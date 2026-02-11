@@ -2,10 +2,62 @@ import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
-import { Badge } from "@/components/ui/badge"
 
-// Import SVG paths
-import svgPaths from "../assets/svg-u56aai38lk"
+// Import logo
+import logoImage from "../assets/logo.png"
+
+// SVG Icon Components
+const UserIcon = ({ className = "" }: { className?: string }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+    <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+    <path d="M8 7a4 4 0 1 0 8 0a4 4 0 0 0 -8 0" />
+    <path d="M6 21v-2a4 4 0 0 1 4 -4h4a4 4 0 0 1 4 4v2" />
+  </svg>
+)
+
+const CurrencyIcon = ({ className = "" }: { className?: string }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+    <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+    <path d="M8 6h5a3 3 0 0 1 3 3v.143a2.857 2.857 0 0 1 -2.857 2.857h-5.143" />
+    <path d="M8 12h5a3 3 0 0 1 3 3v.143a2.857 2.857 0 0 1 -2.857 2.857h-5.143" />
+    <path d="M8 6v12" />
+    <path d="M11 4v2" />
+    <path d="M11 18v2" />
+  </svg>
+)
+
+const HeadphonesIcon = ({ className = "" }: { className?: string }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+    <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+    <path d="M4 15a2 2 0 0 1 2 -2h1a2 2 0 0 1 2 2v3a2 2 0 0 1 -2 2h-1a2 2 0 0 1 -2 -2l0 -3" />
+    <path d="M15 15a2 2 0 0 1 2 -2h1a2 2 0 0 1 2 2v3a2 2 0 0 1 -2 2h-1a2 2 0 0 1 -2 -2l0 -3" />
+    <path d="M4 15v-3a8 8 0 0 1 16 0v3" />
+  </svg>
+)
+
+const HotelIcon = ({ className = "" }: { className?: string }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+    <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+    <path d="M3 21l18 0" />
+    <path d="M5 21v-14l8 -4v18" />
+    <path d="M19 21v-10l-6 -4" />
+    <path d="M9 9l0 .01" />
+    <path d="M9 12l0 .01" />
+    <path d="M9 15l0 .01" />
+    <path d="M9 18l0 .01" />
+  </svg>
+)
+
+const MapIcon = ({ className = "" }: { className?: string }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+    <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+    <path d="M12 18.5l-3 -1.5l-6 3v-13l6 -3l6 3v7.5" />
+    <path d="M9 4v13" />
+    <path d="M15 7v5.5" />
+    <path d="M21.121 20.121a3 3 0 1 0 -4.242 0c.418 .419 1.125 1.045 2.121 1.879c1.051 -.89 1.759 -1.516 2.121 -1.879" />
+    <path d="M19 18v.01" />
+  </svg>
+)
 
 // Star icon component (matching original design)
 const StarIcon = ({ filled = true, size = 40 }: { filled?: boolean; size?: number }) => (
@@ -53,10 +105,10 @@ export default function HomePage() {
   const [email, setEmail] = useState("")
 
   const features = [
-    { id: 1, title: "คุ้มค่าคุ้มราคา", desc: "เที่ยวง่าย จ่ายเบาๆ", icon: "💰" },
-    { id: 2, title: "ไกด์ส่วนตัว", desc: "เที่ยวตามสไตล์คุณ", icon: "🏨" },
-    { id: 3, title: "เดินทางปลอดภัย", desc: "อุ่นใจทุกเส้นทาง", icon: "🗺️" },
-    { id: 4, title: "ดูแลตลอด 24 ชม.", desc: "ติดต่อได้ทุกเมื่อ", icon: "🎧" },
+    { id: 1, title: "คุ้มค่าคุ้มราคา", desc: "เที่ยวง่าย จ่ายเบาๆ", icon: CurrencyIcon },
+    { id: 2, title: "ไกด์ส่วนตัว", desc: "เที่ยวตามสไตล์คุณ", icon: HotelIcon },
+    { id: 3, title: "เดินทางปลอดภัย", desc: "อุ่นใจทุกเส้นทาง", icon: MapIcon },
+    { id: 4, title: "ดูแลตลอด 24 ชม.", desc: "ติดต่อได้ทุกเมื่อ", icon: HeadphonesIcon },
   ]
 
   const testimonials = [
@@ -82,7 +134,7 @@ export default function HomePage() {
       id: 1,
       name: "หมู่เกาะสิมิลัน",
       description: "ดำน้ำดูปะการังระดับโลก น้ำใสหาดทรายขาว",
-      image: "/src/assets/Rectangle.png",
+      image: "/src/assets/หมู่เกาะสิมิลัน.jpeg",
       duration: "ทริป 1 วัน",
       price: "฿3,500",
     },
@@ -90,7 +142,7 @@ export default function HomePage() {
       id: 2,
       name: "เขาสก",
       description: "นอนแพพักผ่อน ท่ามกลางป่าฝนอันอุดมสมบูรณ์",
-      image: "/src/assets/Rectangle 19387.png",
+      image: "/src/assets/เขาสก.jpeg",
       duration: "3 วัน / 2 คืน",
       price: "฿8,900",
     },
@@ -98,7 +150,7 @@ export default function HomePage() {
       id: 3,
       name: "ภูเก็ต",
       description: "สัมผัสความโรแมนติกในแดนสวรรค์เขตร้อน",
-      image: "/src/assets/Rectangle.png",
+      image: "/src/assets/ภูเก็ต.jpeg",
       duration: "ทริป 1 วัน",
       price: "฿2,200",
     },
@@ -118,59 +170,49 @@ export default function HomePage() {
           <div className="flex items-center justify-between h-20 md:h-32">
             {/* Logo */}
             <div className="flex items-center gap-4">
-              <div className="relative h-16 md:h-24 w-20 md:w-32">
-                <div className="absolute inset-0 bg-gradient-to-br from-[#4F200D] to-[#8B4513] rounded-xl shadow-lg overflow-hidden">
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <span className="text-white font-bold text-xl md:text-2xl">Thai</span>
-                  </div>
-                </div>
+              <div className="relative h-12 md:h-20">
+                <img
+                  src={logoImage}
+                  alt="Thai Tours Logo"
+                  className="h-full w-auto object-contain"
+                />
               </div>
-              <span className="text-xl md:text-2xl font-bold text-[#4F200D] hidden sm:block">Thai Tours</span>
+              <span className="text-lg md:text-xl font-bold text-[#4F200D] hidden sm:block">Thai Tours Service</span>
             </div>
 
             {/* Navigation Links */}
-            <div className="hidden md:flex items-center gap-6 lg:gap-8">
-              <a href="#" className="font-bold text-xl md:text-2xl text-[#FF8400]">Home</a>
-              <a href="#" className="font-extralight text-lg md:text-xl text-[#4F200D] hover:text-[#FF8400] transition-colors">Tours</a>
-              <a href="#" className="font-extralight text-lg md:text-xl text-[#4F200D] hover:text-[#FF8400] transition-colors">About Us</a>
-              <a href="#" className="font-extralight text-lg md:text-xl text-[#4F200D] hover:text-[#FF8400] transition-colors">Contact</a>
+            <div className="hidden md:flex items-center gap-4 lg:gap-6">
+              <a href="#" className="font-bold text-lg md:text-xl text-[#FF8400]">Home</a>
+              <a href="#" className="font-extralight text-base md:text-lg text-[#4F200D] hover:text-[#FF8400] transition-colors">Tours</a>
+              <a href="#" className="font-extralight text-base md:text-lg text-[#4F200D] hover:text-[#FF8400] transition-colors">About Us</a>
+              <a href="#" className="font-extralight text-base md:text-lg text-[#4F200D] hover:text-[#FF8400] transition-colors">Contact</a>
             </div>
 
-            {/* Cart Icon */}
-            <div className="flex items-center gap-3">
-              <div className="relative">
-                <div className="w-12 h-12 md:w-16 md:h-16 rounded-full border-4 border-[#F6F1E9] bg-white flex items-center justify-center">
-                  <svg className="w-6 h-6 md:w-8 md:h-8 text-[#4F200D]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
-                  </svg>
-                </div>
-                <span className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 w-3 h-3 bg-[#4F200D] rounded-full"></span>
-              </div>
-              <Button className="bg-[#FF8400] text-white hover:bg-[#FF8400]/90 rounded-full px-4 md:px-6 text-sm md:text-base hidden sm:block">
-                เริ่มต้นเดินทาง
-              </Button>
-            </div>
+            {/* Cart Button with User Icon */}
+            <Button className="w-12 h-12 md:w-14 md:h-14 rounded-full border-4 border-[#F6F1E9] bg-white hover:bg-[#FF8400]/90 flex items-center justify-center p-0">
+              <UserIcon className="w-5 h-5 md:w-6 md:h-6 text-[#4F200D]" />
+            </Button>
           </div>
         </div>
       </nav>
 
       {/* Hero Section */}
-      <section className="relative min-h-[500px] md:min-h-[700px] lg:min-h-[962px] overflow-hidden">
+      <section className="relative min-h-[400px] md:min-h-[500px] lg:min-h-[600px] overflow-hidden">
         <div className="absolute inset-0">
           <img
-            src="/src/assets/ไม่ว่าจุดหมายคือที่ใด.png"
+            src="/src/assets/bg2.jpeg"
             alt="Thailand Tourism"
-            className="w-full h-full object-cover"
+            className="w-full h-full object-cover object-center"
             onError={(e) => {
               // Fallback to gradient if image fails
               e.currentTarget.style.display = 'none'
               e.currentTarget.parentElement!.style.background = 'linear-gradient(135deg, #4F200D 0%, #8B4513 100%)'
             }}
           />
-          <div className="absolute inset-0 bg-gradient-to-b from-black/40 to-black/60"></div>
+          <div className="absolute inset-0 bg-gradient-to-b from-black/30 to-black/50"></div>
         </div>
 
-        <div className="relative z-10 flex flex-col items-center justify-center min-h-[500px] md:min-h-[700px] lg:min-h-[962px] px-4">
+        <div className="relative z-10 flex flex-col items-center justify-center min-h-[400px] md:min-h-[500px] lg:min-h-[600px] px-4 py-8">
           <h1 className="text-4xl md:text-6xl lg:text-7xl xl:text-[80px] font-bold text-white mb-4 text-center drop-shadow-lg">
             ไม่ว่าจุดหมายคือที่ใด
           </h1>
@@ -179,21 +221,21 @@ export default function HomePage() {
           </h2>
 
           {/* Search Bar */}
-          <div className="w-full max-w-4xl md:max-w-6xl mx-auto mt-8 md:mt-16">
-            <div className="bg-[#F6F1E9]/95 backdrop-blur-sm rounded-full p-3 md:p-4 flex flex-col sm:flex-row gap-3 md:gap-4 border-2 border-[#E3DCD4]">
-              <button className="flex-1 bg-[#FFFDFA] rounded-full px-4 md:px-8 py-3 md:py-6 flex items-center justify-between border-2 border-[#4F200D]/30 hover:border-[#4F200D] transition-colors">
-                <span className="text-sm md:text-xl lg:text-[38px] text-[#4F200D]/90 font-medium">เลือกจังหวัด</span>
+          <div className="w-full max-w-3xl md:max-w-4xl mx-auto mt-8 md:mt-16">
+            <div className="bg-[#F6F1E9]/95 backdrop-blur-sm rounded-full p-2 md:p-3 flex flex-col sm:flex-row gap-2 md:gap-3 border-2 border-[#E3DCD4] items-stretch">
+              <button className="flex-1 bg-[#FFFDFA] rounded-full px-3 md:px-6 py-2 md:py-4 flex items-center justify-between border-2 border-[#4F200D]/30 hover:border-[#4F200D] transition-colors">
+                <span className="text-xs md:text-lg lg:text-2xl text-[#4F200D]/90 font-medium">เลือกจังหวัด</span>
                 <ChevronDownIcon />
               </button>
-              <button className="flex-1 bg-[#FFFDFA] rounded-full px-4 md:px-8 py-3 md:py-6 flex items-center justify-between border-2 border-[#4F200D]/30 hover:border-[#4F200D] transition-colors">
-                <span className="text-sm md:text-xl lg:text-[38px] text-[#4F200D]/90 font-medium">เลือกประเภททัวร์</span>
+              <button className="flex-1 bg-[#FFFDFA] rounded-full px-3 md:px-6 py-2 md:py-4 flex items-center justify-between border-2 border-[#4F200D]/30 hover:border-[#4F200D] transition-colors">
+                <span className="text-xs md:text-lg lg:text-2xl text-[#4F200D]/90 font-medium">เลือกประเภททัวร์</span>
                 <ChevronDownIcon />
               </button>
-              <button className="flex-1 bg-[#FFFDFA] rounded-full px-4 md:px-8 py-3 md:py-6 flex items-center justify-between border-2 border-[#4F200D]/30 hover:border-[#4F200D] transition-colors">
-                <span className="text-sm md:text-xl lg:text-[38px] text-[#4F200D]/90 font-medium">จำนวนวันเดินทาง</span>
+              <button className="flex-1 bg-[#FFFDFA] rounded-full px-3 md:px-6 py-2 md:py-4 flex items-center justify-between border-2 border-[#4F200D]/30 hover:border-[#4F200D] transition-colors">
+                <span className="text-xs md:text-lg lg:text-2xl text-[#4F200D]/90 font-medium">จำนวนวันเดินทาง</span>
                 <ChevronDownIcon />
               </button>
-              <Button className="flex-1 bg-[#FF8400] text-white hover:bg-[#FF8400]/90 rounded-full px-6 md:px-12 py-3 md:py-6 text-sm md:text-xl lg:text-[38px] font-bold shadow-lg">
+              <Button className="flex-1 bg-[#FF8400] text-white hover:bg-[#FF8400]/90 rounded-full px-4 md:px-8 py-2 md:py-4 text-sm md:text-lg lg:text-2xl font-bold shadow-lg whitespace-nowrap">
                 ค้นหา
               </Button>
             </div>
@@ -215,8 +257,8 @@ export default function HomePage() {
             {features.map((feature) => (
               <Card key={feature.id} className="border-0 shadow-lg rounded-2xl md:rounded-3xl bg-[#FFFDFA] overflow-hidden">
                 <CardContent className="p-6 md:p-8 text-center">
-                  <div className="w-16 h-16 md:w-24 md:h-32 mx-auto mb-4 md:mb-6 bg-[#FFFDFA] rounded-2xl md:rounded-3xl flex items-center justify-center">
-                    <span className="text-3xl md:text-5xl">{feature.icon}</span>
+                  <div className="w-16 h-16 md:w-24 md:h-32 mx-auto mb-4 md:mb-6 bg-[#FFFDFA] rounded-2xl md:rounded-3xl flex items-center justify-center text-[#FF8400]">
+                    <feature.icon className="w-8 h-8 md:w-16 md:h-24" />
                   </div>
                   <h3 className="text-lg md:text-2xl lg:text-[48px] font-bold text-[#4F200D] mb-2">
                     {feature.title}
@@ -235,7 +277,7 @@ export default function HomePage() {
       <section className="relative py-24 md:py-32 lg:py-48 overflow-hidden">
         <div className="absolute inset-0">
           <img
-            src="/src/assets/เราพร้อมพาคุณไปส่งถึงที่.png"
+            src="/src/assets/bg1.jpeg"
             alt="Travel Background"
             className="w-full h-full object-cover"
             onError={(e) => {
@@ -298,18 +340,6 @@ export default function HomePage() {
                     </div>
                   </div>
                 ))}
-              </div>
-
-              {/* Rating Badge */}
-              <div className="mt-8 md:mt-12 inline-flex">
-                <div className="bg-[#FFFDFA] rounded-2xl md:rounded-3xl shadow-xl px-4 md:px-8 py-3 md:py-4 flex items-center gap-3 md:gap-4">
-                  <p className="text-2xl md:text-4xl font-bold text-black">4.9/5</p>
-                  <div className="flex">
-                    {[...Array(5)].map((_, i) => (
-                      <StarIcon key={i} size={24} />
-                    ))}
-                  </div>
-                </div>
               </div>
             </div>
 
@@ -469,10 +499,12 @@ export default function HomePage() {
             {/* Logo & Description */}
             <div className="lg:col-span-1">
               <div className="flex items-center gap-3 mb-4 md:mb-6">
-                <div className="w-12 h-12 md:w-16 md:h-20 bg-white/10 rounded-xl flex items-center justify-center">
-                  <span className="text-white font-bold text-lg md:text-2xl">TT</span>
-                </div>
-                <span className="text-xl md:text-2xl font-bold">Thai Tours</span>
+                <img
+                  src={logoImage}
+                  alt="Thai Tours Logo"
+                  className="h-12 md:h-16 w-auto object-contain"
+                />
+                <span className="text-xl md:text-2xl font-bold">Thai Tours Service</span>
               </div>
               <p className="text-sm md:text-base xl:text-[24px] font-extralight leading-relaxed text-white/80 max-w-xs md:max-w-sm">
                 เที่ยวอย่างมั่นใจไปกับเรา สร้างความทรงจำที่ประทับใจมิรู้ลืม ด้วยบริการระดับพรีเมียม

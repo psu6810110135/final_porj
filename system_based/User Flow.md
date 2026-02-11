@@ -49,11 +49,17 @@ flowchart TD
     Browse --> WantSearch{Want to Search?}
 
     WantSearch -- Yes --> Search[Search Tours]
-    Search --> Filters[Select: Region, Category, Price]
+    Search --> Filters[Select: Region, Category, Price, Tour Type]
     Filters --> Results[Show Results]
 
     WantSearch -- No --> ShowAll[Show All Tours]
-    ShowAll --> Results
+    ShowAll --> TypeSelect{Select Tour Type}
+
+    TypeSelect -- One Day --> OneDay[Show One-Day Trips]
+    TypeSelect -- Multi Day --> MultiDay[Show Multi-Day Packages]
+
+    OneDay --> Results
+    MultiDay --> Results
 
     Results --> Select[Click Tour]
     Select --> Detail[Tour Detail Page]
@@ -61,10 +67,14 @@ flowchart TD
     Detail --> Decide{Want to Book?}
 
     Decide -- No --> Browse
-    Decide -- Yes --> StartBooking[Start Booking]
+    Decide -- Yes --> CheckType{Check Tour Type}
+
+    CheckType -- One Day --> OneDayBooking[Book One-Day Tour]
+    CheckType -- Multi Day --> MultiDayBooking[Book Multi-Day Package]
 
     style Home fill:#E1F5FE
-    style StartBooking fill:#C8E6C9
+    style OneDayBooking fill:#C8E6C9
+    style MultiDayBooking fill:#FFF9C4
 ```
 
 ---
@@ -82,13 +92,31 @@ flowchart TD
 
     CheckLogin -- Yes --> Back
 
-    Back --> Form[Booking Form]
-    Form --> InputDate[Select Travel Date]
-    InputDate --> InputPax[Enter Number of People]
-    InputPax --> Calc[Calculate Price]
-    Calc --> ShowPrice[Show Total Price]
+    Back --> CheckType{Tour Type?}
 
-    ShowPrice --> Confirm{Confirm?}
+    CheckType -- One Day --> OneDayFlow[One-Day Booking Flow]
+    CheckType -- Multi Day --> MultiDayFlow[Multi-Day Booking Flow]
+
+    %% One-Day Flow
+    OneDayFlow --> OneForm[Booking Form]
+    OneForm --> OneDate[Select Travel Date]
+    OneDate --> OnePax[Enter Number of People]
+    OnePax --> Calc[Calculate Price]
+
+    %% Multi-Day Flow
+    MultiDayFlow --> MultiForm[Booking Form]
+    MultiForm --> MultiStart[Select Start Date]
+    MultiStart --> MultiEnd[Select End Date]
+    MultiEnd --> MultiPax[Enter Number of People]
+    MultiPax --> Calc
+
+    Calc --> ShowPrice[Show Total Price + Details]
+
+    ShowPrice --> ShowInfo[Show: Transportation, Itinerary]
+    ShowInfo --> ShowAccom{Multi-Day?}
+    ShowAccom -- Yes --> ShowAccomDetails[Show Accommodation Details]
+    ShowAccom -- No --> Confirm
+    ShowAccomDetails --> Confirm{Confirm?}
 
     Confirm -- No --> Detail
 
@@ -107,8 +135,10 @@ flowchart TD
     Pay -- Yes --> Upload[Upload Slip]
 
     style Start fill:#E1F5FE
-    style ShowQR fill:#FFF9C4
-    style Upload fill:#C8E6C9
+    style OneDayFlow fill:#C8E6C9
+    style MultiDayFlow fill:#FFF9C4
+    style ShowQR fill:#FFE082
+    style Upload fill:#A5D6A7
 ```
 
 ---

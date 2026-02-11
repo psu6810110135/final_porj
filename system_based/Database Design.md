@@ -46,9 +46,14 @@ erDiagram
         uuid id PK "Tour ID (UUID)"
         string title "Tour Name - NOT NULL"
         text description "Detailed Description"
+        text itinerary "รายการท่องเที่ยว (Itinerary Details)"
         decimal base_price "Price per Person (THB)"
         string region "North | South | Central | East | West | Northeast"
         string category "Adventure | Relax | Culture | Food | Beach"
+        string tour_type "one_day | multi_day - Default: one_day"
+        int duration_days "จำนวนวัน (Number of Days) - Default: 1"
+        text transportation "วิธีการเดินทาง (Transportation Method)"
+        text accommodation "ที่พัก (Accommodation Details) - for multi-day tours"
         int max_capacity "Total Available Seats"
         string image_url "Cover Image URL"
         string[] additional_images "Gallery Images Array"
@@ -66,7 +71,9 @@ erDiagram
         uuid tour_id FK "Ref: TOURS.id"
         int pax "Number of People"
         decimal total_price "Final Calculated Price"
-        date travel_date "Selected Travel Date"
+        date travel_date "Selected Travel Date (for one-day tours)"
+        date start_date "วันเริ่มต้น (Start Date - for multi-day tours)"
+        date end_date "วันสิ้นสุด (End Date - for multi-day tours)"
         json selected_options "Chosen Add-ons"
         enum status "pending_pay | pending_verify | confirmed | cancelled | expired"
         datetime payment_deadline "Auto-cancel time (created_at + 24h)"
@@ -128,9 +135,14 @@ CREATE TABLE tours (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     title VARCHAR(255) NOT NULL,
     description TEXT,
+    itinerary TEXT, -- รายการท่องเที่ยว (Itinerary Details)
     base_price DECIMAL(10,2) NOT NULL CHECK (base_price >= 0),
     region VARCHAR(50) NOT NULL CHECK (region IN ('North', 'South', 'Central', 'East', 'West', 'Northeast')),
     category VARCHAR(50) NOT NULL CHECK (category IN ('Adventure', 'Relax', 'Culture', 'Food', 'Beach')),
+    tour_type VARCHAR(20) NOT NULL DEFAULT 'one_day' CHECK (tour_type IN ('one_day', 'multi_day')),
+    duration_days INTEGER NOT NULL DEFAULT 1 CHECK (duration_days > 0), -- จำนวนวัน (Number of Days)
+    transportation TEXT, -- วิธีการเดินทาง (Transportation Method)
+    accommodation TEXT, -- ที่พัก (Accommodation Details - for multi-day tours)
     max_capacity INTEGER NOT NULL CHECK (max_capacity > 0),
     image_url TEXT,
     additional_images TEXT[],
@@ -144,6 +156,7 @@ CREATE TABLE tours (
 -- Indexes
 CREATE INDEX idx_tours_region ON tours(region);
 CREATE INDEX idx_tours_category ON tours(category);
+CREATE INDEX idx_tours_type ON tours(tour_type);
 CREATE INDEX idx_tours_active ON tours(is_active) WHERE is_active = TRUE;
 CREATE INDEX idx_tours_recommended ON tours(is_recommended) WHERE is_recommended = TRUE;
 CREATE INDEX idx_tours_price ON tours(base_price);
@@ -160,7 +173,9 @@ CREATE TABLE bookings (
     tour_id UUID NOT NULL REFERENCES tours(id) ON DELETE RESTRICT,
     pax INTEGER NOT NULL CHECK (pax > 0),
     total_price DECIMAL(10,2) NOT NULL CHECK (total_price > 0),
-    travel_date DATE NOT NULL CHECK (travel_date >= CURRENT_DATE),
+    travel_date DATE, -- For one-day tours (nullable, use start_date/end_date for multi-day)
+    start_date DATE CHECK (start_date >= CURRENT_DATE), -- วันเริ่มต้น (for multi-day tours)
+    end_date DATE CHECK (end_date >= start_date), -- วันสิ้นสุด (for multi-day tours)
     selected_options JSONB,
     status VARCHAR(20) NOT NULL DEFAULT 'pending_pay'
         CHECK (status IN ('pending_pay', 'pending_verify', 'confirmed', 'cancelled', 'expired')),
@@ -175,6 +190,8 @@ CREATE INDEX idx_bookings_tour_id ON bookings(tour_id);
 CREATE INDEX idx_bookings_status ON bookings(status);
 CREATE INDEX idx_bookings_deadline ON bookings(payment_deadline);
 CREATE INDEX idx_bookings_tour_status ON bookings(tour_id, status);
+CREATE INDEX idx_bookings_travel_date ON bookings(travel_date);
+CREATE INDEX idx_bookings_date_range ON bookings(start_date, end_date);
 ```
 
 ---
@@ -315,9 +332,14 @@ VALUES (
 | id | UUID | PK | Tour identifier |
 | title | VARCHAR(255) | NOT NULL | Tour name |
 | description | TEXT | NULLABLE | Full details |
+| itinerary | TEXT | NULLABLE | รายการท่องเที่ยว (Itinerary Details) |
 | base_price | DECIMAL(10,2) | CHECK >= 0 | Price per person |
 | region | VARCHAR(50) | CHECK IN (...) | Geographic region |
 | category | VARCHAR(50) | CHECK IN (...) | Tour type |
+| tour_type | VARCHAR(20) | Default: one_day | one_day | multi_day |
+| duration_days | INTEGER | Default: 1, CHECK > 0 | จำนวนวัน (Number of Days) |
+| transportation | TEXT | NULLABLE | วิธีการเดินทาง (Transportation Method) |
+| accommodation | TEXT | NULLABLE | ที่พัก (Accommodation - for multi-day) |
 | max_capacity | INTEGER | CHECK > 0 | Total seats |
 | is_active | BOOLEAN | Default: TRUE | Show in listings |
 | is_recommended | BOOLEAN | Default: FALSE | Featured status |
@@ -331,7 +353,9 @@ VALUES (
 | tour_id | UUID | FK TOURS(id) | Booked tour |
 | pax | INTEGER | CHECK > 0 | Number of travelers |
 | total_price | DECIMAL(10,2) | CHECK > 0 | Final price |
-| travel_date | DATE | CHECK >= CURRENT_DATE | Travel date |
+| travel_date | DATE | NULLABLE | Travel date (for one-day tours) |
+| start_date | DATE | CHECK >= CURRENT_DATE | วันเริ่มต้น (for multi-day tours) |
+| end_date | DATE | CHECK >= start_date | วันสิ้นสุด (for multi-day tours) |
 | status | VARCHAR(20) | CHECK IN (...) | Booking status |
 | payment_deadline | TIMESTAMPTZ | NOT NULL | Auto-cancel time |
 

@@ -82,9 +82,14 @@ classDiagram
         +UUID id
         +String title
         +String description
+        +String itinerary "รายการท่องเที่ยว"
         +Decimal basePrice
         +String region
         +String category
+        +String tourType "one_day | multi_day"
+        +Int durationDays "จำนวนวัน"
+        +String transportation "วิธีการเดินทาง"
+        +String accommodation "ที่พัก (สำหรับ multi-day)"
         +Int maxCapacity
         +String[] imageUrls
         +Boolean isActive
@@ -97,7 +102,9 @@ classDiagram
         +UUID tourId
         +Int pax
         +Decimal totalPrice
-        +Date travelDate
+        +Date travelDate "สำหรับ one-day tours"
+        +Date startDate "วันเริ่มต้น (สำหรับ multi-day)"
+        +Date endDate "วันสิ้นสุด (สำหรับ multi-day)"
         +Enum status
         +DateTime paymentDeadline
     }
@@ -153,6 +160,8 @@ classDiagram
 
     class TourService {
         +findTours(filters): Promise~Tour[]~
+        +getOneDayTours(): Promise~Tour[]~
+        +getMultiDayTours(): Promise~Tour[]~
         +getTourById(id): Promise~Tour~
         +createTour(data): Promise~Tour~
     }

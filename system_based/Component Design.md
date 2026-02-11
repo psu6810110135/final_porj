@@ -29,6 +29,10 @@ classDiagram
     class CustomerPortal {
         +searchTours(criteria: Object): Promise~Tour[]~
         +viewTourDetail(id: UUID): Promise~Tour~
+        +viewOneDayTours(): Promise~Tour[]~
+        +viewMultiDayTours(): Promise~Tour[]~
+        +bookOneDayTour(tourId: UUID, date: Date, pax: Int): Promise~Booking~
+        +bookMultiDayTour(tourId: UUID, startDate: Date, endDate: Date, pax: Int): Promise~Booking~
         +planCustomTrip(people: Int, dates: Date[]): Promise~Plan~
         +uploadPaymentSlip(image: File): Promise~UploadResult~
         +viewBookingHistory(): Promise~Booking[]~
@@ -66,6 +70,8 @@ classDiagram
         +updateTour(id: UUID, data: Object): Promise~Tour~
         +deleteTour(id: UUID): Promise~Boolean~
         +checkAvailability(tourId: UUID, date: Date): Promise~Int~
+        +getOneDayTours(): Promise~Tour[]~
+        +getMultiDayTours(): Promise~Tour[]~
     }
 
     class BookingEngine {
@@ -154,6 +160,8 @@ POST /api/v1/auth/login
 | Method | Endpoint | Description | Auth Required |
 |---|---|---|---|
 | GET | `/api/v1/tours` | List all tours (with filters) | ❌ |
+| GET | `/api/v1/tours/one-day` | List one-day trips only | ❌ |
+| GET | `/api/v1/tours/multi-day` | List multi-day packages only | ❌ |
 | GET | `/api/v1/tours/:id` | Get tour details | ❌ |
 | POST | `/api/v1/tours` | Create new tour | ✅ Admin |
 | PATCH | `/api/v1/tours/:id` | Update tour | ✅ Admin |
@@ -162,7 +170,7 @@ POST /api/v1/auth/login
 **Query Parameters Example:**
 
 ```
-GET /api/v1/tours?region=south&category=adventure&minPrice=1000&maxPrice=5000
+GET /api/v1/tours?region=south&category=adventure&minPrice=1000&maxPrice=5000&tour_type=multi_day
 ```
 
 ---

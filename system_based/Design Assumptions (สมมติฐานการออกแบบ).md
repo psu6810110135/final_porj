@@ -46,13 +46,13 @@
 |---|---|---|---|
 | Frontend | Vercel | 99.99% | Cloudflare CDN |
 | Backend | Render (Starter) | 99.9% | Cold Start ~30s |
-| Database | Supabase (Free) | 99.9% | Connection Pool: 60 |
+| Database | PostgreSQL (Render/Railway) | 99.9% | Connection Pool: 60 |
 
 **Mitigation for Render Cold Start:**
 - Cron job ping `/api/health` every 10 minutes
 
-### 2.3 File Storage (Supabase)
-- Total Storage: 1 GB (Free tier)
+### 2.3 File Storage
+- Storage: Render Disk / Railway Volume / Cloud Storage
 - Max File Size: 5 MB (system limit)
 - Slip size average: 500 KB
 
@@ -150,7 +150,7 @@
 ## 6. Maintenance Assumptions
 
 ### 6.1 Backup & Recovery
-- Supabase auto-backup (daily @ 03:00 AM)
+- PostgreSQL automated backups (Render/Railway)
 - Retention: 7 days (Free tier)
 
 ### 6.2 Monitoring

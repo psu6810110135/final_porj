@@ -130,7 +130,8 @@ sequenceDiagram
 |---|---|
 | Vercel | Frontend Hosting |
 | Render | Backend Hosting |
-| Supabase | Database + Storage |
+| PostgreSQL | Database (Render/Railway) |
+| File Storage | Local/Cloud Storage |
 
 ---
 
@@ -145,7 +146,7 @@ flowchart LR
     AdminUI --> API
 
     API --> DB[(PostgreSQL)]
-    API --> Storage[(Supabase Storage)]
+    API --> Storage[(File Storage)]
 
     API --> Console[console.log()<br>Email Simulation]
 

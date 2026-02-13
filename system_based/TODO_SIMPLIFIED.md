@@ -90,8 +90,8 @@
   - `JWT_SECRET=your-secret-key`
   - `JWT_EXPIRES_IN=24h`
 
-### 0.4 Database Setup (Supabase)
-- [ ] Create Supabase Project
+### 0.4 Database Setup (PostgreSQL)
+- [ ] Create PostgreSQL instance (Render/Railway)
 - [ ] Get Connection String
 - [ ] Setup Database (ดู Phase 1)
 
@@ -320,7 +320,7 @@ async uploadSlip(file, bookingId) {
     throw new Error('Duplicate slip detected');
   }
   
-  // 3. Upload to Supabase Storage
+  // 3. Upload to File Storage (local/cloud)
   const url = await this.uploadToStorage(file, bookingId);
   
   // 4. Update payment record
@@ -477,7 +477,7 @@ async uploadSlip(file, bookingId) {
   - [ ] Connect GitHub repo
   - [ ] Setup environment variables
   - [ ] Deploy
-- [ ] **Database to Supabase**
+- [ ] **Database (PostgreSQL)**
   - [ ] Run migration scripts
 
 ### 6.3 Post-Deployment

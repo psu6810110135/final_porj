@@ -1,43 +1,87 @@
-import { useState } from "react"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 
 // Import logo
-import logoImage from "../assets/logo.png"
+import logoImage from "../assets/logo.png";
 
 // SVG Icon Components
 const UserIcon = ({ className = "" }: { className?: string }) => (
-  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
-    <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    width="24"
+    height="24"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className={className}
+  >
+    <path stroke="none" d="M0 0h24v24H0z" fill="none" />
     <path d="M8 7a4 4 0 1 0 8 0a4 4 0 0 0 -8 0" />
     <path d="M6 21v-2a4 4 0 0 1 4 -4h4a4 4 0 0 1 4 4v2" />
   </svg>
-)
+);
 
 const CurrencyIcon = ({ className = "" }: { className?: string }) => (
-  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
-    <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    width="24"
+    height="24"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className={className}
+  >
+    <path stroke="none" d="M0 0h24v24H0z" fill="none" />
     <path d="M8 6h5a3 3 0 0 1 3 3v.143a2.857 2.857 0 0 1 -2.857 2.857h-5.143" />
     <path d="M8 12h5a3 3 0 0 1 3 3v.143a2.857 2.857 0 0 1 -2.857 2.857h-5.143" />
     <path d="M8 6v12" />
     <path d="M11 4v2" />
     <path d="M11 18v2" />
   </svg>
-)
+);
 
 const HeadphonesIcon = ({ className = "" }: { className?: string }) => (
-  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
-    <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    width="24"
+    height="24"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className={className}
+  >
+    <path stroke="none" d="M0 0h24v24H0z" fill="none" />
     <path d="M4 15a2 2 0 0 1 2 -2h1a2 2 0 0 1 2 2v3a2 2 0 0 1 -2 2h-1a2 2 0 0 1 -2 -2l0 -3" />
     <path d="M15 15a2 2 0 0 1 2 -2h1a2 2 0 0 1 2 2v3a2 2 0 0 1 -2 2h-1a2 2 0 0 1 -2 -2l0 -3" />
     <path d="M4 15v-3a8 8 0 0 1 16 0v3" />
   </svg>
-)
+);
 
 const HotelIcon = ({ className = "" }: { className?: string }) => (
-  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
-    <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    width="24"
+    height="24"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className={className}
+  >
+    <path stroke="none" d="M0 0h24v24H0z" fill="none" />
     <path d="M3 21l18 0" />
     <path d="M5 21v-14l8 -4v18" />
     <path d="M19 21v-10l-6 -4" />
@@ -46,21 +90,38 @@ const HotelIcon = ({ className = "" }: { className?: string }) => (
     <path d="M9 15l0 .01" />
     <path d="M9 18l0 .01" />
   </svg>
-)
+);
 
 const MapIcon = ({ className = "" }: { className?: string }) => (
-  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
-    <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    width="24"
+    height="24"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className={className}
+  >
+    <path stroke="none" d="M0 0h24v24H0z" fill="none" />
     <path d="M12 18.5l-3 -1.5l-6 3v-13l6 -3l6 3v7.5" />
     <path d="M9 4v13" />
     <path d="M15 7v5.5" />
     <path d="M21.121 20.121a3 3 0 1 0 -4.242 0c.418 .419 1.125 1.045 2.121 1.879c1.051 -.89 1.759 -1.516 2.121 -1.879" />
     <path d="M19 18v.01" />
   </svg>
-)
+);
 
 // Star icon component (matching original design)
-const StarIcon = ({ filled = true, size = 40 }: { filled?: boolean; size?: number }) => (
+const StarIcon = ({
+  filled = true,
+  size = 40,
+}: {
+  filled?: boolean;
+  size?: number;
+}) => (
   <svg width={size} height={size} viewBox="0 0 48.5377 47.2556" fill="none">
     <path
       d="M24.2681 28.8333L17.3515 33C17.0459 33.1944 16.7265 33.2778 16.3931 33.25C16.0598 33.2222 15.7681 33.1111 15.5181 32.9167C15.2681 32.7222 15.0737 32.4794 14.9348 32.1883C14.7959 31.8972 14.7681 31.5706 14.8515 31.2083L16.6848 23.3333L10.5598 18.0417C10.282 17.7917 10.1087 17.5067 10.0398 17.1867C9.9709 16.8667 9.99146 16.5544 10.1015 16.25C10.2115 15.9456 10.3781 15.6956 10.6015 15.5C10.8248 15.3044 11.1303 15.1794 11.5181 15.125L19.6015 14.4167L22.7265 7C22.8653 6.66667 23.0809 6.41667 23.3731 6.25C23.6653 6.08333 23.9637 6 24.2681 6C24.5726 6 24.8709 6.08333 25.1631 6.25C25.4553 6.41667 25.6709 6.66667 25.8098 7L28.9348 14.4167L37.0181 15.125C37.407 15.1806 37.7126 15.3056 37.9348 15.5C38.157 15.6944 38.3237 15.9444 38.4348 16.25C38.5459 16.5556 38.567 16.8683 38.4981 17.1883C38.4292 17.5083 38.2553 17.7928 37.9765 18.0417L31.8515 23.3333L33.6848 31.2083C33.7681 31.5694 33.7403 31.8961 33.6015 32.1883C33.4626 32.4806 33.2681 32.7233 33.0181 32.9167C32.7681 33.11 32.4765 33.2211 32.1431 33.25C31.8098 33.2789 31.4903 33.1956 31.1848 33L24.2681 28.8333Z"
@@ -69,15 +130,53 @@ const StarIcon = ({ filled = true, size = 40 }: { filled?: boolean; size?: numbe
       strokeWidth={filled ? "0" : "1.5"}
     />
   </svg>
-)
+);
+
+// Shopping cart icon
+const ShoppingCartIcon = ({ className = "" }: { className?: string }) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    width="24"
+    height="24"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className={className}
+  >
+    <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+    <path d="M6 19m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0" />
+    <path d="M17 19m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0" />
+    <path d="M17 17h-11v-14h-2" />
+    <path d="M6 5l14 1l-1 7h-13" />
+  </svg>
+);
 
 // Chevron down icon for dropdown
 const ChevronDownIcon = () => (
   <svg width="28" height="17" viewBox="0 0 27.7115 16.636" fill="none">
-    <line x1="2.11325" y1="1.50003" x2="13.0406" y2="14.5228" stroke="#4F200D" strokeWidth="3" strokeLinecap="round" />
-    <line x1="14.6709" y1="14.5228" x2="25.5983" y2="1.50003" stroke="#4F200D" strokeWidth="3" strokeLinecap="round" />
+    <line
+      x1="2.11325"
+      y1="1.50003"
+      x2="13.0406"
+      y2="14.5228"
+      stroke="#4F200D"
+      strokeWidth="3"
+      strokeLinecap="round"
+    />
+    <line
+      x1="14.6709"
+      y1="14.5228"
+      x2="25.5983"
+      y2="1.50003"
+      stroke="#4F200D"
+      strokeWidth="3"
+      strokeLinecap="round"
+    />
   </svg>
-)
+);
 
 // Arrow up icon for action buttons
 const ArrowUpIcon = () => (
@@ -87,7 +186,7 @@ const ArrowUpIcon = () => (
       fill="#4F200D"
     />
   </svg>
-)
+);
 
 // Quote icon
 const QuoteIcon = () => (
@@ -99,35 +198,48 @@ const QuoteIcon = () => (
       strokeWidth="5"
     />
   </svg>
-)
+);
 
 export default function HomePage() {
-  const [email, setEmail] = useState("")
+  const [email, setEmail] = useState("");
 
   const features = [
-    { id: 1, title: "คุ้มค่าคุ้มราคา", desc: "เที่ยวง่าย จ่ายเบาๆ", icon: CurrencyIcon },
+    {
+      id: 1,
+      title: "คุ้มค่าคุ้มราคา",
+      desc: "เที่ยวง่าย จ่ายเบาๆ",
+      icon: CurrencyIcon,
+    },
     { id: 2, title: "ไกด์ส่วนตัว", desc: "เที่ยวตามสไตล์คุณ", icon: HotelIcon },
     { id: 3, title: "เดินทางปลอดภัย", desc: "อุ่นใจทุกเส้นทาง", icon: MapIcon },
-    { id: 4, title: "ดูแลตลอด 24 ชม.", desc: "ติดต่อได้ทุกเมื่อ", icon: HeadphonesIcon },
-  ]
+    {
+      id: 4,
+      title: "ดูแลตลอด 24 ชม.",
+      desc: "ติดต่อได้ทุกเมื่อ",
+      icon: HeadphonesIcon,
+    },
+  ];
 
   const testimonials = [
     {
       id: 1,
       name: "นเรศ วงวิไล",
-      content: "ประสบการณ์เที่ยวที่ดีที่สุด! ไกด์น่ารักมาก วิวสวยหลักล้าน ทุกอย่างจัดการได้เป๊ะมาก",
+      content:
+        "ประสบการณ์เที่ยวที่ดีที่สุด! ไกด์น่ารักมาก วิวสวยหลักล้าน ทุกอย่างจัดการได้เป๊ะมาก",
     },
     {
       id: 2,
       name: "ยศธร รัตนาประสิทธิ์",
-      content: "จองง่ายมาก แอปช่วยวางแผนทริปได้แบบไม่ต้องกังวลเลย แนะนำแพ็กเกจเขาสกมาก ๆ",
+      content:
+        "จองง่ายมาก แอปช่วยวางแผนทริปได้แบบไม่ต้องกังวลเลย แนะนำแพ็กเกจเขาสกมาก ๆ",
     },
     {
       id: 3,
       name: "จันทรวิมล พงษ์ธนาพัฒน์",
-      content: "แนะนำเลยสำหรับครอบครัว เด็ก ๆ ชอบกิจกรรมที่ภูเก็ตมาก ปีหน้ามาจองซ้ำแน่นอน!",
+      content:
+        "แนะนำเลยสำหรับครอบครัว เด็ก ๆ ชอบกิจกรรมที่ภูเก็ตมาก ปีหน้ามาจองซ้ำแน่นอน!",
     },
-  ]
+  ];
 
   const destinations = [
     {
@@ -154,22 +266,34 @@ export default function HomePage() {
       duration: "ทริป 1 วัน",
       price: "฿2,200",
     },
-  ]
+  ];
 
   const steps = [
-    { num: 1, title: "เลือกจุดหมาย", desc: "ค้นหารายชื่อสถานที่ท่องเที่ยวยอดนิยมที่เราคัดมาเพื่อคุณ" },
-    { num: 2, title: "เช็ควันว่าง", desc: "เลือกวันเดินทางที่เหมาะสมกับตารางเวลาของคุณ" },
-    { num: 3, title: "ออกเดินทางกันเลย!", desc: "รับแผนการเดินทาง แล้วเตรียมตัวเดินทางได้ทันที" },
-  ]
+    {
+      num: 1,
+      title: "เลือกจุดหมาย",
+      desc: "ค้นหารายชื่อสถานที่ท่องเที่ยวยอดนิยมที่เราคัดมาเพื่อคุณ",
+    },
+    {
+      num: 2,
+      title: "เช็ควันว่าง",
+      desc: "เลือกวันเดินทางที่เหมาะสมกับตารางเวลาของคุณ",
+    },
+    {
+      num: 3,
+      title: "ออกเดินทางกันเลย!",
+      desc: "รับแผนการเดินทาง แล้วเตรียมตัวเดินทางได้ทันที",
+    },
+  ];
 
   return (
     <div className="min-h-screen bg-[#F6F1E9]">
       {/* Navbar */}
       <nav className="sticky top-0 z-50 bg-white shadow-sm">
         <div className="max-w-[1920px] mx-auto px-4 md:px-8">
-          <div className="flex items-center justify-between h-20 md:h-32">
+          <div className="flex items-center h-20 md:h-32">
             {/* Logo */}
-            <div className="flex items-center gap-4">
+            <div className="flex-1 flex items-center gap-4">
               <div className="relative h-12 md:h-20">
                 <img
                   src={logoImage}
@@ -177,21 +301,48 @@ export default function HomePage() {
                   className="h-full w-auto object-contain"
                 />
               </div>
-              <span className="text-lg md:text-xl font-bold text-[#4F200D] hidden sm:block">Thai Tours Service</span>
+              <span className="text-lg md:text-xl font-bold text-[#4F200D] hidden sm:block">
+                Thai Tours Service
+              </span>
             </div>
 
             {/* Navigation Links */}
             <div className="hidden md:flex items-center gap-4 lg:gap-6">
-              <a href="#" className="font-bold text-lg md:text-xl text-[#FF8400]">Home</a>
-              <a href="#" className="font-extralight text-base md:text-lg text-[#4F200D] hover:text-[#FF8400] transition-colors">Tours</a>
-              <a href="#" className="font-extralight text-base md:text-lg text-[#4F200D] hover:text-[#FF8400] transition-colors">About Us</a>
-              <a href="#" className="font-extralight text-base md:text-lg text-[#4F200D] hover:text-[#FF8400] transition-colors">Contact</a>
+              <a
+                href="#"
+                className="font-bold text-lg md:text-xl text-[#FF8400]"
+              >
+                Home
+              </a>
+              <a
+                href="#"
+                className="font-extralight text-base md:text-lg text-[#4F200D] hover:text-[#FF8400] transition-colors"
+              >
+                Tours
+              </a>
+              <a
+                href="#"
+                className="font-extralight text-base md:text-lg text-[#4F200D] hover:text-[#FF8400] transition-colors"
+              >
+                About Us
+              </a>
+              <a
+                href="#"
+                className="font-extralight text-base md:text-lg text-[#4F200D] hover:text-[#FF8400] transition-colors"
+              >
+                Contact
+              </a>
             </div>
 
-            {/* Cart Button with User Icon */}
-            <Button className="w-12 h-12 md:w-14 md:h-14 rounded-full border-4 border-[#F6F1E9] bg-white hover:bg-[#FF8400]/90 flex items-center justify-center p-0">
-              <UserIcon className="w-5 h-5 md:w-6 md:h-6 text-[#4F200D]" />
-            </Button>
+            {/* Cart & User Icons */}
+            <div className="flex-1 flex items-center justify-end gap-3">
+              <Button className="w-12 h-12 md:w-14 md:h-14 rounded-full border-4 border-[#F6F1E9] bg-white hover:bg-[#FF8400]/90 flex items-center justify-center p-0">
+                <ShoppingCartIcon className="w-5 h-5 md:w-6 md:h-6 text-[#4F200D]" />
+              </Button>
+              <Button className="w-12 h-12 md:w-14 md:h-14 rounded-full border-4 border-[#F6F1E9] bg-white hover:bg-[#FF8400]/90 flex items-center justify-center p-0">
+                <UserIcon className="w-5 h-5 md:w-6 md:h-6 text-[#4F200D]" />
+              </Button>
+            </div>
           </div>
         </div>
       </nav>
@@ -205,8 +356,9 @@ export default function HomePage() {
             className="w-full h-full object-cover object-center"
             onError={(e) => {
               // Fallback to gradient if image fails
-              e.currentTarget.style.display = 'none'
-              e.currentTarget.parentElement!.style.background = 'linear-gradient(135deg, #4F200D 0%, #8B4513 100%)'
+              e.currentTarget.style.display = "none";
+              e.currentTarget.parentElement!.style.background =
+                "linear-gradient(135deg, #4F200D 0%, #8B4513 100%)";
             }}
           />
           <div className="absolute inset-0 bg-gradient-to-b from-black/30 to-black/50"></div>
@@ -221,21 +373,27 @@ export default function HomePage() {
           </h2>
 
           {/* Search Bar */}
-          <div className="w-full max-w-3xl md:max-w-4xl mx-auto mt-8 md:mt-16">
-            <div className="bg-[#F6F1E9]/95 backdrop-blur-sm rounded-full p-2 md:p-3 flex flex-col sm:flex-row gap-2 md:gap-3 border-2 border-[#E3DCD4] items-stretch">
+          <div className="w-full max-w-2xl md:max-w-3xl mt-8 md:mt-16">
+            <div className="bg-[#F6F1E9]/95 backdrop-blur-sm rounded-full p-2 md:p-3 flex flex-col sm:flex-row gap-2 md:gap-3 border-2 border-[#E3DCD4] items-center">
               <button className="flex-1 bg-[#FFFDFA] rounded-full px-3 md:px-6 py-2 md:py-4 flex items-center justify-between border-2 border-[#4F200D]/30 hover:border-[#4F200D] transition-colors">
-                <span className="text-xs md:text-lg lg:text-2xl text-[#4F200D]/90 font-medium">เลือกจังหวัด</span>
+                <span className="text-xs md:text-lg lg:text-2xl text-[#4F200D]/90 font-medium">
+                  เลือกจังหวัด
+                </span>
                 <ChevronDownIcon />
               </button>
               <button className="flex-1 bg-[#FFFDFA] rounded-full px-3 md:px-6 py-2 md:py-4 flex items-center justify-between border-2 border-[#4F200D]/30 hover:border-[#4F200D] transition-colors">
-                <span className="text-xs md:text-lg lg:text-2xl text-[#4F200D]/90 font-medium">เลือกประเภททัวร์</span>
+                <span className="text-xs md:text-lg lg:text-2xl text-[#4F200D]/90 font-medium">
+                  เลือกประเภททัวร์
+                </span>
                 <ChevronDownIcon />
               </button>
               <button className="flex-1 bg-[#FFFDFA] rounded-full px-3 md:px-6 py-2 md:py-4 flex items-center justify-between border-2 border-[#4F200D]/30 hover:border-[#4F200D] transition-colors">
-                <span className="text-xs md:text-lg lg:text-2xl text-[#4F200D]/90 font-medium">จำนวนวันเดินทาง</span>
+                <span className="text-xs md:text-lg lg:text-2xl text-[#4F200D]/90 font-medium">
+                  จำนวนวันเดินทาง
+                </span>
                 <ChevronDownIcon />
               </button>
-              <Button className="flex-1 bg-[#FF8400] text-white hover:bg-[#FF8400]/90 rounded-full px-4 md:px-8 py-2 md:py-4 text-sm md:text-lg lg:text-2xl font-bold shadow-lg whitespace-nowrap">
+              <Button className="bg-[#FF8400] text-white hover:bg-[#FF8400]/90 rounded-full px-6 md:px-10 py-2 md:py-4 text-sm md:text-lg lg:text-2xl font-bold shadow-lg whitespace-nowrap">
                 ค้นหา
               </Button>
             </div>
@@ -255,7 +413,10 @@ export default function HomePage() {
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 md:gap-8">
             {features.map((feature) => (
-              <Card key={feature.id} className="border-0 shadow-lg rounded-2xl md:rounded-3xl bg-[#FFFDFA] overflow-hidden">
+              <Card
+                key={feature.id}
+                className="border-0 shadow-lg rounded-2xl md:rounded-3xl bg-[#FFFDFA] overflow-hidden"
+              >
                 <CardContent className="p-6 md:p-8 text-center">
                   <div className="w-16 h-16 md:w-24 md:h-32 mx-auto mb-4 md:mb-6 bg-[#FFFDFA] rounded-2xl md:rounded-3xl flex items-center justify-center text-[#FF8400]">
                     <feature.icon className="w-8 h-8 md:w-16 md:h-24" />
@@ -281,8 +442,9 @@ export default function HomePage() {
             alt="Travel Background"
             className="w-full h-full object-cover"
             onError={(e) => {
-              e.currentTarget.style.display = 'none'
-              e.currentTarget.parentElement!.style.background = 'linear-gradient(135deg, #FF8400 0%, #FFD93D 100%)'
+              e.currentTarget.style.display = "none";
+              e.currentTarget.parentElement!.style.background =
+                "linear-gradient(135deg, #FF8400 0%, #FFD93D 100%)";
             }}
           />
           <div className="absolute inset-0 bg-black/40"></div>
@@ -301,7 +463,8 @@ export default function HomePage() {
         <div className="relative z-10 max-w-[1920px] mx-auto px-4 md:px-8">
           <div className="text-center">
             <h2 className="text-2xl md:text-4xl lg:text-6xl xl:text-[128px] font-bold text-white leading-tight mb-8 md:mb-16 drop-shadow-lg px-4">
-              การเดินทาง คือการลงทุนเดียว<br />
+              การเดินทาง คือการลงทุนเดียว
+              <br />
               ที่ทำให้ชีวิตคุณมั่งคั่งขึ้น
             </h2>
             <Button className="bg-[#FF8400] text-white hover:bg-[#FF8400]/90 rounded-full px-8 md:px-16 py-4 md:py-8 text-lg md:text-2xl lg:text-[48px] font-bold shadow-xl">
@@ -321,14 +484,20 @@ export default function HomePage() {
                 วางแผนทริปในฝันได้ง่าย ๆ
               </h2>
               <p className="text-base md:text-xl lg:text-2xl xl:text-[32px] font-extralight text-[#4F200D] mb-8 md:mb-12 max-w-2xl">
-                เราลดความยุ่งยากในการจอง เพื่อให้คุณมีเวลาเตรียมจัดกระเป๋าได้เต็มที่
+                เราลดความยุ่งยากในการจอง
+                เพื่อให้คุณมีเวลาเตรียมจัดกระเป๋าได้เต็มที่
               </p>
 
               <div className="space-y-6 md:space-y-8">
                 {steps.map((step) => (
-                  <div key={step.num} className="flex items-start gap-4 md:gap-6">
+                  <div
+                    key={step.num}
+                    className="flex items-start gap-4 md:gap-6"
+                  >
                     <div className="w-16 h-16 md:w-24 md:h-24 flex-shrink-0 rounded-2xl md:rounded-3xl bg-[#F6F1E9] flex items-center justify-center">
-                      <span className="text-2xl md:text-4xl font-bold text-[#FF8400]">{step.num}</span>
+                      <span className="text-2xl md:text-4xl font-bold text-[#FF8400]">
+                        {step.num}
+                      </span>
                     </div>
                     <div>
                       <p className="text-lg md:text-3xl xl:text-[48px] font-medium text-[#4F200D] mb-1 md:mb-2">
@@ -371,14 +540,18 @@ export default function HomePage() {
 
           <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-6 md:gap-8">
             {destinations.map((dest) => (
-              <Card key={dest.id} className="overflow-hidden border-0 shadow-xl rounded-2xl md:rounded-3xl bg-[#FFFDFA] group">
+              <Card
+                key={dest.id}
+                className="overflow-hidden border-0 shadow-xl rounded-2xl md:rounded-3xl bg-[#FFFDFA] group"
+              >
                 <div className="relative h-56 md:h-72 lg:h-96 overflow-hidden">
                   <img
                     src={dest.image}
                     alt={dest.name}
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                     onError={(e) => {
-                      e.currentTarget.src = "https://images.unsplash.com/photo-1552465011-b4e21bf6e79a?w=600&q=80"
+                      e.currentTarget.src =
+                        "https://images.unsplash.com/photo-1552465011-b4e21bf6e79a?w=600&q=80";
                     }}
                   />
                 </div>
@@ -484,7 +657,7 @@ export default function HomePage() {
                 onChange={(e) => setEmail(e.target.value)}
                 className="flex-1 h-12 md:h-16 xl:h-[102px] rounded-full bg-white/50 border-2 border-[#E3DCD4] text-base md:text-xl xl:text-[32px] px-4 md:px-6"
               />
-              <Button className="h-12 md:h-16 xl:h-[75px] rounded-full bg-[#FF8400] text-white hover:bg-[#FF8400]/90 px-6 md:px-8 xl:px-[29px] text-base md:text-xl xl:text-[48px] font-bold whitespace-nowrap">
+              <Button className="h-12 md:h-16 xl:h-[102px] rounded-full bg-[#FF8400] text-white hover:bg-[#FF8400]/90 px-6 md:px-8 xl:px-[29px] text-base md:text-xl xl:text-[48px] font-bold whitespace-nowrap">
                 สมัคร
               </Button>
             </div>
@@ -504,24 +677,35 @@ export default function HomePage() {
                   alt="Thai Tours Logo"
                   className="h-12 md:h-16 w-auto object-contain"
                 />
-                <span className="text-xl md:text-2xl font-bold">Thai Tours Service</span>
+                <span className="text-xl md:text-2xl font-bold">
+                  Thai Tours Service
+                </span>
               </div>
               <p className="text-sm md:text-base xl:text-[24px] font-extralight leading-relaxed text-white/80 max-w-xs md:max-w-sm">
-                เที่ยวอย่างมั่นใจไปกับเรา สร้างความทรงจำที่ประทับใจมิรู้ลืม ด้วยบริการระดับพรีเมียม
+                เที่ยวอย่างมั่นใจไปกับเรา สร้างความทรงจำที่ประทับใจมิรู้ลืม
+                ด้วยบริการระดับพรีเมียม
               </p>
             </div>
 
             {/* Organization Info */}
             <div>
-              <h3 className="text-lg md:text-xl xl:text-[32px] font-bold mb-4 md:mb-6">ข้อมูลองค์กร</h3>
+              <h3 className="text-lg md:text-xl xl:text-[32px] font-bold mb-4 md:mb-6">
+                ข้อมูลองค์กร
+              </h3>
               <ul className="space-y-2 md:space-y-3">
                 <li>
-                  <a href="#" className="text-sm md:text-base xl:text-[24px] font-extralight text-white/80 hover:text-white transition-colors">
+                  <a
+                    href="#"
+                    className="text-sm md:text-base xl:text-[24px] font-extralight text-white/80 hover:text-white transition-colors"
+                  >
                     เกี่ยวกับเรา
                   </a>
                 </li>
                 <li>
-                  <a href="#" className="text-sm md:text-base xl:text-[24px] font-extralight text-white/80 hover:text-white transition-colors">
+                  <a
+                    href="#"
+                    className="text-sm md:text-base xl:text-[24px] font-extralight text-white/80 hover:text-white transition-colors"
+                  >
                     สถานที่ท่องเที่ยว
                   </a>
                 </li>
@@ -530,25 +714,39 @@ export default function HomePage() {
 
             {/* Support */}
             <div>
-              <h3 className="text-lg md:text-xl xl:text-[32px] font-bold mb-4 md:mb-6">Support</h3>
+              <h3 className="text-lg md:text-xl xl:text-[32px] font-bold mb-4 md:mb-6">
+                Support
+              </h3>
               <ul className="space-y-2 md:space-y-3">
                 <li>
-                  <a href="#" className="text-sm md:text-base xl:text-[24px] font-extralight text-white/80 hover:text-white transition-colors">
+                  <a
+                    href="#"
+                    className="text-sm md:text-base xl:text-[24px] font-extralight text-white/80 hover:text-white transition-colors"
+                  >
                     ศูนย์ช่วยเหลือ
                   </a>
                 </li>
                 <li>
-                  <a href="#" className="text-sm md:text-base xl:text-[24px] font-extralight text-white/80 hover:text-white transition-colors">
+                  <a
+                    href="#"
+                    className="text-sm md:text-base xl:text-[24px] font-extralight text-white/80 hover:text-white transition-colors"
+                  >
                     เงื่อนไขการให้บริการ
                   </a>
                 </li>
                 <li>
-                  <a href="#" className="text-sm md:text-base xl:text-[24px] font-extralight text-white/80 hover:text-white transition-colors">
+                  <a
+                    href="#"
+                    className="text-sm md:text-base xl:text-[24px] font-extralight text-white/80 hover:text-white transition-colors"
+                  >
                     นโยบายความเป็นส่วนตัว
                   </a>
                 </li>
                 <li>
-                  <a href="#" className="text-sm md:text-base xl:text-[24px] font-extralight text-white/80 hover:text-white transition-colors">
+                  <a
+                    href="#"
+                    className="text-sm md:text-base xl:text-[24px] font-extralight text-white/80 hover:text-white transition-colors"
+                  >
                     ติดต่อเรา
                   </a>
                 </li>
@@ -557,18 +755,22 @@ export default function HomePage() {
 
             {/* Social */}
             <div>
-              <h3 className="text-lg md:text-xl xl:text-[32px] font-bold mb-4 md:mb-6">ติดตามข่าวสาร</h3>
+              <h3 className="text-lg md:text-xl xl:text-[32px] font-bold mb-4 md:mb-6">
+                ติดตามข่าวสาร
+              </h3>
               <p className="text-sm md:text-base xl:text-[24px] font-extralight mb-4 md:mb-6 text-white/80 max-w-xs">
                 สมัครรับข่าวสารเพื่อไม่พลาดข้อมูลอัปเดตและข้อเสนอสุดพิเศษ
               </p>
               <div className="flex gap-3 md:gap-4">
-                {['facebook', 'twitter', 'instagram'].map((social) => (
+                {["facebook", "twitter", "instagram"].map((social) => (
                   <a
                     key={social}
                     href="#"
                     className="w-10 h-10 md:w-14 md:h-14 xl:w-[57px] xl:h-[57px] rounded-full bg-[#F6F1E9] flex items-center justify-center hover:bg-white/30 transition-colors"
                   >
-                    <span className="text-xs md:text-sm capitalize">{social[0]}</span>
+                    <span className="text-xs md:text-sm capitalize">
+                      {social[0]}
+                    </span>
                   </a>
                 ))}
               </div>
@@ -587,5 +789,5 @@ export default function HomePage() {
         </div>
       </footer>
     </div>
-  )
+  );
 }

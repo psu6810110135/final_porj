@@ -7,6 +7,8 @@ import {
   Param,
   UseGuards,
   Request,
+  ParseUUIDPipe,
+  BadRequestException,
 } from '@nestjs/common';
 import { BookingsService } from './bookings.service';
 import { CalculateBookingDto } from './dto/calculate-booking.dto';
@@ -40,7 +42,7 @@ export class BookingsController {
 
   @Get(':id')
   // @UseGuards(JwtAuthGuard) // Uncomment when auth is implemented
-  findOne(@Param('id') id: string, @Request() req: any) {
+  findOne(@Param('id', ParseUUIDPipe) id: string, @Request() req: any) {
     // For now, use a mock user ID. Replace with req.user.id when auth is ready
     const userId = req.user?.id || 'mock-user-id';
     return this.bookingsService.findOne(id, userId);
@@ -49,7 +51,7 @@ export class BookingsController {
   @Patch(':id/cancel')
   // @UseGuards(JwtAuthGuard) // Uncomment when auth is implemented
   cancel(
-    @Param('id') id: string,
+    @Param('id', ParseUUIDPipe) id: string,
     @Body() cancelBookingDto: CancelBookingDto,
     @Request() req: any,
   ) {

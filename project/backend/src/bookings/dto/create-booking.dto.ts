@@ -1,3 +1,4 @@
+export class CreateBookingDto {}
 import {
   IsString,
   IsDateString,

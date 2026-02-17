@@ -34,9 +34,7 @@ export class AdminService {
     });
 
     // 4. Count Active Tours
-    const activeTours = await this.tourRepo.count({
-      where: { isActive: true } // Ensure your Tour entity has 'isActive' or remove this line
-    });
+    const activeTours = await this.tourRepo.count();
 
     return {
       success: true,

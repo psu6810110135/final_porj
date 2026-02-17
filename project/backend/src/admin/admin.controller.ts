@@ -1,17 +1,12 @@
 import { Controller, Get } from '@nestjs/common';
+import { AdminService } from './admin.service';
 
 @Controller('api/v1/admin')
 export class AdminController {
+  constructor(private readonly adminService: AdminService) {} // Inject Service
+
   @Get('stats')
-  getDashboardStats() {
-    return {
-      success: true,
-      data: {
-        totalRevenue: 150200, // ข้อมูลจำลองสำหรับปี 1
-        todayBookings: 12,
-        pendingPayments: 4,
-        activeTours: 8
-      }
-    };
+  async getDashboardStats() {
+    return this.adminService.getDashboardStats(); // Call real logic
   }
 }

@@ -21,7 +21,6 @@ export class Payment {
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;
 
-  // Relationship: One Payment belongs to One Booking
   @OneToOne(() => Booking, (booking) => booking.payment)
   @JoinColumn({ name: 'booking_id' })
   booking: Booking;

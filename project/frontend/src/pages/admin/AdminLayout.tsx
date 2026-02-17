@@ -7,18 +7,16 @@ export default function AdminLayout() {
 
   const menuItems = [
     { icon: LayoutDashboard, label: 'Dashboard', path: '/admin' },
-    { icon: Map, label: 'Tour Management', path: '/admin/tours' },
+    { icon: Map, label: 'Manage Tours', path: '/admin/tours' },
     { icon: CreditCard, label: 'Verify Payments', path: '/admin/payments' },
   ];
 
   return (
     <div className="flex h-screen bg-gray-100 font-sans">
       {/* Sidebar */}
-      <aside className="w-64 bg-white shadow-md flex flex-col z-10">
+      <aside className="w-64 bg-white shadow-md flex flex-col fixed h-full z-10">
         <div className="p-6 border-b">
-          <h1 className="text-xl font-bold text-blue-600 flex items-center gap-2">
-             ThaiTour <span className="text-gray-400 text-xs">Admin</span>
-          </h1>
+          <h1 className="text-2xl font-bold text-blue-600">ThaiTour <span className="text-sm text-gray-500">Admin</span></h1>
         </div>
         
         <nav className="flex-1 p-4 space-y-2">
@@ -44,10 +42,10 @@ export default function AdminLayout() {
         </div>
       </aside>
 
-      {/* Main Content Area */}
-      <main className="flex-1 overflow-auto p-8">
+      {/* Main Content */}
+      <main className="flex-1 ml-64 p-8 overflow-auto h-screen">
         <div className="max-w-7xl mx-auto">
-          <Outlet /> {/* This is where the pages (Dashboard, TourManager) will appear */}
+          <Outlet />
         </div>
       </main>
     </div>

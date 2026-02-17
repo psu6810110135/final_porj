@@ -1,12 +1,23 @@
 import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn } from 'typeorm';
 
+// 👇 ใส่ export ตรงนี้เพื่อให้ไฟล์ DTO มองเห็นครับ
+export enum TourCategory {
+  SEA = 'Sea',
+  MOUNTAIN = 'Mountain',
+  CULTURAL = 'Cultural',
+  NATURE = 'Nature',
+  CITY = 'City',
+  ADVENTURE = 'Adventure'
+}
+
+// 👇 ใส่ export ตรงนี้ด้วย
 export enum TourRegion {
-  NORTH = 'North',   // ภาคเหนือ
-  SOUTH = 'South',   // ภาคใต้
-  CENTRAL = 'Central', // ภาคกลาง
-  EAST = 'East',     // ภาคตะวันออก
-  WEST = 'West',     // ภาคตะวันตก
-  NORTHEAST = 'Northeast' // ภาคอีสาน
+  NORTH = 'North',
+  SOUTH = 'South',
+  CENTRAL = 'Central',
+  EAST = 'East',
+  WEST = 'West',
+  NORTHEAST = 'Northeast'
 }
 
 @Entity('tours')
@@ -18,13 +29,13 @@ export class Tour {
   title: string;
 
   @Column('text')
-  description: string; // คำอธิบายสั้นๆ หน้าการ์ด
+  description: string;
 
   @Column('decimal', { precision: 10, scale: 2 })
-  price: number; // ราคาผู้ใหญ่
+  price: number;
 
   @Column('decimal', { precision: 10, scale: 2, nullable: true })
-  child_price: number; // ราคาเด็ก (เผื่อไว้คำนวณหน้า Booking)
+  child_price: number;
 
   @Column({ length: 50 })
   province: string;
@@ -34,42 +45,44 @@ export class Tour {
     enum: TourRegion,
     default: TourRegion.CENTRAL
   })
-  region: TourRegion; // **เพิ่ม: สำหรับ Filter ภูมิภาค**
+  region: TourRegion;
 
   @Column({ length: 50 })
-  duration: string; // **เพิ่ม: เช่น "1 Day", "2 Days 1 Night"**
+  duration: string;
 
   @Column('decimal', { precision: 2, scale: 1, default: 0 })
-  rating: number; // **เพิ่ม: เช่น 4.8**
+  rating: number;
 
   @Column({ default: 0 })
-  review_count: number; // **เพิ่ม: จำนวนรีวิว (เช่น 120 รีวิว)**
+  review_count: number;
 
   @Column({ nullable: true })
-  image_cover: string; // รูปปก 1 รูป
+  image_cover: string;
 
   @Column('text', { array: true, default: [] })
-  images: string[]; // **สำคัญ: รูป Gallery ทั้งหมด (เก็บเป็น Array URL)**
+  images: string[];
 
-  // --- ส่วนรายละเอียดหน้า Detail (เก็บเป็น JSON หรือ Text ยาว) ---
-  
   @Column('text', { array: true, default: [] })
-  highlights: string[]; // **เพิ่ม: จุดเช็คอิน (เป็นข้อๆ)**
+  highlights: string[]; 
 
   @Column('text', { nullable: true })
-  itinerary: string; // แผนการเดินทาง (HTML หรือ Text)
+  itinerary: string;
 
   @Column('text', { nullable: true })
-  included: string; // สิ่งที่รวมในแพ็กเกจ
+  included: string;
 
   @Column('text', { nullable: true })
-  excluded: string; // สิ่งที่ไม่รวม
+  excluded: string;
 
   @Column('text', { nullable: true })
-  conditions: string; // ข้อควรรู้ / ความปลอดภัย
+  conditions: string;
 
-  @Column()
-  category: string; // Adventure, Sea, etc.
+  @Column({
+    type: 'enum',
+    enum: TourCategory,
+    default: TourCategory.NATURE
+  })
+  category: TourCategory;
 
   @Column({ default: true })
   is_active: boolean;

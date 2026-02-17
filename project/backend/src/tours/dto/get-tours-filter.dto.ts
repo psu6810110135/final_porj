@@ -1,5 +1,6 @@
-import { IsOptional, IsString, IsNumber, IsEnum } from 'class-validator';
-import { TourRegion } from '../entities/tour.entity';
+import { IsOptional, IsString, IsNumber, IsEnum, Min } from 'class-validator';
+import { Type } from 'class-transformer';
+import { TourCategory, TourRegion } from '../entities/tour.entity'; // เช็ค Path ให้ถูก
 
 export class GetToursFilterDto {
   @IsOptional()
@@ -7,28 +8,34 @@ export class GetToursFilterDto {
   search?: string;
 
   @IsOptional()
+  @IsString()
+  province?: string;  // ✅ ตัวนี้ที่ Error อยู่
+
+  @IsOptional()
   @IsEnum(TourRegion)
-  region?: TourRegion; // กรองภาค (North, South...)
+  region?: TourRegion;
 
   @IsOptional()
-  @IsString()
-  duration?: string; // กรองระยะเวลา (รับเป็น String ไปก่อนเพื่อให้ง่ายกับ Checkbox)
+  @IsEnum(TourCategory) // ถ้ายังไม่ได้ทำ Enum ให้เปลี่ยนเป็น @IsString() category?: string; ไปก่อน
+  category?: TourCategory;
 
   @IsOptional()
-  @IsString()
-  category?: string; // กรองประเภท (ทะเล, ภูเขา)
-
-  @IsOptional()
+  @Type(() => Number)
   @IsNumber()
+  @Min(0)
   minPrice?: number;
 
   @IsOptional()
+  @Type(() => Number)
   @IsNumber()
+  @Min(0)
   maxPrice?: number;
-  
-  // วันที่เดินทาง (Frontend ส่งมา แต่ Backend อาจจะยังไม่ใช้กรองจริงจังในเฟสแรก 
-  // หรือใช้เช็คกับตารางรอบทัวร์ ถ้ามี)
+
   @IsOptional()
   @IsString()
-  travelDate?: string; 
+  duration?: string;
+
+  @IsOptional()
+  @IsString()
+  sort?: 'ASC' | 'DESC'; // ✅ ตัวนี้ที่ Error อยู่
 }

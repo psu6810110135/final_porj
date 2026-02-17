@@ -1,34 +1,28 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import { Controller, Get, Post, Param, Query } from '@nestjs/common';
 import { ToursService } from './tours.service';
-import { CreateTourDto } from './dto/create-tour.dto';
-import { UpdateTourDto } from './dto/update-tour.dto';
+import { GetToursFilterDto } from './dto/get-tours-filter.dto';
+import { Tour } from './entities/tour.entity';
 
 @Controller('tours')
 export class ToursController {
   constructor(private readonly toursService: ToursService) {}
 
-  @Post()
-  create(@Body() createTourDto: CreateTourDto) {
-    return this.toursService.create(createTourDto);
-  }
-
+  // 1. GET /tours (ดึงข้อมูลทั้งหมด + Filter)
   @Get()
-  findAll() {
-    return this.toursService.findAll();
+  getTours(@Query() filterDto: GetToursFilterDto): Promise<Tour[]> {
+    return this.toursService.getTours(filterDto);
   }
 
+  // 2. POST /tours/seed (สร้างข้อมูลจำลอง)
+  @Post('seed')
+  seedTours() {
+    return this.toursService.seedTours();
+  }
+
+  // 3. GET /tours/:id (ดึงรายตัว)
+  // ต้องเอาไว้ล่างสุด! เพราะถ้าเอาไว้บน มันอาจจะมองว่าคำว่า "seed" คือ "id"
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.toursService.findOne(+id);
-  }
-
-  @Patch(':id')
-  update(@Param('id') id: string, @Body() updateTourDto: UpdateTourDto) {
-    return this.toursService.update(+id, updateTourDto);
-  }
-
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.toursService.remove(+id);
+  getTourById(@Param('id') id: string): Promise<Tour> {
+    return this.toursService.getTourById(id);
   }
 }

@@ -13,6 +13,10 @@ import { User } from './users/entities/user.entity';
 import { Booking } from './bookings/entities/booking.entity';
 import { Payment } from './payments/entities/payment.entity';
 import { Tour } from './tours/entities/tour.entity';
+import { BookingsModule } from './bookings/bookings.module';
+import { Booking } from './bookings/entities/booking.entity';
+import { ToursModule } from './tours/tours.module';
+import { User } from './users/entities/user.entity';
 
 @Module({
   imports: [
@@ -22,7 +26,7 @@ import { Tour } from './tours/entities/tour.entity';
     }),
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
-      useFactory: async (configService: ConfigService) => ({
+      useFactory: (configService: ConfigService) => ({
         type: 'postgres',
         url: configService.get('DATABASE_URL'),
         entities: [User, Booking, Payment, Tour],
@@ -39,8 +43,16 @@ import { Tour } from './tours/entities/tour.entity';
     AdminModule,
     BookingsModule,
     PaymentsModule,
+        entities: [Booking, User],
+        synchronize: configService.get('NODE_ENV') !== 'production',
+        logging: configService.get('NODE_ENV') === 'development',
+      }),
+      inject: [ConfigService],
+    }),
+    BookingsModule,
+    ToursModule,
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [AppService, ConfigService],
 })
 export class AppModule {}

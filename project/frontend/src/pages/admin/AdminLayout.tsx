@@ -1,5 +1,5 @@
 import { Outlet, Link, useLocation } from 'react-router-dom';
-import { LayoutDashboard, Map, CreditCard, LogOut } from 'lucide-react';
+import { LayoutDashboard, Map, CreditCard, FileText, LogOut } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 export default function AdminLayout() {
@@ -9,6 +9,7 @@ export default function AdminLayout() {
     { icon: LayoutDashboard, label: 'Dashboard', path: '/admin' },
     { icon: Map, label: 'Manage Tours', path: '/admin/tours' },
     { icon: CreditCard, label: 'Verify Payments', path: '/admin/payments' },
+    { icon: FileText, label: 'Booking History', path: '/admin/bookings' },
   ];
 
   return (
@@ -36,13 +37,13 @@ export default function AdminLayout() {
         </nav>
 
         <div className="p-4 border-t">
-          <Button variant="ghost" className="w-full justify-start text-red-600 hover:text-red-700 hover:bg-red-50">
+          <Button variant="ghost" className="w-full justify-start text-red-600 hover:bg-red-50">
             <LogOut size={18} className="mr-2" /> Logout
           </Button>
         </div>
       </aside>
 
-      {/* Main Content */}
+      {/* Main Content Area */}
       <main className="flex-1 ml-64 p-8 overflow-auto h-screen">
         <div className="max-w-7xl mx-auto">
           <Outlet />

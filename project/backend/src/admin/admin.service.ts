@@ -14,21 +14,21 @@ export class AdminService {
   ) {}
 
   async getDashboardStats() {
-    // 1. Calculate Total Revenue (only confirmed bookings)
+    // 1. Calculate Total Revenue (only from confirmed bookings)
     const revenueQuery = await this.bookingRepo
       .createQueryBuilder('booking')
       .select('SUM(booking.totalPrice)', 'sum')
       .where("booking.status = 'confirmed'")
       .getRawOne();
 
-    // 2. Count Today's Bookings
-    const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+    // 2. Count Bookings Created Today
+    const today = new Date().toISOString().split('T')[0];
     const todayBookings = await this.bookingRepo
       .createQueryBuilder('booking')
       .where('DATE(booking.createdAt) = :today', { today })
       .getCount();
 
-    // 3. Count Pending Payments
+    // 3. Count Pending Payments (To show "Action Required")
     const pendingPayments = await this.paymentRepo.count({
       where: { status: 'pending_verify' }
     });
@@ -45,5 +45,13 @@ export class AdminService {
         activeTours,
       },
     };
+  }
+
+  async getAllBookings() {
+    // Fetch all bookings with relations to show names
+    return this.bookingRepo.find({
+      relations: ['user', 'tour'],
+      order: { createdAt: 'DESC' }, // Newest first
+    });
   }
 }

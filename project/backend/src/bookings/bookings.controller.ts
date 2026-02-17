@@ -31,4 +31,11 @@ export class BookingsController {
   remove(@Param('id') id: string) {
     return this.bookingsService.remove(+id);
   }
+  // ใน class BookingsController
+@Get('admin/all')
+  // @UseGuards(JwtAuthGuard, RolesGuard)
+  // @Roles(Role.ADMIN)
+  async findAllForAdmin() {
+    return this.bookingsService.findAllForAdmin(); 
+}
 }

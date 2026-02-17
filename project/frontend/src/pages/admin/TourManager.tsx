@@ -3,134 +3,105 @@ import axios from 'axios';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { Trash2, Plus, RefreshCw, X } from 'lucide-react';
-
-// Define the interface
-interface Tour {
-  id: string;
-  title: string;
-  region: string;
-  base_price: number;
-  max_capacity: number;
-}
+import { Trash2, Plus, MapPin } from 'lucide-react';
 
 export default function TourManager() {
-  const [tours, setTours] = useState<Tour[]>([]);
-  const [showForm, setShowForm] = useState(false);
+  const [tours, setTours] = useState([]);
+  const [isCreating, setIsCreating] = useState(false);
   
-  // Form State
+  // Simple Form State
   const [formData, setFormData] = useState({
     title: '',
-    region: 'Central',
-    category: 'Nature',
-    base_price: 0,
-    max_capacity: 10
+    description: '',
+    price: '',
+    duration: '',
+    max_people: '',
+    location: '',
+    image_url: '' // Simple URL input for now
   });
 
-  const fetchTours = async () => {
-    try {
-      // Updated URL to match the new controller path
-      const response = await axios.get('http://localhost:3000/api/v1/tours');
-      setTours(response.data);
-    } catch (error) {
-      console.error("Error fetching tours:", error);
-    }
+  const fetchTours = () => {
+    axios.get('http://localhost:3000/api/v1/tours')
+      .then(res => setTours(res.data))
+      .catch(err => console.error(err));
   };
 
+  useEffect(() => { fetchTours(); }, []);
+
   const handleDelete = async (id: string) => {
-    if (!window.confirm("Delete this tour?")) return;
-    await axios.delete(`http://localhost:3000/api/v1/tours/${id}`);
-    fetchTours();
+    if(!confirm("Are you sure you want to delete this tour?")) return;
+    try {
+      await axios.delete(`http://localhost:3000/api/v1/tours/${id}`);
+      fetchTours();
+    } catch (err) {
+      alert("Failed to delete");
+    }
   };
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await axios.post('http://localhost:3000/api/v1/tours', formData);
-      setShowForm(false);
-      fetchTours(); // Refresh list
+      await axios.post('http://localhost:3000/api/v1/tours', {
+        ...formData,
+        price: Number(formData.price),
+        max_people: Number(formData.max_people)
+      });
+      setIsCreating(false);
+      fetchTours();
       // Reset form
-      setFormData({ title: '', region: 'Central', category: 'Nature', base_price: 0, max_capacity: 10 });
-    } catch (error) {
-      alert("Error creating tour");
+      setFormData({ title: '', description: '', price: '', duration: '', max_people: '', location: '', image_url: '' });
+    } catch (err) {
+      alert("Failed to create tour");
     }
   };
-
-  useEffect(() => { fetchTours(); }, []);
 
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h2 className="text-3xl font-bold">Tour Management</h2>
-        <Button onClick={() => setShowForm(!showForm)} className="bg-blue-600">
-          {showForm ? <><X className="mr-2"/> Cancel</> : <><Plus className="mr-2"/> Add New Tour</>}
+        <h2 className="text-3xl font-bold">Manage Tours</h2>
+        <Button onClick={() => setIsCreating(!isCreating)}>
+          <Plus size={16} className="mr-2"/> Add New Tour
         </Button>
       </div>
 
-      {/* Simple Create Form */}
-      {showForm && (
-        <Card className="bg-blue-50 p-4 border-blue-200">
-          <form onSubmit={handleCreate} className="grid gap-4 md:grid-cols-2">
-            <Input 
-              placeholder="Tour Title" 
-              value={formData.title}
-              onChange={e => setFormData({...formData, title: e.target.value})}
-              required
-            />
-            <Input 
-              placeholder="Region (e.g., North)" 
-              value={formData.region}
-              onChange={e => setFormData({...formData, region: e.target.value})}
-              required
-            />
-             <Input 
-              type="number" 
-              placeholder="Price" 
-              value={formData.base_price}
-              onChange={e => setFormData({...formData, base_price: +e.target.value})}
-              required
-            />
-             <Input 
-              type="number" 
-              placeholder="Max Capacity" 
-              value={formData.max_capacity}
-              onChange={e => setFormData({...formData, max_capacity: +e.target.value})}
-              required
-            />
-            <Button type="submit" className="md:col-span-2">Save Tour</Button>
-          </form>
+      {isCreating && (
+        <Card className="bg-blue-50 p-6 border-blue-100">
+            <h3 className="font-bold mb-4 text-blue-800">Create New Tour</h3>
+            <form onSubmit={handleCreate} className="grid gap-4 grid-cols-2">
+                <Input placeholder="Tour Title" value={formData.title} onChange={e => setFormData({...formData, title: e.target.value})} required />
+                <Input placeholder="Location (e.g. Phuket)" value={formData.location} onChange={e => setFormData({...formData, location: e.target.value})} required />
+                <Input placeholder="Price (THB)" type="number" value={formData.price} onChange={e => setFormData({...formData, price: e.target.value})} required />
+                <Input placeholder="Duration (e.g. 3 Days)" value={formData.duration} onChange={e => setFormData({...formData, duration: e.target.value})} required />
+                <Input placeholder="Max People" type="number" value={formData.max_people} onChange={e => setFormData({...formData, max_people: e.target.value})} required />
+                <Input placeholder="Image URL (http://...)" value={formData.image_url} onChange={e => setFormData({...formData, image_url: e.target.value})} />
+                <Input placeholder="Description" className="col-span-2" value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})} required />
+                <Button type="submit" className="col-span-2 bg-blue-600 hover:bg-blue-700">Save Tour</Button>
+            </form>
         </Card>
       )}
 
-      {/* Tour List */}
-      <Card>
-        <CardContent className="p-0">
-          <table className="w-full text-left">
-            <thead className="bg-gray-50 border-b">
-              <tr>
-                <th className="p-4">Tour Name</th>
-                <th className="p-4">Region</th>
-                <th className="p-4">Price</th>
-                <th className="p-4 text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y">
-              {tours.map((tour) => (
-                <tr key={tour.id}>
-                  <td className="p-4">{tour.title}</td>
-                  <td className="p-4 text-gray-600">{tour.region}</td>
-                  <td className="p-4">฿{Number(tour.base_price).toLocaleString()}</td>
-                  <td className="p-4 text-right">
-                    <Button variant="ghost" className="text-red-500" onClick={() => handleDelete(tour.id)}>
-                      <Trash2 size={18} />
-                    </Button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </CardContent>
-      </Card>
+      <div className="grid gap-4">
+        {tours.map((tour: any) => (
+          <Card key={tour.id}>
+            <CardContent className="p-4 flex justify-between items-center">
+                <div className="flex items-center gap-4">
+                    <div className="h-12 w-12 bg-gray-200 rounded-md overflow-hidden">
+                        {tour.image_url && <img src={tour.image_url} className="object-cover h-full w-full" />}
+                    </div>
+                    <div>
+                        <h3 className="font-bold text-lg">{tour.title}</h3>
+                        <p className="text-gray-500 text-sm flex items-center">
+                            <MapPin size={14} className="mr-1"/> {tour.location} • ฿{tour.price} • {tour.duration}
+                        </p>
+                    </div>
+                </div>
+                <Button variant="destructive" size="sm" onClick={() => handleDelete(tour.id)}>
+                    <Trash2 size={16}/>
+                </Button>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
     </div>
   );
 }

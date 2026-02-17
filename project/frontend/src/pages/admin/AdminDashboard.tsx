@@ -12,10 +12,11 @@ export default function AdminDashboard() {
   });
 
   useEffect(() => {
-    // ดึงข้อมูลจาก API ที่เราทำใน Step 4
     axios.get('http://localhost:3000/api/v1/admin/stats')
-      .then(res => setStats(res.data))
-      .catch(err => console.error(err));
+      .then(res => {
+          if(res.data.success) setStats(res.data.data);
+      })
+      .catch(err => console.error("Failed to load stats:", err));
   }, []);
 
   return (
@@ -23,6 +24,7 @@ export default function AdminDashboard() {
       <h2 className="text-3xl font-bold tracking-tight">Dashboard Overview</h2>
       
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        {/* Revenue Card */}
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
@@ -33,6 +35,7 @@ export default function AdminDashboard() {
           </CardContent>
         </Card>
 
+        {/* Today's Bookings */}
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Today's Bookings</CardTitle>
@@ -43,6 +46,7 @@ export default function AdminDashboard() {
           </CardContent>
         </Card>
 
+        {/* Pending Payments (Highlighted) */}
         <Card className="bg-orange-50 border-orange-200">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium text-orange-800">Pending Verify</CardTitle>
@@ -54,6 +58,7 @@ export default function AdminDashboard() {
           </CardContent>
         </Card>
 
+        {/* Active Tours */}
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Active Tours</CardTitle>

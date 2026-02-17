@@ -11,12 +11,7 @@ async function bootstrap() {
   const userService = app.get(UsersService);
 
   // 1. ตั้งค่า Global Pipes
-  app.useGlobalPipes(
-    new ValidationPipe({
-      whitelist: true,
-      transform: true,
-    }),
-  );
+  app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
 
   // 2. เปิดใช้งาน CORS (ต้องทำก่อน app.listen)
   app.enableCors();

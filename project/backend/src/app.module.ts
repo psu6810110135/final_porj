@@ -7,7 +7,8 @@ import { UsersModule } from './users/users.module';
 import { ToursModule } from './tours/tours.module'; // Import Tours ที่มีอยู่แล้ว
 import { User } from './users/entities/user.entity';
 import { AdminModule } from './admin/admin.module';
-
+import { Booking } from './bookings/entities/booking.entity';
+import { Payment } from './payments/entities/payment.entity';
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -20,7 +21,7 @@ import { AdminModule } from './admin/admin.module';
       useFactory: async (configService: ConfigService) => ({
         type: 'postgres',
         url: configService.get('DATABASE_URL'), // อ่านจาก .env
-        entities: [User], // ใส่ Entity User ที่เพิ่งสร้าง (และ Tour ด้วยถ้ามี)
+        entities: [User, Booking, Payment], // ใส่ Entity User ที่เพิ่งสร้าง (และ Tour ด้วยถ้ามี)
         autoLoadEntities: true,
         synchronize: true, // true = auto create table (ใช้เฉพาะ dev mode)
       }),

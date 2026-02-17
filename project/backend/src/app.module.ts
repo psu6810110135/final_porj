@@ -6,6 +6,7 @@ import { AppService } from './app.service';
 import { BookingsModule } from './bookings/bookings.module';
 import { Booking } from './bookings/entities/booking.entity';
 import { ToursModule } from './tours/tours.module';
+import { User } from './users/entities/user.entity';
 
 @Module({
   imports: [
@@ -18,7 +19,7 @@ import { ToursModule } from './tours/tours.module';
       useFactory: (configService: ConfigService) => ({
         type: 'postgres',
         url: configService.get('DATABASE_URL'),
-        entities: [Booking],
+        entities: [Booking, User],
         synchronize: configService.get('NODE_ENV') !== 'production',
         logging: configService.get('NODE_ENV') === 'development',
       }),

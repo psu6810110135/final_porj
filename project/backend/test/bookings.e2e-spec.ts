@@ -4,6 +4,8 @@ import request from 'supertest';
 import { AppModule } from './../src/app.module';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { Booking } from '../src/bookings/entities/booking.entity';
+import { User, UserRole } from '../src/users/entities/user.entity';
+import { Tour } from '../src/tours/entities/tour.entity';
 import { DataSource, Repository } from 'typeorm';
 import { BookingStatus } from '../src/bookings/entities/booking.entity';
 
@@ -11,13 +13,15 @@ describe('BookingsController (e2e)', () => {
   let app: INestApplication;
   let dataSource: DataSource;
   let bookingRepository: Repository<Booking>;
+  let userRepository: Repository<User>;
+  let tourRepository: Repository<Tour>;
 
-  const mockUserId = 'test-user-id';
-  const mockTourId = 'test-tour-id';
+  const mockUserId = '11111111-1111-1111-1111-111111111111';
+  const mockTourId = '22222222-2222-2222-2222-222222222222';
 
   beforeAll(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
-      imports: [AppModule, TypeOrmModule.forFeature([Booking])],
+      imports: [AppModule, TypeOrmModule.forFeature([Booking, User, Tour])],
     }).compile();
 
     app = moduleFixture.createNestApplication();
@@ -31,12 +35,41 @@ describe('BookingsController (e2e)', () => {
     dataSource = moduleFixture.get<DataSource>(DataSource);
     bookingRepository =
       moduleFixture.get<Repository<Booking>>('BookingRepository');
+    userRepository = moduleFixture.get<Repository<User>>('UserRepository');
+    tourRepository = moduleFixture.get<Repository<Tour>>('TourRepository');
+
+    // Create test user and tour
+    await userRepository.save({
+      id: mockUserId,
+      email: 'test@example.com',
+      full_name: 'Test User',
+      password_hash: 'password123',
+      role: UserRole.CUSTOMER,
+    });
+
+    await tourRepository.save({
+      id: mockTourId,
+      title: 'Test Tour',
+      description: 'A test tour',
+      base_price: 5000,
+      region: 'Test Location',
+      category: 'adventure',
+      max_capacity: 10,
+      is_active: true,
+    });
+
+    await tourRepository.save({
+      id: '33333333-3333-3333-3333-333333333333',
+      title: 'Another Test Tour',
+      description: 'Another test tour',
+      base_price: 3000,
+      region: 'Another Location',
+      category: 'relaxation',
+      max_capacity: 20,
+      is_active: true,
+    });
 
     await app.init();
-  });
-
-  afterAll(async () => {
-    await app.close();
   });
 
   afterEach(async () => {
@@ -44,6 +77,21 @@ describe('BookingsController (e2e)', () => {
     if (bookingRepository) {
       await bookingRepository.query('DELETE FROM bookings');
     }
+  });
+
+  afterAll(async () => {
+    // Clean up test user and tours
+    if (userRepository) {
+      await userRepository.query(
+        `DELETE FROM users WHERE id = '${mockUserId}'`,
+      );
+    }
+    if (tourRepository) {
+      await tourRepository.query(
+        `DELETE FROM tours WHERE id IN ('${mockTourId}', '33333333-3333-3333-3333-333333333333')`,
+      );
+    }
+    await app.close();
   });
 
   describe('POST /api/v1/bookings/calculate', () => {
@@ -282,7 +330,7 @@ describe('BookingsController (e2e)', () => {
       };
 
       const bookingDto2 = {
-        tourId: 'another-tour-id',
+        tourId: '33333333-3333-3333-3333-333333333333',
         startDate: '2025-03-01',
         endDate: '2025-03-03',
         numberOfTravelers: 1,

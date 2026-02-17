@@ -28,7 +28,7 @@ export class BookingsController {
   // @UseGuards(JwtAuthGuard) // Uncomment when auth is implemented
   create(@Body() createBookingDto: CreateBookingDto, @Request() req: any) {
     // For now, use a mock user ID. Replace with req.user.id when auth is ready
-    const userId = req.user?.id || 'mock-user-id';
+    const userId = req.user?.id || '11111111-1111-1111-1111-111111111111';
     return this.bookingsService.create(createBookingDto, userId);
   }
 
@@ -36,7 +36,7 @@ export class BookingsController {
   // @UseGuards(JwtAuthGuard) // Uncomment when auth is implemented
   findMyBookings(@Request() req: any) {
     // For now, use a mock user ID. Replace with req.user.id when auth is ready
-    const userId = req.user?.id || 'mock-user-id';
+    const userId = req.user?.id || '11111111-1111-1111-1111-111111111111';
     return this.bookingsService.findAllByUser(userId);
   }
 
@@ -44,8 +44,8 @@ export class BookingsController {
   // @UseGuards(JwtAuthGuard) // Uncomment when auth is implemented
   findOne(@Param('id', ParseUUIDPipe) id: string, @Request() req: any) {
     // For now, use a mock user ID. Replace with req.user.id when auth is ready
-    const userId = req.user?.id || 'mock-user-id';
-    return this.bookingsService.findOne(id, userId);
+    const userId = req.user?.id || '11111111-1111-1111-1111-111111111111';
+    return this.bookingsService.findOneById(id, userId);
   }
 
   @Patch(':id/cancel')
@@ -56,7 +56,7 @@ export class BookingsController {
     @Request() req: any,
   ) {
     // For now, use a mock user ID. Replace with req.user.id when auth is ready
-    const userId = req.user?.id || 'mock-user-id';
+    const userId = req.user?.id || '11111111-1111-1111-1111-111111111111';
     return this.bookingsService.cancelBooking(id, cancelBookingDto, userId);
   }
 }

@@ -13,10 +13,6 @@ import { User } from './users/entities/user.entity';
 import { Booking } from './bookings/entities/booking.entity';
 import { Payment } from './payments/entities/payment.entity';
 import { Tour } from './tours/entities/tour.entity';
-import { BookingsModule } from './bookings/bookings.module';
-import { Booking } from './bookings/entities/booking.entity';
-import { ToursModule } from './tours/tours.module';
-import { User } from './users/entities/user.entity';
 
 @Module({
   imports: [
@@ -31,28 +27,19 @@ import { User } from './users/entities/user.entity';
         url: configService.get('DATABASE_URL'),
         entities: [User, Booking, Payment, Tour],
         autoLoadEntities: true,
-        synchronize: true,
-      }),
-      inject: [ConfigService],
-    }),
-    // FIX: Register the repositories so AppService can use them
-    TypeOrmModule.forFeature([Booking, Payment, Tour]), 
-    
-    UsersModule,
-    ToursModule,
-    AdminModule,
-    BookingsModule,
-    PaymentsModule,
-        entities: [Booking, User],
         synchronize: configService.get('NODE_ENV') !== 'production',
         logging: configService.get('NODE_ENV') === 'development',
       }),
       inject: [ConfigService],
     }),
-    BookingsModule,
+    UsersModule,
     ToursModule,
+    AdminModule,
+    BookingsModule,
+    PaymentsModule,
+    TypeOrmModule.forFeature([Booking, Payment, Tour]),
   ],
   controllers: [AppController],
-  providers: [AppService, ConfigService],
+  providers: [AppService],
 })
 export class AppModule {}

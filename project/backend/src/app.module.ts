@@ -1,7 +1,12 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
+import { TypeOrmModule } from '@nestjs/typeorm';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
+import { UsersModule } from './users/users.module';
+import { ToursModule } from './tours/tours.module'; // Import Tours ที่มีอยู่แล้ว
+import { User } from './users/entities/user.entity';
+import { AdminModule } from './admin/admin.module';
 
 @Module({
   imports: [
@@ -9,8 +14,23 @@ import { AppService } from './app.service';
       isGlobal: true,
       envFilePath: '.env',
     }),
+    // ตั้งค่า Database Connection
+    TypeOrmModule.forRootAsync({
+      imports: [ConfigModule],
+      useFactory: async (configService: ConfigService) => ({
+        type: 'postgres',
+        url: configService.get('DATABASE_URL'), // อ่านจาก .env
+        entities: [User], // ใส่ Entity User ที่เพิ่งสร้าง (และ Tour ด้วยถ้ามี)
+        autoLoadEntities: true,
+        synchronize: true, // true = auto create table (ใช้เฉพาะ dev mode)
+      }),
+      inject: [ConfigService],
+    }),
+    UsersModule,
+    ToursModule,
+    AdminModule,
   ],
   controllers: [AppController],
-  providers: [AppService, ConfigService],
+  providers: [AppService],
 })
 export class AppModule {}

@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-
+import { Link } from "react-router-dom";  
 // Import logo
 import logoImage from "../assets/logo.png";
 
@@ -339,9 +339,11 @@ export default function HomePage() {
               <Button className="w-10 h-10 md:w-12 md:h-12 rounded-full border-3 border-[#F6F1E9] bg-white hover:bg-[#FF8400]/90 flex items-center justify-center p-0">
                 <ShoppingCartIcon className="w-4 h-4 md:w-5 md:h-5 text-[#4F200D]" />
               </Button>
+              <Link to="/login">
               <Button className="w-10 h-10 md:w-12 md:h-12 rounded-full border-3 border-[#F6F1E9] bg-white hover:bg-[#FF8400]/90 flex items-center justify-center p-0">
                 <UserIcon className="w-4 h-4 md:w-5 md:h-5 text-[#4F200D]" />
-              </Button>
+              </Button> 
+              </Link>
             </div>
           </div>
         </div>

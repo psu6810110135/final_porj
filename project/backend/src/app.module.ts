@@ -3,10 +3,10 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
-import { UsersModule } from './users/users.module';
-import { ToursModule } from './tours/tours.module'; // Import Tours ที่มีอยู่แล้ว
+import { BookingsModule } from './bookings/bookings.module';
+import { Booking } from './bookings/entities/booking.entity';
+import { ToursModule } from './tours/tours.module';
 import { User } from './users/entities/user.entity';
-import { AdminModule } from './admin/admin.module';
 
 @Module({
   imports: [
@@ -14,23 +14,21 @@ import { AdminModule } from './admin/admin.module';
       isGlobal: true,
       envFilePath: '.env',
     }),
-    // ตั้งค่า Database Connection
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
-      useFactory: async (configService: ConfigService) => ({
+      useFactory: (configService: ConfigService) => ({
         type: 'postgres',
-        url: configService.get('DATABASE_URL'), // อ่านจาก .env
-        entities: [User], // ใส่ Entity User ที่เพิ่งสร้าง (และ Tour ด้วยถ้ามี)
-        autoLoadEntities: true,
-        synchronize: true, // true = auto create table (ใช้เฉพาะ dev mode)
+        url: configService.get('DATABASE_URL'),
+        entities: [Booking, User],
+        synchronize: configService.get('NODE_ENV') !== 'production',
+        logging: configService.get('NODE_ENV') === 'development',
       }),
       inject: [ConfigService],
     }),
-    UsersModule,
+    BookingsModule,
     ToursModule,
-    AdminModule,
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [AppService, ConfigService],
 })
 export class AppModule {}

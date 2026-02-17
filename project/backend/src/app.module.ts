@@ -9,6 +9,9 @@ import { User } from './users/entities/user.entity';
 import { AdminModule } from './admin/admin.module';
 import { Booking } from './bookings/entities/booking.entity';
 import { Payment } from './payments/entities/payment.entity';
+import { BookingsModule } from './bookings/bookings.module';
+import { PaymentsModule } from './payments/payments.module';
+import { UsersModule } from './users/users.module';
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -30,6 +33,8 @@ import { Payment } from './payments/entities/payment.entity';
     UsersModule,
     ToursModule,
     AdminModule,
+    BookingsModule,
+    PaymentsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

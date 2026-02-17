@@ -2,12 +2,15 @@ import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { AdminService } from './admin.service';
 import { AdminController } from './admin.controller';
-import { Booking } from '../bookings/entities/booking.entity';
-import { Payment } from '../payments/entities/payment.entity';
-import { Tour } from '../tours/entities/tour.entity';
+import { Booking } from '../bookings/entities/booking.entity'; //
+import { Payment } from '../payments/entities/payment.entity'; //
+import { Tour } from '../tours/entities/tour.entity'; //
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Booking, Payment, Tour])], // <--- Required for Repositories to work
+  imports: [
+    // ต้องมีบรรทัดนี้เพื่อให้ AdminService เรียกใช้ Repository ได้
+    TypeOrmModule.forFeature([Booking, Payment, Tour]) 
+  ],
   controllers: [AdminController],
   providers: [AdminService],
 })

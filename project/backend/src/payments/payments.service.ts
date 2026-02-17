@@ -1,43 +1,26 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
-import { Payment } from './entities/payment.entity';
-import { Booking } from '../bookings/entities/booking.entity';
+import { Injectable } from '@nestjs/common';
+import { CreatePaymentDto } from './dto/create-payment.dto';
+import { UpdatePaymentDto } from './dto/update-payment.dto';
 
 @Injectable()
 export class PaymentsService {
-  constructor(
-    @InjectRepository(Payment) private paymentRepo: Repository<Payment>,
-    @InjectRepository(Booking) private bookingRepo: Repository<Booking>,
-  ) {}
-
-  async findAllPending() {
-    return this.paymentRepo.find({
-      where: { status: 'pending_verify' },
-      relations: ['booking', 'booking.user', 'booking.tour'], // ดึงข้อมูล User และ Tour มาแสดงด้วย
-      order: { uploadedAt: 'ASC' },
-    });
+  create(createPaymentDto: CreatePaymentDto) {
+    return 'This action adds a new payment';
   }
 
-  async verifyPayment(id: string, status: 'approved' | 'rejected') {
-    const payment = await this.paymentRepo.findOne({ 
-      where: { id },
-      relations: ['booking'] 
-    });
+  findAll() {
+    return `This action returns all payments`;
+  }
 
-    if (!payment) throw new NotFoundException('Payment not found');
+  findOne(id: number) {
+    return `This action returns a #${id} payment`;
+  }
 
-    // อัปเดตสถานะ Payment
-    payment.status = status;
-    await this.paymentRepo.save(payment);
+  update(id: number, updatePaymentDto: UpdatePaymentDto) {
+    return `This action updates a #${id} payment`;
+  }
 
-    // อัปเดตสถานะ Booking
-    if (status === 'approved') {
-      await this.bookingRepo.update(payment.booking.id, { status: 'confirmed' });
-    } else {
-      await this.bookingRepo.update(payment.booking.id, { status: 'pending_pay' }); // ให้ลูกค้าจ่ายใหม่
-    }
-
-    return { success: true };
+  remove(id: number) {
+    return `This action removes a #${id} payment`;
   }
 }

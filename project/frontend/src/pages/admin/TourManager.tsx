@@ -1,0 +1,1 @@
+export default function TourManager() { return <div>Tour Page</div> }

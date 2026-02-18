@@ -10,8 +10,20 @@ async function bootstrap() {
   const configService = app.get(ConfigService);
   const userService = app.get(UsersService);
 
-  // 1. ตั้งค่า Global Pipes
-  app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
+  // --- เพิ่มบรรทัดปลดล็อก CORS ตรงนี้ครับ ---
+  app.enableCors({
+    origin: 'http://localhost:5173', // พอร์ตของ Vite/React
+    methods: 'GET,POST,PUT,DELETE,PATCH,OPTIONS',
+    credentials: true,
+  });
+  // --------------------------------------
+
+  app.useGlobalPipes(
+    new ValidationPipe({
+      whitelist: true,
+      transform: true,
+    }),
+  );
 
   // 2. เปิดใช้งาน CORS (ต้องทำก่อน app.listen)
   app.enableCors();

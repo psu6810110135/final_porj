@@ -16,6 +16,7 @@ import { Tour } from './tours/entities/tour.entity';
 
 @Module({
   imports: [
+    // 1. โหลด Config จาก .env
     ConfigModule.forRoot({
       isGlobal: true,
       envFilePath: '.env',

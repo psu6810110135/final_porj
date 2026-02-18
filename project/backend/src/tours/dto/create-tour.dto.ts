@@ -1,4 +1,11 @@
-import { IsString, IsNotEmpty, IsNumber, IsOptional, Min, IsBoolean } from 'class-validator';
+import {
+  IsString,
+  IsNotEmpty,
+  IsNumber,
+  IsOptional,
+  Min,
+  IsBoolean,
+} from 'class-validator';
 import { Type } from 'class-transformer';
 
 export class CreateTourDto {
@@ -13,7 +20,11 @@ export class CreateTourDto {
   @IsNumber()
   @Min(0)
   @Type(() => Number) // Convert "1000" string to 1000 number automatically
-  base_price: number;
+  price: number;
+
+  @IsString()
+  @IsNotEmpty()
+  province: string;
 
   @IsString()
   @IsNotEmpty()
@@ -21,12 +32,48 @@ export class CreateTourDto {
 
   @IsString()
   @IsNotEmpty()
+  duration: string;
+
+  @IsString()
+  @IsNotEmpty()
   category: string;
 
   @IsNumber()
-  @Min(1)
+  @Min(0)
+  @IsOptional()
   @Type(() => Number)
-  max_capacity: number;
+  child_price?: number;
+
+  @IsNumber()
+  @Min(0)
+  @Type(() => Number)
+  rating?: number;
+
+  @IsNumber()
+  @Min(0)
+  @IsOptional()
+  @Type(() => Number)
+  review_count?: number;
+
+  @IsString()
+  @IsOptional()
+  image_cover?: string;
+
+  @IsString()
+  @IsOptional()
+  itinerary?: string;
+
+  @IsString()
+  @IsOptional()
+  included?: string;
+
+  @IsString()
+  @IsOptional()
+  excluded?: string;
+
+  @IsString()
+  @IsOptional()
+  conditions?: string;
 
   @IsBoolean()
   @IsOptional()

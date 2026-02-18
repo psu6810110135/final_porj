@@ -1,11 +1,11 @@
 import { Module } from '@nestjs/common';
-import { TypeOrmModule } from '@nestjs/typeorm'; // Import this
+import { TypeOrmModule } from '@nestjs/typeorm';
 import { ToursService } from './tours.service';
 import { ToursController } from './tours.controller';
-import { Tour } from './entities/tour.entity'; // Import the Entity
+import { Tour } from './entities/tour.entity';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Tour])], // Add this line to provide the Repository
+  imports: [TypeOrmModule.forFeature([Tour])],
   controllers: [ToursController],
   providers: [ToursService],
   exports: [ToursService], // Good practice to export if other modules need it

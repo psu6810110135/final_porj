@@ -1,9 +1,18 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
-import { TypeOrmModule } from '@nestjs/typeorm'; // 👈 สำคัญมาก
+import { TypeOrmModule } from '@nestjs/typeorm';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
-import { ToursModule } from './tours/tours.module'; // 👈 สำคัญมาก
+import { UsersModule } from './users/users.module';
+import { ToursModule } from './tours/tours.module';
+import { AdminModule } from './admin/admin.module';
+import { BookingsModule } from './bookings/bookings.module';
+import { PaymentsModule } from './payments/payments.module';
+
+import { User } from './users/entities/user.entity';
+import { Booking } from './bookings/entities/booking.entity';
+import { Payment } from './payments/entities/payment.entity';
+import { Tour } from './tours/entities/tour.entity';
 
 @Module({
   imports: [
@@ -12,21 +21,24 @@ import { ToursModule } from './tours/tours.module'; // 👈 สำคัญม�
       isGlobal: true,
       envFilePath: '.env',
     }),
-
-    // 2. เชื่อมต่อ Database (แบบใช้ URL บรรทัดเดียวตาม .env ของคุณ)
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
-      inject: [ConfigService],
       useFactory: (configService: ConfigService) => ({
         type: 'postgres',
-        url: configService.get<string>('DATABASE_URL'), // 👈 อ่านจาก DATABASE_URL ตรงๆ
-        autoLoadEntities: true, // โหลด Entity อัตโนมัติ
-        synchronize: true,      // สร้างตารางให้อัตโนมัติ (เฉพาะตอน Dev)
+        url: configService.get('DATABASE_URL'),
+        entities: [User, Booking, Payment, Tour],
+        autoLoadEntities: true,
+        synchronize: configService.get('NODE_ENV') !== 'production',
+        logging: configService.get('NODE_ENV') === 'development',
       }),
+      inject: [ConfigService],
     }),
-
-    // 3. ใส่ ToursModule เพื่อให้ App รู้จัก /tours
+    UsersModule,
     ToursModule,
+    AdminModule,
+    BookingsModule,
+    PaymentsModule,
+    TypeOrmModule.forFeature([Booking, Payment, Tour]),
   ],
   controllers: [AppController],
   providers: [AppService],

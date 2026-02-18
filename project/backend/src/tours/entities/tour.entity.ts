@@ -1,4 +1,10 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn } from 'typeorm';
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  CreateDateColumn,
+  UpdateDateColumn,
+} from 'typeorm';
 
 // 👇 ใส่ export ตรงนี้เพื่อให้ไฟล์ DTO มองเห็นครับ
 export enum TourCategory {
@@ -7,7 +13,7 @@ export enum TourCategory {
   CULTURAL = 'Cultural',
   NATURE = 'Nature',
   CITY = 'City',
-  ADVENTURE = 'Adventure'
+  ADVENTURE = 'Adventure',
 }
 
 // 👇 ใส่ export ตรงนี้ด้วย
@@ -17,9 +23,8 @@ export enum TourRegion {
   CENTRAL = 'Central',
   EAST = 'East',
   WEST = 'West',
-  NORTHEAST = 'Northeast'
+  NORTHEAST = 'Northeast',
 }
-
 @Entity('tours')
 export class Tour {
   @PrimaryGeneratedColumn('uuid')
@@ -43,7 +48,7 @@ export class Tour {
   @Column({
     type: 'enum',
     enum: TourRegion,
-    default: TourRegion.CENTRAL
+    default: TourRegion.CENTRAL,
   })
   region: TourRegion;
 
@@ -63,7 +68,7 @@ export class Tour {
   images: string[];
 
   @Column('text', { array: true, default: [] })
-  highlights: string[]; 
+  highlights: string[];
 
   @Column('text', { nullable: true })
   itinerary: string;
@@ -80,7 +85,7 @@ export class Tour {
   @Column({
     type: 'enum',
     enum: TourCategory,
-    default: TourCategory.NATURE
+    default: TourCategory.NATURE,
   })
   category: TourCategory;
 

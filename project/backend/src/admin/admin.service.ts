@@ -1,51 +1,57 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-// Fix paths: Use ./ to look inside src/ folder
-import { Booking } from './bookings/entities/booking.entity';
-import { Payment } from './payments/entities/payment.entity';
-import { Tour } from './tours/entities/tour.entity';
+import { Booking } from '../bookings/entities/booking.entity';
+import { Payment } from '../payments/entities/payment.entity';
+import { Tour } from '../tours/entities/tour.entity';
 
 @Injectable()
-export class AppService { // FIXED: Class name must match file name (AppService)
+export class AdminService {
   constructor(
     @InjectRepository(Booking) private bookingRepo: Repository<Booking>,
     @InjectRepository(Payment) private paymentRepo: Repository<Payment>,
     @InjectRepository(Tour) private tourRepo: Repository<Tour>,
   ) {}
 
-  getHello(): string {
-    return 'Hello World!';
-  }
-
-  // NOTE: Ideally, dashboard logic should be in AdminService, 
-  // but if you want it here temporarily, this works:
   async getDashboardStats() {
-    const revenueResult = await this.bookingRepo
+    // 1. Calculate Total Revenue (only from confirmed bookings)
+    const revenueQuery = await this.bookingRepo
       .createQueryBuilder('booking')
       .select('SUM(booking.totalPrice)', 'sum')
       .where("booking.status = 'confirmed'")
       .getRawOne();
 
+    // 2. Count Bookings Created Today
     const today = new Date().toISOString().split('T')[0];
     const todayBookings = await this.bookingRepo
       .createQueryBuilder('booking')
       .where('DATE(booking.createdAt) = :today', { today })
       .getCount();
 
+    // 3. Count Pending Payments (To show "Action Required")
     const pendingPayments = await this.paymentRepo.count({
       where: { status: 'pending_verify' }
     });
 
-    const activeTours = await this.tourRepo.count({
-      where: { is_active: true }
-    });
+    // 4. Count Active Tours
+    const activeTours = await this.tourRepo.count();
 
     return {
-      totalRevenue: Number(revenueResult?.sum || 0),
-      todayBookings,
-      pendingPayments,
-      activeTours,
+      success: true,
+      data: {
+        totalRevenue: Number(revenueQuery?.sum || 0),
+        todayBookings,
+        pendingPayments,
+        activeTours,
+      },
     };
+  }
+
+  async getAllBookings() {
+    // Fetch all bookings with relations to show names
+    return this.bookingRepo.find({
+      relations: ['user', 'tour'],
+      order: { createdAt: 'DESC' }, // Newest first
+    });
   }
 }

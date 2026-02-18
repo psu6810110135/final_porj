@@ -1,9 +1,19 @@
-import { Controller, Get, Post, Param, Query } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Param,
+  Query,
+  Patch,
+  Delete,
+  Body,
+} from '@nestjs/common';
 import { ToursService } from './tours.service';
 import { GetToursFilterDto } from './dto/get-tours-filter.dto';
 import { Tour } from './entities/tour.entity';
+import { UpdateTourDto } from './dto/update-tour.dto';
 
-@Controller('tours')
+@Controller('api/v1/tours') // Updated path
 export class ToursController {
   constructor(private readonly toursService: ToursService) {}
 
@@ -24,5 +34,15 @@ export class ToursController {
   @Get(':id')
   getTourById(@Param('id') id: string): Promise<Tour> {
     return this.toursService.getTourById(id);
+  }
+
+  @Patch(':id')
+  update(@Param('id') id: string, @Body() updateTourDto: UpdateTourDto) {
+    return this.toursService.update(id, updateTourDto);
+  }
+
+  @Delete(':id')
+  remove(@Param('id') id: string) {
+    return this.toursService.remove(id);
   }
 }

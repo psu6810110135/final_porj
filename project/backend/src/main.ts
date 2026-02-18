@@ -18,6 +18,14 @@ async function bootstrap() {
   });
   // --------------------------------------
 
+  // --- เพิ่มบรรทัดปลดล็อก CORS ตรงนี้ครับ ---
+  app.enableCors({
+    origin: 'http://localhost:5173', // พอร์ตของ Vite/React
+    methods: 'GET,POST,PUT,DELETE,PATCH,OPTIONS',
+    credentials: true,
+  });
+  // --------------------------------------
+
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,

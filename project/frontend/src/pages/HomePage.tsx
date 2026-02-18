@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { Link } from "react-router-dom";
 
 // Import logo
 import logoImage from "../assets/logo.png";
@@ -314,12 +315,13 @@ export default function HomePage() {
               >
                 Home
               </a>
-              <a
-                href="#"
+
+              <Link
+                to="/tours" // เปลี่ยนจาก href="#" เป็น to="/tours"
                 className="font-extralight text-base md:text-lg text-[#4F200D] hover:text-[#FF8400] transition-colors"
               >
                 Tours
-              </a>
+              </Link>
               <a
                 href="#"
                 className="font-extralight text-base md:text-lg text-[#4F200D] hover:text-[#FF8400] transition-colors"
@@ -585,7 +587,8 @@ export default function HomePage() {
           <div className="text-center mt-6 md:mt-9">
             <Button
               variant="outline"
-              className="rounded-xl md:rounded-2xl border-2 border-[#4F200D] text-[#4F200D] hover:bg-[#4F200D] hover:text-white px-5 md:px-9 py-2 md:py-4 text-sm md:text-lg xl:text-xl font-medium"
+              className="..."
+              onClick={() => window.location.href='/tours'} // หรือใช้ useNavigate ของ react-router-dom
             >
               ดูทัวร์ทั้งหมด
             </Button>

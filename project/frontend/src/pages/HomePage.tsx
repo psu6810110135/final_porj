@@ -1,8 +1,8 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
 // Import logo
 import logoImage from "../assets/logo.png";
@@ -203,6 +203,70 @@ const QuoteIcon = () => (
 
 export default function HomePage() {
   const [email, setEmail] = useState("");
+  const navigate = useNavigate();
+
+  // Filter states
+  const [selectedProvince, setSelectedProvince] = useState<string>("");
+  const [selectedCategory, setSelectedCategory] = useState<string>("");
+  const [selectedDuration, setSelectedDuration] = useState<string>("");
+
+  // Dropdown states
+  const [showProvinceDropdown, setShowProvinceDropdown] = useState(false);
+  const [showCategoryDropdown, setShowCategoryDropdown] = useState(false);
+  const [showDurationDropdown, setShowDurationDropdown] = useState(false);
+
+  // Filter options from API
+  const [provinces, setProvinces] = useState<string[]>([]);
+  const [categories, setCategories] = useState<string[]>([]);
+  const [durations, setDurations] = useState<string[]>([]);
+
+  // Fetch filter options from backend
+  useEffect(() => {
+    fetch("http://localhost:3000/api/v1/tours")
+      .then((res) => res.json())
+      .then((data) => {
+        // Extract unique values
+        const uniqueProvinces = [
+          ...new Set(data.map((tour: any) => tour.province)),
+        ].filter(Boolean) as string[];
+        const uniqueCategories = [
+          ...new Set(data.map((tour: any) => tour.category)),
+        ].filter(Boolean) as string[];
+        const uniqueDurations = [
+          ...new Set(data.map((tour: any) => tour.duration)),
+        ].filter(Boolean) as string[];
+
+        setProvinces(uniqueProvinces);
+        setCategories(uniqueCategories);
+        setDurations(uniqueDurations);
+      })
+      .catch((err) => console.error("Error fetching filter options:", err));
+  }, []);
+
+  // Close dropdowns when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as HTMLElement;
+      if (!target.closest(".dropdown-container")) {
+        setShowProvinceDropdown(false);
+        setShowCategoryDropdown(false);
+        setShowDurationDropdown(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  // Handle search button click
+  const handleSearch = () => {
+    const params = new URLSearchParams();
+    if (selectedProvince) params.append("province", selectedProvince);
+    if (selectedCategory) params.append("category", selectedCategory);
+    if (selectedDuration) params.append("duration", selectedDuration);
+
+    navigate(`/tours?${params.toString()}`);
+  };
 
   const features = [
     {
@@ -317,17 +381,19 @@ export default function HomePage() {
               </a>
 
               <Link
-                to="/tours" // เปลี่ยนจาก href="#" เป็น to="/tours"
+                to="/tours"
                 className="font-extralight text-base md:text-lg text-[#4F200D] hover:text-[#FF8400] transition-colors"
               >
                 Tours
               </Link>
+
               <a
                 href="#"
                 className="font-extralight text-base md:text-lg text-[#4F200D] hover:text-[#FF8400] transition-colors"
               >
                 About Us
               </a>
+
               <a
                 href="#"
                 className="font-extralight text-base md:text-lg text-[#4F200D] hover:text-[#FF8400] transition-colors"
@@ -376,26 +442,137 @@ export default function HomePage() {
 
           {/* Search Bar */}
           <div className="w-full max-w-2xl md:max-w-4xl xl:max-w-6xl mt-6 md:mt-12">
-            <div className="bg-[#F6F1E9]/95 backdrop-blur-sm rounded-full p-2 md:p-2 flex flex-col sm:flex-row gap-2 md:gap-2 border-2 border-[#E3DCD4] items-center">
-              <button className="flex-1 bg-[#FFFDFA] rounded-full px-2 md:px-3 py-2 md:py-3 flex items-center justify-between border-2 border-[#4F200D]/30 hover:border-[#4F200D] transition-colors">
-                <span className="text-xs md:text-sm lg:text-base text-[#4F200D]/90 font-medium">
-                  เลือกจังหวัด
-                </span>
-                <ChevronDownIcon />
-              </button>
-              <button className="flex-1 bg-[#FFFDFA] rounded-full px-2 md:px-3 py-2 md:py-3 flex items-center justify-between border-2 border-[#4F200D]/30 hover:border-[#4F200D] transition-colors">
-                <span className="text-xs md:text-sm lg:text-base text-[#4F200D]/90 font-medium">
-                  เลือกประเภททัวร์
-                </span>
-                <ChevronDownIcon />
-              </button>
-              <button className="flex-1 bg-[#FFFDFA] rounded-full px-2 md:px-3 py-2 md:py-3 flex items-center justify-between border-2 border-[#4F200D]/30 hover:border-[#4F200D] transition-colors">
-                <span className="text-xs md:text-sm lg:text-base text-[#4F200D]/90 font-medium">
-                  จำนวนวันเดินทาง
-                </span>
-                <ChevronDownIcon />
-              </button>
-              <Button className="bg-[#FF8400] text-white hover:bg-[#FF8400]/90 rounded-full px-4 md:px-6 py-2 md:py-3 text-xs md:text-sm lg:text-base font-bold shadow-lg whitespace-nowrap">
+            <div className="dropdown-container bg-[#F6F1E9]/95 backdrop-blur-sm rounded-full p-2 md:p-2 flex flex-col sm:flex-row gap-2 md:gap-2 border-2 border-[#E3DCD4] items-center relative">
+              {/* Province Dropdown */}
+              <div className="flex-1 relative">
+                <button
+                  onClick={() => {
+                    setShowProvinceDropdown(!showProvinceDropdown);
+                    setShowCategoryDropdown(false);
+                    setShowDurationDropdown(false);
+                  }}
+                  className="w-full bg-[#FFFDFA] rounded-full px-2 md:px-3 py-2 md:py-3 flex items-center justify-between border-2 border-[#4F200D]/30 hover:border-[#4F200D] transition-colors"
+                >
+                  <span className="text-xs md:text-sm lg:text-base text-[#4F200D]/90 font-medium truncate">
+                    {selectedProvince || "เลือกจังหวัด"}
+                  </span>
+                  <ChevronDownIcon />
+                </button>
+                {showProvinceDropdown && (
+                  <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-2xl shadow-xl border border-[#E3DCD4] max-h-60 overflow-y-auto z-50">
+                    <button
+                      onClick={() => {
+                        setSelectedProvince("");
+                        setShowProvinceDropdown(false);
+                      }}
+                      className="w-full px-4 py-3 text-left text-sm text-[#4F200D]/70 hover:bg-[#F6F1E9] transition-colors"
+                    >
+                      ทั้งหมด
+                    </button>
+                    {provinces.map((province) => (
+                      <button
+                        key={province}
+                        onClick={() => {
+                          setSelectedProvince(province);
+                          setShowProvinceDropdown(false);
+                        }}
+                        className="w-full px-4 py-3 text-left text-sm text-[#4F200D] hover:bg-[#F6F1E9] transition-colors"
+                      >
+                        {province}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Category Dropdown */}
+              <div className="flex-1 relative">
+                <button
+                  onClick={() => {
+                    setShowCategoryDropdown(!showCategoryDropdown);
+                    setShowProvinceDropdown(false);
+                    setShowDurationDropdown(false);
+                  }}
+                  className="w-full bg-[#FFFDFA] rounded-full px-2 md:px-3 py-2 md:py-3 flex items-center justify-between border-2 border-[#4F200D]/30 hover:border-[#4F200D] transition-colors"
+                >
+                  <span className="text-xs md:text-sm lg:text-base text-[#4F200D]/90 font-medium truncate">
+                    {selectedCategory || "เลือกประเภททัวร์"}
+                  </span>
+                  <ChevronDownIcon />
+                </button>
+                {showCategoryDropdown && (
+                  <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-2xl shadow-xl border border-[#E3DCD4] max-h-60 overflow-y-auto z-50">
+                    <button
+                      onClick={() => {
+                        setSelectedCategory("");
+                        setShowCategoryDropdown(false);
+                      }}
+                      className="w-full px-4 py-3 text-left text-sm text-[#4F200D]/70 hover:bg-[#F6F1E9] transition-colors"
+                    >
+                      ทั้งหมด
+                    </button>
+                    {categories.map((category) => (
+                      <button
+                        key={category}
+                        onClick={() => {
+                          setSelectedCategory(category);
+                          setShowCategoryDropdown(false);
+                        }}
+                        className="w-full px-4 py-3 text-left text-sm text-[#4F200D] hover:bg-[#F6F1E9] transition-colors"
+                      >
+                        {category}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Duration Dropdown */}
+              <div className="flex-1 relative">
+                <button
+                  onClick={() => {
+                    setShowDurationDropdown(!showDurationDropdown);
+                    setShowProvinceDropdown(false);
+                    setShowCategoryDropdown(false);
+                  }}
+                  className="w-full bg-[#FFFDFA] rounded-full px-2 md:px-3 py-2 md:py-3 flex items-center justify-between border-2 border-[#4F200D]/30 hover:border-[#4F200D] transition-colors"
+                >
+                  <span className="text-xs md:text-sm lg:text-base text-[#4F200D]/90 font-medium truncate">
+                    {selectedDuration || "จำนวนวันเดินทาง"}
+                  </span>
+                  <ChevronDownIcon />
+                </button>
+                {showDurationDropdown && (
+                  <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-2xl shadow-xl border border-[#E3DCD4] max-h-60 overflow-y-auto z-50">
+                    <button
+                      onClick={() => {
+                        setSelectedDuration("");
+                        setShowDurationDropdown(false);
+                      }}
+                      className="w-full px-4 py-3 text-left text-sm text-[#4F200D]/70 hover:bg-[#F6F1E9] transition-colors"
+                    >
+                      ทั้งหมด
+                    </button>
+                    {durations.map((duration) => (
+                      <button
+                        key={duration}
+                        onClick={() => {
+                          setSelectedDuration(duration);
+                          setShowDurationDropdown(false);
+                        }}
+                        className="w-full px-4 py-3 text-left text-sm text-[#4F200D] hover:bg-[#F6F1E9] transition-colors"
+                      >
+                        {duration}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <Button
+                onClick={handleSearch}
+                className="bg-[#FF8400] text-white hover:bg-[#FF8400]/90 rounded-full px-4 md:px-6 py-2 md:py-3 text-xs md:text-sm lg:text-base font-bold shadow-lg whitespace-nowrap"
+              >
                 ค้นหา
               </Button>
             </div>
@@ -588,7 +765,7 @@ export default function HomePage() {
             <Button
               variant="outline"
               className="..."
-              onClick={() => window.location.href='/tours'} // หรือใช้ useNavigate ของ react-router-dom
+              onClick={() => (window.location.href = "/tours")} // หรือใช้ useNavigate ของ react-router-dom
             >
               ดูทัวร์ทั้งหมด
             </Button>

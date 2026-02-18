@@ -5,8 +5,10 @@ import {
   IsOptional,
   Min,
   IsBoolean,
+  IsEnum,
 } from 'class-validator';
 import { Type } from 'class-transformer';
+import { TourRegion, TourCategory } from '../entities/tour.entity';
 
 export class CreateTourDto {
   @IsString()
@@ -26,17 +28,17 @@ export class CreateTourDto {
   @IsNotEmpty()
   province: string;
 
-  @IsString()
+  @IsEnum(TourRegion)
   @IsNotEmpty()
-  region: string;
+  region: TourRegion;
 
   @IsString()
   @IsNotEmpty()
   duration: string;
 
-  @IsString()
+  @IsEnum(TourCategory)
   @IsNotEmpty()
-  category: string;
+  category: TourCategory;
 
   @IsNumber()
   @Min(0)

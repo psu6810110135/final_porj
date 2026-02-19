@@ -3,6 +3,7 @@ import { Link, useSearchParams } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+
 interface Tour {
   id: number | string;
   title: string;
@@ -20,6 +21,9 @@ export default function ToursPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  const [locationSearch, setLocationSearch] = useState("");
+  const [keywordSearch, setKeywordSearch] = useState("");
 
   const apiBase = "http://localhost:3000/api/v1";
 
@@ -61,6 +65,30 @@ export default function ToursPage() {
     setSearchParams(newParams);
   };
 
+  const handleSearch = () => {
+    setLoading(true);
+    setError(null);
+    const params = new URLSearchParams();
+    if (regionFilter) params.append("region", regionFilter);
+    if (categoryFilter) params.append("category", categoryFilter);
+    if (durationFilter) params.append("duration", durationFilter);
+    if (locationSearch) params.append("location", locationSearch);
+    if (keywordSearch) params.append("keyword", keywordSearch);
+
+    const url = `${apiBase}/tours${params.toString() ? `?${params.toString()}` : ""}`;
+    fetch(url)
+      .then((res) => {
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        return res.json();
+      })
+      .then((data) => setTours(data))
+      .catch((err) => {
+        setError(err.message);
+        setTours([]);
+      })
+      .finally(() => setLoading(false));
+  };
+
   return (
     <div className="min-h-screen bg-[#F6F1E9]">
       <Navbar activePage="tours" />
@@ -73,12 +101,51 @@ export default function ToursPage() {
             </Link>
           </div>
 
-          <h1 className="text-4xl font-black text-center mb-8 text-[#4F200D]">
+          <h1 className="text-4xl font-black text-center mb-2 text-[#4F200D]">
             ทุกจุดหมาย มั่นใจไปกับเรา
           </h1>
+          <div className="flex justify-center mb-8">
+            <div className="w-48 h-1 rounded-full bg-[#4F200D]" />
+          </div>
+
+          {/* Search Bar */}
+          <div className="flex flex-col sm:flex-row gap-3 mb-8 max-w-3xl mx-auto">
+            <div className="relative flex-1">
+              <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+              </svg>
+              <input
+                type="text"
+                placeholder="ค้นหาสถานที่ท่องเที่ยวของคุณ"
+                value={locationSearch}
+                onChange={(e) => setLocationSearch(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && handleSearch()}
+                className="w-full pl-9 pr-4 py-3 rounded-full border border-gray-200 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-[#FF8400]/40 shadow-sm"
+              />
+            </div>
+            <div className="relative flex-1">
+              <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+              </svg>
+              <input
+                type="text"
+                placeholder="คีย์เวิร์ด (ระบุหรือไม่ก็ได้)"
+                value={keywordSearch}
+                onChange={(e) => setKeywordSearch(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && handleSearch()}
+                className="w-full pl-9 pr-4 py-3 rounded-full border border-gray-200 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-[#FF8400]/40 shadow-sm"
+              />
+            </div>
+            <button
+              onClick={handleSearch}
+              className="px-8 py-3 bg-[#FF8400] hover:bg-[#e07600] text-white font-bold rounded-full transition-colors shadow-sm text-sm"
+            >
+              ค้นหา
+            </button>
+          </div>
 
           <div className="flex flex-col lg:flex-row gap-8">
-            {/* Sidebar Filters */}
+            {/* Sidebar Filters — ของเดิม */}
             <aside className="w-full lg:w-72 shrink-0">
               <div className="bg-white p-8 rounded-[2rem] shadow-sm sticky top-28 border border-orange-50 space-y-6">
                 <div>

@@ -1,9 +1,10 @@
-import { Outlet, Link, useLocation } from 'react-router-dom';
-import { LayoutDashboard, Map, CreditCard, FileText, LogOut } from 'lucide-react';
+import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
+import { LayoutDashboard, Map, CreditCard, FileText, LogOut, Home } from 'lucide-react'; // 👈 Import 'Home' เพิ่มเข้ามา
 import { Button } from '@/components/ui/button';
 
 export default function AdminLayout() {
   const location = useLocation();
+  const navigate = useNavigate(); // 👈 เพิ่ม useNavigate สำหรับทำฟังก์ชัน Logout
 
   const menuItems = [
     { icon: LayoutDashboard, label: 'Dashboard', path: '/admin' },
@@ -11,6 +12,14 @@ export default function AdminLayout() {
     { icon: CreditCard, label: 'Verify Payments', path: '/admin/payments' },
     { icon: FileText, label: 'Booking History', path: '/admin/bookings' },
   ];
+
+  // 👈 ฟังก์ชันออกจากระบบ (แถมให้!)
+  const handleLogout = () => {
+    if (window.confirm("คุณต้องการออกจากระบบใช่ไหม?")) {
+      localStorage.removeItem('jwt_token');
+      navigate('/login');
+    }
+  };
 
   return (
     <div className="flex h-screen bg-gray-100 font-sans">
@@ -36,10 +45,25 @@ export default function AdminLayout() {
           })}
         </nav>
 
-        <div className="p-4 border-t">
-          <Button variant="ghost" className="w-full justify-start text-red-600 hover:bg-red-50">
+        {/* 🌟 โซนปุ่มด้านล่างที่เพิ่มปุ่ม Home เข้าไป */}
+        <div className="p-4 border-t flex flex-col gap-2">
+          
+          {/* ปุ่มกลับหน้า Home */}
+          <Link to="/">
+            <Button variant="ghost" className="w-full justify-start text-gray-600 hover:bg-gray-100 hover:text-blue-600 transition-colors">
+              <Home size={18} className="mr-2" /> Back to Home
+            </Button>
+          </Link>
+
+          {/* ปุ่ม Logout ที่ใส่ฟังก์ชันคลิกให้แล้ว */}
+          <Button 
+            variant="ghost" 
+            onClick={handleLogout} 
+            className="w-full justify-start text-red-600 hover:bg-red-50 transition-colors"
+          >
             <LogOut size={18} className="mr-2" /> Logout
           </Button>
+
         </div>
       </aside>
 

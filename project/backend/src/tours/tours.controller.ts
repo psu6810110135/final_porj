@@ -30,7 +30,6 @@ export class ToursController {
   }
 
   // 3. GET /tours/:id (ดึงรายตัว)
-  // ต้องเอาไว้ล่างสุด! เพราะถ้าเอาไว้บน มันอาจจะมองว่าคำว่า "seed" คือ "id"
   @Get(':id')
   getTourById(@Param('id') id: string): Promise<Tour> {
     return this.toursService.getTourById(id);

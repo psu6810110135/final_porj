@@ -13,7 +13,7 @@ export class ToursService {
     private toursRepository: Repository<Tour>,
   ) {}
 
-  // 1. ฟังก์ชันดึงข้อมูล + Filter
+  // ฟังก์ชันดึงข้อมูล + Filter
   async getTours(filterDto: GetToursFilterDto): Promise<Tour[]> {
     const {
       search,
@@ -28,7 +28,6 @@ export class ToursService {
 
     const query = this.toursRepository.createQueryBuilder('tour');
 
-    // Default: เอาเฉพาะที่ Active
     query.where('tour.is_active = :isActive', { isActive: true });
 
     if (search) {
@@ -171,10 +170,8 @@ export class ToursService {
           is_active: true,
         } as any);
 
-        // 👇👇 จุดที่แก้: ใช้ as Tour เพื่อบังคับบอก TypeScript ว่านี่คือตัวเดียวนะ ไม่ใช่ Array
         const saved = await this.toursRepository.save(tour);
 
-        // ใส่ as any กันเหนียวให้ครับ จะได้ไม่แดงแน่นอน
         savedTours.push(saved as any);
       }
     }

@@ -1,6 +1,6 @@
 import { IsOptional, IsString, IsNumber, IsEnum, Min } from 'class-validator';
 import { Type } from 'class-transformer';
-import { TourCategory, TourRegion } from '../entities/tour.entity'; // เช็ค Path ให้ถูก
+import { TourCategory, TourRegion } from '../entities/tour.entity';
 
 export class GetToursFilterDto {
   @IsOptional()
@@ -9,14 +9,14 @@ export class GetToursFilterDto {
 
   @IsOptional()
   @IsString()
-  province?: string;  // ✅ ตัวนี้ที่ Error อยู่
+  province?: string;
 
   @IsOptional()
   @IsEnum(TourRegion)
   region?: TourRegion;
 
   @IsOptional()
-  @IsEnum(TourCategory) // ถ้ายังไม่ได้ทำ Enum ให้เปลี่ยนเป็น @IsString() category?: string; ไปก่อน
+  @IsEnum(TourCategory)
   category?: TourCategory;
 
   @IsOptional()
@@ -37,5 +37,5 @@ export class GetToursFilterDto {
 
   @IsOptional()
   @IsString()
-  sort?: 'ASC' | 'DESC'; // ✅ ตัวนี้ที่ Error อยู่
+  sort?: 'ASC' | 'DESC';
 }

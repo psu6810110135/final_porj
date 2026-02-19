@@ -13,9 +13,10 @@ interface Tour {
   image_cover?: string;
   province?: string;
   price: string | number;
+  duration?: string;
 }
 
-// --- ส่วน ICON Components ---
+// SVG ICON Components
 const UserIcon = ({ className = "" }: { className?: string }) => (
   <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
     <path stroke="none" d="M0 0h24v24H0z" fill="none" />
@@ -38,7 +39,7 @@ export default function ToursPage() {
   const [tours, setTours] = useState<Tour[]>([]);
 
   useEffect(() => {
-    fetch("http://localhost:3000/tours")
+    fetch("http://localhost:3000/api/v1/tours")
       .then((res) => res.json())
       .then((data) => setTours(data))
       .catch((err) => console.error("Error:", err));
@@ -59,7 +60,6 @@ export default function ToursPage() {
                     src={logoImage}
                     alt="Thai Tours Logo"
                     className="h-full w-auto object-contain"
-                    // แก้ไข Type ของ event
                     onError={(e) => (e.currentTarget.style.display = 'none')}
                   />
                 </div>
@@ -112,7 +112,7 @@ export default function ToursPage() {
         </div>
       </nav>
 
-      {/* ================= MAIN CONTENT ================= */}
+      {/* MAIN CONTENT */}
       <main className="flex-grow p-4 md:p-10">
         <div className="max-w-[1400px] mx-auto">
           
@@ -125,7 +125,7 @@ export default function ToursPage() {
             </Link>
           </div>
 
-          <h1 className="text-4xl font-black text-center mb-8">ทุกจุดหมาย มั่นใจไปกับเรา</h1>
+          <h1 className="text-4xl font-black text-center mb-8 text-[#4F200D]">ทุกจุดหมาย มั่นใจไปกับเรา</h1>
 
           {/* ช่องค้นหา */}
           <div className="flex gap-3 max-w-2xl mx-auto mb-12">
@@ -144,23 +144,23 @@ export default function ToursPage() {
             {/* Filter Sidebar */}
             <aside className="w-full lg:w-72 shrink-0">
               <div className="bg-white p-8 rounded-[2rem] shadow-sm sticky top-28 border border-orange-50">
-                <h3 className="font-extrabold text-xl mb-6">ระยะเวลา</h3>
+                <h3 className="font-extrabold text-xl mb-6 text-[#4F200D]">ระยะเวลา</h3>
                 <div className="space-y-4">
                   {['1 วัน', 'หลายวัน', '2 วัน 1 คืน', 'ครึ่งวัน'].map((label) => (
                     <label key={label} className="flex items-center gap-3 cursor-pointer group">
                       <input type="checkbox" className="w-5 h-5 accent-[#FF8400] rounded-lg" />
-                      <span className="text-sm font-medium group-hover:text-[#FF8400]">{label}</span>
+                      <span className="text-sm font-medium text-[#4F200D] group-hover:text-[#FF8400]">{label}</span>
                     </label>
                   ))}
                 </div>
 
                 <div className="mt-8 pt-8 border-t border-gray-100">
-                  <h3 className="font-extrabold text-xl mb-6">โซน / ภูมิภาค</h3>
+                  <h3 className="font-extrabold text-xl mb-6 text-[#4F200D]">โซน / ภูมิภาค</h3>
                   <div className="space-y-4">
                     {['ภาคเหนือ', 'ภาคใต้', 'ภาคกลาง', 'เกาะ/ทะเล'].map((zone) => (
                       <label key={zone} className="flex items-center gap-3 cursor-pointer group">
                         <input type="checkbox" className="w-5 h-5 accent-[#FF8400] rounded-lg" />
-                        <span className="text-sm font-medium group-hover:text-[#FF8400]">{zone}</span>
+                        <span className="text-sm font-medium text-[#4F200D] group-hover:text-[#FF8400]">{zone}</span>
                       </label>
                     ))}
                   </div>
@@ -186,7 +186,20 @@ export default function ToursPage() {
                     
                     <CardContent className="p-7 flex flex-col flex-grow">
                       <h3 className="text-2xl font-black mb-1 text-[#4F200D]">{tour.title}</h3>
-                      <p className="text-sm text-gray-400 mb-6 line-clamp-1">{tour.province || 'ประเทศไทย'}</p>
+                      
+                      {/* 2. แสดงระยะเวลา คู่กับจังหวัด */}
+                      <div className="flex items-center gap-2 mb-6 text-sm">
+                        <span className="text-gray-400 line-clamp-1">{tour.province || 'ประเทศไทย'}</span>
+                        {/* เช็คว่ามีข้อมูล duration ส่งมาไหม ถ้ามีค่อยแสดง */}
+                        {tour.duration && (
+                          <>
+                            <span className="text-gray-300">|</span>
+                            <span className="font-medium text-[#FF8400] bg-orange-50 px-2 py-0.5 rounded-md">
+                              {tour.duration}
+                            </span>
+                          </>
+                        )}
+                      </div>
                       
                       <div className="mt-auto pt-5 border-t border-gray-100 flex justify-between items-center">
                         <div>

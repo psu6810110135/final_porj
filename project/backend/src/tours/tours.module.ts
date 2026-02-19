@@ -8,6 +8,6 @@ import { Tour } from './entities/tour.entity';
   imports: [TypeOrmModule.forFeature([Tour])],
   controllers: [ToursController],
   providers: [ToursService],
-  exports: [ToursService], // Good practice to export if other modules need it
+  exports: [ToursService],
 })
 export class ToursModule {}

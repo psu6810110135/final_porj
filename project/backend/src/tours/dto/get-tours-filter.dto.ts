@@ -38,4 +38,9 @@ export class GetToursFilterDto {
   @IsOptional()
   @IsString()
   sort?: 'ASC' | 'DESC';
+
+  // 👇 ADD THIS FIELD
+  @IsOptional()
+  @IsString()
+  show_all?: string; // Pass 'true' to see inactive tours
 }

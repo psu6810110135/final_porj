@@ -3,7 +3,6 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Payment } from './entities/payment.entity';
 import { Booking, BookingStatus } from '../bookings/entities/booking.entity';
-import { UpdatePaymentDto } from './dto/update-payment.dto';
 
 @Injectable()
 export class PaymentsService {
@@ -12,11 +11,10 @@ export class PaymentsService {
     @InjectRepository(Booking) private bookingRepo: Repository<Booking>,
   ) {}
 
-  // Get only pending payments for admin review
   findPending() {
     return this.paymentRepo.find({
       where: { status: 'pending_verify' },
-      relations: ['booking', 'booking.user', 'booking.tour'], // Join related data
+      relations: ['booking', 'booking.user', 'booking.tour'],
       order: { uploadedAt: 'ASC' },
     });
   }
@@ -26,14 +24,13 @@ export class PaymentsService {
       where: { id },
       relations: ['booking'],
     });
+    
     if (!payment) throw new NotFoundException('Payment not found');
 
-    // Update Payment Status
     payment.status = status;
     payment.verifiedAt = new Date();
     await this.paymentRepo.save(payment);
 
-    // Update Booking Status based on decision
     if (status === 'approved') {
       await this.bookingRepo.update(payment.booking.id, {
         status: BookingStatus.CONFIRMED,
@@ -41,11 +38,20 @@ export class PaymentsService {
     } else {
       await this.bookingRepo.update(payment.booking.id, {
         status: BookingStatus.PENDING,
-      }); // Reset to pending if rejected
+      });
     }
 
     return { success: true, message: `Payment ${status}` };
   }
 
-  // ... keep other CRUD methods if needed
+  async checkStatus(id: string) {
+    const payment = await this.paymentRepo.findOne({
+      where: { id },
+      select: ['id', 'status'],
+    });
+
+    if (!payment) throw new NotFoundException('Payment not found');
+
+    return { id: payment.id, status: payment.status };
+  }
 }

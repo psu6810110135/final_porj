@@ -1,13 +1,13 @@
 import { Module } from '@nestjs/common';
-import { TypeOrmModule } from '@nestjs/typeorm'; // Import this
+import { TypeOrmModule } from '@nestjs/typeorm';
 import { PaymentsService } from './payments.service';
 import { PaymentsController } from './payments.controller';
-import { Payment } from './entities/payment.entity'; // Import Payment Entity
-import { Booking } from '../bookings/entities/booking.entity'; // Import Booking Entity
+import { Payment } from './entities/payment.entity';
+import { Booking } from '../bookings/entities/booking.entity';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Payment, Booking]) // Register both entities here
+    TypeOrmModule.forFeature([Payment, Booking])
   ],
   controllers: [PaymentsController],
   providers: [PaymentsService],

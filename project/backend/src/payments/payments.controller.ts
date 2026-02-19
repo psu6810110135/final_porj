@@ -1,4 +1,4 @@
-import { Controller, Get, Patch, Param, Body } from '@nestjs/common';
+import { Controller, Get, Patch, Post, Param, Body } from '@nestjs/common';
 import { PaymentsService } from './payments.service';
 
 @Controller('api/v1/payments')
@@ -16,5 +16,15 @@ export class PaymentsController {
     @Body('status') status: 'approved' | 'rejected'
   ) {
     return this.paymentsService.verifyPayment(id, status);
+  }
+
+  @Post('webhook')
+  async handleBankWebhook(@Body() payload: { id: string; status: 'approved' | 'rejected' }) {
+    return this.paymentsService.verifyPayment(payload.id, payload.status);
+  }
+
+  @Get(':id/status')
+  async checkPaymentStatus(@Param('id') id: string) {
+    return this.paymentsService.checkStatus(id);
   }
 }

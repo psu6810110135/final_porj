@@ -6,6 +6,7 @@ import {
   Min,
   IsBoolean,
   IsEnum,
+  IsArray,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { TourRegion, TourCategory } from '../entities/tour.entity';
@@ -13,7 +14,7 @@ import { TourRegion, TourCategory } from '../entities/tour.entity';
 export class CreateTourDto {
   @IsString()
   @IsNotEmpty()
-  title: string;
+  title!: string;
 
   @IsString()
   @IsOptional()
@@ -21,24 +22,24 @@ export class CreateTourDto {
 
   @IsNumber()
   @Min(0)
-  @Type(() => Number)
-  price: number;
+  @Type(() => Number) // Convert "1000" string to 1000 number automatically
+  price!: number;
 
   @IsString()
   @IsNotEmpty()
-  province: string;
+  province!: string;
 
   @IsEnum(TourRegion)
   @IsNotEmpty()
-  region: TourRegion;
+  region!: TourRegion;
 
   @IsString()
   @IsNotEmpty()
-  duration: string;
+  duration!: string;
 
   @IsEnum(TourCategory)
   @IsNotEmpty()
-  category: TourCategory;
+  category!: TourCategory;
 
   @IsNumber()
   @Min(0)
@@ -49,7 +50,7 @@ export class CreateTourDto {
   // 👇 ADDED @IsOptional() HERE
   @IsNumber()
   @Min(0)
-  @IsOptional() 
+  @IsOptional()
   @Type(() => Number)
   rating?: number;
 
@@ -62,6 +63,16 @@ export class CreateTourDto {
   @IsString()
   @IsOptional()
   image_cover?: string;
+
+  @IsArray()
+  @IsString({ each: true })
+  @IsOptional()
+  images?: string[];
+
+  @IsArray()
+  @IsString({ each: true })
+  @IsOptional()
+  highlights?: string[];
 
   @IsString()
   @IsOptional()

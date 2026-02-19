@@ -21,7 +21,7 @@ export class CreateTourDto {
 
   @IsNumber()
   @Min(0)
-  @Type(() => Number) // Convert "1000" string to 1000 number automatically
+  @Type(() => Number)
   price: number;
 
   @IsString()
@@ -46,8 +46,10 @@ export class CreateTourDto {
   @Type(() => Number)
   child_price?: number;
 
+  // 👇 ADDED @IsOptional() HERE
   @IsNumber()
   @Min(0)
+  @IsOptional() 
   @Type(() => Number)
   rating?: number;
 

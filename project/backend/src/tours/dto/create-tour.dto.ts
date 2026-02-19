@@ -47,8 +47,10 @@ export class CreateTourDto {
   @Type(() => Number)
   child_price?: number;
 
+  // 👇 ADDED @IsOptional() HERE
   @IsNumber()
   @Min(0)
+  @IsOptional()
   @Type(() => Number)
   rating?: number;
 

@@ -36,30 +36,12 @@ export class ToursService {
         { search: `%${search}%` },
       );
     }
-
-    if (province) {
-      query.andWhere('tour.province = :province', { province });
-    }
-
-    if (region) {
-      query.andWhere('tour.region = :region', { region });
-    }
-
-    if (category) {
-      query.andWhere('tour.category = :category', { category });
-    }
-
-    if (duration) {
-      query.andWhere('tour.duration = :duration', { duration });
-    }
-
-    if (minPrice) {
-      query.andWhere('tour.price >= :minPrice', { minPrice });
-    }
-
-    if (maxPrice) {
-      query.andWhere('tour.price <= :maxPrice', { maxPrice });
-    }
+    if (province) query.andWhere('tour.province = :province', { province });
+    if (region) query.andWhere('tour.region = :region', { region });
+    if (category) query.andWhere('tour.category = :category', { category });
+    if (duration) query.andWhere('tour.duration = :duration', { duration });
+    if (minPrice) query.andWhere('tour.price >= :minPrice', { minPrice });
+    if (maxPrice) query.andWhere('tour.price <= :maxPrice', { maxPrice });
 
     if (sort) {
       query.orderBy('tour.price', sort);
@@ -70,7 +52,7 @@ export class ToursService {
     return await query.getMany();
   }
 
-  // 2. ฟังก์ชันดึงรายตัว (Detail)
+  // 2. Get Single Tour
   async getTourById(id: string): Promise<Tour> {
     const found = await this.toursRepository.findOne({ where: { id } });
     if (!found) {
@@ -79,7 +61,18 @@ export class ToursService {
     return found;
   }
 
-  // 3. ฟังก์ชัน Seed ข้อมูล
+  // 3. Create Tour (Used by Admin)
+  async create(createTourDto: CreateTourDto): Promise<Tour> {
+    const tour = this.toursRepository.create({
+      ...createTourDto,
+      // If image_cover is provided, add it to the images array automatically
+      images: createTourDto.image_cover ? [createTourDto.image_cover] : [],
+      is_active: true,
+    });
+    return await this.toursRepository.save(tour);
+  }
+
+  // 4. Seed Data
   async seedTours() {
     const mockTours = [
       {
@@ -178,11 +171,6 @@ export class ToursService {
     return { message: 'Seeding Complete', added: savedTours.length };
   }
 
-  create(createTourDto: CreateTourDto) {
-    const tour = this.toursRepository.create(createTourDto);
-    return this.toursRepository.save(tour);
-  }
-
   findAll() {
     // FIX: Changed createdAt to created_at to match the Entity definition
     return this.toursRepository.find({ order: { created_at: 'DESC' } });
@@ -194,14 +182,15 @@ export class ToursService {
     return tour;
   }
 
+  // 5. Update & Remove
   async update(id: string, updateTourDto: UpdateTourDto) {
-    const tour = await this.findOne(id);
+    const tour = await this.getTourById(id);
     Object.assign(tour, updateTourDto);
     return this.toursRepository.save(tour);
   }
 
   async remove(id: string) {
-    const tour = await this.findOne(id);
+    const tour = await this.getTourById(id);
     return this.toursRepository.remove(tour);
   }
 }

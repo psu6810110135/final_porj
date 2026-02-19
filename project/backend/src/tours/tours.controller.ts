@@ -14,29 +14,29 @@ import { Tour } from './entities/tour.entity';
 import { UpdateTourDto } from './dto/update-tour.dto';
 import { CreateTourDto } from './dto/create-tour.dto';
 
-@Controller('api/v1/tours') // Updated path
+@Controller('api/v1/tours')
 export class ToursController {
   constructor(private readonly toursService: ToursService) {}
 
-  // 1. GET /tours (ดึงข้อมูลทั้งหมด + Filter)
+  // 1. GET /tours (Get all tours + Filter)
   @Get()
   getTours(@Query() filterDto: GetToursFilterDto): Promise<Tour[]> {
     return this.toursService.getTours(filterDto);
   }
 
-  // 2. POST /tours/seed (สร้างข้อมูลจำลอง)
+  // 2. POST /tours (Create a new tour - REQUIRED FOR ADMIN)
+  @Post()
+  createTour(@Body() createTourDto: CreateTourDto): Promise<Tour> {
+    return this.toursService.create(createTourDto);
+  }
+
+  // 3. POST /tours/seed (Generate mock data)
   @Post('seed')
   seedTours() {
     return this.toursService.seedTours();
   }
 
-  // 2.1 POST /tours (สร้างทัวร์ใหม่)
-  @Post()
-  createTour(@Body() createTourDto: CreateTourDto) {
-    return this.toursService.create(createTourDto);
-  }
-
-  // 3. GET /tours/:id (ดึงรายตัว)
+  // 4. GET /tours/:id (Get single tour details)
   @Get(':id')
   getTourById(@Param('id') id: string): Promise<Tour> {
     return this.toursService.getTourById(id);

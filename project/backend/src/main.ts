@@ -21,7 +21,7 @@ async function bootstrap() {
       transform: true,
     }),
   );
-
+  app.enableCors();
   const port = configService.get<number>('PORT') || 3000;
   await app.listen(port);
   console.log(`Application is running on: http://localhost:${port}`);

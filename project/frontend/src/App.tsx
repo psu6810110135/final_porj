@@ -14,26 +14,28 @@ import AdminLayout from "./pages/admin/AdminLayout";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import PendingPayments from "./pages/admin/PendingPayments";
 import TourManager from "./pages/admin/TourManager";
+import AdminGuard from "./pages/AdminGuard";
 
 export default function App() {
   return (
     <BrowserRouter>
       <Routes>
-        {/* หน้าบ้าน (ลูกค้าทั่วไป) */}
+        {/* --- หน้าบ้านทั่วไป --- */}
         <Route path="/" element={<HomePage />} />
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/register" element={<RegisterPage />} />
         <Route path="/tours" element={<ToursPage />} />
         <Route path="/tours/:id" element={<TourDetailPage />} />
 
-        {/* ระบบเข้าสู่ระบบ/สมัครสมาชิก */}
-        <Route path="/login" element={<LoginPage />} />
-        <Route path="/register" element={<RegisterPage />} />
-
-        {/* หลังบ้าน (Admin) */}
-        <Route path="/admin" element={<AdminLayout />}>
-          <Route index element={<AdminDashboard />} />
-          <Route path="tours" element={<TourManager />} />
-          <Route path="payments" element={<PendingPayments />} />
+        {/* --- 🛡️ โซนป้องกันแอดมิน --- */}
+        <Route element={<AdminGuard />}> 
+          <Route path="/admin" element={<AdminLayout />}>
+            <Route index element={<AdminDashboard />} />
+            <Route path="tours" element={<TourManager />} />
+            <Route path="payments" element={<PendingPayments />} />
+          </Route>
         </Route>
+
       </Routes>
     </BrowserRouter>
   );

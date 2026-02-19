@@ -1,27 +1,24 @@
 import React, { useState } from 'react';
 import axios from 'axios';
-import { Link ,useNavigate} from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import Navbar from '../components/Navbar'; // ✅ import Navbar
 
-// 1. สร้าง Interface เพื่อบอกว่าข้อมูลหน้าตาเป็นยังไง (แก้ตัวแดง formData)
 interface FormData {
   username: string;
   password: string;
 }
 
 const LoginPage = () => {
-  // กำหนด Type ให้ State
   const navigate = useNavigate();
   const [formData, setFormData] = useState<FormData>({
     username: '',
     password: ''
   });
 
-  // 2. ระบุ Type ของ Event (แก้ตัวแดงที่ตัว e)
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  // 3. ระบุ Type ของ Event ตอนกดปุ่ม (แก้ตัวแดงที่ตัว e)
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
@@ -33,7 +30,6 @@ const LoginPage = () => {
       alert('Login สำเร็จ! 🎉');
       console.log('Token:', token);
       navigate('/');
-      // window.location.href = '/dashboard'; 
 
     } catch (error) {
       console.error(error);
@@ -42,68 +38,69 @@ const LoginPage = () => {
   };
 
   return (
-    <div style={styles.container}>
-      <div style={styles.card}>
-        <h2 style={styles.title}>เข้าสู่ระบบ</h2>
-        
-        <form onSubmit={handleSubmit}>
-          <div style={styles.inputGroup}>
-            <label style={styles.label}>ชื่อผู้ใช้</label>
-            <input 
-              type="text" 
-              name="username"
-              value={formData.username}
-              onChange={handleChange}
-              style={styles.input}
-              placeholder="Username"
-              required 
-            />
+    <>
+      <Navbar /> {/* ✅ เพิ่ม Navbar */}
+      <div style={styles.container}>
+        <div style={styles.card}>
+          <h2 style={styles.title}>เข้าสู่ระบบ</h2>
+          
+          <form onSubmit={handleSubmit}>
+            <div style={styles.inputGroup}>
+              <label style={styles.label}>ชื่อผู้ใช้</label>
+              <input 
+                type="text" 
+                name="username"
+                value={formData.username}
+                onChange={handleChange}
+                style={styles.input}
+                placeholder="Username"
+                required 
+              />
+            </div>
+
+            <div style={styles.inputGroup}>
+              <label style={styles.label}>รหัสผ่าน</label>
+              <input 
+                type="password" 
+                name="password"
+                value={formData.password}
+                onChange={handleChange}
+                style={styles.input}
+                placeholder="Password"
+                required 
+              />
+            </div>
+
+            <button type="submit" style={styles.submitButton}>เข้าสู่ระบบ</button>
+          </form>
+
+          <p style={styles.orText}>หรือ เข้าสู่ระบบกับ</p>
+          
+          <div style={styles.socialGroup}>
+            <button type="button" style={{...styles.socialBtn, color: '#3b5998', borderColor: '#3b5998'}}>
+              Facebook
+            </button>
+            <button type="button" style={{...styles.socialBtn, color: '#DB4437', borderColor: '#DB4437'}}>
+              Google
+            </button>
           </div>
-
-          <div style={styles.inputGroup}>
-            <label style={styles.label}>รหัสผ่าน</label>
-            <input 
-              type="password" 
-              name="password"
-              value={formData.password}
-              onChange={handleChange}
-              style={styles.input}
-              placeholder="Password"
-              required 
-            />
-          </div>
-
-          <button type="submit" style={styles.submitButton}>เข้าสู่ระบบ</button>
-        </form>
-
-        <p style={styles.orText}>หรือ เข้าสู่ระบบกับ</p>
-        
-        <div style={styles.socialGroup}>
-          <button type="button" style={{...styles.socialBtn, color: '#3b5998', borderColor: '#3b5998'}}>
-            Facebook
-          </button>
-          <button type="button" style={{...styles.socialBtn, color: '#DB4437', borderColor: '#DB4437'}}>
-            Google
-          </button>
+          
+          <p style={styles.registerText}>
+            หากยังไม่มีบัญชี 
+            <Link to="/register" style={styles.registerLink}> ลงทะเบียน</Link>
+          </p>
         </div>
-        
-        <p style={styles.registerText}>
-          หากยังไม่มีบัญชี 
-          {/* แก้ตรงนี้ครับ */}
-          <Link to="/register" style={styles.registerLink}> ลงทะเบียน</Link>
-        </p>
       </div>
-    </div>
+    </>
   );
 };
 
-// CSS Styles (ย้ายมาวางข้างบนได้ถ้า Linter ยังบ่น แต่ปกติวางล่างสุดได้ครับ)
 const styles: { [key: string]: React.CSSProperties } = {
   container: { 
     display: 'flex', 
     justifyContent: 'center', 
     alignItems: 'center', 
-    height: '100vh', 
+    height: 'calc(100vh - 64px)', // ✅ ลบความสูง Navbar ออก ไม่ให้ล้น
     backgroundColor: '#f5f5f5',
     fontFamily: "'Prompt', sans-serif"
   },

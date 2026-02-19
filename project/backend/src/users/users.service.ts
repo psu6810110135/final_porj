@@ -1,11 +1,9 @@
-import { Injectable, ConflictException, InternalServerErrorException } from '@nestjs/common';
+import { Injectable, ConflictException, InternalServerErrorException,NotFoundException  } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
-import { User } from './entities/user.entity';
-import { UserProfile } from './entities/user-profile.entity';
-
+import { User, UserRole } from './entities/user.entity';
 @Injectable()
 export class UsersService {
   constructor(
@@ -13,58 +11,55 @@ export class UsersService {
     private usersRepository: Repository<User>,
   ) {}
 
-  // ==========================================
-  // 🟢 ส่วนของระบบ Auth (จาก branch login+register)
-  // ==========================================
-
   async findOne(username: string): Promise<User | null> {
     return this.usersRepository.findOne({ where: { username } });
   }
 
+  // 👇 ปรับปรุงฟังก์ชันสร้าง User ให้คลีนขึ้น
   async createUser(userData: Partial<User>): Promise<User> {
-    // สร้าง User พร้อม Profile ว่างๆ
     const user = this.usersRepository.create({
       ...userData,
-      profile: new UserProfile(), 
+      role: userData.role || UserRole.USER, // กำหนด role เป็น user ถ้าไม่ได้ส่งมา
     });
 
     try {
       return await this.usersRepository.save(user);
     } catch (error) {
       const dbError = error as any;
-      
-      if (dbError.code === '23505' || dbError.errno === 1062) {
+      if (dbError.code === '23505') {
         throw new ConflictException('Username already exists');
-      } else {
-        console.error(dbError); 
-        throw new InternalServerErrorException();
       }
+      console.error(dbError);
+      throw new InternalServerErrorException('Error during user creation');
     }
   }
 
-  // ==========================================
-  // 🟡 ส่วนโครงร่างเดิม (จาก branch dev) 
-  // เก็บไว้เผื่อ UsersController เรียกใช้ จะได้ไม่ Error
-  // ==========================================
+  // ฟังก์ชัน CRUD เดิม (เปลี่ยนชื่อ findOne เป็น findById เพื่อไม่ให้ชนกัน)
+  create(createUserDto: CreateUserDto) { return 'This action adds a new user'; }
+  async findAll(): Promise<User[]> {
+    return this.usersRepository.find({
+      relations: ['profile'], // ดึงข้อมูล Profile ติดมาด้วย
+    });
+  }
+  async findById(id: string): Promise<User | null> {
+  return this.usersRepository.findOne({ 
+    where: { id },
+    relations: ['profile'] // ดึงข้อมูลโปรไฟล์พ่วงมาด้วย
+  });
+}
+ async update(id: string, updateUserDto: UpdateUserDto): Promise<User> {
+  // 1. ค้นหา User ก่อนว่ามีตัวตนไหม
+  const user = await this.usersRepository.preload({
+    id: id,
+    ...updateUserDto, // เอาข้อมูลใหม่ไปทับข้อมูลเดิม
+  });
 
-  create(createUserDto: CreateUserDto) {
-    return 'This action adds a new user';
+  if (!user) {
+    throw new NotFoundException(`ไม่พบผู้ใช้งานไอดี #${id} ครับ`);
   }
 
-  findAll() {
-    return `This action returns all users`;
-  }
-
-  // 💡 เปลี่ยนชื่อจาก findOne เป็น findById เพื่อไม่ให้ชนกับ findOne(username) ด้านบน
-  findById(id: string) {
-    return `This action returns a #${id} user`;
-  }
-
-  update(id: string, updateUserDto: UpdateUserDto) {
-    return `This action updates a #${id} user`;
-  }
-
-  remove(id: string) {
-    return `This action removes a #${id} user`;
-  }
+  // 2. บันทึกค่าใหม่ลง Database
+  return this.usersRepository.save(user);
+}
+  remove(id: string) { return `This action removes a #${id} user`; }
 }

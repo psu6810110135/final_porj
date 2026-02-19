@@ -7,9 +7,21 @@ import {
   IsBoolean,
   IsEnum,
   IsArray,
+  ValidateNested,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { TourRegion, TourCategory } from '../entities/tour.entity';
+
+// ✨ เพิ่ม Class สำหรับตรวจสอบข้อมูลใน Itinerary Array
+class ItineraryItemDto {
+  @IsString()
+  @IsNotEmpty()
+  time!: string;
+
+  @IsString()
+  @IsNotEmpty()
+  detail!: string;
+}
 
 export class CreateTourDto {
   @IsString()
@@ -22,7 +34,7 @@ export class CreateTourDto {
 
   @IsNumber()
   @Min(0)
-  @Type(() => Number) // Convert "1000" string to 1000 number automatically
+  @Type(() => Number)
   price!: number;
 
   @IsString()
@@ -41,13 +53,19 @@ export class CreateTourDto {
   @IsNotEmpty()
   category!: TourCategory;
 
+  // ✨ เพิ่ม: จำนวนคนสูงสุด
+  @IsNumber()
+  @Min(1)
+  @IsOptional()
+  @Type(() => Number)
+  max_group_size?: number;
+
   @IsNumber()
   @Min(0)
   @IsOptional()
   @Type(() => Number)
   child_price?: number;
 
-  // 👇 ADDED @IsOptional() HERE
   @IsNumber()
   @Min(0)
   @IsOptional()
@@ -74,9 +92,22 @@ export class CreateTourDto {
   @IsOptional()
   highlights?: string[];
 
+  // ✨ เพิ่ม: รายการการเตรียมตัว
+  @IsArray()
+  @IsString({ each: true })
+  @IsOptional()
+  preparation?: string[];
+
   @IsString()
   @IsOptional()
-  itinerary?: string;
+  itinerary?: string; // ข้อความยาวแบบเดิม
+
+  // ✨ เพิ่ม: แผนการเดินทางแบบ JSON (Array ของวัตถุ)
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => ItineraryItemDto)
+  @IsOptional()
+  itinerary_data?: ItineraryItemDto[];
 
   @IsString()
   @IsOptional()

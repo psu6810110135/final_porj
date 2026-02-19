@@ -65,7 +65,8 @@ export default function ToursPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  // Force backend base to port 3000 to avoid wrong env (8080)
+  
+  // Force backend base to port 3000 to avoid wrong env
   const apiBase = "http://localhost:3000/api/v1";
 
   const regionFilter = searchParams.get("region") || "";
@@ -326,68 +327,69 @@ export default function ToursPage() {
               {!loading && !error && tours.length > 0 && (
                 <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
                   {tours.map((tour) => (
-                    <Card
+                    // 👇👇 จุดสำคัญของคุณ: ใช้ Link ครอบไว้ เพื่อให้คลิกไปหน้า Detail ได้ 👇👇
+                    <Link 
+                      to={`/tours/${tour.id}`} 
                       key={tour.id}
-                      className="rounded-[2.5rem] overflow-hidden border-0 shadow-sm hover:shadow-xl transition-all duration-300 group bg-white h-full flex flex-col"
+                      className="block h-full cursor-pointer group"
                     >
-                      <div className="relative h-52 shrink-0 overflow-hidden">
-                        <img
-                          src={
-                            tour.image_cover &&
-                            tour.image_cover.startsWith("http")
-                              ? tour.image_cover
-                              : "https://via.placeholder.com/400x300?text=No+Image"
-                          }
-                          className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
-                          alt={tour.title}
-                          onError={(e) => {
-                            (e.currentTarget as HTMLImageElement).src =
-                              "https://via.placeholder.com/400x300?text=Image+Error";
-                          }}
-                        />
-                        <div className="absolute top-4 right-4 bg-white/90 px-3 py-1 rounded-full text-xs font-bold text-[#FF8400] shadow-sm">
-                          ★ {tour.rating || "New"}
+                      <Card className="rounded-[2.5rem] overflow-hidden border-0 shadow-sm group-hover:shadow-xl transition-all duration-300 bg-white h-full flex flex-col">
+                        <div className="relative h-52 shrink-0 overflow-hidden">
+                          <img
+                            src={
+                              tour.image_cover && tour.image_cover.startsWith("http")
+                                ? tour.image_cover
+                                : "https://via.placeholder.com/400x300?text=No+Image"
+                            }
+                            className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+                            alt={tour.title}
+                            onError={(e) => {
+                              (e.currentTarget as HTMLImageElement).src =
+                                "https://via.placeholder.com/400x300?text=Image+Error";
+                            }}
+                          />
+                          <div className="absolute top-4 right-4 bg-white/90 px-3 py-1 rounded-full text-xs font-bold text-[#FF8400] shadow-sm">
+                            ★ {tour.rating || "New"}
+                          </div>
+                          <div className="absolute bottom-4 left-4 bg-black/50 px-3 py-1 rounded-full text-xs font-medium text-white backdrop-blur-sm">
+                            {tour.category}
+                          </div>
                         </div>
-                        <div className="absolute bottom-4 left-4 bg-black/50 px-3 py-1 rounded-full text-xs font-medium text-white backdrop-blur-sm">
-                          {tour.category}
-                        </div>
-                      </div>
 
-                      <CardContent className="p-7 flex flex-col flex-grow">
-                        <h3 className="text-2xl font-black mb-1 leading-tight text-gray-800">
-                          {tour.title}
-                        </h3>
-                        <p className="text-sm text-gray-400 mb-6 line-clamp-1 flex items-center gap-1">
-                          📍 {tour.province || "Thailand"} ({tour.region})
-                        </p>
+                        <CardContent className="p-7 flex flex-col flex-grow">
+                          <h3 className="text-2xl font-black mb-1 leading-tight text-gray-800">
+                            {tour.title}
+                          </h3>
+                          <p className="text-sm text-gray-400 mb-6 line-clamp-1 flex items-center gap-1">
+                            📍 {tour.province || "Thailand"} ({tour.region})
+                          </p>
 
-                        <div className="mt-auto pt-5 border-t border-gray-100 flex justify-between items-center">
-                          <div>
-                            <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">
-                              ราคาเริ่มต้น
-                            </span>
-                            <div className="text-2xl font-black text-[#FF8400]">
-                              ฿{Number(tour.price).toLocaleString()}
+                          <div className="mt-auto pt-5 border-t border-gray-100 flex justify-between items-center">
+                            <div>
+                              <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">
+                                ราคาเริ่มต้น
+                              </span>
+                              <div className="text-2xl font-black text-[#FF8400]">
+                                ฿{Number(tour.price).toLocaleString()}
+                              </div>
+                            </div>
+                            {/* 👇 เปลี่ยนจาก Button เป็น div ธรรมดา เพื่อไม่ให้เกิด Error HTML ซ้อนทับกัน 👇 */}
+                            <div className="w-12 h-12 flex items-center justify-center rounded-full bg-[#F6F1E9] group-hover:bg-[#FF8400] text-[#4F200D] group-hover:text-white transition-all shadow-none group-hover:shadow-md">
+                              <svg
+                                width="24"
+                                height="24"
+                                fill="none"
+                                stroke="currentColor"
+                                strokeWidth="3"
+                                viewBox="0 0 24 24"
+                              >
+                                <path d="M12 5v14M5 12h14"></path>
+                              </svg>
                             </div>
                           </div>
-                          <Button
-                            size="icon"
-                            className="w-12 h-12 rounded-full bg-[#F6F1E9] hover:bg-[#FF8400] text-[#4F200D] hover:text-white transition-all shadow-none hover:shadow-md"
-                          >
-                            <svg
-                              width="24"
-                              height="24"
-                              fill="none"
-                              stroke="currentColor"
-                              strokeWidth="3"
-                              viewBox="0 0 24 24"
-                            >
-                              <path d="M12 5v14M5 12h14"></path>
-                            </svg>
-                          </Button>
-                        </div>
-                      </CardContent>
-                    </Card>
+                        </CardContent>
+                      </Card>
+                    </Link>
                   ))}
                 </div>
               )}

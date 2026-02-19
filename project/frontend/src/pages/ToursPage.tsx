@@ -65,8 +65,8 @@ export default function ToursPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const apiBase =
-    import.meta.env.VITE_API_URL ?? "http://localhost:3000/api/v1";
+  // Force backend base to port 3000 to avoid wrong env (8080)
+  const apiBase = "http://localhost:3000/api/v1";
 
   const regionFilter = searchParams.get("region") || "";
   const categoryFilter = searchParams.get("category") || "";

@@ -12,6 +12,7 @@ import { ToursService } from './tours.service';
 import { GetToursFilterDto } from './dto/get-tours-filter.dto';
 import { Tour } from './entities/tour.entity';
 import { UpdateTourDto } from './dto/update-tour.dto';
+import { CreateTourDto } from './dto/create-tour.dto';
 
 @Controller('api/v1/tours') // Updated path
 export class ToursController {
@@ -27,6 +28,12 @@ export class ToursController {
   @Post('seed')
   seedTours() {
     return this.toursService.seedTours();
+  }
+
+  // 2.1 POST /tours (สร้างทัวร์ใหม่)
+  @Post()
+  createTour(@Body() createTourDto: CreateTourDto) {
+    return this.toursService.create(createTourDto);
   }
 
   // 3. GET /tours/:id (ดึงรายตัว)

@@ -98,8 +98,10 @@
   ├── src/
   │   ├── auth/           # Authentication module
   │   ├── tours/          # Tour management module
+  │   ├── schedules/      # Tour schedules module
   │   ├── bookings/       # Booking module
   │   ├── payments/       # Payment module
+  │   ├── reviews/        # Reviews module
   │   ├── users/          # User management module
   │   ├── common/         # Shared utilities
   │   └── main.ts         # Entry point
@@ -151,20 +153,30 @@ CREATE TABLE tours (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     title VARCHAR(255) NOT NULL,
     description TEXT,
+    itinerary TEXT,
     base_price DECIMAL(10,2) NOT NULL CHECK (base_price >= 0),
-    region VARCHAR(50) NOT NULL,
-    category VARCHAR(50) NOT NULL,
+    region VARCHAR(50) NOT NULL CHECK (region IN ('North', 'South', 'Central', 'East', 'West', 'Northeast')),
+    category VARCHAR(50) NOT NULL CHECK (category IN ('Adventure', 'Relax', 'Culture', 'Food', 'Beach')),
+    tour_type VARCHAR(20) NOT NULL DEFAULT 'one_day' CHECK (tour_type IN ('one_day', 'multi_day')),
+    duration_days INTEGER NOT NULL DEFAULT 1 CHECK (duration_days > 0),
+    transportation TEXT,
+    accommodation TEXT,
     max_capacity INTEGER NOT NULL CHECK (max_capacity > 0),
     image_url TEXT,
     additional_images TEXT[],
     is_active BOOLEAN DEFAULT TRUE,
-    is_recommended BOOLEAN DEFAULT FALSE,
-    created_by UUID REFERENCES users(id),
+    is_featured BOOLEAN DEFAULT FALSE,
+    average_rating DECIMAL(3,2) DEFAULT 0,
+    review_count INTEGER DEFAULT 0,
+    options JSONB,
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 CREATE INDEX idx_tours_region ON tours(region);
-CREATE INDEX idx_tours_active ON tours(is_active);
+CREATE INDEX idx_tours_category ON tours(category);
+CREATE INDEX idx_tours_type ON tours(tour_type);
+CREATE INDEX idx_tours_active ON tours(is_active) WHERE is_active = TRUE;
+CREATE INDEX idx_tours_featured ON tours(is_featured) WHERE is_featured = TRUE;
 ```
 
 #### Bookings
@@ -174,20 +186,63 @@ CREATE INDEX idx_tours_active ON tours(is_active);
 ```sql
 CREATE TABLE bookings (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    user_id UUID NOT NULL REFERENCES users(id),
-    tour_id UUID NOT NULL REFERENCES tours(id),
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    tour_id UUID NOT NULL REFERENCES tours(id) ON DELETE RESTRICT,
     pax INTEGER NOT NULL CHECK (pax > 0),
     total_price DECIMAL(10,2) NOT NULL CHECK (total_price > 0),
-    travel_date DATE NOT NULL CHECK (travel_date >= CURRENT_DATE),
-    status VARCHAR(20) DEFAULT 'pending_pay'
+    travel_date DATE,
+    start_date DATE,
+    end_date DATE,
+    selected_options JSONB,
+    status VARCHAR(20) NOT NULL DEFAULT 'pending_pay'
         CHECK (status IN ('pending_pay', 'pending_verify', 'confirmed', 'cancelled', 'expired')),
-    payment_deadline TIMESTAMPTZ NOT NULL,
-    cancellation_reason TEXT,
+    payment_deadline TIMESTAMPTZ NOT NULL DEFAULT (NOW() + INTERVAL '24 hours'),
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 CREATE INDEX idx_bookings_status ON bookings(status);
 CREATE INDEX idx_bookings_user_id ON bookings(user_id);
+CREATE INDEX idx_bookings_tour_id ON bookings(tour_id);
+CREATE INDEX idx_bookings_deadline ON bookings(payment_deadline);
+CREATE INDEX idx_bookings_travel_date ON bookings(travel_date);
+```
+
+#### Tour Schedules
+
+- [ ] Create `tour_schedules` table
+
+```sql
+CREATE TABLE tour_schedules (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    tour_id UUID NOT NULL REFERENCES tours(id) ON DELETE CASCADE,
+    available_date DATE NOT NULL,
+    max_capacity_override INTEGER CHECK (max_capacity_override IS NULL OR max_capacity_override > 0),
+    is_available BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    UNIQUE (tour_id, available_date)
+);
+CREATE INDEX idx_schedules_tour_date ON tour_schedules(tour_id, available_date);
+CREATE INDEX idx_schedules_available ON tour_schedules(available_date) WHERE is_available = TRUE;
+```
+
+#### Reviews
+
+- [ ] Create `reviews` table
+
+```sql
+CREATE TABLE reviews (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    tour_id UUID NOT NULL REFERENCES tours(id) ON DELETE CASCADE,
+    booking_id UUID NOT NULL REFERENCES bookings(id) ON DELETE CASCADE,
+    rating INTEGER NOT NULL CHECK (rating BETWEEN 1 AND 5),
+    comment TEXT,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW(),
+    UNIQUE (booking_id)
+);
+CREATE INDEX idx_reviews_tour_id ON reviews(tour_id);
+CREATE INDEX idx_reviews_user_id ON reviews(user_id);
 ```
 
 #### Payments
@@ -213,19 +268,26 @@ CREATE TABLE payments (
 CREATE INDEX idx_payments_hash ON payments(slip_hash);
 ```
 
-### 1.2 Create Simple View (สำหรับดู availability)
+### 1.2 Create Views (สำหรับดู availability)
 
 ```sql
-CREATE VIEW tour_availability AS
+-- View แสดง availability ต่อวัน (ใช้ tour_schedules)
+CREATE OR REPLACE VIEW tour_date_availability AS
 SELECT
-    t.id,
-    t.title,
-    t.max_capacity,
-    COALESCE(SUM(CASE WHEN b.status IN ('pending_pay', 'pending_verify', 'confirmed') THEN b.pax ELSE 0 END), 0) AS booked_seats,
-    t.max_capacity - COALESCE(SUM(CASE WHEN b.status IN ('pending_pay', 'pending_verify', 'confirmed') THEN b.pax ELSE 0 END), 0) AS available_seats
+    t.id AS tour_id,
+    ts.available_date,
+    COALESCE(ts.max_capacity_override, t.max_capacity) AS max_capacity,
+    COALESCE(SUM(b.pax) FILTER (
+        WHERE b.status IN ('confirmed', 'pending_verify', 'pending_pay')
+    ), 0) AS booked_seats,
+    COALESCE(ts.max_capacity_override, t.max_capacity) - COALESCE(SUM(b.pax) FILTER (
+        WHERE b.status IN ('confirmed', 'pending_verify', 'pending_pay')
+    ), 0) AS available_seats,
+    ts.is_available
 FROM tours t
-LEFT JOIN bookings b ON t.id = b.tour_id
-GROUP BY t.id, t.title, t.max_capacity;
+JOIN tour_schedules ts ON ts.tour_id = t.id
+LEFT JOIN bookings b ON b.tour_id = t.id AND b.travel_date = ts.available_date
+GROUP BY t.id, ts.available_date, ts.max_capacity_override, t.max_capacity, ts.is_available;
 ```
 
 ### 1.3 Create Simple Trigger (auto-update updated_at)
@@ -246,6 +308,9 @@ CREATE TRIGGER update_tours_updated_at BEFORE UPDATE ON tours
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 CREATE TRIGGER update_bookings_updated_at BEFORE UPDATE ON bookings
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+CREATE TRIGGER update_reviews_updated_at BEFORE UPDATE ON reviews
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 ```
 
@@ -277,11 +342,24 @@ CREATE TRIGGER update_bookings_updated_at BEFORE UPDATE ON bookings
 - [ ] Create Tour Service: `nest g service tours`
 - [ ] Create Tour Controller: `nest g controller tours`
 - [ ] Implement endpoints:
-  - [ ] `GET /api/v1/tours` - List all tours (with filters)
+  - [ ] `GET /api/v1/tours` - List all tours (with filters: region, category, tour_type, is_featured)
+  - [ ] `GET /api/v1/tours/one-day` - List one-day tours only
+  - [ ] `GET /api/v1/tours/multi-day` - List multi-day tours only
+  - [ ] `GET /api/v1/tours/featured` - List featured tours (for Home page)
   - [ ] `GET /api/v1/tours/:id` - Get tour details
+  - [ ] `GET /api/v1/tours/:id/schedules` - Get available dates for a tour
   - [ ] `POST /api/v1/tours` - Create new tour (Admin only)
   - [ ] `PATCH /api/v1/tours/:id` - Update tour (Admin only)
   - [ ] `DELETE /api/v1/tours/:id` - Soft delete tour (Admin only)
+
+### 2.2b Tour Schedule Module
+
+- [ ] Create Schedule Module: `nest g module schedules`
+- [ ] Create Schedule Service: `nest g service schedules`
+- [ ] Implement endpoints:
+  - [ ] `POST /api/v1/tours/:id/schedules` - Add schedule date (Admin only)
+  - [ ] `PATCH /api/v1/tours/:id/schedules/:scheduleId` - Update schedule (Admin only)
+  - [ ] `DELETE /api/v1/tours/:id/schedules/:scheduleId` - Remove schedule (Admin only)
 
 ### 2.3 Booking Module
 
@@ -385,7 +463,17 @@ async uploadSlip(file, bookingId) {
 }
 ```
 
-### 2.5 Admin Module (Simple)
+### 2.5 Reviews Module
+
+- [ ] Create Review Module: `nest g module reviews`
+- [ ] Create Review Service: `nest g service reviews`
+- [ ] Create Review Controller: `nest g controller reviews`
+- [ ] Implement endpoints:
+  - [ ] `POST /api/v1/reviews` - Create review (must have confirmed booking)
+  - [ ] `GET /api/v1/tours/:id/reviews` - Get reviews for a tour
+- [ ] Auto-update `tours.average_rating` and `tours.review_count` after review created
+
+### 2.6 Admin Module (Simple)
 
 - [ ] Create Admin Module: `nest g module admin`
 - [ ] Create Admin Service: `nest g service admin`
@@ -550,7 +638,7 @@ async uploadSlip(file, bookingId) {
 
 | Priority | Task                                 | Why                        |
 | -------- | ------------------------------------ | -------------------------- |
-| 🔴🔴🔴   | Database Tables                      | ทุกอย่างต้องใช้ DB         |
+| 🔴🔴🔴   | Database Tables (6 tables)           | ทุกอย่างต้องใช้ DB         |
 | 🔴🔴🔴   | Auth Service                         | ทุกหน้าต้อง Login          |
 | 🔴🔴🔴   | Booking with Transaction             | ป้องกัน race condition     |
 | 🔴🔴     | Payment Upload + Duplicate Detection | ป้องกันโกง                 |

@@ -6,7 +6,6 @@ import {
   UpdateDateColumn,
 } from 'typeorm';
 
-// 👇 ใส่ export ตรงนี้เพื่อให้ไฟล์ DTO มองเห็นครับ
 export enum TourCategory {
   SEA = 'Sea',
   MOUNTAIN = 'Mountain',
@@ -16,7 +15,6 @@ export enum TourCategory {
   ADVENTURE = 'Adventure',
 }
 
-// 👇 ใส่ export ตรงนี้ด้วย
 export enum TourRegion {
   NORTH = 'North',
   SOUTH = 'South',
@@ -25,6 +23,7 @@ export enum TourRegion {
   WEST = 'West',
   NORTHEAST = 'Northeast',
 }
+
 @Entity('tours')
 export class Tour {
   @PrimaryGeneratedColumn('uuid')
@@ -55,6 +54,9 @@ export class Tour {
   @Column({ length: 50 })
   duration: string;
 
+  @Column({ type: 'int', default: 15 })
+  max_group_size: number; // ✨ เพิ่ม: จำนวนคนสูงสุด
+
   @Column('decimal', { precision: 2, scale: 1, default: 0 })
   rating: number;
 
@@ -70,8 +72,14 @@ export class Tour {
   @Column('text', { array: true, default: [] })
   highlights: string[];
 
+  @Column('text', { array: true, default: [] })
+  preparation: string[]; // ✨ เพิ่ม: การเตรียมตัว (Array ของข้อความ)
+
   @Column('text', { nullable: true })
-  itinerary: string;
+  itinerary: string; // ของเดิม (เก็บเป็นข้อความยาว)
+
+  @Column({ type: 'jsonb', nullable: true })
+  itinerary_data: { time: string; detail: string }[]; // ✨ เพิ่ม: แผนการเดินทางแบบโครงสร้าง JSON
 
   @Column('text', { nullable: true })
   included: string;

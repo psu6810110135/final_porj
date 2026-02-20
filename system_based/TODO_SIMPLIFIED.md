@@ -4,29 +4,50 @@
 
 ---
 
+## 🔄 Scope Update (ต้องทำเพิ่มให้ตรงระบบปัจจุบัน)
+
+- **Tour Schedule & Slot**: สร้าง `tour_schedules` + API GET schedules + booking ต้องหัก slot
+- **Featured Tours**: เพิ่มคอลัมน์ `is_featured` + endpoint/filter featured และหน้า Home ดึงเฉพาะ featured (Admin ปรับได้)
+- **Reviews & Rating**: สร้าง `reviews` + API POST/GET + คำนวณ avg rating/ review_count กลับไปที่ tours
+- **Booking Pricing & Auth**: เลิกใช้ราคา mock 5000; ใช้ `tours.price/child_price`, แยกผู้ใหญ่/เด็ก, ตรวจ slot, ใช้ userId จาก JWT
+- **Search Flow**: Search หน้า Home ต้องส่ง query ไป `/tours` และ ToursPage ต้องอ่าน `search/region` เพื่อกรอง/ยิง backend
+
+### File Upload Guardrails (แนวทางเพิ่ม)
+
+- จำกัดขนาดไฟล์ผ่าน Multer `limits.fileSize` (เช่น 50MB จาก env) ส่ง 413 ถ้าเกิน
+- ตรวจ MIME whitelist ใน `fileFilter` (ปี 1 ตรวจ MIME พอ) และปฏิเสธ MIME ต้องห้าม
+- ป้องกัน path traversal: อย่าใช้ชื่อไฟล์จาก client เป็นพาธ; rename เป็น UUID; เก็บ original name แยกได้
+- Storage ควรใช้ที่ปลอดภัย (เช่น S3) ใช้ชื่อ UUID; ปิดการใช้ `..` หรือ absolute path
+- Error message ชัดเจนสำหรับ oversize / MIME ไม่ผ่าน / upload fail
+- ทดสอบ: ไฟล์ถูกประเภท, ไฟล์ใหญ่เกิน, MIME ต้องห้าม, ตรวจว่าไฟล์ที่เซฟเป็น UUID ไม่มี path แฝง
+
+---
+
 ## 🎯 ทัศนะภาพรวม (Overview)
 
-| Phase | งานหลัก | Priority | ประมาณการ |
-|---|---|---|
-| **Phase 0** | Setup & Infrastructure | 🔴 High | 1-2 วัน |
-| **Phase 1** | Database Setup | 🔴 High | 1 วัน |
-| **Phase 2** | Backend API | 🔴 High | 5-7 วัน |
-| **Phase 3** | Frontend - Auth & Tours | 🟡 Medium | 4-5 วัน |
-| **Phase 4** | Frontend - Booking & Payment | 🔴 High | 4-5 วัน |
-| **Phase 5** | Admin Dashboard | 🟡 Medium | 3-4 วัน |
-| **Phase 6** | Testing & Deployment | 🟡 Medium | 2-3 วัน |
+| Phase       | งานหลัก                      | Priority  | ประมาณการ |
+| ----------- | ---------------------------- | --------- | --------- |
+| **Phase 0** | Setup & Infrastructure       | 🔴 High   | 1-2 วัน   |
+| **Phase 1** | Database Setup               | 🔴 High   | 1 วัน     |
+| **Phase 2** | Backend API                  | 🔴 High   | 5-7 วัน   |
+| **Phase 3** | Frontend - Auth & Tours      | 🟡 Medium | 4-5 วัน   |
+| **Phase 4** | Frontend - Booking & Payment | 🔴 High   | 4-5 วัน   |
+| **Phase 5** | Admin Dashboard              | 🟡 Medium | 3-4 วัน   |
+| **Phase 6** | Testing & Deployment         | 🟡 Medium | 2-3 วัน   |
 
 ---
 
 ## 📍 Phase 0: Setup & Infrastructure (1-2 วัน)
 
 ### 0.1 Project Repository Setup
+
 - [ ] Create GitHub Repository
 - [ ] Setup `.gitignore` (Node.js, .env, node_modules)
 - [ ] Setup README.md with project overview
 - [ ] Create branch structure (`main`, `dev`)
 
 ### 0.2 Frontend Setup (Vercel)
+
 - [ ] Initialize React Project (Vite + React + TypeScript)
   ```bash
   npm create vite@latest frontend -- --template react-ts
@@ -53,6 +74,7 @@
   - `VITE_API_URL=http://localhost:3000/api/v1`
 
 ### 0.3 Backend Setup (Render) - NestJS
+
 - [ ] Initialize NestJS Project
   ```bash
   npm i -g @nestjs/cli
@@ -91,6 +113,7 @@
   - `JWT_EXPIRES_IN=24h`
 
 ### 0.4 Database Setup (PostgreSQL)
+
 - [ ] Create PostgreSQL instance (Render/Railway)
 - [ ] Get Connection String
 - [ ] Setup Database (ดู Phase 1)
@@ -102,7 +125,9 @@
 ### 1.1 Create Tables (ตามลำดับ)
 
 #### Users
+
 - [ ] Create `users` table
+
 ```sql
 CREATE TABLE users (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -118,7 +143,9 @@ CREATE INDEX idx_users_email ON users(email);
 ```
 
 #### Tours
+
 - [ ] Create `tours` table
+
 ```sql
 CREATE TABLE tours (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -141,7 +168,9 @@ CREATE INDEX idx_tours_active ON tours(is_active);
 ```
 
 #### Bookings
+
 - [ ] Create `bookings` table
+
 ```sql
 CREATE TABLE bookings (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -150,7 +179,7 @@ CREATE TABLE bookings (
     pax INTEGER NOT NULL CHECK (pax > 0),
     total_price DECIMAL(10,2) NOT NULL CHECK (total_price > 0),
     travel_date DATE NOT NULL CHECK (travel_date >= CURRENT_DATE),
-    status VARCHAR(20) DEFAULT 'pending_pay' 
+    status VARCHAR(20) DEFAULT 'pending_pay'
         CHECK (status IN ('pending_pay', 'pending_verify', 'confirmed', 'cancelled', 'expired')),
     payment_deadline TIMESTAMPTZ NOT NULL,
     cancellation_reason TEXT,
@@ -162,7 +191,9 @@ CREATE INDEX idx_bookings_user_id ON bookings(user_id);
 ```
 
 #### Payments
+
 - [ ] Create `payments` table
+
 ```sql
 CREATE TABLE payments (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -183,9 +214,10 @@ CREATE INDEX idx_payments_hash ON payments(slip_hash);
 ```
 
 ### 1.2 Create Simple View (สำหรับดู availability)
+
 ```sql
 CREATE VIEW tour_availability AS
-SELECT 
+SELECT
     t.id,
     t.title,
     t.max_capacity,
@@ -197,6 +229,7 @@ GROUP BY t.id, t.title, t.max_capacity;
 ```
 
 ### 1.3 Create Simple Trigger (auto-update updated_at)
+
 ```sql
 CREATE OR REPLACE FUNCTION update_updated_at_column()
 RETURNS TRIGGER AS $$
@@ -217,6 +250,7 @@ CREATE TRIGGER update_bookings_updated_at BEFORE UPDATE ON bookings
 ```
 
 ### 1.4 Seed Data (ข้อมูลทดสอบ)
+
 - [ ] Create Admin Test Account: `admin@test.com` / `TestPass123!`
 - [ ] Create Customer Test Account: `customer@test.com` / `TestPass123!`
 - [ ] Insert 5-10 Sample Tours
@@ -226,6 +260,7 @@ CREATE TRIGGER update_bookings_updated_at BEFORE UPDATE ON bookings
 ## 📍 Phase 2: Backend API (5-7 วัน)
 
 ### 2.1 Authentication Module
+
 - [ ] Create Auth Module: `nest g module auth`
 - [ ] Create Auth Service: `nest g service auth`
 - [ ] Create Auth Controller: `nest g controller auth`
@@ -237,6 +272,7 @@ CREATE TRIGGER update_bookings_updated_at BEFORE UPDATE ON bookings
   - [ ] `POST /api/v1/auth/logout` - Logout (optional, mainly clear client-side token)
 
 ### 2.2 Tour Module
+
 - [ ] Create Tour Module: `nest g module tours`
 - [ ] Create Tour Service: `nest g service tours`
 - [ ] Create Tour Controller: `nest g controller tours`
@@ -248,6 +284,7 @@ CREATE TRIGGER update_bookings_updated_at BEFORE UPDATE ON bookings
   - [ ] `DELETE /api/v1/tours/:id` - Soft delete tour (Admin only)
 
 ### 2.3 Booking Module
+
 - [ ] Create Booking Module: `nest g module bookings`
 - [ ] Create Booking Service: `nest g service bookings`
 - [ ] Create Booking Controller: `nest g controller bookings`
@@ -259,6 +296,7 @@ CREATE TRIGGER update_bookings_updated_at BEFORE UPDATE ON bookings
   - [ ] `PATCH /api/v1/bookings/:id/cancel` - Cancel booking
 
 **CRITICAL: Booking Creation with Transaction**
+
 ```typescript
 // Pseudo-code
 async createBooking(data) {
@@ -268,13 +306,13 @@ async createBooking(data) {
       where: { id: data.tourId },
       lock: { mode: 'pessimistic_write' }
     });
-    
+
     // 2. Check availability
     const availability = await this.checkAvailability(tour.id, data.travelDate);
     if (availability < data.pax) {
       throw new Error('Insufficient seats');
     }
-    
+
     // 3. Create booking
     const booking = manager.create(Booking, {
       ...data,
@@ -282,7 +320,7 @@ async createBooking(data) {
       paymentDeadline: new Date(Date.now() + 24 * 60 * 60 * 1000)
     });
     await manager.save(booking);
-    
+
     // 4. Create payment record
     const payment = manager.create(Payment, {
       bookingId: booking.id,
@@ -290,16 +328,17 @@ async createBooking(data) {
       status: 'waiting'
     });
     await manager.save(payment);
-    
+
     // 5. Generate QR Code
     const qrCode = await this.generateQRCode(data.totalPrice, booking.id);
-    
+
     return { booking, qrCode };
   });
 }
 ```
 
 ### 2.4 Payment Module
+
 - [ ] Create Payment Module: `nest g module payments`
 - [ ] Create Payment Service: `nest g service payments`
 - [ ] Create Payment Controller: `nest g controller payments`
@@ -309,43 +348,45 @@ async createBooking(data) {
   - [ ] `PATCH /api/v1/payments/:id/verify` - Verify payment (Admin only)
 
 **Upload Slip Logic:**
+
 ```typescript
 async uploadSlip(file, bookingId) {
   // 1. Calculate hash
   const hash = crypto.createHash('sha256').update(file.buffer).digest('hex');
-  
+
   // 2. Check duplicate
   const existing = await this.paymentRepo.findOne({ where: { slipHash: hash } });
   if (existing) {
     throw new Error('Duplicate slip detected');
   }
-  
+
   // 3. Upload to File Storage (local/cloud)
   const url = await this.uploadToStorage(file, bookingId);
-  
+
   // 4. Update payment record
   await this.paymentRepo.update(
     { bookingId },
-    { 
+    {
       slipUrl: url,
       slipHash: hash,
       status: 'pending_verify',
       uploadedAt: new Date()
     }
   );
-  
+
   // 5. Update booking status
   await this.bookingRepo.update(
     { id: bookingId },
     { status: 'pending_verify' }
   );
-  
+
   // 6. Log to console (simulate email)
   console.log(`📧 New payment uploaded for booking ${bookingId}`);
 }
 ```
 
 ### 2.5 Admin Module (Simple)
+
 - [ ] Create Admin Module: `nest g module admin`
 - [ ] Create Admin Service: `nest g service admin`
 - [ ] Create Admin Controller: `nest g controller admin`
@@ -353,15 +394,17 @@ async uploadSlip(file, bookingId) {
   - [ ] `GET /api/v1/admin/stats` - Dashboard statistics
 
 ### 2.6 Background Jobs (Simple Cron)
+
 - [ ] Install `@nestjs/schedule`
 - [ ] Create ScheduleModule
 - [ ] Implement cron jobs:
   - [ ] Expire pending bookings (every hour)
+
   ```typescript
   @Cron('0 * * * *') // Every hour
   async expirePendingBookings() {
     await this.bookingRepo.update(
-      { 
+      {
         status: 'pending_pay',
         paymentDeadline: LessThan(new Date())
       },
@@ -369,7 +412,9 @@ async uploadSlip(file, bookingId) {
     );
   }
   ```
+
   - [ ] Ping `/api/health` every 10 minutes (prevent Render sleep)
+
   ```typescript
   @Cron('*/10 * * * *') // Every 10 minutes
   async pingHealth() {
@@ -382,16 +427,19 @@ async uploadSlip(file, bookingId) {
 ## 📍 Phase 3: Frontend - Auth & Tours (4-5 วัน)
 
 ### 3.1 Common Components
+
 - [ ] `Layout` (Navbar, Footer)
 - [ ] `LoadingSpinner`
 - [ ] `ErrorMessage`
 - [ ] `ProtectedRoute` (wrapper สำหรับหน้าที่ต้อง login)
 
 ### 3.2 Authentication Pages
+
 - [ ] `Login` page
 - [ ] `Register` page
 
 ### 3.3 Tour Pages
+
 - [ ] `TourList` page (Home)
   - [ ] Search filters (Region, Category, Price)
   - [ ] Tour card grid
@@ -402,6 +450,7 @@ async uploadSlip(file, bookingId) {
   - [ ] "Book Now" button
 
 ### 3.4 User Profile
+
 - [ ] `MyProfile` page
   - [ ] View/Edit profile
   - [ ] Change password
@@ -411,6 +460,7 @@ async uploadSlip(file, bookingId) {
 ## 📍 Phase 4: Frontend - Booking & Payment (4-5 วัน)
 
 ### 4.1 Booking Flow
+
 - [ ] `BookingForm` component
   - [ ] Select travel date
   - [ ] Input pax
@@ -420,6 +470,7 @@ async uploadSlip(file, bookingId) {
   - [ ] Show deadline
 
 ### 4.2 Payment Flow
+
 - [ ] `PaymentUpload` component
   - [ ] File upload (drag & drop)
   - [ ] Preview
@@ -427,6 +478,7 @@ async uploadSlip(file, bookingId) {
 - [ ] `PaymentStatus` page
 
 ### 4.3 My Bookings
+
 - [ ] `MyBookings` page
   - [ ] List all bookings
   - [ ] Filter by status
@@ -437,21 +489,25 @@ async uploadSlip(file, bookingId) {
 ## 📍 Phase 5: Admin Dashboard (3-4 วัน)
 
 ### 5.1 Admin Layout
+
 - [ ] `AdminLayout` (Sidebar)
 - [ ] Admin route protection
 
 ### 5.2 Dashboard Overview
+
 - [ ] `DashboardOverview` page
   - [ ] Total revenue
   - [ ] Today's bookings
   - [ ] Pending payments count
 
 ### 5.3 Tour Management
+
 - [ ] `TourList` (Admin view)
 - [ ] `TourForm` (Create/Edit)
 - [ ] Delete confirmation
 
 ### 5.4 Payment Verification
+
 - [ ] `PendingPayments` page
   - [ ] List pending payments
   - [ ] View slip modal
@@ -462,6 +518,7 @@ async uploadSlip(file, bookingId) {
 ## 📍 Phase 6: Testing & Deployment (2-3 วัน)
 
 ### 6.1 Testing
+
 - [ ] Manual Testing
   - [ ] Complete customer journey
   - [ ] Complete admin journey
@@ -469,6 +526,7 @@ async uploadSlip(file, bookingId) {
   - [ ] Test duplicate slip detection
 
 ### 6.2 Deployment
+
 - [ ] **Frontend to Vercel**
   - [ ] Connect GitHub repo
   - [ ] Setup environment variables
@@ -481,6 +539,7 @@ async uploadSlip(file, bookingId) {
   - [ ] Run migration scripts
 
 ### 6.3 Post-Deployment
+
 - [ ] Test all endpoints on production
 - [ ] Verify file upload works
 - [ ] Setup health check monitoring
@@ -489,24 +548,26 @@ async uploadSlip(file, bookingId) {
 
 ## 🔥 Critical Tasks (ทำก่อนเป็นพิเศษ)
 
-| Priority | Task | Why |
-|---|---|---|
-| 🔴🔴🔴 | Database Tables | ทุกอย่างต้องใช้ DB |
-| 🔴🔴🔴 | Auth Service | ทุกหน้าต้อง Login |
-| 🔴🔴🔴 | Booking with Transaction | ป้องกัน race condition |
-| 🔴🔴 | Payment Upload + Duplicate Detection | ป้องกันโกง |
-| 🔴🔴 | Admin Payment Verification | ระบบไม่ทำงานถ้าไม่มี |
-| 🔴 | Tour CRUD | ต้องมีข้อมูลทัวร์ก่อนจะจอง |
+| Priority | Task                                 | Why                        |
+| -------- | ------------------------------------ | -------------------------- |
+| 🔴🔴🔴   | Database Tables                      | ทุกอย่างต้องใช้ DB         |
+| 🔴🔴🔴   | Auth Service                         | ทุกหน้าต้อง Login          |
+| 🔴🔴🔴   | Booking with Transaction             | ป้องกัน race condition     |
+| 🔴🔴     | Payment Upload + Duplicate Detection | ป้องกันโกง                 |
+| 🔴🔴     | Admin Payment Verification           | ระบบไม่ทำงานถ้าไม่มี       |
+| 🔴       | Tour CRUD                            | ต้องมีข้อมูลทัวร์ก่อนจะจอง |
 
 ---
 
 ## 📝 หมายเหตุ
 
 ### File Naming Convention
+
 - Components: `PascalCase` (e.g., `TourCard.tsx`)
 - Services: `camelCase` (e.g., `tourService.ts`)
 
 ### Git Commit Convention
+
 ```
 feat: add login page
 fix: resolve race condition in booking

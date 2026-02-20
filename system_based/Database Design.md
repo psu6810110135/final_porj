@@ -15,6 +15,7 @@ Database Tables (4 tables only):
 ```
 
 **Removed from original design:**
+
 - ❌ SESSIONS table → JWT only (stateless)
 - ❌ AUDIT_LOGS table → console.log() instead
 - ❌ EMAIL_QUEUE table → console.log() instead
@@ -22,6 +23,13 @@ Database Tables (4 tables only):
 - ❌ Row Level Security (RLS) → NestJS Guards instead
 - ❌ Full-text search index → LIKE/ILIKE instead
 - ❌ Materialized views → Simple views instead
+
+**Delta (ต้องเพิ่มให้ตรงความต้องการปัจจุบัน):**
+
+- เพิ่มตาราง `tour_schedules` (tour_id, available_date, max_capacity_override, is_available) สำหรับ slot ต่อวัน
+- เพิ่มตาราง `reviews` (tour_id, user_id, booking_id, rating, comment) และ index tour_id/user_id
+- เพิ่มคอลัมน์ใน `tours`: `is_featured`, `average_rating`, `review_count`
+- เพิ่ม view `tour_date_availability` (หรือใช้ JOIN bookings เพื่อนับที่ว่างต่อวัน)
 
 ---
 
@@ -41,6 +49,18 @@ erDiagram
         datetime updated_at "Last Update"
     }
 
+    %% ========== Reviews ==========
+    REVIEWS {
+        uuid id PK "Review ID"
+        uuid user_id FK "Ref: USERS.id"
+        uuid tour_id FK "Ref: TOURS.id"
+        uuid booking_id FK "Ref: BOOKINGS.id (unique)"
+        int rating "1-5"
+        text comment "Optional"
+        datetime created_at "Created"
+        datetime updated_at "Updated"
+    }
+
     %% ========== Tour Management ==========
     TOURS {
         uuid id PK "Tour ID (UUID)"
@@ -58,10 +78,22 @@ erDiagram
         string image_url "Cover Image URL"
         string[] additional_images "Gallery Images Array"
         boolean is_active "Show/Hide Status - Default: true"
-        boolean is_recommended "Featured Tour - Default: false"
+        boolean is_featured "Featured Tour - Default: false"
+        decimal average_rating "Cached avg rating"
+        int review_count "Number of reviews"
         json options "Optional Add-ons"
         datetime created_at "Creation Date"
         datetime updated_at "Last Modified Date"
+    }
+
+    %% ========== Tour Schedules ==========
+    TOUR_SCHEDULES {
+        uuid id PK "Schedule ID"
+        uuid tour_id FK "Ref: TOURS.id"
+        date available_date "Date open for booking"
+        int max_capacity_override "Nullable override"
+        boolean is_available "Open flag - Default: true"
+        datetime created_at "Created"
     }
 
     %% ========== Booking System ==========
@@ -97,9 +129,15 @@ erDiagram
     }
 
     %% ========== Relationships ==========
-    USERS ||--o{ BOOKINGS : "makes"
-    TOURS ||--o{ BOOKINGS : "is_booked_in"
-    BOOKINGS ||--|| PAYMENTS : "has_payment"
+    USERS ||--o{ BOOKINGS : "1 booking belongs to 1 user"
+    USERS ||--o{ PAYMENTS : "Admin verifies payments"
+    USERS ||--o{ REVIEWS : "User writes reviews"
+    TOURS ||--o{ BOOKINGS : "1 tour has many bookings"
+    TOURS ||--o{ TOUR_SCHEDULES : "Tour schedules per day"
+    TOURS ||--o{ REVIEWS : "Reviews per tour"
+    BOOKINGS ||--|| PAYMENTS : "1 booking has 1 payment"
+    BOOKINGS ||--|| REVIEWS : "1 booking has 1 review"
+    TOUR_SCHEDULES ||--o{ BOOKINGS : "Booking ties to a date"
     USERS ||--o{ PAYMENTS : "admin_verifies"
 ```
 
@@ -147,7 +185,9 @@ CREATE TABLE tours (
     image_url TEXT,
     additional_images TEXT[],
     is_active BOOLEAN DEFAULT TRUE,
-    is_recommended BOOLEAN DEFAULT FALSE,
+    is_featured BOOLEAN DEFAULT FALSE,
+    average_rating DECIMAL(3,2) DEFAULT 0,
+    review_count INTEGER DEFAULT 0,
     options JSONB,
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW()
@@ -158,13 +198,35 @@ CREATE INDEX idx_tours_region ON tours(region);
 CREATE INDEX idx_tours_category ON tours(category);
 CREATE INDEX idx_tours_type ON tours(tour_type);
 CREATE INDEX idx_tours_active ON tours(is_active) WHERE is_active = TRUE;
-CREATE INDEX idx_tours_recommended ON tours(is_recommended) WHERE is_recommended = TRUE;
+CREATE INDEX idx_tours_featured ON tours(is_featured) WHERE is_featured = TRUE;
 CREATE INDEX idx_tours_price ON tours(base_price);
+CREATE INDEX idx_tours_category_region ON tours(category, region);
+CREATE INDEX idx_tours_title_fulltext ON tours USING GIN (to_tsvector('thai', title));
 ```
 
 ---
 
-### 2.3 Bookings Table
+### 2.3 Tour Schedules Table
+
+```sql
+CREATE TABLE tour_schedules (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    tour_id UUID NOT NULL REFERENCES tours(id) ON DELETE CASCADE,
+    available_date DATE NOT NULL,
+    max_capacity_override INTEGER CHECK (max_capacity_override IS NULL OR max_capacity_override > 0),
+    is_available BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    UNIQUE (tour_id, available_date)
+);
+
+-- Indexes
+CREATE INDEX idx_schedules_tour_date ON tour_schedules(tour_id, available_date);
+CREATE INDEX idx_schedules_available ON tour_schedules(available_date) WHERE is_available = TRUE;
+```
+
+---
+
+### 2.4 Bookings Table
 
 ```sql
 CREATE TABLE bookings (
@@ -196,7 +258,29 @@ CREATE INDEX idx_bookings_date_range ON bookings(start_date, end_date);
 
 ---
 
-### 2.4 Payments Table
+### 2.5 Reviews Table
+
+```sql
+CREATE TABLE reviews (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    tour_id UUID NOT NULL REFERENCES tours(id) ON DELETE CASCADE,
+    booking_id UUID NOT NULL REFERENCES bookings(id) ON DELETE CASCADE,
+    rating INTEGER NOT NULL CHECK (rating BETWEEN 1 AND 5),
+    comment TEXT,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW(),
+    UNIQUE (booking_id)
+);
+
+-- Indexes
+CREATE INDEX idx_reviews_tour_id ON reviews(tour_id);
+CREATE INDEX idx_reviews_user_id ON reviews(user_id);
+```
+
+---
+
+### 2.6 Payments Table
 
 ```sql
 CREATE TABLE payments (
@@ -224,19 +308,25 @@ CREATE INDEX idx_payments_hash ON payments(slip_hash) WHERE slip_hash IS NOT NUL
 
 ## 3. Database Views (Simplified)
 
-### 3.1 Tour Availability View
+### 3.1 Tour Availability View (ใช้ schedules)
 
 ```sql
-CREATE OR REPLACE VIEW tour_availability AS
+CREATE OR REPLACE VIEW tour_date_availability AS
 SELECT
     t.id AS tour_id,
-    t.title,
-    t.max_capacity,
-    COALESCE(SUM(b.pax) FILTER (WHERE b.status IN ('confirmed', 'pending_verify', 'pending_pay')), 0) AS booked_seats,
-    t.max_capacity - COALESCE(SUM(b.pax) FILTER (WHERE b.status IN ('confirmed', 'pending_verify', 'pending_pay')), 0) AS available_seats
+    ts.available_date,
+    COALESCE(ts.max_capacity_override, t.max_capacity) AS max_capacity,
+    COALESCE(SUM(b.pax) FILTER (
+        WHERE b.status IN ('confirmed', 'pending_verify', 'pending_pay')
+    ), 0) AS booked_seats,
+    COALESCE(ts.max_capacity_override, t.max_capacity) - COALESCE(SUM(b.pax) FILTER (
+        WHERE b.status IN ('confirmed', 'pending_verify', 'pending_pay')
+    ), 0) AS available_seats,
+    ts.is_available
 FROM tours t
-LEFT JOIN bookings b ON t.id = b.tour_id
-GROUP BY t.id, t.title, t.max_capacity;
+JOIN tour_schedules ts ON ts.tour_id = t.id
+LEFT JOIN bookings b ON b.tour_id = t.id AND b.travel_date = ts.available_date
+GROUP BY t.id, ts.available_date, ts.max_capacity_override, t.max_capacity, ts.is_available;
 ```
 
 ---
@@ -314,76 +404,76 @@ VALUES (
 
 ### Table: USERS
 
-| Column | Type | Constraints | Description |
-|---|---|---|---|
-| id | UUID | PK, Default: gen_random_uuid() | Primary Key |
-| email | VARCHAR(255) | UNIQUE, NOT NULL | Login username |
-| password_hash | VARCHAR(255) | NOT NULL | bcrypt hash (cost=12) |
-| full_name | VARCHAR(255) | NOT NULL | Display name |
-| phone_number | VARCHAR(20) | NULLABLE | Contact number |
-| role | VARCHAR(20) | CHECK, Default: 'customer' | User role |
-| created_at | TIMESTAMPTZ | Default: NOW() | Registration timestamp |
-| updated_at | TIMESTAMPTZ | Default: NOW() | Last update timestamp |
+| Column        | Type         | Constraints                    | Description            |
+| ------------- | ------------ | ------------------------------ | ---------------------- |
+| id            | UUID         | PK, Default: gen_random_uuid() | Primary Key            |
+| email         | VARCHAR(255) | UNIQUE, NOT NULL               | Login username         |
+| password_hash | VARCHAR(255) | NOT NULL                       | bcrypt hash (cost=12)  |
+| full_name     | VARCHAR(255) | NOT NULL                       | Display name           |
+| phone_number  | VARCHAR(20)  | NULLABLE                       | Contact number         |
+| role          | VARCHAR(20)  | CHECK, Default: 'customer'     | User role              |
+| created_at    | TIMESTAMPTZ  | Default: NOW()                 | Registration timestamp |
+| updated_at    | TIMESTAMPTZ  | Default: NOW()                 | Last update timestamp  |
 
 ### Table: TOURS
 
-| Column | Type | Constraints | Description |
-|---|---|---|---|
-| id | UUID | PK | Tour identifier |
-| title | VARCHAR(255) | NOT NULL | Tour name |
-| description | TEXT | NULLABLE | Full details |
-| itinerary | TEXT | NULLABLE | รายการท่องเที่ยว (Itinerary Details) |
-| base_price | DECIMAL(10,2) | CHECK >= 0 | Price per person |
-| region | VARCHAR(50) | CHECK IN (...) | Geographic region |
-| category | VARCHAR(50) | CHECK IN (...) | Tour type |
-| tour_type | VARCHAR(20) | Default: one_day | one_day | multi_day |
-| duration_days | INTEGER | Default: 1, CHECK > 0 | จำนวนวัน (Number of Days) |
-| transportation | TEXT | NULLABLE | วิธีการเดินทาง (Transportation Method) |
-| accommodation | TEXT | NULLABLE | ที่พัก (Accommodation - for multi-day) |
-| max_capacity | INTEGER | CHECK > 0 | Total seats |
-| is_active | BOOLEAN | Default: TRUE | Show in listings |
-| is_recommended | BOOLEAN | Default: FALSE | Featured status |
+| Column         | Type          | Constraints           | Description                            |
+| -------------- | ------------- | --------------------- | -------------------------------------- | --------- |
+| id             | UUID          | PK                    | Tour identifier                        |
+| title          | VARCHAR(255)  | NOT NULL              | Tour name                              |
+| description    | TEXT          | NULLABLE              | Full details                           |
+| itinerary      | TEXT          | NULLABLE              | รายการท่องเที่ยว (Itinerary Details)   |
+| base_price     | DECIMAL(10,2) | CHECK >= 0            | Price per person                       |
+| region         | VARCHAR(50)   | CHECK IN (...)        | Geographic region                      |
+| category       | VARCHAR(50)   | CHECK IN (...)        | Tour type                              |
+| tour_type      | VARCHAR(20)   | Default: one_day      | one_day                                | multi_day |
+| duration_days  | INTEGER       | Default: 1, CHECK > 0 | จำนวนวัน (Number of Days)              |
+| transportation | TEXT          | NULLABLE              | วิธีการเดินทาง (Transportation Method) |
+| accommodation  | TEXT          | NULLABLE              | ที่พัก (Accommodation - for multi-day) |
+| max_capacity   | INTEGER       | CHECK > 0             | Total seats                            |
+| is_active      | BOOLEAN       | Default: TRUE         | Show in listings                       |
+| is_recommended | BOOLEAN       | Default: FALSE        | Featured status                        |
 
 ### Table: BOOKINGS
 
-| Column | Type | Constraints | Description |
-|---|---|---|---|
-| id | UUID | PK | Booking ID |
-| user_id | UUID | FK USERS(id) | Customer who booked |
-| tour_id | UUID | FK TOURS(id) | Booked tour |
-| pax | INTEGER | CHECK > 0 | Number of travelers |
-| total_price | DECIMAL(10,2) | CHECK > 0 | Final price |
-| travel_date | DATE | NULLABLE | Travel date (for one-day tours) |
-| start_date | DATE | CHECK >= CURRENT_DATE | วันเริ่มต้น (for multi-day tours) |
-| end_date | DATE | CHECK >= start_date | วันสิ้นสุด (for multi-day tours) |
-| status | VARCHAR(20) | CHECK IN (...) | Booking status |
-| payment_deadline | TIMESTAMPTZ | NOT NULL | Auto-cancel time |
+| Column           | Type          | Constraints           | Description                       |
+| ---------------- | ------------- | --------------------- | --------------------------------- |
+| id               | UUID          | PK                    | Booking ID                        |
+| user_id          | UUID          | FK USERS(id)          | Customer who booked               |
+| tour_id          | UUID          | FK TOURS(id)          | Booked tour                       |
+| pax              | INTEGER       | CHECK > 0             | Number of travelers               |
+| total_price      | DECIMAL(10,2) | CHECK > 0             | Final price                       |
+| travel_date      | DATE          | NULLABLE              | Travel date (for one-day tours)   |
+| start_date       | DATE          | CHECK >= CURRENT_DATE | วันเริ่มต้น (for multi-day tours) |
+| end_date         | DATE          | CHECK >= start_date   | วันสิ้นสุด (for multi-day tours)  |
+| status           | VARCHAR(20)   | CHECK IN (...)        | Booking status                    |
+| payment_deadline | TIMESTAMPTZ   | NOT NULL              | Auto-cancel time                  |
 
 ### Table: PAYMENTS
 
-| Column | Type | Constraints | Description |
-|---|---|---|---|
-| id | UUID | PK | Payment record ID |
-| booking_id | UUID | FK BOOKINGS(id), UNIQUE | Related booking |
-| slip_url | TEXT | NULLABLE | Storage path |
-| slip_hash | VARCHAR(64) | UNIQUE | SHA-256 of image |
-| amount | DECIMAL(10,2) | CHECK > 0 | Payment amount |
-| status | VARCHAR(20) | CHECK IN (...) | Verification status |
+| Column     | Type          | Constraints             | Description         |
+| ---------- | ------------- | ----------------------- | ------------------- |
+| id         | UUID          | PK                      | Payment record ID   |
+| booking_id | UUID          | FK BOOKINGS(id), UNIQUE | Related booking     |
+| slip_url   | TEXT          | NULLABLE                | Storage path        |
+| slip_hash  | VARCHAR(64)   | UNIQUE                  | SHA-256 of image    |
+| amount     | DECIMAL(10,2) | CHECK > 0               | Payment amount      |
+| status     | VARCHAR(20)   | CHECK IN (...)          | Verification status |
 
 ---
 
 ## 7. Summary of Simplifications
 
-| Original (Complex) | Simplified |
-|---|---|
-| 7 Tables | 4 Tables |
-| SESSIONS table | JWT only (stateless) |
-| AUDIT_LOGS table | console.log() |
-| EMAIL_QUEUE table | console.log() |
-| PASSWORD_RESETS table | Admin reset |
-| Row Level Security (RLS) | NestJS Guards |
-| Full-text search index | LIKE/ILIKE |
-| Materialized views | Simple views |
+| Original (Complex)       | Simplified           |
+| ------------------------ | -------------------- |
+| 7 Tables                 | 4 Tables             |
+| SESSIONS table           | JWT only (stateless) |
+| AUDIT_LOGS table         | console.log()        |
+| EMAIL_QUEUE table        | console.log()        |
+| PASSWORD_RESETS table    | Admin reset          |
+| Row Level Security (RLS) | NestJS Guards        |
+| Full-text search index   | LIKE/ILIKE           |
+| Materialized views       | Simple views         |
 
 ---
 

@@ -4,18 +4,21 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Cron } from '@nestjs/schedule';
+import { DataSource, In, LessThan, Not, Repository } from 'typeorm';
 import { Booking, BookingStatus } from './entities/booking.entity';
 import { CalculateBookingDto } from './dto/calculate-booking.dto';
 import { CreateBookingDto } from './dto/create-booking.dto';
 import { UpdateBookingDto } from './dto/update-booking.dto';
 import { CancelBookingDto } from './dto/cancel-booking.dto';
+import { Tour } from '../tours/entities/tour.entity';
 
 @Injectable()
 export class BookingsService {
   constructor(
     @InjectRepository(Booking)
     private bookingsRepository: Repository<Booking>,
+    private readonly dataSource: DataSource,
   ) {}
 
   async findAllForAdmin() {
@@ -54,47 +57,93 @@ export class BookingsService {
   }
 
   async create(createBookingDto: CreateBookingDto, userId: string) {
-    // Calculate pricing
-    const pricing = await this.calculatePrice({
-      tourId: createBookingDto.tourId,
-      startDate: createBookingDto.startDate,
-      endDate: createBookingDto.endDate,
-      numberOfTravelers: createBookingDto.numberOfTravelers,
+    const startDate = new Date(createBookingDto.startDate);
+    const endDate = new Date(createBookingDto.endDate);
+
+    return this.dataSource.transaction(async (manager) => {
+      // 1) Lock tour row to prevent concurrent overbooking
+      const tour = await manager
+        .getRepository(Tour)
+        .createQueryBuilder('tour')
+        .setLock('pessimistic_write')
+        .where('tour.id = :tourId', { tourId: createBookingDto.tourId })
+        .getOne();
+
+      if (!tour) {
+        throw new NotFoundException(
+          `Tour with ID "${createBookingDto.tourId}" not found`,
+        );
+      }
+
+      if (!tour.is_active) {
+        throw new BadRequestException('ทัวร์นี้ไม่เปิดให้จอง');
+      }
+
+      // 2) Re-check capacity inside the lock
+      const bookedSeats = await manager
+        .getRepository(Booking)
+        .createQueryBuilder('b')
+        .select('COALESCE(SUM(b.number_of_travelers), 0)', 'total')
+        .where('b.tourId = :tourId', { tourId: createBookingDto.tourId })
+        .andWhere('b.startDate = :startDate', { startDate })
+        .andWhere('b.status NOT IN (:...statuses)', {
+          statuses: [
+            BookingStatus.CANCELLED,
+            BookingStatus.REFUNDED,
+            BookingStatus.EXPIRED,
+          ],
+        })
+        .getRawOne<{ total: string }>();
+
+      const activeSeats = Number(bookedSeats?.total ?? 0);
+      const available = tour.max_group_size - activeSeats;
+
+      if (available < createBookingDto.numberOfTravelers) {
+        const remaining = Math.max(available, 0);
+        throw new BadRequestException(`เหลือที่นั่งเพียง ${remaining} ที่`);
+      }
+
+      // 3) Calculate pricing and create booking within the same transaction
+      const pricing = await this.calculatePrice({
+        tourId: createBookingDto.tourId,
+        startDate: createBookingDto.startDate,
+        endDate: createBookingDto.endDate,
+        numberOfTravelers: createBookingDto.numberOfTravelers,
+      });
+
+      const bookingReference = this.generateBookingReference();
+
+      const booking = manager.create(Booking, {
+        bookingReference,
+        tourId: createBookingDto.tourId,
+        userId,
+        startDate,
+        endDate,
+        numberOfTravelers: createBookingDto.numberOfTravelers,
+        basePrice: pricing.basePrice,
+        discount: pricing.discount,
+        totalPrice: pricing.totalPrice,
+        contactInfo: createBookingDto.contactInfo,
+        specialRequests: createBookingDto.specialRequests,
+        status: BookingStatus.PENDING_PAY,
+        paymentDeadline: new Date(Date.now() + 24 * 60 * 60 * 1000),
+      });
+
+      const savedBooking = await manager.save(booking);
+
+      return {
+        id: savedBooking.id,
+        bookingReference: savedBooking.bookingReference,
+        status: savedBooking.status,
+        tourId: savedBooking.tourId,
+        startDate: savedBooking.startDate,
+        endDate: savedBooking.endDate,
+        numberOfTravelers: savedBooking.numberOfTravelers,
+        totalPrice: savedBooking.totalPrice,
+        contactInfo: savedBooking.contactInfo,
+        createdAt: savedBooking.createdAt,
+      };
     });
-
-    // Generate unique booking reference
-    const bookingReference = this.generateBookingReference();
-
-    // Create booking entity
-    const booking = this.bookingsRepository.create({
-      bookingReference,
-      tourId: createBookingDto.tourId,
-      userId,
-      startDate: new Date(createBookingDto.startDate),
-      endDate: new Date(createBookingDto.endDate),
-      numberOfTravelers: createBookingDto.numberOfTravelers,
-      basePrice: pricing.basePrice,
-      discount: pricing.discount,
-      totalPrice: pricing.totalPrice,
-      contactInfo: createBookingDto.contactInfo,
-      specialRequests: createBookingDto.specialRequests,
-      status: BookingStatus.PENDING,
-    });
-
-    const savedBooking = await this.bookingsRepository.save(booking);
-
-    return {
-      id: savedBooking.id,
-      bookingReference: savedBooking.bookingReference,
-      status: savedBooking.status,
-      tourId: savedBooking.tourId,
-      startDate: savedBooking.startDate,
-      endDate: savedBooking.endDate,
-      numberOfTravelers: savedBooking.numberOfTravelers,
-      totalPrice: savedBooking.totalPrice,
-      contactInfo: savedBooking.contactInfo,
-      createdAt: savedBooking.createdAt,
-    };
   }
 
   findAll() {
@@ -168,12 +217,22 @@ export class BookingsService {
     const updatedBooking = await this.bookingsRepository.save(booking);
 
     return {
-      id: updatedBooking.id,
-      status: updatedBooking.status,
-      refundAmount: updatedBooking.refundAmount,
+      id: booking.id,
+      status: booking.status,
       refundPercentage,
-      cancellationReason: updatedBooking.cancellationReason,
+      refundAmount: booking.refundAmount,
+      cancellationReason: booking.cancellationReason,
     };
+  }
+
+  @Cron('*/5 * * * *')
+  async expireOldBookings() {
+    const now = new Date();
+    const result = await this.bookingsRepository.update(
+      { status: BookingStatus.PENDING_PAY, paymentDeadline: LessThan(now) },
+      { status: BookingStatus.EXPIRED },
+    );
+    return result.affected ?? 0;
   }
 
   private generateBookingReference(): string {

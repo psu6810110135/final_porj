@@ -5,9 +5,14 @@ import { AppModule } from './../src/app.module';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { Booking } from '../src/bookings/entities/booking.entity';
 import { User, UserRole } from '../src/users/entities/user.entity';
-import { Tour } from '../src/tours/entities/tour.entity';
+import {
+  Tour,
+  TourCategory,
+  TourRegion,
+} from '../src/tours/entities/tour.entity';
 import { DataSource, Repository } from 'typeorm';
 import { BookingStatus } from '../src/bookings/entities/booking.entity';
+import { BookingsService } from '../src/bookings/bookings.service';
 
 describe('BookingsController (e2e)', () => {
   let app: INestApplication;
@@ -15,6 +20,7 @@ describe('BookingsController (e2e)', () => {
   let bookingRepository: Repository<Booking>;
   let userRepository: Repository<User>;
   let tourRepository: Repository<Tour>;
+  let bookingsService: BookingsService;
 
   const mockUserId = '11111111-1111-1111-1111-111111111111';
   const mockTourId = '22222222-2222-2222-2222-222222222222';
@@ -37,13 +43,15 @@ describe('BookingsController (e2e)', () => {
       moduleFixture.get<Repository<Booking>>('BookingRepository');
     userRepository = moduleFixture.get<Repository<User>>('UserRepository');
     tourRepository = moduleFixture.get<Repository<Tour>>('TourRepository');
+    bookingsService = moduleFixture.get<BookingsService>(BookingsService);
 
     // Create test user and tour
     await userRepository.save({
       id: mockUserId,
+      username: 'testuser',
+      password: 'password123',
       email: 'test@example.com',
       full_name: 'Test User',
-      password_hash: 'password123',
       role: UserRole.CUSTOMER,
     });
 
@@ -51,22 +59,34 @@ describe('BookingsController (e2e)', () => {
       id: mockTourId,
       title: 'Test Tour',
       description: 'A test tour',
-      base_price: 5000,
-      region: 'Test Location',
-      category: 'adventure',
-      max_capacity: 10,
+      price: 5000,
+      child_price: 2500,
+      province: 'Bangkok',
+      region: TourRegion.CENTRAL,
+      category: TourCategory.ADVENTURE,
+      duration: '1 วัน',
+      max_group_size: 10,
       is_active: true,
+      images: [],
+      highlights: [],
+      preparation: [],
     });
 
     await tourRepository.save({
       id: '33333333-3333-3333-3333-333333333333',
       title: 'Another Test Tour',
       description: 'Another test tour',
-      base_price: 3000,
-      region: 'Another Location',
-      category: 'relaxation',
-      max_capacity: 20,
+      price: 3000,
+      child_price: 1500,
+      province: 'Chiang Mai',
+      region: TourRegion.NORTH,
+      category: TourCategory.NATURE,
+      duration: '2 วัน 1 คืน',
+      max_group_size: 20,
       is_active: true,
+      images: [],
+      highlights: [],
+      preparation: [],
     });
 
     await app.init();
@@ -196,6 +216,39 @@ describe('BookingsController (e2e)', () => {
         .send(calculateDto)
         .expect(400);
     });
+
+    it('should expire pending_pay bookings past paymentDeadline', async () => {
+      const pastDeadline = new Date(Date.now() - 60 * 60 * 1000);
+      const startDate = '2025-02-01';
+      const endDate = '2025-02-03';
+
+      const booking = await bookingRepository.save({
+        bookingReference: 'BK-EXPIRE',
+        tourId: mockTourId,
+        userId: mockUserId,
+        startDate: new Date(startDate),
+        endDate: new Date(endDate),
+        numberOfTravelers: 1,
+        basePrice: 1000,
+        discount: 0,
+        totalPrice: 1000,
+        contactInfo: {
+          name: 'Expire User',
+          email: 'expire@example.com',
+          phone: '+1111111111',
+        },
+        status: BookingStatus.PENDING_PAY,
+        paymentDeadline: pastDeadline,
+      });
+
+      await bookingsService.expireOldBookings();
+
+      const refreshed = await bookingRepository.findOne({
+        where: { id: booking.id },
+      });
+
+      expect(refreshed?.status).toBe(BookingStatus.EXPIRED);
+    });
   });
 
   describe('POST /api/v1/bookings', () => {
@@ -220,7 +273,7 @@ describe('BookingsController (e2e)', () => {
         .expect((res) => {
           expect(res.body).toHaveProperty('id');
           expect(res.body).toHaveProperty('bookingReference');
-          expect(res.body).toHaveProperty('status', BookingStatus.PENDING);
+          expect(res.body).toHaveProperty('status', BookingStatus.PENDING_PAY);
           expect(res.body).toHaveProperty('tourId', mockTourId);
           expect(res.body).toHaveProperty('numberOfTravelers', 2);
           expect(res.body).toHaveProperty('totalPrice');
@@ -250,8 +303,38 @@ describe('BookingsController (e2e)', () => {
         .expect((res) => {
           expect(res.body).toHaveProperty('id');
           expect(res.body).toHaveProperty('bookingReference');
-          expect(res.body.status).toBe(BookingStatus.PENDING);
+          expect(res.body.status).toBe(BookingStatus.PENDING_PAY);
         });
+    });
+
+    it('should reject second concurrent booking when capacity exceeded', async () => {
+      const futureDate = new Date();
+      futureDate.setDate(futureDate.getDate() + 15);
+      const startDate = futureDate.toISOString().split('T')[0];
+      const endDate = new Date(futureDate.getTime() + 2 * 24 * 60 * 60 * 1000)
+        .toISOString()
+        .split('T')[0];
+
+      const payload = {
+        tourId: mockTourId,
+        startDate,
+        endDate,
+        numberOfTravelers: 6,
+        contactInfo: {
+          name: 'Concurrent User',
+          email: 'concurrent@example.com',
+          phone: '+1234567890',
+        },
+      };
+
+      const [resA, resB] = await Promise.all([
+        request(app.getHttpServer()).post('/api/v1/bookings').send(payload),
+        request(app.getHttpServer()).post('/api/v1/bookings').send(payload),
+      ]);
+
+      const statuses = [resA.status, resB.status];
+      expect(statuses).toContain(201);
+      expect(statuses).toContain(400);
     });
 
     it('should fail validation with invalid email', () => {

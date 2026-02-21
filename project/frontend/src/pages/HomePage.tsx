@@ -681,7 +681,7 @@ export default function HomePage() {
                       </p>
                     </div>
                     <button
-                      onClick={() => navigate(`/tours?highlight=${tour.id}`)}
+                      onClick={() => navigate(`/tours/${tour.id}`)}
                       className="gap-2 whitespace-nowrap text-sm font-medium disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg:not([class*='size-'])]:size-4 shrink-0 [&_svg]:shrink-0 outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive text-primary-foreground px-4 py-2 has-[>svg]:px-3 w-8 h-8 md:w-10 md:h-10 xl:w-12 xl:h-12 rounded-full bg-[#FFFDFA] border-2 border-[#E3DCD4] hover:bg-[#FF8400] hover:text-white hover:border-[#FF8400] transition-all flex items-center justify-center"
                       aria-label="ดูรายละเอียด"
                     >

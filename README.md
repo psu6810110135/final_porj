@@ -23,7 +23,7 @@ A full-stack tour booking website for Thai tourists, built with NestJS backend a
 ### Deployment
 - **Frontend**: Vercel
 - **Backend**: Render
-- **Database**: Supabase PostgreSQL
+- **Database**: PostgreSQL (Render/Railway)
 
 ## Project Structure
 

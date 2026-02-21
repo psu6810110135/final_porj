@@ -30,13 +30,13 @@ Admins can:
 - **Runtime**: Node.js
 - **Framework**: Express
 - **ORM**: TypeORM
-- **Database**: PostgreSQL (Supabase)
+- **Database**: PostgreSQL (Render/Railway)
 - **Authentication**: JWT
 - **Deployment**: Render
 
 ### Database
-- PostgreSQL via Supabase
-- Row Level Security (RLS) enabled
+- PostgreSQL (Render/Railway)
+- Connection pooling managed by backend
 
 ## Project Structure
 

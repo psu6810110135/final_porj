@@ -279,10 +279,12 @@ class RateLimiter {
 ### 1. Database Schema (Simplified)
 
 ```
-users (4 tables แทน 7 tables)
+users (6 tables แทน 7 tables)
 ├── users
 ├── tours  
+├── tour_schedules
 ├── bookings
+├── reviews
 └── payments
 ```
 
@@ -383,7 +385,7 @@ Learning Curve: 🔴🔴🔴🔴🔴 (Very Hard)
 
 ### After (เรียบง่าย)
 ```
-Database Tables: 4 tables
+Database Tables: 6 tables
 Backend Modules: 6 modules
 External Services: None
 Dependencies: 8 packages
@@ -408,9 +410,9 @@ Learning Curve: 🟢🟢 (Easy)
 10. ❌ Materialized views
 
 ### เก็บไว้ (Keep):
-1. ✅ users, tours, bookings, payments tables
+1. ✅ users, tours, tour_schedules, bookings, reviews, payments tables
 2. ✅ Basic indexes
-3. ✅ Simple VIEW for availability
+3. ✅ VIEW tour_date_availability (ใช้ tour_schedules)
 4. ✅ Transaction for booking
 5. ✅ SHA-256 hash for duplicate detection
 6. ✅ JWT authentication
@@ -434,7 +436,7 @@ Learning Curve: 🟢🟢 (Easy)
 #### Week 1-2: Database & Basic CRUD
 - เรียนรู้ SQL (SELECT, INSERT, UPDATE, DELETE)
 - เข้าใจ Foreign Keys
-- สร้าง 4 tables พื้นฐาน
+- สร้าง 6 tables พื้นฐาน
 
 #### Week 3-4: NestJS Basics
 - เข้าใจ Modules, Controllers, Services

@@ -22,7 +22,7 @@ graph TD
         end
 
         subgraph Database_Host
-            PostgreSQL[(PostgreSQL<br>4 Tables)]
+            PostgreSQL[(PostgreSQL<br>6 Tables)]
             Storage[(File Storage<br>Slip Images)]
         end
     end
@@ -130,7 +130,8 @@ sequenceDiagram
 |---|---|
 | Vercel | Frontend Hosting |
 | Render | Backend Hosting |
-| Supabase | Database + Storage |
+| PostgreSQL | Database (Render/Railway) |
+| File Storage | Local/Cloud Storage |
 
 ---
 
@@ -145,14 +146,16 @@ flowchart LR
     AdminUI --> API
 
     API --> DB[(PostgreSQL)]
-    API --> Storage[(Supabase Storage)]
+    API --> Storage[(File Storage)]
 
     API --> Console[console.log()<br>Email Simulation]
 
     subgraph Tables
         DB --> Users[users]
         DB --> Tours[tours]
+        DB --> TourSchedules[tour_schedules]
         DB --> Bookings[bookings]
+        DB --> Reviews[reviews]
         DB --> Payments[payments]
     end
 ```
@@ -163,7 +166,7 @@ flowchart LR
 
 | Component | Original | Simplified |
 |---|---|---|
-| Database | 7 Tables | 4 Tables |
+| Database | 7 Tables | 6 Tables |
 | Auth | Session + JWT | JWT only |
 | Email | Queue System | console.log() |
 | Logging | Winston | console.log() |

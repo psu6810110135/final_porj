@@ -11,53 +11,58 @@ import { User } from '../../users/entities/user.entity';
 import { Tour } from '../../tours/entities/tour.entity';
 
 export enum BookingStatus {
+  PENDING_PAY = 'pending_pay',
   PENDING = 'pending',
   CONFIRMED = 'confirmed',
   CANCELLED = 'cancelled',
   REFUNDED = 'refunded',
+  EXPIRED = 'expired',
 }
 
 @Entity('bookings')
 export class Booking {
   @PrimaryGeneratedColumn('uuid')
-  id: string;
+  id!: string;
 
   @Column({ unique: true, name: 'booking_reference' })
-  bookingReference: string;
+  bookingReference!: string;
 
   @Column({ name: 'tour_id' })
-  tourId: string;
+  tourId!: string;
 
   @Column({ name: 'user_id' })
-  userId: string;
+  userId!: string;
 
   @Column({ type: 'date', name: 'start_date' })
-  startDate: Date;
+  startDate!: Date;
 
   @Column({ type: 'date', name: 'end_date' })
-  endDate: Date;
+  endDate!: Date;
 
   @Column({ name: 'number_of_travelers' })
-  numberOfTravelers: number;
+  numberOfTravelers!: number;
 
   @Column({ type: 'decimal', precision: 10, scale: 2, name: 'base_price' })
-  basePrice: number;
+  basePrice!: number;
 
   @Column({ type: 'decimal', precision: 10, scale: 2, default: 0 })
-  discount: number;
+  discount!: number;
 
   @Column({ type: 'decimal', precision: 10, scale: 2, name: 'total_price' })
-  totalPrice: number;
+  totalPrice!: number;
 
   @Column({
     type: 'enum',
     enum: BookingStatus,
-    default: BookingStatus.PENDING,
+    default: BookingStatus.PENDING_PAY,
   })
-  status: BookingStatus;
+  status!: BookingStatus;
+
+  @Column({ type: 'timestamp', name: 'payment_deadline', nullable: true })
+  paymentDeadline?: Date;
 
   @Column({ type: 'jsonb', name: 'contact_info' })
-  contactInfo: {
+  contactInfo!: {
     name: string;
     email: string;
     phone: string;
@@ -79,17 +84,17 @@ export class Booking {
   refundAmount?: number;
 
   @CreateDateColumn({ name: 'created_at' })
-  createdAt: Date;
+  createdAt!: Date;
 
   @UpdateDateColumn({ name: 'updated_at' })
-  updatedAt: Date;
+  updatedAt!: Date;
 
   // Relations
   @ManyToOne(() => User, (user) => user.id)
   @JoinColumn({ name: 'user_id' })
-  user: User;
+  user!: User;
 
   @ManyToOne(() => Tour, (tour) => tour.id)
   @JoinColumn({ name: 'tour_id' })
-  tour: Tour;
+  tour!: Tour;
 }

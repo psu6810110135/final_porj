@@ -4,7 +4,8 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { DataSource, In, Not, Repository } from 'typeorm';
+import { Cron } from '@nestjs/schedule';
+import { DataSource, In, LessThan, Not, Repository } from 'typeorm';
 import { Booking, BookingStatus } from './entities/booking.entity';
 import { CalculateBookingDto } from './dto/calculate-booking.dto';
 import { CreateBookingDto } from './dto/create-booking.dto';
@@ -79,15 +80,23 @@ export class BookingsService {
       }
 
       // 2) Re-check capacity inside the lock
-      const activeBookings = await manager.getRepository(Booking).count({
-        where: {
-          tourId: createBookingDto.tourId,
-          startDate,
-          status: Not(In([BookingStatus.CANCELLED, BookingStatus.REFUNDED])),
-        },
-      });
+      const bookedSeats = await manager
+        .getRepository(Booking)
+        .createQueryBuilder('b')
+        .select('COALESCE(SUM(b.number_of_travelers), 0)', 'total')
+        .where('b.tourId = :tourId', { tourId: createBookingDto.tourId })
+        .andWhere('b.startDate = :startDate', { startDate })
+        .andWhere('b.status NOT IN (:...statuses)', {
+          statuses: [
+            BookingStatus.CANCELLED,
+            BookingStatus.REFUNDED,
+            BookingStatus.EXPIRED,
+          ],
+        })
+        .getRawOne<{ total: string }>();
 
-      const available = tour.max_group_size - activeBookings;
+      const activeSeats = Number(bookedSeats?.total ?? 0);
+      const available = tour.max_group_size - activeSeats;
 
       if (available < createBookingDto.numberOfTravelers) {
         const remaining = Math.max(available, 0);
@@ -116,7 +125,8 @@ export class BookingsService {
         totalPrice: pricing.totalPrice,
         contactInfo: createBookingDto.contactInfo,
         specialRequests: createBookingDto.specialRequests,
-        status: BookingStatus.PENDING,
+        status: BookingStatus.PENDING_PAY,
+        paymentDeadline: new Date(Date.now() + 24 * 60 * 60 * 1000),
       });
 
       const savedBooking = await manager.save(booking);
@@ -207,12 +217,22 @@ export class BookingsService {
     const updatedBooking = await this.bookingsRepository.save(booking);
 
     return {
-      id: updatedBooking.id,
-      status: updatedBooking.status,
-      refundAmount: updatedBooking.refundAmount,
+      id: booking.id,
+      status: booking.status,
       refundPercentage,
-      cancellationReason: updatedBooking.cancellationReason,
+      refundAmount: booking.refundAmount,
+      cancellationReason: booking.cancellationReason,
     };
+  }
+
+  @Cron('*/5 * * * *')
+  async expireOldBookings() {
+    const now = new Date();
+    const result = await this.bookingsRepository.update(
+      { status: BookingStatus.PENDING_PAY, paymentDeadline: LessThan(now) },
+      { status: BookingStatus.EXPIRED },
+    );
+    return result.affected ?? 0;
   }
 
   private generateBookingReference(): string {

@@ -8,6 +8,7 @@ import { Repository } from 'typeorm';
 import { Booking, BookingStatus } from './entities/booking.entity';
 import { CalculateBookingDto } from './dto/calculate-booking.dto';
 import { CreateBookingDto } from './dto/create-booking.dto';
+import { UpdateBookingDto } from './dto/update-booking.dto';
 import { CancelBookingDto } from './dto/cancel-booking.dto';
 
 @Injectable()
@@ -16,6 +17,13 @@ export class BookingsService {
     @InjectRepository(Booking)
     private bookingsRepository: Repository<Booking>,
   ) {}
+
+  async findAllForAdmin() {
+    return this.bookingsRepository.find({
+      relations: ['user', 'tour'],
+      order: { createdAt: 'DESC' },
+    });
+  }
 
   async calculatePrice(calculateBookingDto: CalculateBookingDto) {
     const { tourId, startDate, endDate, numberOfTravelers } =
@@ -89,6 +97,12 @@ export class BookingsService {
     };
   }
 
+  findAll() {
+    return this.bookingsRepository.find({
+      order: { createdAt: 'DESC' },
+    });
+  }
+
   async findAllByUser(userId: string) {
     const bookings = await this.bookingsRepository.find({
       where: { userId },
@@ -98,7 +112,13 @@ export class BookingsService {
     return bookings;
   }
 
-  async findOne(id: string, userId?: string) {
+  findOne(id: number) {
+    return this.bookingsRepository.findOne({
+      where: { id: id.toString() },
+    });
+  }
+
+  async findOneById(id: string, userId?: string) {
     const booking = await this.bookingsRepository.findOne({
       where: { id },
     });
@@ -115,8 +135,16 @@ export class BookingsService {
     return booking;
   }
 
+  update(id: number, updateBookingDto: UpdateBookingDto) {
+    return `This action updates a #${id} booking`;
+  }
+
+  remove(id: number) {
+    return `This action removes a #${id} booking`;
+  }
+
   async cancelBooking(id: string, cancelDto: CancelBookingDto, userId: string) {
-    const booking = await this.findOne(id, userId);
+    const booking = await this.findOneById(id, userId);
 
     if (booking.status === BookingStatus.CANCELLED) {
       throw new BadRequestException('Booking is already cancelled');

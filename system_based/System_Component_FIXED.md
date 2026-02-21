@@ -93,7 +93,28 @@ classDiagram
         +Int maxCapacity
         +String[] imageUrls
         +Boolean isActive
-        +Boolean isRecommended
+        +Boolean isFeatured
+        +Decimal averageRating
+        +Int reviewCount
+    }
+
+    class TourSchedule {
+        +UUID id
+        +UUID tourId
+        +Date availableDate
+        +Int maxCapacityOverride
+        +Boolean isAvailable
+        +DateTime createdAt
+    }
+
+    class Review {
+        +UUID id
+        +UUID userId
+        +UUID tourId
+        +UUID bookingId
+        +Int rating "1-5"
+        +String comment
+        +DateTime createdAt
     }
 
     class Booking {
@@ -191,8 +212,12 @@ classDiagram
 
     %% ========== Relationships ==========
     User "1" --> "*" Booking : makes
+    User "1" --> "*" Review : writes
     Tour "1" --> "*" Booking : includes
+    Tour "1" --> "*" TourSchedule : has
+    Tour "1" --> "*" Review : receives
     Booking "1" --> "1" Payment : has
+    Booking "1" --> "0..1" Review : has
 
     AuthController ..> AuthService : uses
     TourController ..> TourService : uses
@@ -284,7 +309,7 @@ export class EmailService {
 
 | Original | Simplified |
 |---|---|
-| 7 Tables | 4 Tables |
+| 7 Tables | 6 Tables |
 | Session Class | JWT only |
 | AuditLog Class | console.log() |
 | NotificationService (Queue) | EmailService (console.log) |

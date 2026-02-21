@@ -1,31 +1,48 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn } from 'typeorm';
+import { 
+  Entity, 
+  PrimaryGeneratedColumn, 
+  Column, 
+  CreateDateColumn, 
+  UpdateDateColumn, 
+  OneToOne, 
+  JoinColumn, 
+  Unique 
+} from 'typeorm';
+import { UserProfile } from './user-profile.entity';
 
 export enum UserRole {
   ADMIN = 'admin',
   CUSTOMER = 'customer',
+  USER = 'user',
 }
 
 @Entity('users')
+@Unique(['username'])
 export class User {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column({ unique: true })
+  @Column()
+  username: string;
+
+  @Column()
+  password: string;
+
+  // 👇 แก้ไข: เพิ่ม { nullable: true } ตรงนี้
+  @OneToOne(() => UserProfile, (profile) => profile.user, { cascade: true, nullable: true })
+  @JoinColumn()
+  profile: UserProfile;
+
+  @Column({ unique: true, nullable: true })
   email: string;
 
-  @Column()
-  password_hash: string;
-
-  @Column()
-  full_name: string;
-
   @Column({ nullable: true })
-  phone_number: string;
+  full_name: string;
 
   @Column({
     type: 'enum',
     enum: UserRole,
-    default: UserRole.CUSTOMER,
+    default: UserRole.USER,
   })
   role: UserRole;
 

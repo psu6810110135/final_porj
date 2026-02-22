@@ -35,7 +35,7 @@ import { Tour } from './tours/entities/tour.entity';
       useFactory: (configService: ConfigService) => ({
         type: 'postgres',
         // ใช้ URL จาก .env เป็นหลัก ถ้าไม่มีให้ Fallback ไปใช้ค่าตรงๆ แบบที่คุณเคยลองทำ
-        url: configService.get('DATABASE_URL') || 'postgresql://thai_tours:thai_tours_password@localhost:5432/thai_tours',
+        url: configService.get('DATABASE_URL') || 'postgresql://thai_tours:thai_tours_password@localhost:5433/thai_tours',
         entities: [User, Booking, Payment, Tour],
         autoLoadEntities: true,
         synchronize: true, // เปิดไว้สำหรับ dev

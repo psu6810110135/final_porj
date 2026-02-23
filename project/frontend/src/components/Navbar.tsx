@@ -1,5 +1,6 @@
 import { Link, useNavigate } from "react-router-dom";
 import logoImage from "../assets/logo.png";
+import { useState } from "react";
 
 // --- ➕ เพิ่มไอคอน Dashboard สำหรับ Admin ---
 const DashboardIcon = ({ className = "" }: { className?: string }) => (
@@ -88,6 +89,7 @@ interface NavbarProps {
 }
 
 export default function Navbar({ activePage = "home" }: NavbarProps) {
+  const [menuOpen, setMenuOpen] = useState(false);
   const navigate = useNavigate();
   const token = localStorage.getItem("jwt_token");
   const isLoggedIn = !!token;
@@ -138,16 +140,16 @@ export default function Navbar({ activePage = "home" }: NavbarProps) {
           {/* Navigation Links */}
           <div className="hidden md:flex items-center gap-4 lg:gap-6">
             <Link to="/" className={linkClass("home")}>
-              Home
+              หน้าหลัก
             </Link>
             <Link to="/tours" className={linkClass("tours")}>
-              Tours
+              ทัวร์
             </Link>
             <Link to="/about" className={linkClass("about")}>
-              About Us
+              เกี่ยวกับเรา
             </Link>
             <Link to="/contact" className={linkClass("contact")}>
-              Contact
+              ติดต่อเรา
             </Link>
           </div>
 
@@ -184,8 +186,77 @@ export default function Navbar({ activePage = "home" }: NavbarProps) {
                 </button>
               </Link>
             )}
+
+            {/* Mobile menu toggle (after profile buttons) */}
+            <button
+              className="md:hidden w-10 h-10 rounded-full border-3 border-[#F6F1E9] bg-white hover:bg-[#FF8400]/10 flex items-center justify-center p-0 transition-colors"
+              onClick={() => setMenuOpen((prev) => !prev)}
+              aria-label="เปิดเมนู"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="w-5 h-5 text-[#4F200D]"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth="2"
+              >
+                {menuOpen ? (
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M6 18L18 6M6 6l12 12"
+                  />
+                ) : (
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M4 6h16M4 12h16M4 18h16"
+                  />
+                )}
+              </svg>
+            </button>
           </div>
         </div>
+
+        {/* Mobile dropdown menu */}
+        {menuOpen && (
+          <div className="md:hidden mt-2 pb-3 border-t border-[#F0E8E0]">
+            <div className="flex flex-col gap-2 pt-3">
+              {[
+                {
+                  to: "/",
+                  label: "หน้าหลัก",
+                  key: "home",
+                },
+                {
+                  to: "/tours",
+                  label: "ทัวร์",
+                  key: "tours",
+                },
+                {
+                  to: "/about",
+                  label: "เกี่ยวกับเรา",
+                  key: "about",
+                },
+                {
+                  to: "/contact",
+                  label: "ติดต่อเรา",
+                  key: "contact",
+                },
+              ].map((item) => (
+                <Link
+                  key={item.key}
+                  to={item.to}
+                  onClick={() => setMenuOpen(false)}
+                  className={`px-4 py-2 rounded-xl text-base font-medium transition-colors ${activePage === item.key ? "bg-[#FF8400]/10 text-[#FF8400]" : "text-[#4F200D] hover:bg-[#F6F1E9]"}`}
+                >
+                  {item.label}
+                </Link>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
     </nav>
   );

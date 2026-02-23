@@ -40,8 +40,8 @@ export class PaymentsService {
       });
     } else {
       await this.bookingRepo.update(payment.booking.id, {
-        status: BookingStatus.PENDING,
-      }); // Reset to pending if rejected
+        status: BookingStatus.PENDING_VERIFY,
+      }); // Reset to pending verify if rejected
     }
 
     return { success: true, message: `Payment ${status}` };

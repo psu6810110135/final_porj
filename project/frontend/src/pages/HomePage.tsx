@@ -147,14 +147,17 @@ const ChevronDownIcon = () => (
   </svg>
 );
 
-const QuoteIcon = ({ className = "" }: { className?: string }) => (
-  <svg
-    className={className}
-    width="183"
-    height="183"
-    viewBox="0 0 183 183"
-    fill="none"
-  >
+const ArrowUpIcon = () => (
+  <svg width="60" height="60" viewBox="0 0 60 60" fill="none">
+    <path
+      d="M31.7675 9.09C31.2987 8.62132 30.6629 8.35803 30 8.35803C29.3371 8.35803 28.7013 8.62132 28.2325 9.09L14.09 23.2325C13.8512 23.4631 13.6608 23.739 13.5297 24.044C13.3987 24.349 13.3298 24.6771 13.3269 25.009C13.324 25.3409 13.3872 25.6701 13.5129 25.9774C13.6387 26.2846 13.8243 26.5638 14.059 26.7985C14.2937 27.0332 14.5729 27.2189 14.8801 27.3446C15.1874 27.4703 15.5166 27.5335 15.8485 27.5306C16.1805 27.5277 16.5085 27.4588 16.8135 27.3278C17.1185 27.1967 17.3944 27.0063 17.625 26.7675L27.5 16.8925V50C27.5 50.663 27.7634 51.2989 28.2322 51.7678C28.7011 52.2366 29.337 52.5 30 52.5C30.663 52.5 31.2989 52.2366 31.7678 51.7678C32.2366 51.2989 32.5 50.663 32.5 50V16.8925L42.375 26.7675C42.8465 27.2229 43.478 27.4749 44.1335 27.4692C44.789 27.4635 45.416 27.2006 45.8796 26.737C46.3431 26.2735 46.606 25.6465 46.6117 24.991C46.6174 24.3355 46.3654 23.704 45.91 23.2325L31.7675 9.09Z"
+      fill="#4F200D"
+    />
+  </svg>
+);
+
+const QuoteIcon = () => (
+  <svg width="183" height="183" viewBox="0 0 183 183" fill="none">
     <path
       d="M45.3145 43.5C53.7462 43.5156 61.8287 46.8717 67.791 52.834C73.7547 58.7977 77.1109 66.8825 77.125 75.3164C77.1245 88.8203 74.6675 100.44 67.9033 110.76C61.0818 121.19 50.3939 130.188 34.2764 140.441C28.8597 143.871 22.5073 137.666 25.8037 132.174C29.3717 126.235 31.3447 122.459 32.3584 118.942C33.387 115.374 33.3838 112.205 33.3555 107.733L33.3467 106.273L32.0693 105.563C26.6755 102.567 21.9525 100.204 19.2334 96.2646L19.2285 96.2559L18.8555 95.707C15.0773 89.9925 13.5011 83.0246 13.5 75.3203C13.5281 66.8897 16.8892 58.812 22.8506 52.8506C28.8106 46.8906 36.8859 43.5296 45.3145 43.5ZM136.814 43.5C145.246 43.5156 153.329 46.8717 159.291 52.834C165.255 58.7977 168.611 66.8825 168.625 75.3164C168.625 88.8203 166.167 100.44 159.403 110.76C152.582 121.19 141.894 130.188 125.776 140.441C120.36 143.871 114.009 137.667 117.304 132.176C120.877 126.236 122.851 122.46 123.863 118.941C124.89 115.372 124.884 112.203 124.855 107.733L124.847 106.273L123.569 105.563C118.176 102.567 113.453 100.204 110.733 96.2646L110.729 96.2559L110.355 95.707C106.577 89.9925 105.001 83.0246 105 75.3203C105.028 66.8897 108.389 58.812 114.351 52.8506C120.311 46.8906 128.386 43.5296 136.814 43.5Z"
       fill="#FF8400"
@@ -374,7 +377,7 @@ export default function HomePage() {
                     setShowCategoryDropdown(false);
                     setShowDurationDropdown(false);
                   }}
-                  className="w-full bg-[#FFFDFA] rounded-full px-3 md:px-3 py-2 md:py-3 flex items-center justify-between border-2 border-[#4F200D]/30 hover:border-[#4F200D] transition-colors"
+                  className="w-full bg-[#FFFDFA] rounded-full px-2 md:px-3 py-2 md:py-3 flex items-center justify-between border-2 border-[#4F200D]/30 hover:border-[#4F200D] transition-colors"
                 >
                   <span className="text-xs md:text-sm lg:text-base text-[#4F200D]/90 font-medium truncate">
                     {selectedProvince || "เลือกจังหวัด"}
@@ -494,7 +497,7 @@ export default function HomePage() {
 
               <Button
                 onClick={handleSearch}
-                className="bg-[#FF8400] text-white hover:bg-[#FF8400]/90 rounded-full px-4 md:px-6 py-2.5 md:py-3 text-xs md:text-sm lg:text-base font-bold shadow-lg whitespace-nowrap w-full sm:w-auto"
+                className="bg-[#FF8400] text-white hover:bg-[#FF8400]/90 rounded-full px-4 md:px-6 py-2 md:py-3 text-xs md:text-sm lg:text-base font-bold shadow-lg whitespace-nowrap"
               >
                 ค้นหา
               </Button>
@@ -506,7 +509,7 @@ export default function HomePage() {
       {/* Best Services Section */}
       <section className="py-9 md:py-12 lg:py-18 bg-[#F6F1E9]">
         <div className="max-w-[1920px] mx-auto px-4 md:px-8">
-          <div className="text-center mb-7 md:mb-12">
+          <div className="text-center mb-9 md:mb-12">
             <h2 className="text-2xl md:text-4xl lg:text-5xl font-bold text-[#4F200D] mb-3">
               บริการที่เป็นเลิศเพื่อคุณ
             </h2>
@@ -518,11 +521,11 @@ export default function HomePage() {
                 key={feature.id}
                 className="border-0 shadow-lg rounded-2xl md:rounded-3xl bg-[#FFFDFA] overflow-hidden"
               >
-                <CardContent className="p-4 md:p-6 text-center">
-                  <div className="w-12 h-12 md:w-16 md:h-18 mx-auto mb-3 md:mb-4 bg-[#FFFDFA] rounded-xl md:rounded-2xl flex items-center justify-center text-[#FF8400]">
-                    <feature.icon className="w-6 h-6 md:w-8 md:h-10" />
+                <CardContent className="p-5 md:p-6 text-center">
+                  <div className="w-12 h-12 md:w-16 md:h-20 mx-auto mb-3 md:mb-4 bg-[#FFFDFA] rounded-xl md:rounded-2xl flex items-center justify-center text-[#FF8400]">
+                    <feature.icon className="w-6 h-6 md:w-8 md:h-12" />
                   </div>
-                  <h3 className="text-base md:text-lg lg:text-2xl font-bold text-[#4F200D] mb-1.5">
+                  <h3 className="text-base md:text-lg lg:text-2xl font-bold text-[#4F200D] mb-2">
                     {feature.title}
                   </h3>
                   <p className="text-xs md:text-sm lg:text-lg text-[#4F200D]/80 font-extralight">
@@ -550,17 +553,17 @@ export default function HomePage() {
           />
           <div className="absolute inset-0 bg-black/40"></div>
         </div>
-        <div className="absolute top-2 md:top-6 left-2 md:left-8 opacity-25">
+        <div className="absolute top-3 md:top-6 left-3 md:left-8 opacity-30">
           <div className="rotate-180">
-            <QuoteIcon className="w-16 h-16 md:w-28 md:h-28 lg:w-40 lg:h-40" />
+            <QuoteIcon />
           </div>
         </div>
-        <div className="absolute bottom-2 md:bottom-6 right-2 md:right-8 opacity-25">
-          <QuoteIcon className="w-16 h-16 md:w-28 md:h-28 lg:w-40 lg:h-40" />
+        <div className="absolute bottom-3 md:bottom-6 right-3 md:right-8 opacity-30">
+          <QuoteIcon />
         </div>
         <div className="relative z-10 max-w-[1920px] mx-auto px-4 md:px-8">
           <div className="text-center">
-            <h2 className="text-xl md:text-3xl lg:text-5xl xl:text-[96px] font-bold text-white leading-tight mb-6 md:mb-12 drop-shadow-lg px-2 md:px-4">
+            <h2 className="text-lg md:text-3xl lg:text-5xl xl:text-[96px] font-bold text-white leading-tight mb-6 md:mb-12 drop-shadow-lg px-4">
               การเดินทาง คือการลงทุนเดียว
               <br />
               ที่ทำให้ชีวิตคุณมั่งคั่งขึ้น
@@ -677,26 +680,9 @@ export default function HomePage() {
                           : "สอบถามราคา"}
                       </p>
                     </div>
-                    <button
-                      onClick={() => navigate(`/tours/${tour.id}`)}
-                      className="gap-2 whitespace-nowrap text-sm font-medium disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg:not([class*='size-'])]:size-4 shrink-0 [&_svg]:shrink-0 outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive text-[#4F200D] px-4 py-2 has-[>svg]:px-3 w-10 h-10 md:w-10 md:h-10 xl:w-12 xl:h-12 rounded-full bg-[#F6F1E9] border-2 border-[#D4C8BC] hover:bg-[#FF8400] hover:text-white hover:border-[#FF8400] transition-all flex items-center justify-center"
-                      aria-label="ดูรายละเอียด"
-                    >
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        strokeWidth={2}
-                        stroke="currentColor"
-                        className="w-4 h-4 md:w-5 md:h-5"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          d="M8.25 4.5l7.5 7.5-7.5 7.5"
-                        />
-                      </svg>
-                    </button>
+                    <Button className="w-8 h-8 md:w-10 md:h-10 xl:w-12 xl:h-12 rounded-full bg-[#FFFDFA] border-2 border-[#E3DCD4] hover:bg-[#FF8400] hover:text-white hover:border-[#FF8400] transition-all flex items-center justify-center">
+                      <ArrowUpIcon />
+                    </Button>
                   </div>
                 </CardContent>
               </Card>

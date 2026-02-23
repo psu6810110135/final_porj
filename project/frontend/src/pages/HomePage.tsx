@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
@@ -276,7 +276,7 @@ export default function HomePage() {
 
   const handleSearch = () => {
     const params = new URLSearchParams();
-    if (selectedProvince) params.append("province", selectedProvince);
+    if (selectedProvince) params.append("location", selectedProvince);
     if (selectedCategory) params.append("category", selectedCategory);
     if (selectedDuration) params.append("duration", selectedDuration);
     navigate(`/tours?${params.toString()}`);
@@ -367,10 +367,10 @@ export default function HomePage() {
           </h2>
 
           {/* Search Bar */}
-          <div className="w-full max-w-2xl md:max-w-4xl xl:max-w-6xl mt-6 md:mt-12">
-            <div className="dropdown-container bg-[#F6F1E9]/95 backdrop-blur-sm rounded-full p-2 flex flex-col sm:flex-row gap-2 border-2 border-[#E3DCD4] items-center relative z-30">
+          <div className="w-full max-w-full sm:max-w-2xl md:max-w-4xl xl:max-w-6xl mt-6 md:mt-12 px-2 sm:px-0">
+            <div className="dropdown-container bg-[#F6F1E9]/95 backdrop-blur-sm rounded-2xl sm:rounded-full p-2 sm:p-2.5 flex flex-col sm:flex-row gap-2 border-2 border-[#E3DCD4] items-stretch sm:items-center relative z-30 shadow-lg sm:shadow-xl">
               {/* Province Dropdown */}
-              <div className="flex-1 relative">
+              <div className="flex-1 relative min-w-[0]">
                 <button
                   onClick={() => {
                     setShowProvinceDropdown(!showProvinceDropdown);
@@ -515,7 +515,7 @@ export default function HomePage() {
             </h2>
             <div className="w-12 md:w-18 lg:w-24 h-1 md:h-1.5 bg-[#FF8400] mx-auto rounded-full"></div>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 md:gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
             {features.map((feature) => (
               <Card
                 key={feature.id}
@@ -539,7 +539,7 @@ export default function HomePage() {
       </section>
 
       {/* Quote Section */}
-      <section className="relative py-18 md:py-24 lg:py-36 overflow-hidden">
+      <section className="relative py-14 md:py-24 lg:py-36 overflow-hidden">
         <div className="absolute inset-0">
           <img
             src="/src/assets/bg1.jpeg"
@@ -680,26 +680,9 @@ export default function HomePage() {
                           : "สอบถามราคา"}
                       </p>
                     </div>
-                    <button
-                      onClick={() => navigate(`/tours/${tour.id}`)}
-                      className="gap-2 whitespace-nowrap text-sm font-medium disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg:not([class*='size-'])]:size-4 shrink-0 [&_svg]:shrink-0 outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive text-primary-foreground px-4 py-2 has-[>svg]:px-3 w-8 h-8 md:w-10 md:h-10 xl:w-12 xl:h-12 rounded-full bg-[#FFFDFA] border-2 border-[#E3DCD4] hover:bg-[#FF8400] hover:text-white hover:border-[#FF8400] transition-all flex items-center justify-center"
-                      aria-label="ดูรายละเอียด"
-                    >
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        strokeWidth={2}
-                        stroke="currentColor"
-                        className="w-4 h-4 md:w-5 md:h-5"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          d="M8.25 4.5l7.5 7.5-7.5 7.5"
-                        />
-                      </svg>
-                    </button>
+                    <Button className="w-8 h-8 md:w-10 md:h-10 xl:w-12 xl:h-12 rounded-full bg-[#FFFDFA] border-2 border-[#E3DCD4] hover:bg-[#FF8400] hover:text-white hover:border-[#FF8400] transition-all flex items-center justify-center">
+                      <ArrowUpIcon />
+                    </Button>
                   </div>
                 </CardContent>
               </Card>

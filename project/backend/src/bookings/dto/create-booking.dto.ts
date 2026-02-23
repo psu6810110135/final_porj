@@ -8,9 +8,9 @@ import {
   IsOptional,
   ValidateNested,
   IsUUID,
-  IsNotEmpty,
+  ValidateIf,
 } from 'class-validator';
-import { Type } from 'class-transformer';
+import { Type, Transform } from 'class-transformer';
 
 class ContactInfoDto {
   @IsString()
@@ -24,10 +24,10 @@ class ContactInfoDto {
 }
 
 export class CreateBookingDto {
-  @IsUUID()
+  @IsUUID('4')
   tourId!: string;
 
-  @IsUUID()
+  @IsUUID('4')
   @IsOptional()
   tourScheduleId?: string;
 
@@ -43,9 +43,20 @@ export class CreateBookingDto {
   @IsOptional()
   endDate?: string; // multi-day end
 
+  @Transform(({ value, obj }) =>
+    value === undefined ? obj?.numberOfTravelers : value,
+  )
+  @Type(() => Number)
+  @ValidateIf((o) => o.pax !== undefined || o.numberOfTravelers === undefined)
   @IsInt()
   @Min(1)
-  pax!: number;
+  pax?: number;
+
+  @Type(() => Number)
+  @ValidateIf((o) => o.numberOfTravelers !== undefined || o.pax === undefined)
+  @IsInt()
+  @Min(1)
+  numberOfTravelers?: number; // legacy alias for tests
 
   @IsObject()
   @ValidateNested()

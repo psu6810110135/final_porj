@@ -152,12 +152,56 @@ function parseDurationDays(duration?: string): number {
 }
 
 function BookingCard({ tour }: { tour: Tour }) {
+  const rawBase = "http://localhost:3000";
+  const baseURL = rawBase.replace(/\/$/, "").replace(/\/api\/v1$/, "");
+
+  const api = axios.create({
+    baseURL,
+  });
   const durationDays = parseDurationDays(tour.duration);
   const isMultiDay = durationDays > 1;
   const [adults, setAdults] = useState(1);
   const [children, setChildren] = useState(0);
   const [travelDate, setTravelDate] = useState("");
   const [startDate, setStartDate] = useState("");
+  const [contactName, setContactName] = useState("");
+  const [contactEmail, setContactEmail] = useState("");
+  const [contactPhone, setContactPhone] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+
+  // Prefill contact info from logged-in user
+  useEffect(() => {
+    const token =
+      localStorage.getItem("jwt_token") ||
+      localStorage.getItem("token") ||
+      localStorage.getItem("accessToken");
+    if (!token) return;
+
+    api
+      .get("/auth/profile", {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      .then((res) => {
+        const data = res.data || {};
+        const profile = data.profile || {};
+        if (
+          !contactName &&
+          (data.full_name || profile.full_name || data.username)
+        ) {
+          setContactName(
+            data.full_name || profile.full_name || data.username || "",
+          );
+        }
+        if (!contactEmail && (data.email || profile.email)) {
+          setContactEmail(data.email || profile.email || "");
+        }
+        if (!contactPhone && (profile.phone || profile.tel)) {
+          setContactPhone(profile.phone || profile.tel || "");
+        }
+      })
+      .catch(() => {});
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const maxGuests = tour.max_group_size ?? 15;
   const childPrice = Math.floor(tour.price * 0.6);
@@ -320,9 +364,92 @@ function BookingCard({ tour }: { tour: Tour }) {
           </div>
         </div>
 
+        {/* Contact info */}
+        <div className="space-y-2">
+          <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider block">
+            ข้อมูลติดต่อ
+          </label>
+          <input
+            type="text"
+            placeholder="ชื่อ-สกุล"
+            value={contactName}
+            onChange={(e) => setContactName(e.target.value)}
+            className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm text-gray-700 focus:outline-none focus:border-[#FF8400] focus:ring-1 focus:ring-[#FF8400] bg-white"
+          />
+          <input
+            type="email"
+            placeholder="อีเมล"
+            value={contactEmail}
+            onChange={(e) => setContactEmail(e.target.value)}
+            className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm text-gray-700 focus:outline-none focus:border-[#FF8400] focus:ring-1 focus:ring-[#FF8400] bg-white"
+          />
+          <input
+            type="tel"
+            placeholder="เบอร์โทร"
+            value={contactPhone}
+            onChange={(e) => setContactPhone(e.target.value)}
+            className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm text-gray-700 focus:outline-none focus:border-[#FF8400] focus:ring-1 focus:ring-[#FF8400] bg-white"
+          />
+        </div>
+
         {/* Book Button */}
-        <button className="w-full bg-[#FF8400] hover:bg-[#e07300] active:scale-[0.98] text-white font-bold py-3.5 rounded-lg transition-all text-sm shadow-md shadow-orange-200">
-          จองทัวร์เลย →
+        <button
+          onClick={async () => {
+            if (!pax || pax < 1) return alert("กรุณาเลือกจำนวนผู้เดินทาง");
+            if (!contactName || !contactEmail || !contactPhone)
+              return alert("กรุณากรอกข้อมูลติดต่อให้ครบ");
+            if (!isMultiDay && !travelDate)
+              return alert("กรุณาเลือกวันที่เดินทาง");
+            if (isMultiDay && !startDate) return alert("กรุณาเลือกวันเริ่มต้น");
+
+            const token =
+              localStorage.getItem("jwt_token") ||
+              localStorage.getItem("token") ||
+              localStorage.getItem("accessToken");
+            if (!token) return alert("กรุณาเข้าสู่ระบบก่อนจองทัวร์");
+
+            const payload: any = {
+              tourId: tour.id,
+              pax,
+              numberOfTravelers: pax,
+              contactInfo: {
+                name: contactName,
+                email: contactEmail,
+                phone: contactPhone,
+              },
+            };
+
+            if (isMultiDay) {
+              payload.startDate = startDate;
+              payload.endDate = endDate;
+            } else {
+              payload.travelDate = travelDate;
+            }
+
+            try {
+              setSubmitting(true);
+              await api.post("/api/v1/bookings", payload, {
+                headers: {
+                  Authorization: `Bearer ${token}`,
+                },
+              });
+              alert("จองสำเร็จ! กรุณาชำระเงินตามขั้นตอนที่ได้รับ");
+              // reset minimal fields
+              setChildren(0);
+              setAdults(1);
+              setTravelDate("");
+              setStartDate("");
+            } catch (err: any) {
+              const msg = err?.response?.data?.message || "จองไม่สำเร็จ";
+              alert(Array.isArray(msg) ? msg.join("\n") : msg);
+            } finally {
+              setSubmitting(false);
+            }
+          }}
+          disabled={submitting}
+          className="w-full bg-[#FF8400] hover:bg-[#e07300] active:scale-[0.98] text-white font-bold py-3.5 rounded-lg transition-all text-sm shadow-md shadow-orange-200 disabled:opacity-60 disabled:cursor-not-allowed"
+        >
+          {submitting ? "กำลังจอง..." : "จองทัวร์เลย →"}
         </button>
 
         {/* Contact */}

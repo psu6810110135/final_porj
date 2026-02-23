@@ -273,7 +273,7 @@ export default function HomePage() {
 
   const handleSearch = () => {
     const params = new URLSearchParams();
-    if (selectedProvince) params.append("province", selectedProvince);
+    if (selectedProvince) params.append("location", selectedProvince);
     if (selectedCategory) params.append("category", selectedCategory);
     if (selectedDuration) params.append("duration", selectedDuration);
     navigate(`/tours?${params.toString()}`);

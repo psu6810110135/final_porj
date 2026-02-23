@@ -7,40 +7,56 @@ import {
   IsEmail,
   IsOptional,
   ValidateNested,
+  IsUUID,
+  IsNotEmpty,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 
 class ContactInfoDto {
   @IsString()
-  name: string;
+  name!: string;
 
   @IsEmail()
-  email: string;
+  email!: string;
 
   @IsString()
-  phone: string;
+  phone!: string;
 }
 
 export class CreateBookingDto {
-  @IsString()
-  tourId: string;
+  @IsUUID()
+  tourId!: string;
+
+  @IsUUID()
+  @IsOptional()
+  tourScheduleId?: string;
 
   @IsDateString()
-  startDate: string;
+  @IsOptional()
+  travelDate?: string; // one-day
 
   @IsDateString()
-  endDate: string;
+  @IsOptional()
+  startDate?: string; // multi-day start
+
+  @IsDateString()
+  @IsOptional()
+  endDate?: string; // multi-day end
 
   @IsInt()
   @Min(1)
-  numberOfTravelers: number;
+  pax!: number;
 
   @IsObject()
   @ValidateNested()
   @Type(() => ContactInfoDto)
-  contactInfo: ContactInfoDto;
+  contactInfo!: ContactInfoDto;
 
   @IsOptional()
   @IsString()
   specialRequests?: string;
+
+  @IsOptional()
+  @IsObject()
+  selectedOptions?: Record<string, any>;
 }

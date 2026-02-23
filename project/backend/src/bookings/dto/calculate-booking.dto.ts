@@ -1,16 +1,38 @@
-import { IsString, IsDateString, IsInt, Min } from 'class-validator';
+import {
+  IsDateString,
+  IsInt,
+  IsOptional,
+  IsString,
+  IsUUID,
+  Min,
+  IsObject,
+} from 'class-validator';
 
 export class CalculateBookingDto {
-  @IsString()
-  tourId: string;
+  @IsUUID()
+  tourId!: string;
+
+  @IsUUID()
+  @IsOptional()
+  tourScheduleId?: string;
 
   @IsDateString()
-  startDate: string;
+  @IsOptional()
+  travelDate?: string;
 
   @IsDateString()
-  endDate: string;
+  @IsOptional()
+  startDate?: string;
+
+  @IsDateString()
+  @IsOptional()
+  endDate?: string;
 
   @IsInt()
   @Min(1)
-  numberOfTravelers: number;
+  pax!: number;
+
+  @IsOptional()
+  @IsObject()
+  selectedOptions?: Record<string, any>;
 }

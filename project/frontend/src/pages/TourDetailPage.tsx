@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
 import axios from "axios";
 import Navbar from "@/components/Navbar";
@@ -9,6 +9,17 @@ import Footer from "@/components/Footer";
 interface ItineraryStep {
   time: string;
   detail: string;
+}
+
+interface Schedule {
+  id: string;
+  tour_id: string;
+  available_date: string;
+  max_capacity_override: number | null;
+  is_available: boolean;
+  booked_seats?: number;
+  available_seats?: number;
+  created_at: string;
 }
 
 interface Tour {
@@ -30,21 +41,26 @@ interface Tour {
 function parsePreparation(raw?: string[] | string): string[] {
   if (!raw) return [];
   if (Array.isArray(raw)) return raw.filter(Boolean);
-  return raw.split(",").map((s) => s.trim()).filter(Boolean);
-}
-
-function parseDurationDays(duration?: string): number {
-  if (!duration) return 1;
-  const match = duration.match(/(\d+)/);
-  const days = match ? Number(match[1]) : 1;
-  return Number.isFinite(days) && days > 0 ? days : 1;
+  return raw
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
 }
 
 /* ─── Icons ─────────────────────────── */
 
 const MapPinIcon = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24"
-    fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    width="14"
+    height="14"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
     <path stroke="none" d="M0 0h24v24H0z" fill="none" />
     <path d="M9 11a3 3 0 1 0 6 0a3 3 0 0 0 -6 0" />
     <path d="M17.657 16.657l-4.243 4.243a2 2 0 0 1 -2.827 0l-4.244 -4.243a8 8 0 1 1 11.314 0z" />
@@ -52,8 +68,17 @@ const MapPinIcon = () => (
 );
 
 const ClockIcon = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24"
-    fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    width="14"
+    height="14"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
     <path stroke="none" d="M0 0h24v24H0z" fill="none" />
     <path d="M3 12a9 9 0 1 0 18 0a9 9 0 0 0 -18 0" />
     <path d="M12 7v5l3 3" />
@@ -61,8 +86,17 @@ const ClockIcon = () => (
 );
 
 const UsersIcon = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24"
-    fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    width="14"
+    height="14"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
     <path stroke="none" d="M0 0h24v24H0z" fill="none" />
     <path d="M9 7m-4 0a4 4 0 1 0 8 0a4 4 0 1 0 -8 0" />
     <path d="M3 21v-2a4 4 0 0 1 4 -4h4a4 4 0 0 1 4 4v2" />
@@ -71,16 +105,18 @@ const UsersIcon = () => (
   </svg>
 );
 
-const ChevronDownIcon = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24"
-    fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M6 9l6 6 6-6" />
-  </svg>
-);
-
 const XIcon = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24"
-    fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    width="20"
+    height="20"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2.5"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
     <path d="M18 6L6 18M6 6l12 12" />
   </svg>
 );
@@ -90,45 +126,94 @@ const XIcon = () => (
 function BookingSheet({ tour, onClose }: { tour: Tour; onClose?: () => void }) {
   const baseURL = "http://localhost:3000";
   const api = axios.create({ baseURL });
-  const durationDays = parseDurationDays(tour.duration);
-  const isMultiDay = durationDays > 1;
-
   const [adults, setAdults] = useState(1);
   const [children, setChildren] = useState(0);
-  const [travelDate, setTravelDate] = useState("");
-  const [startDate, setStartDate] = useState("");
+  const [schedules, setSchedules] = useState<Schedule[]>([]);
+  const [selectedSchedule, setSelectedSchedule] = useState<Schedule | null>(
+    null,
+  );
+  const [loadingSchedules, setLoadingSchedules] = useState(true);
   const [contactName, setContactName] = useState("");
   const [contactEmail, setContactEmail] = useState("");
   const [contactPhone, setContactPhone] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
+  // Fetch tour schedules
   useEffect(() => {
-    const token = localStorage.getItem("jwt_token") || localStorage.getItem("token");
+    const fetchSchedules = async () => {
+      try {
+        setLoadingSchedules(true);
+        const res = await api.get(`/api/v1/tours/${tour.id}/schedules`);
+        const data = res.data || [];
+        // Filter out past dates and sort by date
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const validSchedules = data
+          .filter((s: Schedule) => {
+            const scheduleDate = new Date(s.available_date);
+            scheduleDate.setHours(0, 0, 0, 0);
+            return scheduleDate >= today;
+          })
+          .sort(
+            (a: Schedule, b: Schedule) =>
+              new Date(a.available_date).getTime() -
+              new Date(b.available_date).getTime(),
+          );
+        setSchedules(validSchedules);
+      } catch (err) {
+        console.error("Failed to fetch schedules:", err);
+        setSchedules([]);
+      } finally {
+        setLoadingSchedules(false);
+      }
+    };
+    fetchSchedules();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tour.id]);
+
+  // Prefill contact info from logged-in user
+  useEffect(() => {
+    const token =
+      localStorage.getItem("jwt_token") || localStorage.getItem("token");
     if (!token) return;
-    api.get("/auth/profile", { headers: { Authorization: `Bearer ${token}` } })
+    api
+      .get("/auth/profile", { headers: { Authorization: `Bearer ${token}` } })
       .then((res) => {
         const d = res.data || {};
         const p = d.profile || {};
-        if (!contactName) setContactName(d.full_name || p.full_name || d.username || "");
+        if (!contactName)
+          setContactName(d.full_name || p.full_name || d.username || "");
         if (!contactEmail) setContactEmail(d.email || p.email || "");
         if (!contactPhone) setContactPhone(p.phone || p.tel || "");
-      }).catch(() => {});
+      })
+      .catch(() => {});
   }, []);
 
-  const maxGuests = tour.max_group_size ?? 15;
   const childPrice = Math.floor(tour.price * 0.6);
   const pax = adults + children;
   const total = tour.price * adults + childPrice * children;
-  const nights = Math.max(durationDays - 1, 0);
-  const endDate = startDate ? (() => {
-    const end = new Date(startDate);
-    end.setDate(end.getDate() + durationDays - 1);
-    return end.toISOString().split("T")[0];
-  })() : "";
-  const remaining = maxGuests - pax;
 
-  const Counter = ({ label, value, onDec, onInc, sub }: {
-    label: string; value: number; onDec: () => void; onInc: () => void; sub?: string;
+  // Schedule-based capacity (one-day tours)
+  const availableSeats = selectedSchedule?.available_seats ?? 0;
+  const remainingCapacity = availableSeats - pax;
+  const visibleSchedules = schedules.filter(
+    (s) => (s.available_seats ?? 0) > 0 && s.is_available !== false,
+  );
+
+  const remaining = remainingCapacity;
+
+  const Counter = ({
+    label,
+    value,
+    onDec,
+    onInc,
+    sub,
+  }: {
+    label: string;
+    value: number;
+    onDec: () => void;
+    onInc: () => void;
+    sub?: string;
   }) => (
     <div className="flex items-center justify-between py-3">
       <div>
@@ -136,98 +221,235 @@ function BookingSheet({ tour, onClose }: { tour: Tour; onClose?: () => void }) {
         {sub && <p className="text-xs text-gray-400 mt-0.5">{sub}</p>}
       </div>
       <div className="flex items-center gap-3">
-        <button onClick={onDec}
-          className="w-8 h-8 rounded-full border-2 border-gray-200 text-gray-500 font-bold flex items-center justify-center hover:border-[#FF8400] hover:text-[#FF8400] transition-colors active:scale-95">
+        <button
+          onClick={onDec}
+          className="w-8 h-8 rounded-full border-2 border-gray-200 text-gray-500 font-bold flex items-center justify-center hover:border-[#FF8400] hover:text-[#FF8400] transition-colors active:scale-95"
+        >
           −
         </button>
-        <span className="w-6 text-center text-base font-bold text-[#2C1A0E]">{value}</span>
-        <button onClick={onInc}
-          className="w-8 h-8 rounded-full bg-[#FF8400] text-white font-bold flex items-center justify-center hover:bg-[#e07300] transition-colors active:scale-95">
+        <span className="w-6 text-center text-base font-bold text-[#2C1A0E]">
+          {value}
+        </span>
+        <button
+          onClick={onInc}
+          className="w-8 h-8 rounded-full bg-[#FF8400] text-white font-bold flex items-center justify-center hover:bg-[#e07300] transition-colors active:scale-95"
+        >
           +
         </button>
       </div>
     </div>
   );
 
-  const handleBook = async () => {
-    if (!pax || pax < 1) return alert("กรุณาเลือกจำนวนผู้เดินทาง");
-    if (!contactName || !contactEmail || !contactPhone) return alert("กรุณากรอกข้อมูลติดต่อให้ครบ");
-    if (!isMultiDay && !travelDate) return alert("กรุณาเลือกวันที่เดินทาง");
-    if (isMultiDay && !startDate) return alert("กรุณาเลือกวันเริ่มต้น");
-    const token = localStorage.getItem("jwt_token") || localStorage.getItem("token");
-    if (!token) return alert("กรุณาเข้าสู่ระบบก่อนจองทัวร์");
-    const payload: any = {
-      tourId: tour.id, pax, numberOfTravelers: pax,
-      contactInfo: { name: contactName, email: contactEmail, phone: contactPhone },
-    };
-    if (isMultiDay) { payload.startDate = startDate; payload.endDate = endDate; }
-    else { payload.travelDate = travelDate; }
-    try {
-      setSubmitting(true);
-      await api.post("/api/v1/bookings", payload, { headers: { Authorization: `Bearer ${token}` } });
-      alert("จองสำเร็จ! กรุณาชำระเงินตามขั้นตอนที่ได้รับ");
-      setChildren(0); setAdults(1); setTravelDate(""); setStartDate("");
-    } catch (err: any) {
-      const msg = err?.response?.data?.message || "จองไม่สำเร็จ";
-      alert(Array.isArray(msg) ? msg.join("\n") : msg);
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
   return (
     <div className="bg-white h-full overflow-y-auto">
       {/* Header */}
       <div className="bg-gradient-to-r from-[#FF8400] to-[#FF6B00] px-5 py-4 flex items-center justify-between">
         <div>
-          <p className="text-white/80 text-xs font-medium uppercase tracking-wider">ราคาเริ่มต้น</p>
+          <p className="text-white/80 text-xs font-medium uppercase tracking-wider">
+            ราคาเริ่มต้น
+          </p>
           <p className="text-white text-2xl font-black">
             ฿{tour.price.toLocaleString()}
             <span className="text-sm font-normal ml-1">/ คน</span>
           </p>
         </div>
         {onClose && (
-          <button onClick={onClose} className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center text-white hover:bg-white/30 transition-colors">
+          <button
+            onClick={onClose}
+            className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center text-white hover:bg-white/30 transition-colors"
+          >
             <XIcon />
           </button>
         )}
       </div>
 
-      <div className="p-5 space-y-5">
-        {/* Date */}
-        {!isMultiDay ? (
-          <div>
-            <label className="text-xs font-bold text-gray-400 uppercase tracking-wider block mb-2">วันที่เดินทาง</label>
-            <input type="date" value={travelDate} onChange={(e) => setTravelDate(e.target.value)}
-              className="w-full border-2 border-gray-100 rounded-xl px-4 py-3 text-sm text-gray-700 focus:outline-none focus:border-[#FF8400] bg-gray-50 transition-colors" />
-          </div>
-        ) : (
-          <div className="space-y-3">
-            <label className="text-xs font-bold text-gray-400 uppercase tracking-wider block">วันเดินทาง</label>
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <p className="text-xs text-gray-400 mb-1.5">วันเริ่มต้น</p>
-                <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)}
-                  className="w-full border-2 border-gray-100 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-[#FF8400] bg-gray-50" />
-              </div>
-              <div>
-                <p className="text-xs text-gray-400 mb-1.5">วันสิ้นสุด</p>
-                <input type="date" value={endDate} readOnly
-                  className="w-full border-2 border-gray-100 rounded-xl px-3 py-2.5 text-sm bg-gray-100 text-gray-400" />
+      <div className="p-5 space-y-4">
+        {/* Schedule Selection */}
+        <div>
+          <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider block mb-2">
+            เลือกวันที่เดินทาง
+          </label>
+          {loadingSchedules ? (
+            <div className="text-center py-8">
+              <div className="w-8 h-8 border-3 border-[#FF8400] border-t-transparent rounded-full animate-spin mx-auto" />
+              <p className="text-xs text-gray-500 mt-2">
+                กำลังโหลดวันที่ว่าง...
+              </p>
+            </div>
+          ) : schedules.length === 0 ? (
+            <div className="text-center py-8 bg-gray-50 rounded-lg border border-gray-200">
+              <p className="text-sm text-gray-500">
+                ไม่มีวันที่เปิดให้จองในขณะนี้
+              </p>
+              <p className="text-xs text-gray-400 mt-1">
+                กรุณาติดต่อเราเพื่อสอบถามเพิ่มเติม
+              </p>
+            </div>
+          ) : visibleSchedules.length === 0 ? (
+            <div className="text-center py-8 bg-gray-50 rounded-lg border border-gray-200">
+              <p className="text-sm text-gray-500">รอบนี้เต็มหมดแล้ว</p>
+              <p className="text-xs text-gray-400 mt-1">
+                กรุณาเลือกทัวร์หรือวันที่อื่น
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-2 max-h-64 overflow-y-auto">
+              {visibleSchedules.map((schedule) => {
+                const date = new Date(schedule.available_date);
+                const isSelected = selectedSchedule?.id === schedule.id;
+                const isFull =
+                  (schedule.available_seats ?? 0) <= 0 ||
+                  !schedule.is_available;
+                const dateStr = date.toLocaleDateString("th-TH", {
+                  year: "numeric",
+                  month: "long",
+                  day: "numeric",
+                  weekday: "short",
+                });
+                const seatCount = schedule.available_seats ?? 0;
+                return (
+                  <button
+                    key={schedule.id}
+                    type="button"
+                    onClick={() => !isFull && setSelectedSchedule(schedule)}
+                    disabled={isFull}
+                    className={`w-full text-left border-2 rounded-lg p-3 transition-all ${
+                      isSelected
+                        ? "border-[#FF8400] bg-orange-50"
+                        : isFull
+                          ? "border-gray-200 bg-gray-50 opacity-60 cursor-not-allowed"
+                          : "border-gray-200 hover:border-[#FF8400] hover:bg-orange-50/30"
+                    }`}
+                  >
+                    <div className="flex justify-between items-start">
+                      <div className="flex-1">
+                        <p
+                          className={`text-sm font-semibold ${isSelected ? "text-[#FF8400]" : "text-[#2C1A0E]"}`}
+                        >
+                          {dateStr}
+                        </p>
+                        <div className="flex items-center gap-2 mt-1">
+                          {isFull ? (
+                            <span className="text-xs font-medium text-red-500 bg-red-50 px-2 py-0.5 rounded">
+                              เต็มแล้ว
+                            </span>
+                          ) : (
+                            <span className="text-xs text-gray-600">
+                              เหลือ{" "}
+                              <span className="font-semibold text-[#FF8400]">
+                                {seatCount}
+                              </span>{" "}
+                              ที่
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                      {isSelected && (
+                        <div className="w-5 h-5 bg-[#FF8400] rounded-full flex items-center justify-center">
+                          <svg
+                            className="w-3 h-3 text-white"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={3}
+                              d="M5 13l4 4L19 7"
+                            />
+                          </svg>
+                        </div>
+                      )}
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          )}
+          {selectedSchedule && (
+            <div className="mt-3 p-3 bg-green-50 border border-green-200 rounded-lg">
+              <p className="text-xs font-semibold text-green-800">
+                ✓ เลือกวันที่แล้ว
+              </p>
+              <p className="text-xs text-green-700 mt-0.5">
+                {new Date(selectedSchedule.available_date).toLocaleDateString(
+                  "th-TH",
+                  {
+                    year: "numeric",
+                    month: "long",
+                    day: "numeric",
+                  },
+                )}
+              </p>
+              <div className="flex items-center justify-between mt-2 pt-2 border-t border-green-200">
+                <span className="text-xs text-green-700">ที่นั่งว่าง:</span>
+                <span className="text-sm font-bold text-green-800">
+                  {selectedSchedule.available_seats} ที่
+                </span>
               </div>
             </div>
-            <p className="text-xs text-[#FF8400] font-medium">{durationDays} วัน {nights} คืน</p>
+          )}
+        </div>
+
+        {/* Capacity Warning */}
+        {selectedSchedule && pax > 0 && (
+          <div
+            className={`p-3 rounded-lg border ${
+              remainingCapacity < 0
+                ? "bg-red-50 border-red-200"
+                : remainingCapacity <= 3
+                  ? "bg-yellow-50 border-yellow-200"
+                  : "bg-blue-50 border-blue-200"
+            }`}
+          >
+            {remainingCapacity < 0 ? (
+              <>
+                <p className="text-xs font-semibold text-red-800">
+                  ⚠️ เกินจำนวนที่นั่งว่าง!
+                </p>
+                <p className="text-xs text-red-700 mt-0.5">
+                  คุณเลือก {pax} คน แต่เหลือเพียง {availableSeats} ที่เท่านั้น
+                </p>
+              </>
+            ) : remainingCapacity <= 3 ? (
+              <>
+                <p className="text-xs font-semibold text-yellow-800">
+                  ⚠️ ที่นั่งใกล้เต็ม!
+                </p>
+                <p className="text-xs text-yellow-700 mt-0.5">
+                  หลังจองจะเหลือเพียง {remainingCapacity} ที่
+                </p>
+              </>
+            ) : (
+              <>
+                <p className="text-xs font-semibold text-blue-800">
+                  ✓ ที่นั่งเพียงพอ
+                </p>
+                <p className="text-xs text-blue-700 mt-0.5">
+                  หลังจองจะเหลือ {remainingCapacity} ที่
+                </p>
+              </>
+            )}
           </div>
         )}
 
         {/* Counters */}
         <div className="border-2 border-gray-100 rounded-xl px-4 divide-y divide-gray-100">
-          <Counter label="ผู้ใหญ่" sub={`฿${tour.price.toLocaleString()} / คน`} value={adults}
-            onDec={() => setAdults(n => Math.max(1, n - 1))}
-            onInc={() => setAdults(n => remaining > 0 ? n + 1 : n)} />
-          <Counter label="เด็ก" sub={`฿${childPrice.toLocaleString()} / คน`} value={children}
-            onDec={() => setChildren(n => Math.max(0, n - 1))}
-            onInc={() => setChildren(n => remaining > 0 ? n + 1 : n)} />
+          <Counter
+            label="ผู้ใหญ่"
+            sub={`฿${tour.price.toLocaleString()} / คน`}
+            value={adults}
+            onDec={() => setAdults((n) => Math.max(1, n - 1))}
+            onInc={() => setAdults((n) => (remaining > 0 ? n + 1 : n))}
+          />
+          <Counter
+            label="เด็ก"
+            sub={`฿${childPrice.toLocaleString()} / คน`}
+            value={children}
+            onDec={() => setChildren((n) => Math.max(0, n - 1))}
+            onInc={() => setChildren((n) => (remaining > 0 ? n + 1 : n))}
+          />
         </div>
 
         {/* Price Summary */}
@@ -235,42 +457,123 @@ function BookingSheet({ tour, onClose }: { tour: Tour; onClose?: () => void }) {
           {adults > 0 && (
             <div className="flex justify-between text-sm">
               <span className="text-gray-500">ผู้ใหญ่ {adults} คน</span>
-              <span className="font-semibold">฿{(tour.price * adults).toLocaleString()}</span>
+              <span className="font-semibold">
+                ฿{(tour.price * adults).toLocaleString()}
+              </span>
             </div>
           )}
           {children > 0 && (
             <div className="flex justify-between text-sm">
               <span className="text-gray-500">เด็ก {children} คน</span>
-              <span className="font-semibold">฿{(childPrice * children).toLocaleString()}</span>
+              <span className="font-semibold">
+                ฿{(childPrice * children).toLocaleString()}
+              </span>
             </div>
           )}
-          <div className="flex justify-between text-xs text-gray-400">
-            <span>รวม {pax} คน</span>
-            <span>เหลือ {Math.max(remaining, 0)} ที่นั่ง</span>
+          <div className="flex justify-between text-[11px] text-gray-500">
+            <span>ผู้เดินทางรวม</span>
+            <span>
+              {pax} คน
+              {selectedSchedule && (
+                <span
+                  className={
+                    remainingCapacity < 0 ? "text-red-500 font-semibold" : ""
+                  }
+                >
+                  {" "}
+                  (จาก {availableSeats} ที่)
+                </span>
+              )}
+            </span>
           </div>
           <div className="border-t border-amber-200 pt-2 flex justify-between font-black text-[#2C1A0E]">
             <span>รวมทั้งหมด</span>
-            <span className="text-[#FF8400] text-lg">฿{total.toLocaleString()}</span>
+            <span className="text-[#FF8400] text-lg">
+              ฿{total.toLocaleString()}
+            </span>
           </div>
         </div>
 
         {/* Contact */}
         <div className="space-y-2.5">
-          <label className="text-xs font-bold text-gray-400 uppercase tracking-wider block">ข้อมูลติดต่อ</label>
+          <label className="text-xs font-bold text-gray-400 uppercase tracking-wider block">
+            ข้อมูลติดต่อ
+          </label>
           {[
-            { type: "text", placeholder: "ชื่อ-นามสกุล", value: contactName, onChange: setContactName },
-            { type: "email", placeholder: "อีเมล", value: contactEmail, onChange: setContactEmail },
-            { type: "tel", placeholder: "เบอร์โทรศัพท์", value: contactPhone, onChange: setContactPhone },
+            {
+              type: "text",
+              placeholder: "ชื่อ-นามสกุล",
+              value: contactName,
+              onChange: setContactName,
+            },
+            {
+              type: "email",
+              placeholder: "อีเมล",
+              value: contactEmail,
+              onChange: setContactEmail,
+            },
+            {
+              type: "tel",
+              placeholder: "เบอร์โทรศัพท์",
+              value: contactPhone,
+              onChange: setContactPhone,
+            },
           ].map((f, i) => (
-            <input key={i} type={f.type} placeholder={f.placeholder} value={f.value}
+            <input
+              key={i}
+              type={f.type}
+              placeholder={f.placeholder}
+              value={f.value}
               onChange={(e) => f.onChange(e.target.value)}
-              className="w-full border-2 border-gray-100 rounded-xl px-4 py-3 text-sm text-gray-700 focus:outline-none focus:border-[#FF8400] bg-gray-50 transition-colors placeholder:text-gray-300" />
+              className="w-full border-2 border-gray-100 rounded-xl px-4 py-3 text-sm text-gray-700 focus:outline-none focus:border-[#FF8400] bg-gray-50 transition-colors placeholder:text-gray-300"
+            />
           ))}
         </div>
 
         {/* Book Button */}
-        <button onClick={handleBook} disabled={submitting}
-          className="w-full bg-gradient-to-r from-[#FF8400] to-[#FF6B00] text-white font-black py-4 rounded-xl transition-all text-base shadow-lg shadow-orange-200 disabled:opacity-60 disabled:cursor-not-allowed active:scale-[0.98] hover:shadow-xl hover:shadow-orange-200">
+        <button
+          onClick={async () => {
+            if (!selectedSchedule) return alert("กรุณาเลือกวันที่เดินทาง");
+            if (!pax || pax < 1) return alert("กรุณาเลือกจำนวนผู้เดินทาง");
+            const seats = selectedSchedule.available_seats ?? 0;
+            if (pax > seats)
+              return alert(`ที่นั่งไม่พอ! เหลือเพียง ${seats} ที่`);
+            if (!contactName || !contactEmail || !contactPhone)
+              return alert("กรุณากรอกข้อมูลติดต่อให้ครบ");
+            const token =
+              localStorage.getItem("jwt_token") ||
+              localStorage.getItem("token") ||
+              localStorage.getItem("accessToken");
+            if (!token) return alert("กรุณาเข้าสู่ระบบก่อนจองทัวร์");
+            const payload = {
+              tourId: tour.id,
+              tourScheduleId: selectedSchedule.id,
+              pax,
+              contactInfo: {
+                name: contactName,
+                email: contactEmail,
+                phone: contactPhone,
+              },
+            };
+            try {
+              setSubmitting(true);
+              await api.post("/api/v1/bookings", payload, {
+                headers: { Authorization: `Bearer ${token}` },
+              });
+              alert("จองสำเร็จ! กรุณาชำระเงินตามขั้นตอนที่ได้รับ");
+              setChildren(0);
+              setAdults(1);
+              setSelectedSchedule(null);
+            } catch (err: any) {
+              const msg = err?.response?.data?.message || "จองไม่สำเร็จ";
+              alert(Array.isArray(msg) ? msg.join("\n") : msg);
+            } finally {
+              setSubmitting(false);
+            }
+          }}
+          disabled={submitting || !selectedSchedule}
+          className="w-full bg-gradient-to-r from-[#FF8400] to-[#FF6B00] text-white font-black py-4 rounded-xl transition-all text-base shadow-lg shadow-orange-200 disabled:opacity-60 disabled:cursor-not-allowed active:scale-[0.98] hover:shadow-xl hover:shadow-orange-200"
+        >
           {submitting ? "กำลังจอง..." : "จองทัวร์เลย →"}
         </button>
 
@@ -296,8 +599,9 @@ export default function TourDetailPage() {
 
   useEffect(() => {
     if (id) {
-      axios.get(`http://localhost:3000/api/v1/tours/${id}`)
-        .then(res => setTour(res.data))
+      axios
+        .get(`http://localhost:3000/api/v1/tours/${id}`)
+        .then((res) => setTour(res.data))
         .catch(() => setError(true))
         .finally(() => setLoading(false));
     }
@@ -306,7 +610,9 @@ export default function TourDetailPage() {
   // Lock scroll when sheet open
   useEffect(() => {
     document.body.style.overflow = sheetOpen ? "hidden" : "";
-    return () => { document.body.style.overflow = ""; };
+    return () => {
+      document.body.style.overflow = "";
+    };
   }, [sheetOpen]);
 
   return (
@@ -358,24 +664,44 @@ export default function TourDetailPage() {
           <div className="min-h-[60vh] flex items-center justify-center">
             <div className="text-center space-y-3">
               <p className="text-5xl">😕</p>
-              <p className="text-lg font-bold text-gray-700">ไม่พบข้อมูลทัวร์นี้</p>
-              <Link to="/" className="text-sm text-[#FF8400] hover:underline">← กลับหน้าหลัก</Link>
+              <p className="text-lg font-bold text-gray-700">
+                ไม่พบข้อมูลทัวร์นี้
+              </p>
+              <Link to="/" className="text-sm text-[#FF8400] hover:underline">
+                ← กลับหน้าหลัก
+              </Link>
             </div>
           </div>
         ) : (
           <>
             {/* ── Hero Image (full-bleed, title overlay) ── */}
             <div className="relative w-full h-[55vw] min-h-[240px] max-h-[480px] overflow-hidden">
-              <img src={tour.image_cover} alt={tour.title}
-                className="w-full h-full object-cover" />
+              <img
+                src={tour.image_cover}
+                alt={tour.title}
+                className="w-full h-full object-cover"
+              />
               <div className="hero-gradient absolute inset-0" />
 
               {/* Back button */}
-              <Link to="/tours"
-                className="absolute top-4 left-4 w-9 h-9 rounded-full bg-black/30 backdrop-blur-sm flex items-center justify-center text-white hover:bg-black/50 transition-colors">
-                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24"
-                  stroke="currentColor" strokeWidth="2.5">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+              <Link
+                to="/tours"
+                className="absolute top-4 left-4 w-9 h-9 rounded-full bg-black/30 backdrop-blur-sm flex items-center justify-center text-white hover:bg-black/50 transition-colors"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="18"
+                  height="18"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth="2.5"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M15 19l-7-7 7-7"
+                  />
                 </svg>
               </Link>
 
@@ -391,9 +717,19 @@ export default function TourDetailPage() {
                   {[
                     { Icon: MapPinIcon, text: tour.province },
                     { Icon: ClockIcon, text: tour.duration },
-                    ...(tour.max_group_size ? [{ Icon: UsersIcon, text: `สูงสุด ${tour.max_group_size} คน` }] : []),
+                    ...(tour.max_group_size
+                      ? [
+                          {
+                            Icon: UsersIcon,
+                            text: `สูงสุด ${tour.max_group_size} คน`,
+                          },
+                        ]
+                      : []),
                   ].map(({ Icon, text }, i) => (
-                    <span key={i} className="flex items-center gap-1 text-white/90 text-xs font-medium bg-black/25 backdrop-blur-sm px-2.5 py-1 rounded-full">
+                    <span
+                      key={i}
+                      className="flex items-center gap-1 text-white/90 text-xs font-medium bg-black/25 backdrop-blur-sm px-2.5 py-1 rounded-full"
+                    >
                       <Icon /> {text}
                     </span>
                   ))}
@@ -404,10 +740,8 @@ export default function TourDetailPage() {
             {/* ── Content + Sidebar ── */}
             <div className="max-w-7xl mx-auto px-4 py-5 pb-28 md:pb-8">
               <div className="grid lg:grid-cols-3 gap-6">
-
                 {/* ── Left: Content ── */}
                 <div className="lg:col-span-2 space-y-4">
-
                   {/* Description */}
                   {tour.description && (
                     <div className="section-card">
@@ -415,7 +749,9 @@ export default function TourDetailPage() {
                         <span className="w-1 h-5 bg-[#FF8400] rounded-full inline-block" />
                         รายละเอียดทัวร์
                       </h2>
-                      <p className="text-sm text-gray-600 leading-7 whitespace-pre-line">{tour.description}</p>
+                      <p className="text-sm text-gray-600 leading-7 whitespace-pre-line">
+                        {tour.description}
+                      </p>
                     </div>
                   )}
 
@@ -430,8 +766,12 @@ export default function TourDetailPage() {
                         {itinerary.map((item, i) => (
                           <div key={i} className="relative">
                             <div className="timeline-dot" />
-                            <p className="text-xs font-bold text-[#FF8400] mb-0.5">{item.time}</p>
-                            <p className="text-sm text-gray-600 leading-relaxed">{item.detail}</p>
+                            <p className="text-xs font-bold text-[#FF8400] mb-0.5">
+                              {item.time}
+                            </p>
+                            <p className="text-sm text-gray-600 leading-relaxed">
+                              {item.detail}
+                            </p>
                           </div>
                         ))}
                       </div>
@@ -447,7 +787,10 @@ export default function TourDetailPage() {
                       </h2>
                       <ul className="grid sm:grid-cols-2 gap-2.5">
                         {preparation.map((item, i) => (
-                          <li key={i} className="flex items-start gap-2.5 text-sm text-gray-600">
+                          <li
+                            key={i}
+                            className="flex items-start gap-2.5 text-sm text-gray-600"
+                          >
                             <span className="w-5 h-5 rounded-full bg-[#FF8400]/15 text-[#FF8400] flex items-center justify-center text-xs font-bold shrink-0 mt-0.5">
                               {i + 1}
                             </span>
@@ -475,11 +818,15 @@ export default function TourDetailPage() {
                   <p className="text-xs text-gray-400">ราคาเริ่มต้น</p>
                   <p className="text-xl font-black text-[#FF8400]">
                     ฿{tour.price.toLocaleString()}
-                    <span className="text-xs font-normal text-gray-400 ml-1">/ คน</span>
+                    <span className="text-xs font-normal text-gray-400 ml-1">
+                      / คน
+                    </span>
                   </p>
                 </div>
-                <button onClick={() => setSheetOpen(true)}
-                  className="flex-1 max-w-[180px] bg-gradient-to-r from-[#FF8400] to-[#FF6B00] text-white font-black py-3.5 rounded-xl text-sm shadow-lg shadow-orange-200 active:scale-[0.97] transition-all">
+                <button
+                  onClick={() => setSheetOpen(true)}
+                  className="flex-1 max-w-[180px] bg-gradient-to-r from-[#FF8400] to-[#FF6B00] text-white font-black py-3.5 rounded-xl text-sm shadow-lg shadow-orange-200 active:scale-[0.97] transition-all"
+                >
                   จองทัวร์เลย →
                 </button>
               </div>
@@ -489,8 +836,10 @@ export default function TourDetailPage() {
             {sheetOpen && (
               <div className="lg:hidden fixed inset-0 z-50 flex flex-col justify-end">
                 {/* Backdrop */}
-                <div className="sheet-overlay absolute inset-0 bg-black/50 backdrop-blur-sm"
-                  onClick={() => setSheetOpen(false)} />
+                <div
+                  className="sheet-overlay absolute inset-0 bg-black/50 backdrop-blur-sm"
+                  onClick={() => setSheetOpen(false)}
+                />
                 {/* Panel */}
                 <div className="sheet-panel relative bg-white rounded-t-3xl max-h-[90vh] overflow-hidden flex flex-col">
                   {/* Handle */}
@@ -498,7 +847,10 @@ export default function TourDetailPage() {
                     <div className="w-10 h-1 bg-gray-200 rounded-full" />
                   </div>
                   <div className="overflow-y-auto flex-1">
-                    <BookingSheet tour={tour} onClose={() => setSheetOpen(false)} />
+                    <BookingSheet
+                      tour={tour}
+                      onClose={() => setSheetOpen(false)}
+                    />
                   </div>
                 </div>
               </div>

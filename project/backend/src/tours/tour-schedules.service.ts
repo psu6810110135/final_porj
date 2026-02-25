@@ -2,6 +2,8 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { TourSchedule } from './entities/tour-schedule.entity';
+import { Booking, BookingStatus } from '../bookings/entities/booking.entity';
+import { Tour } from './entities/tour.entity';
 import { CreateTourScheduleDto } from './dto/create-tour-schedule.dto';
 import { UpdateTourScheduleDto } from './dto/update-tour-schedule.dto';
 
@@ -10,6 +12,10 @@ export class TourSchedulesService {
   constructor(
     @InjectRepository(TourSchedule)
     private readonly scheduleRepository: Repository<TourSchedule>,
+    @InjectRepository(Booking)
+    private readonly bookingRepository: Repository<Booking>,
+    @InjectRepository(Tour)
+    private readonly tourRepository: Repository<Tour>,
   ) {}
 
   async create(
@@ -23,11 +29,44 @@ export class TourSchedulesService {
     return this.scheduleRepository.save(schedule);
   }
 
-  async findAll(tourId: string): Promise<TourSchedule[]> {
-    return this.scheduleRepository.find({
+  async findAll(tourId: string): Promise<any[]> {
+    const schedules = await this.scheduleRepository.find({
       where: { tour_id: tourId },
       order: { available_date: 'ASC' },
     });
+
+    const tour = await this.tourRepository.findOne({ where: { id: tourId } });
+    const defaultCapacity = tour?.max_group_size || 30;
+
+    // Calculate booked_seats and available_seats for each schedule
+    const schedulesWithAvailability = await Promise.all(
+      schedules.map(async (schedule) => {
+        const maxCapacity = schedule.max_capacity_override ?? defaultCapacity;
+
+        // Count booked seats for this schedule
+        const result = await this.bookingRepository
+          .createQueryBuilder('booking')
+          .select('COALESCE(SUM(booking.pax), 0)', 'total')
+          .where('booking.tourScheduleId = :scheduleId', {
+            scheduleId: schedule.id,
+          })
+          .andWhere('booking.status NOT IN (:...statuses)', {
+            statuses: [BookingStatus.CANCELLED, BookingStatus.EXPIRED],
+          })
+          .getRawOne<{ total: string }>();
+
+        const bookedSeats = Number(result?.total || 0);
+        const availableSeats = maxCapacity - bookedSeats;
+
+        return {
+          ...schedule,
+          booked_seats: bookedSeats,
+          available_seats: availableSeats,
+        };
+      }),
+    );
+
+    return schedulesWithAvailability;
   }
 
   async findOne(id: string): Promise<TourSchedule> {

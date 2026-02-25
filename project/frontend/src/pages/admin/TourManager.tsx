@@ -18,7 +18,7 @@ export const TourCategory = {
   NATURE: 'Nature',
   CITY: 'City',
   ADVENTURE: 'Adventure',
-}
+};
 
 export const TourRegion =  {
   NORTH: 'North',
@@ -27,7 +27,7 @@ export const TourRegion =  {
   EAST: 'East',
   WEST: 'West',
   NORTHEAST: 'Northeast',
-}
+};
 
 export interface Tour {
   id: string;
@@ -36,7 +36,7 @@ export interface Tour {
   province: string;
   duration: string;
   category: string;
-  region:string;
+  region: string;
   is_active: boolean;
   image_cover?: string;
   description?: string;
@@ -67,7 +67,6 @@ const API_URL = 'http://localhost:3000/api/v1/tours';
 const TourManager = () => {
   const [tours, setTours] = useState<Tour[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [currentPage, setCurrentPage] = useState(1);
@@ -87,7 +86,7 @@ const TourManager = () => {
       const data = await response.json();
       setTours(data);
     } catch (err) {
-      setError('Could not load tours.');
+      console.error('Could not load tours.', err);
     } finally {
       setLoading(false);
     }
@@ -209,57 +208,57 @@ const TourManager = () => {
 
   /* ── Render ────────────────────────────────────── */
   return (
-    <div className="relative space-y-6 p-6 bg-gray-50 min-h-screen font-sans">
+    <div className="w-full space-y-6 animate-in fade-in duration-500">
 
       {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Tour Management</h1>
-          <p className="text-sm text-gray-500 mt-1">Manage your tours, track availability, and update details.</p>
+          <h1 className="text-3xl font-extrabold text-[#4F200D] tracking-tight">Tour Management</h1>
+          <p className="text-sm font-medium text-[#4F200D]/60 mt-1">Manage your tours, track availability, and update details.</p>
         </div>
-        <Button className="bg-orange-500 hover:bg-orange-600 text-white shadow-sm transition-all" onClick={handleAddNew}>
-          <Plus className="w-4 h-4 mr-2" /> Add New Tour
+        <Button className="bg-[#FF8400] hover:bg-[#e67600] text-white shadow-lg shadow-[#FF8400]/20 rounded-xl px-6 py-5 text-sm font-bold transition-all" onClick={handleAddNew}>
+          <Plus className="w-5 h-5 mr-2" strokeWidth={2.5} /> Add New Tour
         </Button>
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm flex items-center justify-between">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="bg-white p-6 rounded-3xl border-0 shadow-sm flex items-center justify-between hover:shadow-md transition-shadow">
           <div>
-            <p className="text-sm font-medium text-gray-500">Total Tours</p>
-            <p className="text-2xl font-bold text-gray-900">{tours.length}</p>
+            <p className="text-sm font-bold text-[#4F200D]/50 uppercase tracking-wider">Total Tours</p>
+            <p className="text-3xl font-black text-[#4F200D] mt-1">{tours.length}</p>
           </div>
-          <div className="p-2 bg-orange-50 rounded-lg text-orange-600"><MapPin className="w-5 h-5" /></div>
+          <div className="p-4 bg-[#FFD93D]/30 rounded-2xl text-[#FF8400]"><MapPin className="w-7 h-7" strokeWidth={2.5}/></div>
         </div>
-        <div className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm flex items-center justify-between">
+        <div className="bg-white p-6 rounded-3xl border-0 shadow-sm flex items-center justify-between hover:shadow-md transition-shadow">
           <div>
-            <p className="text-sm font-medium text-gray-500">Active Tours</p>
-            <p className="text-2xl font-bold text-green-600">{tours.filter((t) => t.is_active).length}</p>
+            <p className="text-sm font-bold text-[#4F200D]/50 uppercase tracking-wider">Active Tours</p>
+            <p className="text-3xl font-black text-emerald-600 mt-1">{tours.filter((t) => t.is_active).length}</p>
           </div>
-          <div className="p-2 bg-green-50 rounded-lg text-green-600"><Calendar className="w-5 h-5" /></div>
+          <div className="p-4 bg-[#FF8400]/10 rounded-2xl text-[#FF8400]"><Calendar className="w-7 h-7" strokeWidth={2.5}/></div>
         </div>
-        <div className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm flex items-center justify-between">
+        <div className="bg-white p-6 rounded-3xl border-0 shadow-sm flex items-center justify-between hover:shadow-md transition-shadow">
           <div>
-            <p className="text-sm font-medium text-gray-500">Categories</p>
-            <p className="text-2xl font-bold text-gray-900">{new Set(tours.map((t) => t.category)).size}</p>
+            <p className="text-sm font-bold text-[#4F200D]/50 uppercase tracking-wider">Categories</p>
+            <p className="text-3xl font-black text-[#4F200D] mt-1">{new Set(tours.map((t) => t.category)).size}</p>
           </div>
-          <div className="p-2 bg-orange-50 rounded-lg text-orange-600"><Users className="w-5 h-5" /></div>
+          <div className="p-4 bg-[#4F200D]/5 rounded-2xl text-[#4F200D]"><Users className="w-7 h-7" strokeWidth={2.5}/></div>
         </div>
       </div>
 
       {/* Filters */}
-      <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm flex flex-col sm:flex-row gap-4 items-center justify-between">
-        <div className="relative w-full sm:w-72">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
+      <div className="bg-white p-5 rounded-3xl border-0 shadow-sm flex flex-col sm:flex-row gap-4 items-center justify-between mb-6">
+        <div className="relative w-full sm:w-96">
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-[#4F200D]/40 w-5 h-5" />
           <Input
             placeholder="Search tours..."
-            className="pl-9 bg-gray-50 border-gray-200 focus:bg-white transition-colors focus:ring-orange-200"
+            className="pl-12 py-6 bg-[#F6F1E9]/50 border-0 rounded-2xl font-bold text-[#4F200D] placeholder:font-medium focus:bg-white focus:ring-2 focus:ring-[#FFD93D] transition-all"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />
         </div>
         <select
-          className="text-sm border-none bg-transparent focus:ring-0 text-gray-600 font-medium cursor-pointer focus:outline-none hover:text-orange-600 transition-colors"
+          className="text-sm border-0 bg-[#F6F1E9]/50 px-6 py-3 rounded-2xl focus:ring-2 focus:ring-[#FFD93D] text-[#4F200D] font-bold cursor-pointer outline-none transition-all"
           value={statusFilter}
           onChange={(e) => setStatusFilter(e.target.value)}
         >
@@ -270,37 +269,37 @@ const TourManager = () => {
       </div>
 
       {/* Table */}
-      <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+      <div className="bg-white rounded-3xl border-0 shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm">
-            <thead className="bg-gray-50 border-b border-gray-200">
+            <thead className="bg-[#F6F1E9]/80 border-b-2 border-[#F6F1E9]">
               <tr>
-                <th className="px-6 py-4 font-semibold text-gray-700">Tour Name</th>
-                <th className="px-6 py-4 font-semibold text-gray-700">Price</th>
-                <th className="px-6 py-4 font-semibold text-gray-700">Region</th>
-                <th className="px-6 py-4 font-semibold text-gray-700">Duration</th>
-                <th className="px-6 py-4 font-semibold text-gray-700">Category</th>
-                <th className="px-6 py-4 font-semibold text-gray-700">Status</th>
-                <th className="px-6 py-4 font-semibold text-gray-700 text-right">Actions</th>
+                <th className="px-6 py-5 font-black text-[#4F200D] uppercase tracking-wider text-xs">Tour Name</th>
+                <th className="px-6 py-5 font-black text-[#4F200D] uppercase tracking-wider text-xs">Price</th>
+                <th className="px-6 py-5 font-black text-[#4F200D] uppercase tracking-wider text-xs">Region</th>
+                <th className="px-6 py-5 font-black text-[#4F200D] uppercase tracking-wider text-xs">Duration</th>
+                <th className="px-6 py-5 font-black text-[#4F200D] uppercase tracking-wider text-xs">Category</th>
+                <th className="px-6 py-5 font-black text-[#4F200D] uppercase tracking-wider text-xs">Status</th>
+                <th className="px-6 py-5 font-black text-[#4F200D] uppercase tracking-wider text-xs text-right">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-100">
+            <tbody className="divide-y divide-[#F6F1E9]">
               {loading ? (
                 <tr>
                   <td colSpan={7} className="px-6 py-12 text-center">
-                    <div className="flex items-center justify-center gap-2 text-gray-400">
-                      <Loader2 className="w-4 h-4 animate-spin" /> Loading tours...
+                    <div className="flex items-center justify-center gap-2 text-[#FF8400] font-bold">
+                      <Loader2 className="w-5 h-5 animate-spin" /> Loading tours...
                     </div>
                   </td>
                 </tr>
               ) : paginatedTours.length === 0 ? (
-                <tr><td colSpan={7} className="px-6 py-12 text-center text-gray-400">No tours found.</td></tr>
+                <tr><td colSpan={7} className="px-6 py-12 text-center text-[#4F200D]/40 font-bold">No tours found.</td></tr>
               ) : (
                 paginatedTours.map((tour) => (
-                  <tr key={tour.id} className="hover:bg-orange-50/50 transition-colors">
-                    <td className="px-6 py-4">
+                  <tr key={tour.id} className="hover:bg-[#FFD93D]/5 transition-colors group">
+                    <td className="px-6 py-5">
                       <div className="flex items-center gap-4">
-                        <div className="w-10 h-10 rounded-lg overflow-hidden bg-gray-100 flex-shrink-0">
+                        <div className="w-12 h-12 rounded-xl overflow-hidden bg-[#F6F1E9] flex-shrink-0 shadow-sm">
                           <img
                             src={tour.image_cover || 'https://placehold.co/80x80?text=Tour'}
                             alt=""
@@ -309,26 +308,26 @@ const TourManager = () => {
                           />
                         </div>
                         <div>
-                          <p className="font-medium text-gray-900">{tour.title}</p>
-                          <p className="text-xs text-gray-500">{tour.province}</p>
+                          <p className="font-bold text-[#4F200D] group-hover:text-[#FF8400] transition-colors">{tour.title}</p>
+                          <p className="text-xs font-semibold text-[#4F200D]/50 mt-0.5">{tour.province}</p>
                         </div>
                       </div>
                     </td>
-                    <td className="px-6 py-4 font-medium text-gray-900">฿{Number(tour.price).toLocaleString()}</td>
-                    <td className="px-6 py-4 text-gray-600">{tour.region}</td>
-                    <td className="px-6 py-4 text-gray-600">{tour.duration}</td>
-                    <td className="px-6 py-4 text-gray-600 capitalize">{tour.category}</td>
-                    <td className="px-6 py-4">
-                      <Badge className={`border-0 shadow-none ${tour.is_active ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}`}>
+                    <td className="px-6 py-5 font-black text-[#4F200D]">฿{Number(tour.price).toLocaleString()}</td>
+                    <td className="px-6 py-5 font-bold text-[#4F200D]/70">{tour.region}</td>
+                    <td className="px-6 py-5 font-bold text-[#4F200D]/70">{tour.duration}</td>
+                    <td className="px-6 py-5 font-bold text-[#4F200D]/70 capitalize">{tour.category}</td>
+                    <td className="px-6 py-5">
+                      <Badge className={`border-0 shadow-none px-3 py-1 font-bold ${tour.is_active ? 'bg-[#FFD93D]/30 text-[#4F200D]' : 'bg-gray-100 text-gray-500'}`}>
                         {tour.is_active ? 'Active' : 'Inactive'}
                       </Badge>
                     </td>
-                    <td className="px-6 py-4 text-right">
+                    <td className="px-6 py-5 text-right">
                       <div className="flex justify-end gap-2">
-                        <Button variant="ghost" size="icon" className="h-8 w-8 hover:text-orange-600 hover:bg-orange-100" onClick={() => handleEdit(tour)}>
+                        <Button variant="ghost" size="icon" className="h-9 w-9 text-[#4F200D]/40 hover:text-[#FF8400] hover:bg-[#FF8400]/10 rounded-xl" onClick={() => handleEdit(tour)}>
                           <Pencil className="w-4 h-4" />
                         </Button>
-                        <Button variant="ghost" size="icon" className="h-8 w-8 hover:text-red-600 hover:bg-red-100" onClick={() => handleDelete(tour.id)}>
+                        <Button variant="ghost" size="icon" className="h-9 w-9 text-[#4F200D]/40 hover:text-red-500 hover:bg-red-50 rounded-xl" onClick={() => handleDelete(tour.id)}>
                           <Trash2 className="w-4 h-4" />
                         </Button>
                       </div>
@@ -341,20 +340,15 @@ const TourManager = () => {
         </div>
 
         {/* Pagination */}
-        <div className="px-6 py-4 border-t border-gray-200 flex items-center justify-between bg-gray-50">
-          <p className="text-sm text-gray-500">
-            Showing{' '}
-            <span className="font-medium">{filteredTours.length === 0 ? 0 : (currentPage - 1) * itemsPerPage + 1}</span>
-            {' '}to{' '}
-            <span className="font-medium">{Math.min(currentPage * itemsPerPage, filteredTours.length)}</span>
-            {' '}of{' '}
-            <span className="font-medium">{filteredTours.length}</span> results
+        <div className="px-6 py-4 flex items-center justify-between bg-white border-t-2 border-[#F6F1E9]">
+          <p className="text-sm font-semibold text-[#4F200D]/50">
+            Showing <span className="text-[#FF8400]">{filteredTours.length === 0 ? 0 : (currentPage - 1) * itemsPerPage + 1}</span> to <span className="text-[#FF8400]">{Math.min(currentPage * itemsPerPage, filteredTours.length)}</span> of <span className="text-[#FF8400]">{filteredTours.length}</span> results
           </p>
           <div className="flex gap-2">
-            <Button variant="outline" size="sm" disabled={currentPage === 1} onClick={() => setCurrentPage((p) => Math.max(1, p - 1))} className="hover:bg-orange-50 hover:text-orange-600 hover:border-orange-200">
+            <Button variant="outline" size="sm" disabled={currentPage === 1} onClick={() => setCurrentPage((p) => Math.max(1, p - 1))} className="border-0 bg-[#F6F1E9]/50 text-[#4F200D] font-bold rounded-xl hover:bg-[#FFD93D]/30 hover:text-[#FF8400] transition-colors">
               Previous
             </Button>
-            <Button variant="outline" size="sm" disabled={currentPage === totalPages || totalPages === 0} onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))} className="hover:bg-orange-50 hover:text-orange-600 hover:border-orange-200">
+            <Button variant="outline" size="sm" disabled={currentPage === totalPages || totalPages === 0} onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))} className="border-0 bg-[#F6F1E9]/50 text-[#4F200D] font-bold rounded-xl hover:bg-[#FFD93D]/30 hover:text-[#FF8400] transition-colors">
               Next
             </Button>
           </div>
@@ -363,64 +357,64 @@ const TourManager = () => {
 
       {/* ─── Modal ───────────────────────────────────── */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-          <div className="bg-white rounded-xl shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#4F200D]/60 backdrop-blur-sm p-4 overflow-y-auto">
+          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-2xl my-auto">
 
             {/* Modal Header */}
-            <div className="flex justify-between items-center p-6 border-b border-gray-100 sticky top-0 bg-white z-10">
-              <h2 className="text-lg font-bold text-gray-900">
-                {editingId ? 'Edit Tour' : 'Add New Tour'}
+            <div className="flex justify-between items-center p-6 border-b-2 border-[#F6F1E9] bg-white rounded-t-3xl">
+              <h2 className="text-2xl font-black text-[#4F200D]">
+                {editingId ? 'Edit Tour' : 'Create New Tour'}
               </h2>
-              <button onClick={() => setIsModalOpen(false)} className="text-gray-400 hover:text-gray-600 p-1 rounded-lg hover:bg-gray-100 transition-colors">
-                <X className="w-5 h-5" />
+              <button onClick={() => setIsModalOpen(false)} className="text-[#4F200D]/40 hover:text-red-500 p-2 rounded-xl hover:bg-red-50 transition-colors">
+                <X className="w-6 h-6" />
               </button>
             </div>
 
-            <form onSubmit={handleSubmit} className="p-6 space-y-5">
+            <form onSubmit={handleSubmit} className="p-6 space-y-5 max-h-[75vh] overflow-y-auto custom-scrollbar">
 
               {/* Title */}
-              <div className="space-y-1">
-                <label className="text-sm font-medium text-gray-700">Tour Title *</label>
-                <Input required value={formData.title} onChange={(e) => setFormData({ ...formData, title: e.target.value })} placeholder="e.g. Amazing Sea Trip" className="focus:ring-orange-500 focus:border-orange-500" />
+              <div className="space-y-2">
+                <label className="text-sm font-black text-[#4F200D] uppercase tracking-wider">Tour Title *</label>
+                <Input required value={formData.title} onChange={(e) => setFormData({ ...formData, title: e.target.value })} placeholder="e.g. Amazing Sea Trip" className="bg-[#F6F1E9]/50 border-0 rounded-xl focus:bg-white focus:ring-2 focus:ring-[#FFD93D] font-bold text-[#4F200D]" />
               </div>
 
               {/* Price & Duration */}
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1">
-                  <label className="text-sm font-medium text-gray-700">Price (฿) *</label>
-                  <Input type="number" required min="0" value={formData.price} onChange={(e) => setFormData({ ...formData, price: e.target.value })} placeholder="0" className="focus:ring-orange-500" />
+              <div className="grid grid-cols-2 gap-5">
+                <div className="space-y-2">
+                  <label className="text-sm font-black text-[#4F200D] uppercase tracking-wider">Price (฿) *</label>
+                  <Input type="number" required min="0" value={formData.price} onChange={(e) => setFormData({ ...formData, price: e.target.value })} placeholder="0" className="bg-[#F6F1E9]/50 border-0 rounded-xl focus:bg-white focus:ring-2 focus:ring-[#FFD93D] font-bold text-[#4F200D]" />
                 </div>
-                <div className="space-y-1">
-                  <label className="text-sm font-medium text-gray-700">Duration *</label>
-                  <Input required value={formData.duration} onChange={(e) => setFormData({ ...formData, duration: e.target.value })} placeholder="e.g. 1 Day" className="focus:ring-orange-500" />
+                <div className="space-y-2">
+                  <label className="text-sm font-black text-[#4F200D] uppercase tracking-wider">Duration *</label>
+                  <Input required value={formData.duration} onChange={(e) => setFormData({ ...formData, duration: e.target.value })} placeholder="e.g. 1 Day" className="bg-[#F6F1E9]/50 border-0 rounded-xl focus:bg-white focus:ring-2 focus:ring-[#FFD93D] font-bold text-[#4F200D]" />
                 </div>
               </div>
 
               {/* Region & Province */}
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1">
-                  <label className="text-sm font-medium text-gray-700">Region *</label>
-                  <select className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2" value={formData.region} onChange={(e) => setFormData({ ...formData, region: e.target.value as string })}>
+              <div className="grid grid-cols-2 gap-5">
+                <div className="space-y-2">
+                  <label className="text-sm font-black text-[#4F200D] uppercase tracking-wider">Region *</label>
+                  <select className="w-full h-10 px-3 rounded-xl border-0 bg-[#F6F1E9]/50 text-[#4F200D] font-bold text-sm focus:bg-white focus:ring-2 focus:ring-[#FFD93D] outline-none" value={formData.region} onChange={(e) => setFormData({ ...formData, region: e.target.value as string })}>
                     {Object.values(TourRegion).map((r) => <option key={r} value={r}>{r}</option>)}
                   </select>
                 </div>
-                <div className="space-y-1">
-                  <label className="text-sm font-medium text-gray-700">Province *</label>
-                  <Input required value={formData.province} onChange={(e) => setFormData({ ...formData, province: e.target.value })} placeholder="e.g. Krabi" className="focus:ring-orange-500" />
+                <div className="space-y-2">
+                  <label className="text-sm font-black text-[#4F200D] uppercase tracking-wider">Province *</label>
+                  <Input required value={formData.province} onChange={(e) => setFormData({ ...formData, province: e.target.value })} placeholder="e.g. Krabi" className="bg-[#F6F1E9]/50 border-0 rounded-xl focus:bg-white focus:ring-2 focus:ring-[#FFD93D] font-bold text-[#4F200D]" />
                 </div>
               </div>
 
               {/* Category & Status */}
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1">
-                  <label className="text-sm font-medium text-gray-700">Category *</label>
-                  <select className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2" value={formData.category} onChange={(e) => setFormData({ ...formData, category: e.target.value as string })}>
+              <div className="grid grid-cols-2 gap-5">
+                <div className="space-y-2">
+                  <label className="text-sm font-black text-[#4F200D] uppercase tracking-wider">Category *</label>
+                  <select className="w-full h-10 px-3 rounded-xl border-0 bg-[#F6F1E9]/50 text-[#4F200D] font-bold text-sm focus:bg-white focus:ring-2 focus:ring-[#FFD93D] outline-none" value={formData.category} onChange={(e) => setFormData({ ...formData, category: e.target.value as string })}>
                     {Object.values(TourCategory).map((c) => <option key={c} value={c}>{c}</option>)}
                   </select>
                 </div>
-                <div className="space-y-1">
-                  <label className="text-sm font-medium text-gray-700">Status</label>
-                  <select className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2" value={formData.is_active ? 'active' : 'inactive'} onChange={(e) => setFormData({ ...formData, is_active: e.target.value === 'active' })}>
+                <div className="space-y-2">
+                  <label className="text-sm font-black text-[#4F200D] uppercase tracking-wider">Status</label>
+                  <select className="w-full h-10 px-3 rounded-xl border-0 bg-[#F6F1E9]/50 text-[#4F200D] font-bold text-sm focus:bg-white focus:ring-2 focus:ring-[#FFD93D] outline-none" value={formData.is_active ? 'active' : 'inactive'} onChange={(e) => setFormData({ ...formData, is_active: e.target.value === 'active' })}>
                     <option value="active">Active</option>
                     <option value="inactive">Inactive</option>
                   </select>
@@ -428,32 +422,34 @@ const TourManager = () => {
               </div>
 
               {/* Max Group Size & Image URL */}
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1">
-                  <label className="text-sm font-medium text-gray-700">Max Group Size</label>
-                  <Input type="number" min="1" value={formData.max_group_size} onChange={(e) => setFormData({ ...formData, max_group_size: Number(e.target.value) })} className="focus:ring-orange-500" />
+              <div className="grid grid-cols-2 gap-5">
+                <div className="space-y-2">
+                  <label className="text-sm font-black text-[#4F200D] uppercase tracking-wider">Max Group Size</label>
+                  <Input type="number" min="1" value={formData.max_group_size} onChange={(e) => setFormData({ ...formData, max_group_size: Number(e.target.value) })} className="bg-[#F6F1E9]/50 border-0 rounded-xl focus:bg-white focus:ring-2 focus:ring-[#FFD93D] font-bold text-[#4F200D]" />
                 </div>
-                <div className="space-y-1">
-                  <label className="text-sm font-medium text-gray-700">Cover Image URL</label>
-                  <Input value={formData.image_cover} onChange={(e) => setFormData({ ...formData, image_cover: e.target.value })} placeholder="https://..." className="focus:ring-orange-500" />
+                <div className="space-y-2">
+                  <label className="text-sm font-black text-[#4F200D] uppercase tracking-wider">Cover Image URL</label>
+                  <Input value={formData.image_cover} onChange={(e) => setFormData({ ...formData, image_cover: e.target.value })} placeholder="https://..." className="bg-[#F6F1E9]/50 border-0 rounded-xl focus:bg-white focus:ring-2 focus:ring-[#FFD93D] font-bold text-[#4F200D]" />
                 </div>
               </div>
 
               {/* Image Preview */}
               {formData.image_cover && (
-                <img
-                  src={formData.image_cover}
-                  alt="preview"
-                  className="h-28 w-full object-cover rounded-lg border border-gray-200"
-                  onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
-                />
+                <div className="rounded-2xl overflow-hidden border-2 border-[#F6F1E9]">
+                  <img
+                    src={formData.image_cover}
+                    alt="preview"
+                    className="h-32 w-full object-cover"
+                    onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                  />
+                </div>
               )}
 
               {/* Description */}
-              <div className="space-y-1">
-                <label className="text-sm font-medium text-gray-700">Description</label>
+              <div className="space-y-2">
+                <label className="text-sm font-black text-[#4F200D] uppercase tracking-wider">Description</label>
                 <textarea
-                  className="w-full p-3 border border-input rounded-md text-sm min-h-[80px] focus:outline-none focus:ring-2 focus:ring-orange-500 resize-none"
+                  className="w-full p-4 border-0 bg-[#F6F1E9]/50 rounded-2xl text-[#4F200D] font-bold text-sm min-h-[100px] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#FFD93D] resize-none"
                   placeholder="Describe the tour experience..."
                   value={formData.description}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
@@ -461,40 +457,40 @@ const TourManager = () => {
               </div>
 
               {/* Preparation */}
-              <div className="space-y-1">
-                <label className="text-sm font-medium text-gray-700">
-                  Preparation <span className="text-gray-400 font-normal text-xs">(คั่นด้วยคอมม่า)</span>
+              <div className="space-y-2">
+                <label className="text-sm font-black text-[#4F200D] uppercase tracking-wider flex items-center gap-2">
+                  Preparation <span className="text-[#4F200D]/40 font-bold text-[10px]">(Comma separated)</span>
                 </label>
                 <textarea
-                  className="w-full p-3 border border-input rounded-md text-sm min-h-[60px] focus:outline-none focus:ring-2 focus:ring-orange-500 resize-none"
-                  placeholder="e.g. ชุดว่ายน้ำ, ครีมกันแดด, กล้องถ่ายรูป"
+                  className="w-full p-4 border-0 bg-[#F6F1E9]/50 rounded-2xl text-[#4F200D] font-bold text-sm min-h-[80px] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#FFD93D] resize-none"
+                  placeholder="e.g. Swimsuit, Sunscreen, Camera"
                   value={formData.preparation_str}
                   onChange={(e) => setFormData({ ...formData, preparation_str: e.target.value })}
                 />
               </div>
 
               {/* Itinerary */}
-              <div className="space-y-3">
-                <div className="flex justify-between items-center">
-                  <label className="text-sm font-medium text-gray-700">Itinerary</label>
+              <div className="space-y-3 bg-[#F6F1E9]/30 p-5 rounded-2xl border-2 border-[#F6F1E9]">
+                <div className="flex justify-between items-center mb-2">
+                  <label className="text-sm font-black text-[#4F200D] uppercase tracking-wider">Itinerary</label>
                   <button
                     type="button"
                     onClick={addItineraryRow}
-                    className="text-xs text-orange-500 hover:text-orange-600 font-semibold border border-orange-200 hover:border-orange-400 px-2.5 py-1 rounded-md transition-colors"
+                    className="text-xs text-[#FF8400] hover:text-white font-bold bg-[#FFD93D]/30 hover:bg-[#FF8400] px-3 py-1.5 rounded-lg transition-colors"
                   >
                     + Add Step
                   </button>
                 </div>
                 {formData.itinerary_data.map((item, index) => (
-                  <div key={index} className="flex gap-2 items-center">
+                  <div key={index} className="flex gap-3 items-center">
                     <Input
-                      className="w-28 focus:ring-orange-500"
-                      placeholder="08:30 น."
+                      className="w-28 bg-white border-0 rounded-xl focus:ring-2 focus:ring-[#FFD93D] font-bold text-[#4F200D]"
+                      placeholder="08:30"
                       value={item.time}
                       onChange={(e) => updateItinerary(index, 'time', e.target.value)}
                     />
                     <Input
-                      className="flex-1 focus:ring-orange-500"
+                      className="flex-1 bg-white border-0 rounded-xl focus:ring-2 focus:ring-[#FFD93D] font-bold text-[#4F200D]"
                       placeholder="Activity detail..."
                       value={item.detail}
                       onChange={(e) => updateItinerary(index, 'detail', e.target.value)}
@@ -503,23 +499,23 @@ const TourManager = () => {
                       type="button"
                       onClick={() => removeItineraryRow(index)}
                       disabled={formData.itinerary_data.length === 1}
-                      className="p-2 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-30"
+                      className="p-2 hover:bg-red-100 rounded-xl transition-colors disabled:opacity-30 text-red-500"
                     >
-                      <X className="w-4 h-4 text-red-400" />
+                      <X className="w-5 h-5" />
                     </button>
                   </div>
                 ))}
               </div>
 
               {/* Actions */}
-              <div className="pt-4 flex items-center justify-end gap-3 border-t border-gray-100">
-                <Button type="button" variant="ghost" onClick={() => setIsModalOpen(false)} className="hover:bg-orange-50 hover:text-orange-600">
+              <div className="pt-6 pb-2 flex items-center justify-end gap-3 sticky bottom-0 bg-white border-t-2 border-[#F6F1E9] mt-6">
+                <Button type="button" variant="ghost" onClick={() => setIsModalOpen(false)} className="hover:bg-[#F6F1E9] text-[#4F200D] font-bold rounded-xl px-6">
                   Cancel
                 </Button>
-                <Button type="submit" className="bg-orange-500 hover:bg-orange-600 text-white min-w-[110px]" disabled={isSubmitting}>
+                <Button type="submit" className="bg-[#FF8400] hover:bg-[#e67600] text-white font-bold shadow-lg shadow-[#FF8400]/20 rounded-xl min-w-[130px] px-6" disabled={isSubmitting}>
                   {isSubmitting
-                    ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Saving...</>
-                    : editingId ? 'Update Tour' : 'Create Tour'}
+                    ? <><Loader2 className="w-5 h-5 mr-2 animate-spin" /> Saving...</>
+                    : editingId ? 'Update Tour' : 'Save New Tour'}
                 </Button>
               </div>
 

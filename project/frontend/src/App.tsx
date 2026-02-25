@@ -14,6 +14,7 @@ import AdminLayout from "./pages/admin/AdminLayout";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import PendingPayments from "./pages/admin/PendingPayments";
 import TourManager from "./pages/admin/TourManager";
+import UserManager from "./pages/admin/UserManager"; // 👈 เพิ่ม Import สำหรับ UserManager
 import AdminGuard from "./pages/AdminGuard";
 
 export default function App() {
@@ -32,6 +33,7 @@ export default function App() {
           <Route path="/admin" element={<AdminLayout />}>
             <Route index element={<AdminDashboard />} />
             <Route path="tours" element={<TourManager />} />
+            <Route path="users" element={<UserManager />} /> {/* 👈 เพิ่ม Route สำหรับจัดการผู้ใช้ */}
             <Route path="payments" element={<PendingPayments />} />
           </Route>
         </Route>

@@ -11,10 +11,10 @@ import {
 import { Transform, Type } from 'class-transformer';
 
 export class CalculateBookingDto {
-  @IsUUID('4')
+  @IsUUID()
   tourId!: string;
 
-  @IsUUID('4')
+  @IsUUID()
   tourScheduleId!: string;
 
   @Transform(({ value, obj }) =>

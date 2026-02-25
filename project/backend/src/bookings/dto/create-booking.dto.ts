@@ -24,10 +24,10 @@ class ContactInfoDto {
 }
 
 export class CreateBookingDto {
-  @IsUUID('4')
+  @IsUUID()
   tourId!: string;
 
-  @IsUUID('4')
+  @IsUUID()
   tourScheduleId!: string;
 
   @Transform(({ value, obj }) =>

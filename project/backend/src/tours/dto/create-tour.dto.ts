@@ -42,8 +42,8 @@ export class CreateTourDto {
   title!: string;
 
   @IsString()
-  @IsOptional()
-  description?: string;
+  @IsNotEmpty()
+  description!: string;
 
   @IsNumber()
   @Min(0)

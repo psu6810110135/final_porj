@@ -11,6 +11,17 @@ interface ItineraryStep {
   detail: string;
 }
 
+interface Schedule {
+  id: string;
+  tour_id: string;
+  available_date: string;
+  max_capacity_override: number | null;
+  is_available: boolean;
+  booked_seats?: number;
+  available_seats?: number;
+  created_at: string;
+}
+
 interface Tour {
   id: string;
   title: string;
@@ -158,16 +169,50 @@ function BookingCard({ tour }: { tour: Tour }) {
   const api = axios.create({
     baseURL,
   });
-  const durationDays = parseDurationDays(tour.duration);
-  const isMultiDay = durationDays > 1;
   const [adults, setAdults] = useState(1);
   const [children, setChildren] = useState(0);
-  const [travelDate, setTravelDate] = useState("");
-  const [startDate, setStartDate] = useState("");
+  const [schedules, setSchedules] = useState<Schedule[]>([]);
+  const [selectedSchedule, setSelectedSchedule] = useState<Schedule | null>(
+    null,
+  );
+  const [loadingSchedules, setLoadingSchedules] = useState(true);
   const [contactName, setContactName] = useState("");
   const [contactEmail, setContactEmail] = useState("");
   const [contactPhone, setContactPhone] = useState("");
   const [submitting, setSubmitting] = useState(false);
+
+  // Fetch tour schedules
+  useEffect(() => {
+    const fetchSchedules = async () => {
+      try {
+        setLoadingSchedules(true);
+        const res = await api.get(`/api/v1/tours/${tour.id}/schedules`);
+        const data = res.data || [];
+        // Filter out past dates and sort by date
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const validSchedules = data
+          .filter((s: Schedule) => {
+            const scheduleDate = new Date(s.available_date);
+            scheduleDate.setHours(0, 0, 0, 0);
+            return scheduleDate >= today;
+          })
+          .sort(
+            (a: Schedule, b: Schedule) =>
+              new Date(a.available_date).getTime() -
+              new Date(b.available_date).getTime(),
+          );
+        setSchedules(validSchedules);
+      } catch (err) {
+        console.error("Failed to fetch schedules:", err);
+        setSchedules([]);
+      } finally {
+        setLoadingSchedules(false);
+      }
+    };
+    fetchSchedules();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tour.id]);
 
   // Prefill contact info from logged-in user
   useEffect(() => {
@@ -207,15 +252,6 @@ function BookingCard({ tour }: { tour: Tour }) {
   const childPrice = Math.floor(tour.price * 0.6);
   const pax = adults + children;
   const total = tour.price * adults + childPrice * children;
-  const nights = Math.max(durationDays - 1, 0);
-  const endDate = startDate
-    ? (() => {
-        const end = new Date(startDate);
-        end.setDate(end.getDate() + durationDays - 1);
-        return end.toISOString().split("T")[0];
-      })()
-    : "";
-
   const remainingCapacity = maxGuests - pax;
 
   const Counter = ({
@@ -271,48 +307,123 @@ function BookingCard({ tour }: { tour: Tour }) {
       </div>
 
       <div className="p-5 space-y-4">
-        {/* Date Picker(s) */}
-        {!isMultiDay ? (
-          <div>
-            <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider block mb-1.5">
-              วันที่เดินทาง (one-day)
-            </label>
-            <input
-              type="date"
-              value={travelDate}
-              onChange={(e) => setTravelDate(e.target.value)}
-              className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm text-gray-700 focus:outline-none focus:border-[#FF8400] focus:ring-1 focus:ring-[#FF8400] bg-gray-50"
-            />
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div>
-              <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider block mb-1.5">
-                วันเริ่มต้น (multi-day)
-              </label>
-              <input
-                type="date"
-                value={startDate}
-                onChange={(e) => setStartDate(e.target.value)}
-                className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm text-gray-700 focus:outline-none focus:border-[#FF8400] focus:ring-1 focus:ring-[#FF8400] bg-gray-50"
-              />
-            </div>
-            <div>
-              <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider block mb-1.5">
-                วันสิ้นสุด (อัตโนมัติ)
-              </label>
-              <input
-                type="date"
-                value={endDate}
-                readOnly
-                className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm text-gray-400 bg-gray-100"
-              />
-              <p className="text-[11px] text-gray-500 mt-1">
-                {durationDays} วัน {nights} คืน • คำนวณจากข้อมูลทัวร์
+        {/* Schedule Selection */}
+        <div>
+          <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider block mb-2">
+            เลือกวันที่เดินทาง
+          </label>
+
+          {loadingSchedules ? (
+            <div className="text-center py-8">
+              <div className="w-8 h-8 border-3 border-[#FF8400] border-t-transparent rounded-full animate-spin mx-auto" />
+              <p className="text-xs text-gray-500 mt-2">
+                กำลังโหลดวันที่ว่าง...
               </p>
             </div>
-          </div>
-        )}
+          ) : schedules.length === 0 ? (
+            <div className="text-center py-8 bg-gray-50 rounded-lg border border-gray-200">
+              <p className="text-sm text-gray-500">
+                ไม่มีวันที่เปิดให้จองในขณะนี้
+              </p>
+              <p className="text-xs text-gray-400 mt-1">
+                กรุณาติดต่อเราเพื่อสอบถามเพิ่มเติม
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-2 max-h-64 overflow-y-auto">
+              {schedules.map((schedule) => {
+                const date = new Date(schedule.available_date);
+                const isSelected = selectedSchedule?.id === schedule.id;
+                const isFull =
+                  (schedule.available_seats ?? 0) <= 0 ||
+                  !schedule.is_available;
+                const dateStr = date.toLocaleDateString("th-TH", {
+                  year: "numeric",
+                  month: "long",
+                  day: "numeric",
+                  weekday: "short",
+                });
+                const availableSeats = schedule.available_seats ?? 0;
+
+                return (
+                  <button
+                    key={schedule.id}
+                    type="button"
+                    onClick={() => !isFull && setSelectedSchedule(schedule)}
+                    disabled={isFull}
+                    className={`w-full text-left border-2 rounded-lg p-3 transition-all ${
+                      isSelected
+                        ? "border-[#FF8400] bg-orange-50"
+                        : isFull
+                          ? "border-gray-200 bg-gray-50 opacity-60 cursor-not-allowed"
+                          : "border-gray-200 hover:border-[#FF8400] hover:bg-orange-50/30"
+                    }`}
+                  >
+                    <div className="flex justify-between items-start">
+                      <div className="flex-1">
+                        <p
+                          className={`text-sm font-semibold ${isSelected ? "text-[#FF8400]" : "text-[#2C1A0E]"}`}
+                        >
+                          {dateStr}
+                        </p>
+                        <div className="flex items-center gap-2 mt-1">
+                          {isFull ? (
+                            <span className="text-xs font-medium text-red-500 bg-red-50 px-2 py-0.5 rounded">
+                              เต็มแล้ว
+                            </span>
+                          ) : (
+                            <span className="text-xs text-gray-600">
+                              เหลือ{" "}
+                              <span className="font-semibold text-[#FF8400]">
+                                {availableSeats}
+                              </span>{" "}
+                              ที่
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                      {isSelected && (
+                        <div className="w-5 h-5 bg-[#FF8400] rounded-full flex items-center justify-center">
+                          <svg
+                            className="w-3 h-3 text-white"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={3}
+                              d="M5 13l4 4L19 7"
+                            />
+                          </svg>
+                        </div>
+                      )}
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          )}
+
+          {selectedSchedule && (
+            <div className="mt-3 p-3 bg-green-50 border border-green-200 rounded-lg">
+              <p className="text-xs font-semibold text-green-800">
+                ✓ เลือกวันที่แล้ว
+              </p>
+              <p className="text-xs text-green-700 mt-0.5">
+                {new Date(selectedSchedule.available_date).toLocaleDateString(
+                  "th-TH",
+                  {
+                    year: "numeric",
+                    month: "long",
+                    day: "numeric",
+                  },
+                )}
+              </p>
+            </div>
+          )}
+        </div>
 
         {/* Counters */}
         <div className="border border-gray-100 rounded-lg px-4 divide-y divide-gray-100">
@@ -395,12 +506,16 @@ function BookingCard({ tour }: { tour: Tour }) {
         {/* Book Button */}
         <button
           onClick={async () => {
+            if (!selectedSchedule) return alert("กรุณาเลือกวันที่เดินทาง");
             if (!pax || pax < 1) return alert("กรุณาเลือกจำนวนผู้เดินทาง");
+
+            const availableSeats = selectedSchedule.available_seats ?? 0;
+            if (pax > availableSeats) {
+              return alert(`ที่นั่งไม่พอ! เหลือเพียง ${availableSeats} ที่`);
+            }
+
             if (!contactName || !contactEmail || !contactPhone)
               return alert("กรุณากรอกข้อมูลติดต่อให้ครบ");
-            if (!isMultiDay && !travelDate)
-              return alert("กรุณาเลือกวันที่เดินทาง");
-            if (isMultiDay && !startDate) return alert("กรุณาเลือกวันเริ่มต้น");
 
             const token =
               localStorage.getItem("jwt_token") ||
@@ -408,23 +523,16 @@ function BookingCard({ tour }: { tour: Tour }) {
               localStorage.getItem("accessToken");
             if (!token) return alert("กรุณาเข้าสู่ระบบก่อนจองทัวร์");
 
-            const payload: any = {
+            const payload = {
               tourId: tour.id,
+              tourScheduleId: selectedSchedule.id,
               pax,
-              numberOfTravelers: pax,
               contactInfo: {
                 name: contactName,
                 email: contactEmail,
                 phone: contactPhone,
               },
             };
-
-            if (isMultiDay) {
-              payload.startDate = startDate;
-              payload.endDate = endDate;
-            } else {
-              payload.travelDate = travelDate;
-            }
 
             try {
               setSubmitting(true);
@@ -434,11 +542,10 @@ function BookingCard({ tour }: { tour: Tour }) {
                 },
               });
               alert("จองสำเร็จ! กรุณาชำระเงินตามขั้นตอนที่ได้รับ");
-              // reset minimal fields
+              // reset
               setChildren(0);
               setAdults(1);
-              setTravelDate("");
-              setStartDate("");
+              setSelectedSchedule(null);
             } catch (err: any) {
               const msg = err?.response?.data?.message || "จองไม่สำเร็จ";
               alert(Array.isArray(msg) ? msg.join("\n") : msg);
@@ -446,7 +553,7 @@ function BookingCard({ tour }: { tour: Tour }) {
               setSubmitting(false);
             }
           }}
-          disabled={submitting}
+          disabled={submitting || !selectedSchedule}
           className="w-full bg-[#FF8400] hover:bg-[#e07300] active:scale-[0.98] text-white font-bold py-3.5 rounded-lg transition-all text-sm shadow-md shadow-orange-200 disabled:opacity-60 disabled:cursor-not-allowed"
         >
           {submitting ? "กำลังจอง..." : "จองทัวร์เลย →"}

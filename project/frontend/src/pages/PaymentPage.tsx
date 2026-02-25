@@ -1,90 +1,103 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
+import { QRCodeCanvas } from 'qrcode.react'; // ✅ นำเข้าตัวสร้าง QR Code
 
 export default function PaymentPage() {
   const navigate = useNavigate();
-  const { id } = useParams();
+  const { id } = useParams(); // id คือ bookingId
   const location = useLocation();
 
-  const amount = location.state?.amount || 3500;
-  const promptPayNumber = "0812345678"; // ⚠️ อย่าลืมเปลี่ยนเบอร์
-  const qrCodeUrl = `https://promptpay.io/${promptPayNumber}/${amount}.png`;
-
-  // เพิ่มสถานะ 'expired' (หมดเวลา) เข้ามา
+  // State สำหรับเก็บข้อมูล
+  const [amount, setAmount] = useState(location.state?.amount || 0);
+  const [qrPayload, setQrPayload] = useState(''); // เก็บโค้ดยาวๆ สำหรับสร้าง QR
   const [paymentStatus, setPaymentStatus] = useState<'pending' | 'approved' | 'rejected' | 'expired'>('pending');
-  
-  // ตั้งเวลา 15 นาที = 900 วินาที
-  const [timeLeft, setTimeLeft] = useState(10);
+  const [timeLeft, setTimeLeft] = useState(900); // 15 นาที
 
-  // ฟังก์ชันดาวน์โหลด QR Code
-  const downloadQRCode = async () => {
-    try {
-      const response = await fetch(qrCodeUrl);
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
+  // 1. ดึงข้อมูล QR Code จาก Backend (ทำงานครั้งแรกครั้งเดียว)
+  useEffect(() => {
+    const fetchQrCode = async () => {
+      try {
+        // ยิงไปที่ API ที่เราเพิ่งเขียนใน Backend
+        const res = await fetch(`http://localhost:3000/payments/qr/${id}`);
+        if (!res.ok) throw new Error('Failed to fetch QR');
+        
+        const data = await res.json();
+        setQrPayload(data.payload); // ✅ ได้รหัสยาวๆ มาแล้ว
+        setAmount(data.amount);     // อัปเดตยอดเงินให้ตรงกับ DB
+      } catch (error) {
+        console.error("Error fetching QR:", error);
+      }
+    };
+
+    if (id) fetchQrCode();
+  }, [id]);
+
+  // 2. ฟังก์ชันดาวน์โหลด (แก้ให้รองรับ QRCodeCanvas)
+  const downloadQRCode = () => {
+    const canvas = document.getElementById('qr-gen') as HTMLCanvasElement;
+    if (canvas) {
+      const url = canvas.toDataURL("image/png");
       const link = document.createElement('a');
+      link.download = `PromptPay-${amount}.png`;
       link.href = url;
-      link.download = `PromptPay-QR-${amount}THB.png`;
-      document.body.appendChild(link);
       link.click();
-      document.body.removeChild(link);
-      window.URL.revokeObjectURL(url);
-    } catch (error) {
-      console.error("Download failed:", error);
-      window.open(qrCodeUrl, '_blank'); 
     }
   };
 
-  // 1. Effect สำหรับตัวนับเวลาถอยหลัง
+  // 3. ตัวนับเวลาถอยหลัง
   useEffect(() => {
-    // ถ้าไม่ได้อยู่ในสถานะรอดำเนินการ หรือเวลาหมดแล้ว ให้หยุดนับ
     if (paymentStatus !== 'pending' || timeLeft <= 0) return;
-
     const timer = setInterval(() => {
       setTimeLeft((prev) => {
         if (prev <= 1) {
           clearInterval(timer);
-          setPaymentStatus('expired'); // เปลี่ยนสถานะเป็นหมดเวลา
+          setPaymentStatus('expired'); 
           return 0;
         }
         return prev - 1;
       });
     }, 1000);
-
     return () => clearInterval(timer);
   }, [timeLeft, paymentStatus]);
 
-  // 2. Effect สำหรับยิง API เช็คสถานะการจ่ายเงิน (Polling)
+  // 4. เช็คสถานะการจ่ายเงิน (Polling)
   useEffect(() => {
     let interval: any;
-
     const checkStatus = async () => {
       try {
-        const response = await fetch(`http://localhost:3000/api/v1/payments/${id}/status`);
-        const data = await response.json();
+        // เช็คว่า id มีค่าไหม ก่อนยิง API
+        if (!id) return;
 
-        if (data.status === 'approved') {
-          setPaymentStatus('approved');
-          clearInterval(interval);
-          setTimeout(() => navigate('/'), 2000);
-        } else if (data.status === 'rejected') {
-          setPaymentStatus('rejected');
-          clearInterval(interval);
+        // ยิงเช็คสถานะการจ่ายเงิน (URL ต้องตรงกับ Backend)
+        // เนื่องจาก route เราคือ /payments/:id/status (เช็คใน Controller อีกทีว่าใช้ paymentId หรือ bookingId)
+        // ถ้า API รับ paymentId แต่เรามี bookingId อาจต้องปรับ Backend นิดหน่อย 
+        // *สมมติว่า Backend ค้นหาจาก BookingId ได้ หรือเราแก้ให้ส่ง paymentId กลับมาพร้อม QR*
+        
+        // ลองยิงไปที่ route นี้ (ถ้า Backend คุณใช้ bookingId ในการเช็ค)
+        const response = await fetch(`http://localhost:3000/bookings/${id}`); 
+        // หรือถ้าต้องเช็คที่ payment โดยตรง ต้องแน่ใจว่าได้ paymentId มาแล้ว
+        
+        if (response.ok) {
+            const data = await response.json();
+            // ปรับเงื่อนไขตามสิ่งที่ Backend ส่งกลับมา
+            if (data.status === 'confirmed' || data.status === 'paid') { 
+                setPaymentStatus('approved');
+                clearInterval(interval);
+                setTimeout(() => navigate('/'), 3000);
+            }
         }
       } catch (error) {
-        console.error(error);
+        console.error("Error checking status:", error);
       }
     };
 
-    // จะยิงถาม API ก็ต่อเมื่อยังเป็นสถานะ pending เท่านั้น (ถ้าหมดเวลาแล้วก็เลิกถาม)
     if (paymentStatus === 'pending') {
       interval = setInterval(checkStatus, 3000);
     }
-
     return () => clearInterval(interval);
   }, [id, navigate, paymentStatus]);
 
-  // แปลงวินาทีให้เป็นรูปแบบ นาที:วินาที (เช่น 14:59)
+  // จัดรูปแบบเวลา
   const formatTime = (seconds: number) => {
     const m = Math.floor(seconds / 60).toString().padStart(2, '0');
     const s = (seconds % 60).toString().padStart(2, '0');
@@ -96,93 +109,85 @@ export default function PaymentPage() {
       <div className="bg-white rounded-2xl shadow-xl max-w-md w-full p-8 text-center">
         
         <h2 className="text-2xl font-bold text-gray-800 mb-2">ชำระเงินผ่านพร้อมเพย์</h2>
-        <p className="text-gray-500 mb-6">สแกน QR Code ด้านล่างเพื่อชำระเงิน ระบบจะยืนยันอัตโนมัติ</p>
+        <p className="text-gray-500 mb-6">สแกน QR Code ด้านล่างเพื่อชำระเงิน</p>
 
-        {/* กล่องแสดงยอดเงิน และ เวลานับถอยหลัง */}
+        {/* ยอดเงิน & เวลา */}
         <div className="bg-orange-50 rounded-lg p-4 mb-6 flex flex-col gap-2">
           <p className="text-sm text-orange-600 font-medium">ยอดที่ต้องชำระ</p>
           <p className="text-3xl font-bold text-orange-600 mb-2">฿{amount.toLocaleString()}</p>
-          
           <div className="border-t border-orange-200 pt-3 flex justify-between items-center px-2">
-            <span className="text-sm text-gray-600">กรุณาชำระเงินภายใน</span>
+            <span className="text-sm text-gray-600">ชำระภายในเวลา</span>
             <span className={`text-xl font-bold font-mono ${timeLeft < 180 ? 'text-red-500 animate-pulse' : 'text-orange-600'}`}>
               {formatTime(timeLeft)}
             </span>
           </div>
         </div>
 
-        {/* รูป QR Code */}
+        {/* ✅ ส่วนแสดง QR Code ด้วย QRCodeCanvas */}
         <div className="flex flex-col items-center justify-center mb-6 relative">
           <div className="p-4 bg-white border-2 border-gray-100 rounded-xl shadow-sm mb-4 relative overflow-hidden">
-            <img 
-              src={qrCodeUrl} 
-              alt="PromptPay QR Code" 
-              // ถ้าจ่ายแล้ว หรือหมดเวลา จะทำให้ QR Code จางลง
-              className={`w-48 h-48 object-contain transition-all duration-500 ${paymentStatus !== 'pending' ? 'opacity-20 grayscale blur-sm' : 'opacity-100'}`}
-            />
             
-            {/* โชว์ทับตอนจ่ายสำเร็จ */}
-            {paymentStatus === 'approved' && (
-              <div className="absolute inset-0 flex flex-col items-center justify-center text-green-500 z-10">
-                 <div className="text-6xl mb-2">✅</div>
-                 <p className="font-bold text-lg bg-white/80 px-4 py-1 rounded-full">ชำระเงินสำเร็จ!</p>
+            {qrPayload ? (
+              <QRCodeCanvas
+                id="qr-gen"
+                value={qrPayload} // ใส่รหัส Payload จาก Backend
+                size={200}
+                level={"H"}
+                includeMargin={true}
+                className={`transition-all duration-500 ${paymentStatus !== 'pending' ? 'opacity-20 blur-sm' : 'opacity-100'}`}
+              />
+            ) : (
+              <div className="w-48 h-48 flex items-center justify-center bg-gray-100 text-gray-400">
+                กำลังโหลด...
               </div>
             )}
 
-            {/* โชว์ทับตอนหมดเวลา */}
+            {/* Overlay: สำเร็จ */}
+            {paymentStatus === 'approved' && (
+              <div className="absolute inset-0 flex flex-col items-center justify-center text-green-500 z-10 animate-in fade-in zoom-in">
+                 <div className="text-6xl mb-2">✅</div>
+                 <p className="font-bold bg-white/90 px-4 py-1 rounded-full">ชำระเงินสำเร็จ!</p>
+              </div>
+            )}
+
+            {/* Overlay: หมดเวลา */}
             {paymentStatus === 'expired' && (
-              <div className="absolute inset-0 flex flex-col items-center justify-center text-gray-500 z-10">
-                 
-                 <p className="font-bold text-lg bg-white/90 px-4 py-1 rounded-full shadow-sm text-red-500">หมดเวลาชำระเงิน</p>
+              <div className="absolute inset-0 flex flex-col items-center justify-center z-10">
+                 <p className="font-bold text-lg bg-white/90 text-red-500 px-4 py-1 rounded-full shadow-sm">หมดเวลาชำระเงิน</p>
               </div>
             )}
           </div>
           
-          {/* ปุ่มดาวน์โหลด (โชว์เฉพาะตอนยังไม่จ่ายเงินและเวลาไม่หมด) */}
+          {/* ปุ่มดาวน์โหลด */}
           {paymentStatus === 'pending' && (
             <button 
               onClick={downloadQRCode}
               className="flex items-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-sm font-medium transition-colors"
             >
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                <polyline points="7 10 12 15 17 10"></polyline>
-                <line x1="12" y1="15" x2="12" y2="3"></line>
-              </svg>
               บันทึกรูป QR Code
             </button>
           )}
 
-          {/* ปุ่มกลับหน้าหลัก (โชว์ตอนหมดเวลา) */}
+          {/* ปุ่มรีโหลด */}
           {paymentStatus === 'expired' && (
             <button 
-              onClick={() => navigate('/')}
-              className="px-6 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg text-sm font-medium transition-colors shadow-md"
+              onClick={() => window.location.reload()}
+              className="px-6 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg text-sm font-medium shadow-md"
             >
-              ทำรายการใหม่
+              ขอ QR Code ใหม่
             </button>
           )}
         </div>
 
-        {/* สถานะด้านล่าง */}
-        <div className="mt-2 flex items-center justify-center gap-2 min-h-[24px]">
+        {/* สถานะ Text */}
+        <div className="mt-2 min-h-[24px]">
           {paymentStatus === 'pending' && (
-            <>
-              <div className="w-5 h-5 border-2 border-orange-500 border-t-transparent rounded-full animate-spin"></div>
-              <p className="text-orange-600 font-medium">กำลังรอการชำระเงิน...</p>
-            </>
-          )}
-          {paymentStatus === 'approved' && (
-            <p className="text-green-600 font-medium">ระบบกำลังพากลับไปหน้าหลัก...</p>
-          )}
-          {paymentStatus === 'rejected' && (
-            <p className="text-red-600 font-medium">การชำระเงินถูกปฏิเสธ กรุณาติดต่อแอดมิน</p>
-          )}
-          {paymentStatus === 'expired' && (
-            <p className="text-gray-500 font-medium">กรุณาทำรายการจองใหม่อีกครั้ง</p>
+            <div className="flex items-center justify-center gap-2 text-orange-600">
+              <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin"></div>
+              <p className="font-medium text-sm">ระบบตรวจสอบอัตโนมัติ...</p>
+            </div>
           )}
         </div>
-
       </div>
     </div>
   );

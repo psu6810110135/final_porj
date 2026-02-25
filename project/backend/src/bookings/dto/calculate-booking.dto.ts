@@ -1,16 +1,51 @@
-import { IsString, IsDateString, IsInt, Min } from 'class-validator';
+import {
+  IsDateString,
+  IsInt,
+  IsOptional,
+  IsString,
+  IsUUID,
+  Min,
+  IsObject,
+  ValidateIf,
+} from 'class-validator';
+import { Transform, Type } from 'class-transformer';
 
 export class CalculateBookingDto {
-  @IsString()
-  tourId: string;
+  @IsUUID('4')
+  tourId!: string;
+
+  @IsUUID('4')
+  @IsOptional()
+  tourScheduleId?: string;
 
   @IsDateString()
-  startDate: string;
+  @IsOptional()
+  travelDate?: string;
 
   @IsDateString()
-  endDate: string;
+  @IsOptional()
+  startDate?: string;
 
+  @IsDateString()
+  @IsOptional()
+  endDate?: string;
+
+  @Transform(({ value, obj }) =>
+    value === undefined ? obj?.numberOfTravelers : value,
+  )
+  @Type(() => Number)
+  @ValidateIf((o) => o.pax !== undefined || o.numberOfTravelers === undefined)
   @IsInt()
   @Min(1)
-  numberOfTravelers: number;
+  pax?: number;
+
+  @Type(() => Number)
+  @ValidateIf((o) => o.numberOfTravelers !== undefined || o.pax === undefined)
+  @IsInt()
+  @Min(1)
+  numberOfTravelers?: number; // legacy alias for tests
+
+  @IsOptional()
+  @IsObject()
+  selectedOptions?: Record<string, any>;
 }

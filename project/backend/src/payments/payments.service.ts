@@ -21,13 +21,14 @@ export class PaymentsService {
 
     if (!booking) throw new NotFoundException('ไม่พบข้อมูลการจอง');
 
-    // ใส่เบอร์โทรศัพท์ที่ผูกกับพร้อมเพย์ของคุณ
-    const mobileNumber = '081-XXX-XXXX'; 
-    // ดึงราคาทัวร์จาก Database มาใช้เป็นยอดโอน
-    const amount = booking.tour.price;
+    // ⚠️ อย่าลืมแก้ตรงนี้เป็นเบอร์พร้อมเพย์ของคุณนะครับ
+    const mobileNumber = '0622125261'; 
     
-    // สร้าง Payload ตามมาตรฐาน EMVCo
-    const payload = generatePayload(mobileNumber, { amount });
+    // ดึงราคาทัวร์จาก Database มาใช้เป็นยอดโอน
+    const amount = Number(booking.tour.price);
+    
+    // สร้าง Payload ตามมาตรฐาน EMVCo (ใช้ as any เพื่อเลี่ยง error type ในบาง setup)
+    const payload = (generatePayload as any)(mobileNumber, { amount });
     
     return { 
       payload, 
@@ -65,9 +66,9 @@ export class PaymentsService {
         status: BookingStatus.CONFIRMED,
       });
     } else {
-      // ถ้าไม่อนุมัติ ให้กลับไปสถานะ PENDING เพื่อให้ลูกค้าจัดการใหม่
+      // ถ้าปฏิเสธ ให้กลับไปสถานะ PENDING เพื่อให้ลูกค้าอัปโหลดสลิปใหม่
       await this.bookingRepo.update(payment.booking.id, {
-        status: BookingStatus.PENDING,
+        status: BookingStatus.PENDING_PAY,
       });
     }
 

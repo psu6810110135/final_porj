@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { ScheduleModule } from '@nestjs/schedule';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 
@@ -27,14 +28,17 @@ import { Tour } from './tours/entities/tour.entity';
       isGlobal: true, // ให้ทุก Module เรียกใช้ .env ได้
       envFilePath: '.env',
     }),
-    
+
+    // Scheduler for background jobs
+    ScheduleModule.forRoot(),
+
     // 2. ตั้งค่า Database (รวมร่าง)
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
       useFactory: (configService: ConfigService) => ({
         type: 'postgres',
-        // ใช้ URL จาก .env เป็นหลัก ถ้าไม่มีให้ Fallback ไปใช้ค่าตรงๆ แบบที่คุณเคยลองทำ
+        // ✅ ใช้ Port 5433 ตามที่ระบุใน docker-compose.yml
         url: configService.get('DATABASE_URL') || 'postgresql://thai_tours:thai_tours_password@localhost:5433/thai_tours',
         entities: [User, Booking, Payment, Tour],
         autoLoadEntities: true,
@@ -45,7 +49,7 @@ import { Tour } from './tours/entities/tour.entity';
         },
       }),
     }),
-    
+
     // 3. รวม Modules ทั้งหมดของระบบ
     UsersModule,
     AuthModule, // 👈 ประกอบร่าง AuthModule เข้ามาแล้ว!

@@ -6,7 +6,7 @@ import ToursPage from "./pages/ToursPage";
 import TourDetailPage from "./pages/TourDetailPage";
 
 // --- ระบบ Auth ---
-import LoginPage from "./pages/loginpage"; // เช็คชื่อไฟล์ตัวพิมพ์เล็ก-ใหญ่ด้วยนะครับ
+import LoginPage from "./pages/loginpage"; 
 import RegisterPage from "./pages/RegisterPage";
 
 // --- ระบบ Admin ---
@@ -14,7 +14,8 @@ import AdminLayout from "./pages/admin/AdminLayout";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import PendingPayments from "./pages/admin/PendingPayments";
 import TourManager from "./pages/admin/TourManager";
-import UserManager from "./pages/admin/UserManager"; // 👈 เพิ่ม Import สำหรับ UserManager
+import UserManager from "./pages/admin/UserManager"; 
+import BookingHistory from "./pages/admin/BookingHistory"; // 👈 1. เพิ่ม Import หน้านี้
 import AdminGuard from "./pages/AdminGuard";
 
 export default function App() {
@@ -33,8 +34,9 @@ export default function App() {
           <Route path="/admin" element={<AdminLayout />}>
             <Route index element={<AdminDashboard />} />
             <Route path="tours" element={<TourManager />} />
-            <Route path="users" element={<UserManager />} /> {/* 👈 เพิ่ม Route สำหรับจัดการผู้ใช้ */}
+            <Route path="users" element={<UserManager />} />
             <Route path="payments" element={<PendingPayments />} />
+            <Route path="bookings" element={<BookingHistory />} /> {/* 👈 2. เพิ่ม Route หน้านี้ */}
           </Route>
         </Route>
 

@@ -67,8 +67,14 @@ const API_URL = 'http://localhost:3000/api/v1/tours';
 const TourManager = () => {
   const [tours, setTours] = useState<Tour[]>([]);
   const [loading, setLoading] = useState(true);
+  
+  // States สำหรับการค้นหาและกรองข้อมูล
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [regionFilter, setRegionFilter] = useState<string>('all');
+  const [categoryFilter, setCategoryFilter] = useState<string>('all');
+  const [durationFilter, setDurationFilter] = useState<string>('all');
+  
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 7;
 
@@ -93,7 +99,11 @@ const TourManager = () => {
   };
 
   useEffect(() => { fetchTours(); }, []);
-  useEffect(() => { setCurrentPage(1); }, [searchQuery, statusFilter]);
+  
+  // รีเซ็ตหน้ากลับไปหน้าแรกเมื่อมีการกรองข้อมูล
+  useEffect(() => { 
+    setCurrentPage(1); 
+  }, [searchQuery, statusFilter, regionFilter, categoryFilter, durationFilter]);
 
   /* ── Handlers ──────────────────────────────────── */
   const handleAddNew = () => {
@@ -167,7 +177,7 @@ const TourManager = () => {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this tour?')) return;
+    if (!confirm('คุณแน่ใจหรือไม่ว่าต้องการลบทัวร์นี้?')) return;
     try {
       const res = await fetch(`${API_URL}/${id}`, { method: 'DELETE', headers: getAuthHeader() });
       if (!res.ok) throw new Error();
@@ -191,17 +201,23 @@ const TourManager = () => {
   const removeItineraryRow = (index: number) =>
     setFormData({ ...formData, itinerary_data: formData.itinerary_data.filter((_, i) => i !== index) });
 
-  /* ── Filtering & Pagination ────────────────────── */
-  const filteredTours = tours.filter((tour) => {
+  /* ── Filtering Logic ────────────────────── */
+  
+  // ดึงรายการระยะเวลาทัวร์ที่ไม่ซ้ำกันจากฐานข้อมูลอัตโนมัติ
+  const uniqueDurations = Array.from(new Set(tours.map((t) => t.duration))).filter(Boolean);
+
+  const processedTours = tours.filter((tour) => {
     const matchesSearch = tour.title.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesStatus =
-      statusFilter === 'all' ||
-      (statusFilter === 'active' ? tour.is_active : !tour.is_active);
-    return matchesSearch && matchesStatus;
+    const matchesStatus = statusFilter === 'all' || (statusFilter === 'active' ? tour.is_active : !tour.is_active);
+    const matchesRegion = regionFilter === 'all' || tour.region === regionFilter;
+    const matchesCategory = categoryFilter === 'all' || tour.category === categoryFilter;
+    const matchesDuration = durationFilter === 'all' || tour.duration === durationFilter;
+    
+    return matchesSearch && matchesStatus && matchesRegion && matchesCategory && matchesDuration;
   });
 
-  const totalPages = Math.ceil(filteredTours.length / itemsPerPage);
-  const paginatedTours = filteredTours.slice(
+  const totalPages = Math.ceil(processedTours.length / itemsPerPage);
+  const paginatedTours = processedTours.slice(
     (currentPage - 1) * itemsPerPage,
     currentPage * itemsPerPage
   );
@@ -246,26 +262,72 @@ const TourManager = () => {
         </div>
       </div>
 
-      {/* Filters */}
-      <div className="bg-white p-5 rounded-3xl border-0 shadow-sm flex flex-col sm:flex-row gap-4 items-center justify-between mb-6">
-        <div className="relative w-full sm:w-96">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-[#4F200D]/40 w-5 h-5" />
-          <Input
-            placeholder="ค้นหาทัวร์..."
-            className="pl-12 py-6 bg-[#F6F1E9]/50 border-0 rounded-2xl font-bold text-[#4F200D] placeholder:font-medium focus:bg-white focus:ring-2 focus:ring-[#FFD93D] transition-all"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-          />
+      {/* Filters (การกรองข้อมูล) */}
+      <div className="bg-white p-5 rounded-3xl border-0 shadow-sm flex flex-col gap-4">
+        <div className="flex flex-col xl:flex-row gap-4 justify-between items-center w-full">
+          
+          <div className="relative w-full xl:w-80 shrink-0">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-[#4F200D]/40 w-5 h-5" />
+            <Input
+              placeholder="ค้นหาทัวร์ด้วยชื่อ..."
+              className="pl-12 py-6 bg-[#F6F1E9]/50 border-0 rounded-2xl font-bold text-[#4F200D] placeholder:font-medium focus:bg-white focus:ring-2 focus:ring-[#FFD93D] transition-all"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+          </div>
+          
+          <div className="flex flex-wrap gap-3 w-full xl:w-auto justify-start xl:justify-end">
+            
+            {/* กรองภูมิภาค */}
+            <select
+              className="text-sm border-0 bg-[#F6F1E9]/50 px-4 py-3 rounded-2xl focus:ring-2 focus:ring-[#FFD93D] text-[#4F200D] font-bold cursor-pointer outline-none transition-all flex-1 sm:flex-none min-w-[140px]"
+              value={regionFilter}
+              onChange={(e) => setRegionFilter(e.target.value)}
+            >
+              <option value="all">ทุกภูมิภาค</option>
+              {Object.values(TourRegion).map((r) => <option key={r} value={r}>{r}</option>)}
+            </select>
+
+            {/* กรองหมวดหมู่ */}
+            <select
+              className="text-sm border-0 bg-[#F6F1E9]/50 px-4 py-3 rounded-2xl focus:ring-2 focus:ring-[#FFD93D] text-[#4F200D] font-bold cursor-pointer outline-none transition-all flex-1 sm:flex-none min-w-[140px]"
+              value={categoryFilter}
+              onChange={(e) => setCategoryFilter(e.target.value)}
+            >
+              <option value="all">ทุกหมวดหมู่</option>
+              {Object.values(TourCategory).map((c) => <option key={c} value={c}>{c}</option>)}
+            </select>
+
+            {/* กรองระยะเวลา */}
+            <select
+              className="text-sm border-0 bg-[#F6F1E9]/50 px-4 py-3 rounded-2xl focus:ring-2 focus:ring-[#FFD93D] text-[#4F200D] font-bold cursor-pointer outline-none transition-all flex-1 sm:flex-none min-w-[140px]"
+              value={durationFilter}
+              onChange={(e) => setDurationFilter(e.target.value)}
+            >
+              <option value="all">ทุกระยะเวลา</option>
+              {uniqueDurations.map((d) => <option key={d} value={d}>{d}</option>)}
+            </select>
+
+            {/* กรองสถานะ */}
+            <select
+              className="text-sm border-0 bg-[#F6F1E9]/50 px-4 py-3 rounded-2xl focus:ring-2 focus:ring-[#FFD93D] text-[#4F200D] font-bold cursor-pointer outline-none transition-all flex-1 sm:flex-none min-w-[140px]"
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+            >
+              <option value="all">สถานะทั้งหมด</option>
+              <option value="active">เปิดใช้งาน</option>
+              <option value="inactive">ปิดใช้งาน</option>
+            </select>
+
+          </div>
         </div>
-        <select
-          className="text-sm border-0 bg-[#F6F1E9]/50 px-6 py-3 rounded-2xl focus:ring-2 focus:ring-[#FFD93D] text-[#4F200D] font-bold cursor-pointer outline-none transition-all"
-          value={statusFilter}
-          onChange={(e) => setStatusFilter(e.target.value)}
-        >
-          <option value="all">สถานะทั้งหมด</option>
-          <option value="active">เปิดใช้งาน</option>
-          <option value="inactive">ปิดใช้งาน</option>
-        </select>
+        
+        {/* แสดงผลสรุปการกรอง */}
+        {processedTours.length !== tours.length && (
+           <p className="text-sm text-[#FF8400] font-bold px-2">
+             พบข้อมูลทัวร์ {processedTours.length} รายการ จากการกรองของคุณ
+           </p>
+        )}
       </div>
 
       {/* Table */}
@@ -342,7 +404,7 @@ const TourManager = () => {
         {/* Pagination */}
         <div className="px-6 py-4 flex items-center justify-between bg-white border-t-2 border-[#F6F1E9]">
           <p className="text-sm font-semibold text-[#4F200D]/50">
-            แสดง <span className="text-[#FF8400]">{filteredTours.length === 0 ? 0 : (currentPage - 1) * itemsPerPage + 1}</span> ถึง <span className="text-[#FF8400]">{Math.min(currentPage * itemsPerPage, filteredTours.length)}</span> จาก <span className="text-[#FF8400]">{filteredTours.length}</span> รายการ
+            แสดง <span className="text-[#FF8400]">{processedTours.length === 0 ? 0 : (currentPage - 1) * itemsPerPage + 1}</span> ถึง <span className="text-[#FF8400]">{Math.min(currentPage * itemsPerPage, processedTours.length)}</span> จาก <span className="text-[#FF8400]">{processedTours.length}</span> รายการ
           </p>
           <div className="flex gap-2">
             <Button variant="outline" size="sm" disabled={currentPage === 1} onClick={() => setCurrentPage((p) => Math.max(1, p - 1))} className="border-0 bg-[#F6F1E9]/50 text-[#4F200D] font-bold rounded-xl hover:bg-[#FFD93D]/30 hover:text-[#FF8400] transition-colors">

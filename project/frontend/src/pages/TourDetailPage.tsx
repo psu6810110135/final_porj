@@ -248,11 +248,13 @@ function BookingCard({ tour }: { tour: Tour }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const maxGuests = tour.max_group_size ?? 15;
   const childPrice = Math.floor(tour.price * 0.6);
   const pax = adults + children;
   const total = tour.price * adults + childPrice * children;
-  const remainingCapacity = maxGuests - pax;
+
+  // Use selected schedule's available seats for capacity validation
+  const availableSeats = selectedSchedule?.available_seats ?? 0;
+  const remainingCapacity = availableSeats - pax;
 
   const Counter = ({
     label,
@@ -421,9 +423,57 @@ function BookingCard({ tour }: { tour: Tour }) {
                   },
                 )}
               </p>
+              <div className="flex items-center justify-between mt-2 pt-2 border-t border-green-200">
+                <span className="text-xs text-green-700">ที่นั่งว่าง:</span>
+                <span className="text-sm font-bold text-green-800">
+                  {selectedSchedule.available_seats} ที่
+                </span>
+              </div>
             </div>
           )}
         </div>
+
+        {/* Capacity Warning */}
+        {selectedSchedule && pax > 0 && (
+          <div
+            className={`p-3 rounded-lg border ${
+              remainingCapacity < 0
+                ? "bg-red-50 border-red-200"
+                : remainingCapacity <= 3
+                  ? "bg-yellow-50 border-yellow-200"
+                  : "bg-blue-50 border-blue-200"
+            }`}
+          >
+            {remainingCapacity < 0 ? (
+              <>
+                <p className="text-xs font-semibold text-red-800">
+                  ⚠️ เกินจำนวนที่นั่งว่าง!
+                </p>
+                <p className="text-xs text-red-700 mt-0.5">
+                  คุณเลือก {pax} คน แต่เหลือเพียง {availableSeats} ที่เท่านั้น
+                </p>
+              </>
+            ) : remainingCapacity <= 3 ? (
+              <>
+                <p className="text-xs font-semibold text-yellow-800">
+                  ⚠️ ที่นั่งใกล้เต็ม!
+                </p>
+                <p className="text-xs text-yellow-700 mt-0.5">
+                  หลังจองจะเหลือเพียง {remainingCapacity} ที่
+                </p>
+              </>
+            ) : (
+              <>
+                <p className="text-xs font-semibold text-blue-800">
+                  ✓ ที่นั่งเพียงพอ
+                </p>
+                <p className="text-xs text-blue-700 mt-0.5">
+                  หลังจองจะเหลือ {remainingCapacity} ที่
+                </p>
+              </>
+            )}
+          </div>
+        )}
 
         {/* Counters */}
         <div className="border border-gray-100 rounded-lg px-4 divide-y divide-gray-100">
@@ -466,7 +516,17 @@ function BookingCard({ tour }: { tour: Tour }) {
           <div className="flex justify-between text-[11px] text-gray-500">
             <span>ผู้เดินทางรวม</span>
             <span>
-              {pax} คน (เหลือ {Math.max(remainingCapacity, 0)} ที่)
+              {pax} คน
+              {selectedSchedule && (
+                <span
+                  className={
+                    remainingCapacity < 0 ? "text-red-500 font-semibold" : ""
+                  }
+                >
+                  {" "}
+                  (จาก {availableSeats} ที่)
+                </span>
+              )}
             </span>
           </div>
           <div className="border-t border-amber-200 pt-1.5 flex justify-between font-bold text-[#2C1A0E]">

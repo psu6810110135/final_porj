@@ -129,14 +129,15 @@ const TourScheduleManager = () => {
     e.preventDefault();
     setIsSubmitting(true);
 
-    const payload = {
-      tour_id: selectedTourId,
+    const payload: any = {
       available_date: formData.available_date,
-      max_capacity_override: formData.max_capacity_override
-        ? Number(formData.max_capacity_override)
-        : null,
       is_available: formData.is_available,
     };
+
+    // Only include max_capacity_override if it has a value
+    if (formData.max_capacity_override) {
+      payload.max_capacity_override = Number(formData.max_capacity_override);
+    }
 
     try {
       const url = editingId

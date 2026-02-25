@@ -5,7 +5,14 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Cron } from '@nestjs/schedule';
-import { DataSource, In, LessThan, Not, Repository } from 'typeorm';
+import {
+  DataSource,
+  EntityManager,
+  In,
+  LessThan,
+  Not,
+  Repository,
+} from 'typeorm';
 import { Booking, BookingStatus } from './entities/booking.entity';
 import { CalculateBookingDto } from './dto/calculate-booking.dto';
 import { CreateBookingDto } from './dto/create-booking.dto';
@@ -13,6 +20,7 @@ import { UpdateBookingDto } from './dto/update-booking.dto';
 import { CancelBookingDto } from './dto/cancel-booking.dto';
 import { Tour } from '../tours/entities/tour.entity';
 import { TourSchedule } from '../tours/entities/tour-schedule.entity';
+import { BOOKING_CONFIG } from '../config/booking.config';
 
 @Injectable()
 export class BookingsService {
@@ -39,23 +47,28 @@ export class BookingsService {
     if (!paxValue || paxValue < 1) {
       throw new BadRequestException('pax must be at least 1');
     }
-    const { tourId, travelDate, startDate, endDate } = calculateBookingDto;
+    const { tourId, tourScheduleId } = calculateBookingDto;
 
     const tour = await this.toursRepository.findOne({ where: { id: tourId } });
     if (!tour)
       throw new NotFoundException(`Tour with ID "${tourId}" not found`);
+
+    const schedule = await this.schedulesRepository.findOne({
+      where: { id: tourScheduleId },
+    });
+    if (!schedule) {
+      throw new NotFoundException('Schedule not found');
+    }
+    if (schedule.tour_id !== tourId) {
+      throw new BadRequestException('Schedule does not belong to this tour');
+    }
 
     const basePricePerPerson = Number.isFinite(Number(tour.price))
       ? Number(tour.price)
       : 5000;
     const basePrice = basePricePerPerson * paxValue;
 
-    // Simple discount sample: weekend -5%
-    const refDate = travelDate
-      ? new Date(travelDate)
-      : startDate
-        ? new Date(startDate)
-        : new Date();
+    const refDate = new Date(schedule.available_date);
     const discount = this.calculateDiscount(refDate, basePrice);
     const totalPrice = basePrice - discount;
 
@@ -75,18 +88,17 @@ export class BookingsService {
   }
 
   async create(createBookingDto: CreateBookingDto, userId: string) {
-    const travelDate = createBookingDto.travelDate
-      ? new Date(createBookingDto.travelDate)
-      : undefined;
-    const startDate = createBookingDto.startDate
-      ? new Date(createBookingDto.startDate)
-      : undefined;
-    const endDate = createBookingDto.endDate
-      ? new Date(createBookingDto.endDate)
-      : undefined;
-
     return this.dataSource.transaction(async (manager) => {
-      // 1) Lock tour row to prevent concurrent overbooking
+      const paxValue =
+        createBookingDto.pax ?? createBookingDto.numberOfTravelers;
+      if (!paxValue || paxValue < 1) {
+        throw new BadRequestException('pax must be at least 1');
+      }
+
+      // 1) Validate max bookings per user
+      await this.validateMaxBookingsPerUser(manager, userId);
+
+      // 2) Lock tour row to prevent concurrent overbooking
       const tour = await manager
         .getRepository(Tour)
         .createQueryBuilder('tour')
@@ -104,68 +116,51 @@ export class BookingsService {
         throw new BadRequestException('ทัวร์นี้ไม่เปิดให้จอง');
       }
 
-      // 2) Re-check capacity inside the lock (prefer schedule override if provided)
-      let maxCapacity = tour.max_group_size;
-      let bookedSeatsTotal = 0;
+      // 3) Lock & validate schedule
+      const schedule = await manager.getRepository(TourSchedule).findOne({
+        where: { id: createBookingDto.tourScheduleId },
+        lock: { mode: 'pessimistic_write' },
+      });
 
-      if (createBookingDto.tourScheduleId) {
-        const schedule = await manager.getRepository(TourSchedule).findOne({
-          where: { id: createBookingDto.tourScheduleId },
-          lock: { mode: 'pessimistic_write' },
-        });
-        if (!schedule) {
-          throw new NotFoundException('Schedule not found');
-        }
-        if (schedule.tour_id !== tour.id) {
-          throw new BadRequestException(
-            'Schedule does not belong to this tour',
-          );
-        }
-        maxCapacity = schedule.max_capacity_override ?? tour.max_group_size;
-
-        const booked = await manager
-          .getRepository(Booking)
-          .createQueryBuilder('b')
-          .select('COALESCE(SUM(b.pax), 0)', 'total')
-          .where('b.tourScheduleId = :sid', { sid: schedule.id })
-          .andWhere('b.status NOT IN (:...statuses)', {
-            statuses: [BookingStatus.CANCELLED, BookingStatus.EXPIRED],
-          })
-          .getRawOne<{ total: string }>();
-        bookedSeatsTotal = Number(booked?.total ?? 0);
-      } else if (travelDate) {
-        const booked = await manager
-          .getRepository(Booking)
-          .createQueryBuilder('b')
-          .select('COALESCE(SUM(b.pax), 0)', 'total')
-          .where('b.tourId = :tourId', { tourId: tour.id })
-          .andWhere('b.travelDate = :travelDate', { travelDate })
-          .andWhere('b.status NOT IN (:...statuses)', {
-            statuses: [BookingStatus.CANCELLED, BookingStatus.EXPIRED],
-          })
-          .getRawOne<{ total: string }>();
-        bookedSeatsTotal = Number(booked?.total ?? 0);
-      } else if (startDate && endDate) {
-        const booked = await manager
-          .getRepository(Booking)
-          .createQueryBuilder('b')
-          .select('COALESCE(SUM(b.pax), 0)', 'total')
-          .where('b.tourId = :tourId', { tourId: tour.id })
-          .andWhere('b.startDate = :startDate', { startDate })
-          .andWhere('b.endDate = :endDate', { endDate })
-          .andWhere('b.status NOT IN (:...statuses)', {
-            statuses: [BookingStatus.CANCELLED, BookingStatus.EXPIRED],
-          })
-          .getRawOne<{ total: string }>();
-        bookedSeatsTotal = Number(booked?.total ?? 0);
+      if (!schedule) {
+        throw new NotFoundException('Schedule not found');
       }
 
-      const paxValue =
-        createBookingDto.pax ?? createBookingDto.numberOfTravelers;
-      if (!paxValue || paxValue < 1) {
-        throw new BadRequestException('pax must be at least 1');
+      if (schedule.tour_id !== tour.id) {
+        throw new BadRequestException('Schedule does not belong to this tour');
       }
 
+      if (!schedule.is_available) {
+        throw new BadRequestException(
+          'This schedule is not available for booking',
+        );
+      }
+
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const scheduleDate = new Date(schedule.available_date);
+      scheduleDate.setHours(0, 0, 0, 0);
+
+      if (scheduleDate < today) {
+        throw new BadRequestException(
+          'Cannot book a schedule that has already passed',
+        );
+      }
+
+      // 4) Capacity check
+      const maxCapacity = schedule.max_capacity_override ?? tour.max_group_size;
+
+      const booked = await manager
+        .getRepository(Booking)
+        .createQueryBuilder('b')
+        .select('COALESCE(SUM(b.pax), 0)', 'total')
+        .where('b.tourScheduleId = :sid', { sid: schedule.id })
+        .andWhere('b.status NOT IN (:...statuses)', {
+          statuses: [BookingStatus.CANCELLED, BookingStatus.EXPIRED],
+        })
+        .getRawOne<{ total: string }>();
+
+      const bookedSeatsTotal = Number(booked?.total ?? 0);
       const available = maxCapacity - bookedSeatsTotal;
 
       if (available < paxValue) {
@@ -173,16 +168,15 @@ export class BookingsService {
         throw new BadRequestException(`เหลือที่นั่งเพียง ${remaining} ที่`);
       }
 
-      // 3) Calculate pricing and create booking within the same transaction
+      // 5) Calculate pricing
       const pricing = await this.calculatePrice({
         tourId: createBookingDto.tourId,
-        travelDate: createBookingDto.travelDate,
-        startDate: createBookingDto.startDate,
-        endDate: createBookingDto.endDate,
+        tourScheduleId: createBookingDto.tourScheduleId,
         pax: paxValue,
         selectedOptions: createBookingDto.selectedOptions,
       });
 
+      // 6) Create booking
       const bookingReference = this.generateBookingReference();
 
       const booking = manager.create(Booking, {
@@ -190,9 +184,7 @@ export class BookingsService {
         tourId: createBookingDto.tourId,
         userId,
         tourScheduleId: createBookingDto.tourScheduleId,
-        travelDate,
-        startDate,
-        endDate,
+        travelDate: new Date(schedule.available_date),
         pax: paxValue,
         basePrice: pricing.basePrice,
         discount: pricing.discount,
@@ -211,8 +203,7 @@ export class BookingsService {
         bookingReference: savedBooking.bookingReference,
         status: savedBooking.status,
         tourId: savedBooking.tourId,
-        startDate: savedBooking.startDate,
-        endDate: savedBooking.endDate,
+        travelDate: savedBooking.travelDate,
         pax: savedBooking.pax,
         numberOfTravelers: savedBooking.pax,
         totalPrice: savedBooking.totalPrice,
@@ -309,6 +300,26 @@ export class BookingsService {
       { status: BookingStatus.EXPIRED },
     );
     return result.affected ?? 0;
+  }
+
+  private async validateMaxBookingsPerUser(
+    manager: EntityManager,
+    userId: string,
+  ): Promise<void> {
+    const count = await manager
+      .getRepository(Booking)
+      .createQueryBuilder('b')
+      .where('b.userId = :userId', { userId })
+      .andWhere('b.status IN (:...statuses)', {
+        statuses: BOOKING_CONFIG.ACTIVE_BOOKING_STATUSES,
+      })
+      .getCount();
+
+    if (count >= BOOKING_CONFIG.MAX_ACTIVE_BOOKINGS_PER_USER) {
+      throw new BadRequestException(
+        `You have reached the maximum limit of ${BOOKING_CONFIG.MAX_ACTIVE_BOOKINGS_PER_USER} active bookings`,
+      );
+    }
   }
 
   private generateBookingReference(): string {

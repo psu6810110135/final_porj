@@ -15,20 +15,7 @@ export class CalculateBookingDto {
   tourId!: string;
 
   @IsUUID('4')
-  @IsOptional()
-  tourScheduleId?: string;
-
-  @IsDateString()
-  @IsOptional()
-  travelDate?: string;
-
-  @IsDateString()
-  @IsOptional()
-  startDate?: string;
-
-  @IsDateString()
-  @IsOptional()
-  endDate?: string;
+  tourScheduleId!: string;
 
   @Transform(({ value, obj }) =>
     value === undefined ? obj?.numberOfTravelers : value,

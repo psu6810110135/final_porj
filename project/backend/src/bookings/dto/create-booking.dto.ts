@@ -28,20 +28,7 @@ export class CreateBookingDto {
   tourId!: string;
 
   @IsUUID('4')
-  @IsOptional()
-  tourScheduleId?: string;
-
-  @IsDateString()
-  @IsOptional()
-  travelDate?: string; // one-day
-
-  @IsDateString()
-  @IsOptional()
-  startDate?: string; // multi-day start
-
-  @IsDateString()
-  @IsOptional()
-  endDate?: string; // multi-day end
+  tourScheduleId!: string;
 
   @Transform(({ value, obj }) =>
     value === undefined ? obj?.numberOfTravelers : value,

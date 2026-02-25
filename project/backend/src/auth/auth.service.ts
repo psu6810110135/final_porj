@@ -10,7 +10,37 @@ export class AuthService {
     private usersService: UsersService,
     private jwtService: JwtService,
   ) {}
+  async googleLogin(req: any): Promise<{ accessToken: string }> {
+    if (!req.user) {
+      throw new UnauthorizedException('ไม่พบข้อมูลจาก Google');
+    }
+    
+    const { email, firstName, lastName } = req.user;
+    
+    // 1. ลองหา User ในระบบ (เพื่อความชัวร์ไม่ซ้ำ เราจะใช้อีเมลเป็น username ไปเลย)
+    let user = await this.usersService.findOne(email);
 
+    if (!user) {
+      // 2. ถ้าไม่เคยมีไอดี -> สมัครสมาชิกให้ใหม่ทันที!
+      // สุ่มรหัสผ่านให้ไปก่อน เพราะเขา Login ผ่าน Google
+      const randomPassword = Math.random().toString(36).slice(-10); 
+      const salt = await bcrypt.genSalt();
+      const hashedPassword = await bcrypt.hash(randomPassword, salt);
+
+      user = await this.usersService.createUser({
+        username: email, // 👈 ใช้อีเมลเป็น Username
+        email: email,
+        password: hashedPassword,
+        full_name: `${firstName} ${lastName}`, // เอาชื่อ-นามสกุลมาต่อกัน
+      });
+    }
+
+    // 3. สร้าง Token ส่งกลับไปให้หน้าบ้าน (เหมือนตอน Login ปกติเป๊ะ)
+    const payload = { username: user.username, role: user.role, sub: user.id };
+    const accessToken = await this.jwtService.sign(payload);
+
+    return { accessToken };
+  }
   // สมัครสมาชิก (เหมือนเดิม)
   async signUp(authCredentialsDto: AuthCredentialsDto): Promise<void> {
     const { username, password } = authCredentialsDto;

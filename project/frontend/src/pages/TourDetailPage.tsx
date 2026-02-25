@@ -256,6 +256,10 @@ function BookingCard({ tour }: { tour: Tour }) {
   const availableSeats = selectedSchedule?.available_seats ?? 0;
   const remainingCapacity = availableSeats - pax;
 
+  const visibleSchedules = schedules.filter(
+    (s) => (s.available_seats ?? 0) > 0 && s.is_available !== false,
+  );
+
   const Counter = ({
     label,
     value,
@@ -331,9 +335,16 @@ function BookingCard({ tour }: { tour: Tour }) {
                 กรุณาติดต่อเราเพื่อสอบถามเพิ่มเติม
               </p>
             </div>
+          ) : visibleSchedules.length === 0 ? (
+            <div className="text-center py-8 bg-gray-50 rounded-lg border border-gray-200">
+              <p className="text-sm text-gray-500">รอบนี้เต็มหมดแล้ว</p>
+              <p className="text-xs text-gray-400 mt-1">
+                กรุณาเลือกทัวร์หรือวันที่อื่น
+              </p>
+            </div>
           ) : (
             <div className="space-y-2 max-h-64 overflow-y-auto">
-              {schedules.map((schedule) => {
+              {visibleSchedules.map((schedule) => {
                 const date = new Date(schedule.available_date);
                 const isSelected = selectedSchedule?.id === schedule.id;
                 const isFull =

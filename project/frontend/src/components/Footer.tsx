@@ -59,13 +59,16 @@ export default function Footer() {
               <span className="text-lg md:text-xl font-bold">Thai Tours Service</span>
             </div>
             <p className="text-xs md:text-sm xl:text-base font-extralight leading-relaxed text-white/80 max-w-xs md:max-w-sm">
-              เที่ยวอย่างมั่นใจไปกับเรา สร้างความทรงจำที่ประทับใจมิรู้ลืม ด้วยบริการระดับพรีเมียม
+              เที่ยวอย่างมั่นใจไปกับเรา สร้างความทรงจำที่ประทับใจมิรู้ลืม
+              ด้วยบริการระดับพรีเมียม
             </p>
           </div>
 
           {/* Organization Info */}
           <div>
-            <h3 className="text-base md:text-lg xl:text-xl font-bold mb-2 md:mb-3">ข้อมูลองค์กร</h3>
+            <h3 className="text-base md:text-lg xl:text-xl font-bold mb-2 md:mb-3">
+              ข้อมูลองค์กร
+            </h3>
             <ul className="space-y-1 md:space-y-2">
               {orgLinks.map(({ label, to }) => (
                 <li key={to}>
@@ -77,7 +80,9 @@ export default function Footer() {
 
           {/* Support */}
           <div>
-            <h3 className="text-base md:text-lg xl:text-xl font-bold mb-2 md:mb-3">Support</h3>
+            <h3 className="text-base md:text-lg xl:text-xl font-bold mb-2 md:mb-3">
+              Support
+            </h3>
             <ul className="space-y-1 md:space-y-2">
               {supportLinks.map(({ label, href, to }) => (
                 <li key={label}>

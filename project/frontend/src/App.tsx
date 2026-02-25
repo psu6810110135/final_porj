@@ -15,6 +15,7 @@ import AdminDashboard from "./pages/admin/AdminDashboard";
 import PendingPayments from "./pages/admin/PendingPayments";
 import TourManager from "./pages/admin/TourManager";
 import AdminGuard from "./pages/AdminGuard";
+import LoginSuccess from "./pages/loginsuccess";
 
 export default function App() {
   return (
@@ -22,11 +23,11 @@ export default function App() {
       <Routes>
         {/* --- หน้าบ้านทั่วไป --- */}
         <Route path="/" element={<HomePage />} />
-        <Route path="/login" element={<LoginPage />} />
-        <Route path="/register" element={<RegisterPage />} />
         <Route path="/tours" element={<ToursPage />} />
         <Route path="/tours/:id" element={<TourDetailPage />} />
-
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/login/success" element={<LoginSuccess />} /> {/* 👈 เพิ่มบรรทัดนี้ */}
+        <Route path="/register" element={<RegisterPage />} />
         {/* --- 🛡️ โซนป้องกันแอดมิน --- */}
         <Route element={<AdminGuard />}> 
           <Route path="/admin" element={<AdminLayout />}>

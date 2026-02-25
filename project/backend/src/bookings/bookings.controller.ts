@@ -10,6 +10,7 @@ import {
   ParseUUIDPipe,
   BadRequestException,
 } from '@nestjs/common';
+import { AuthGuard } from '@nestjs/passport';
 import { BookingsService } from './bookings.service';
 import { CalculateBookingDto } from './dto/calculate-booking.dto';
 import { CreateBookingDto } from './dto/create-booking.dto';
@@ -25,38 +26,46 @@ export class BookingsController {
   }
 
   @Post()
-  // @UseGuards(JwtAuthGuard) // Uncomment when auth is implemented
+  @UseGuards(AuthGuard('jwt'))
   create(@Body() createBookingDto: CreateBookingDto, @Request() req: any) {
-    // For now, use a mock user ID. Replace with req.user.id when auth is ready
-    const userId = req.user?.id || '11111111-1111-1111-1111-111111111111';
+    const userId = req.user?.id;
+    if (!userId) {
+      throw new BadRequestException('User not authenticated');
+    }
     return this.bookingsService.create(createBookingDto, userId);
   }
 
   @Get('my-bookings')
-  // @UseGuards(JwtAuthGuard) // Uncomment when auth is implemented
+  @UseGuards(AuthGuard('jwt'))
   findMyBookings(@Request() req: any) {
-    // For now, use a mock user ID. Replace with req.user.id when auth is ready
-    const userId = req.user?.id || '11111111-1111-1111-1111-111111111111';
+    const userId = req.user?.id;
+    if (!userId) {
+      throw new BadRequestException('User not authenticated');
+    }
     return this.bookingsService.findAllByUser(userId);
   }
 
   @Get(':id')
-  // @UseGuards(JwtAuthGuard) // Uncomment when auth is implemented
+  @UseGuards(AuthGuard('jwt'))
   findOne(@Param('id', ParseUUIDPipe) id: string, @Request() req: any) {
-    // For now, use a mock user ID. Replace with req.user.id when auth is ready
-    const userId = req.user?.id || '11111111-1111-1111-1111-111111111111';
+    const userId = req.user?.id;
+    if (!userId) {
+      throw new BadRequestException('User not authenticated');
+    }
     return this.bookingsService.findOneById(id, userId);
   }
 
   @Patch(':id/cancel')
-  // @UseGuards(JwtAuthGuard) // Uncomment when auth is implemented
+  @UseGuards(AuthGuard('jwt'))
   cancel(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() cancelBookingDto: CancelBookingDto,
     @Request() req: any,
   ) {
-    // For now, use a mock user ID. Replace with req.user.id when auth is ready
-    const userId = req.user?.id || '11111111-1111-1111-1111-111111111111';
+    const userId = req.user?.id;
+    if (!userId) {
+      throw new BadRequestException('User not authenticated');
+    }
     return this.bookingsService.cancelBooking(id, cancelBookingDto, userId);
   }
 }

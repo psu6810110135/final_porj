@@ -7,40 +7,67 @@ import {
   IsEmail,
   IsOptional,
   ValidateNested,
+  IsUUID,
+  ValidateIf,
 } from 'class-validator';
-import { Type } from 'class-transformer';
+import { Type, Transform } from 'class-transformer';
 
 class ContactInfoDto {
   @IsString()
-  name: string;
+  name!: string;
 
   @IsEmail()
-  email: string;
+  email!: string;
 
   @IsString()
-  phone: string;
+  phone!: string;
 }
 
 export class CreateBookingDto {
-  @IsString()
-  tourId: string;
+  @IsUUID('4')
+  tourId!: string;
+
+  @IsUUID('4')
+  @IsOptional()
+  tourScheduleId?: string;
 
   @IsDateString()
-  startDate: string;
+  @IsOptional()
+  travelDate?: string; // one-day
 
   @IsDateString()
-  endDate: string;
+  @IsOptional()
+  startDate?: string; // multi-day start
 
+  @IsDateString()
+  @IsOptional()
+  endDate?: string; // multi-day end
+
+  @Transform(({ value, obj }) =>
+    value === undefined ? obj?.numberOfTravelers : value,
+  )
+  @Type(() => Number)
+  @ValidateIf((o) => o.pax !== undefined || o.numberOfTravelers === undefined)
   @IsInt()
   @Min(1)
-  numberOfTravelers: number;
+  pax?: number;
+
+  @Type(() => Number)
+  @ValidateIf((o) => o.numberOfTravelers !== undefined || o.pax === undefined)
+  @IsInt()
+  @Min(1)
+  numberOfTravelers?: number; // legacy alias for tests
 
   @IsObject()
   @ValidateNested()
   @Type(() => ContactInfoDto)
-  contactInfo: ContactInfoDto;
+  contactInfo!: ContactInfoDto;
 
   @IsOptional()
   @IsString()
   specialRequests?: string;
+
+  @IsOptional()
+  @IsObject()
+  selectedOptions?: Record<string, any>;
 }

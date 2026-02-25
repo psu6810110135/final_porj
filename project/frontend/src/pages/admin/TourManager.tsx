@@ -213,11 +213,11 @@ const TourManager = () => {
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
         <div>
-          <h1 className="text-3xl font-extrabold text-[#4F200D] tracking-tight">Tour Management</h1>
-          <p className="text-sm font-medium text-[#4F200D]/60 mt-1">Manage your tours, track availability, and update details.</p>
+          <h1 className="text-3xl font-extrabold text-[#4F200D] tracking-tight">จัดการทัวร์</h1>
+          <p className="text-sm font-medium text-[#4F200D]/60 mt-1">จัดการทัวร์ของคุณ ดูความพร้อม และอัปเดตรายละเอียดต่างๆ</p>
         </div>
         <Button className="bg-[#FF8400] hover:bg-[#e67600] text-white shadow-lg shadow-[#FF8400]/20 rounded-xl px-6 py-5 text-sm font-bold transition-all" onClick={handleAddNew}>
-          <Plus className="w-5 h-5 mr-2" strokeWidth={2.5} /> Add New Tour
+          <Plus className="w-5 h-5 mr-2" strokeWidth={2.5} /> เพิ่มทัวร์ใหม่
         </Button>
       </div>
 
@@ -225,21 +225,21 @@ const TourManager = () => {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div className="bg-white p-6 rounded-3xl border-0 shadow-sm flex items-center justify-between hover:shadow-md transition-shadow">
           <div>
-            <p className="text-sm font-bold text-[#4F200D]/50 uppercase tracking-wider">Total Tours</p>
+            <p className="text-sm font-bold text-[#4F200D]/50 uppercase tracking-wider">ทัวร์ทั้งหมด</p>
             <p className="text-3xl font-black text-[#4F200D] mt-1">{tours.length}</p>
           </div>
           <div className="p-4 bg-[#FFD93D]/30 rounded-2xl text-[#FF8400]"><MapPin className="w-7 h-7" strokeWidth={2.5}/></div>
         </div>
         <div className="bg-white p-6 rounded-3xl border-0 shadow-sm flex items-center justify-between hover:shadow-md transition-shadow">
           <div>
-            <p className="text-sm font-bold text-[#4F200D]/50 uppercase tracking-wider">Active Tours</p>
+            <p className="text-sm font-bold text-[#4F200D]/50 uppercase tracking-wider">เปิดใช้งาน</p>
             <p className="text-3xl font-black text-emerald-600 mt-1">{tours.filter((t) => t.is_active).length}</p>
           </div>
           <div className="p-4 bg-[#FF8400]/10 rounded-2xl text-[#FF8400]"><Calendar className="w-7 h-7" strokeWidth={2.5}/></div>
         </div>
         <div className="bg-white p-6 rounded-3xl border-0 shadow-sm flex items-center justify-between hover:shadow-md transition-shadow">
           <div>
-            <p className="text-sm font-bold text-[#4F200D]/50 uppercase tracking-wider">Categories</p>
+            <p className="text-sm font-bold text-[#4F200D]/50 uppercase tracking-wider">หมวดหมู่</p>
             <p className="text-3xl font-black text-[#4F200D] mt-1">{new Set(tours.map((t) => t.category)).size}</p>
           </div>
           <div className="p-4 bg-[#4F200D]/5 rounded-2xl text-[#4F200D]"><Users className="w-7 h-7" strokeWidth={2.5}/></div>
@@ -251,7 +251,7 @@ const TourManager = () => {
         <div className="relative w-full sm:w-96">
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-[#4F200D]/40 w-5 h-5" />
           <Input
-            placeholder="Search tours..."
+            placeholder="ค้นหาทัวร์..."
             className="pl-12 py-6 bg-[#F6F1E9]/50 border-0 rounded-2xl font-bold text-[#4F200D] placeholder:font-medium focus:bg-white focus:ring-2 focus:ring-[#FFD93D] transition-all"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
@@ -262,9 +262,9 @@ const TourManager = () => {
           value={statusFilter}
           onChange={(e) => setStatusFilter(e.target.value)}
         >
-          <option value="all">All Status</option>
-          <option value="active">Active</option>
-          <option value="inactive">Inactive</option>
+          <option value="all">สถานะทั้งหมด</option>
+          <option value="active">เปิดใช้งาน</option>
+          <option value="inactive">ปิดใช้งาน</option>
         </select>
       </div>
 
@@ -274,13 +274,13 @@ const TourManager = () => {
           <table className="w-full text-left text-sm">
             <thead className="bg-[#F6F1E9]/80 border-b-2 border-[#F6F1E9]">
               <tr>
-                <th className="px-6 py-5 font-black text-[#4F200D] uppercase tracking-wider text-xs">Tour Name</th>
-                <th className="px-6 py-5 font-black text-[#4F200D] uppercase tracking-wider text-xs">Price</th>
-                <th className="px-6 py-5 font-black text-[#4F200D] uppercase tracking-wider text-xs">Region</th>
-                <th className="px-6 py-5 font-black text-[#4F200D] uppercase tracking-wider text-xs">Duration</th>
-                <th className="px-6 py-5 font-black text-[#4F200D] uppercase tracking-wider text-xs">Category</th>
-                <th className="px-6 py-5 font-black text-[#4F200D] uppercase tracking-wider text-xs">Status</th>
-                <th className="px-6 py-5 font-black text-[#4F200D] uppercase tracking-wider text-xs text-right">Actions</th>
+                <th className="px-6 py-5 font-black text-[#4F200D] uppercase tracking-wider text-xs">ชื่อทัวร์</th>
+                <th className="px-6 py-5 font-black text-[#4F200D] uppercase tracking-wider text-xs">ราคา</th>
+                <th className="px-6 py-5 font-black text-[#4F200D] uppercase tracking-wider text-xs">ภูมิภาค</th>
+                <th className="px-6 py-5 font-black text-[#4F200D] uppercase tracking-wider text-xs">ระยะเวลา</th>
+                <th className="px-6 py-5 font-black text-[#4F200D] uppercase tracking-wider text-xs">หมวดหมู่</th>
+                <th className="px-6 py-5 font-black text-[#4F200D] uppercase tracking-wider text-xs">สถานะ</th>
+                <th className="px-6 py-5 font-black text-[#4F200D] uppercase tracking-wider text-xs text-right">จัดการ</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-[#F6F1E9]">
@@ -288,12 +288,12 @@ const TourManager = () => {
                 <tr>
                   <td colSpan={7} className="px-6 py-12 text-center">
                     <div className="flex items-center justify-center gap-2 text-[#FF8400] font-bold">
-                      <Loader2 className="w-5 h-5 animate-spin" /> Loading tours...
+                      <Loader2 className="w-5 h-5 animate-spin" /> กำลังโหลดข้อมูล...
                     </div>
                   </td>
                 </tr>
               ) : paginatedTours.length === 0 ? (
-                <tr><td colSpan={7} className="px-6 py-12 text-center text-[#4F200D]/40 font-bold">No tours found.</td></tr>
+                <tr><td colSpan={7} className="px-6 py-12 text-center text-[#4F200D]/40 font-bold">ไม่พบข้อมูลทัวร์</td></tr>
               ) : (
                 paginatedTours.map((tour) => (
                   <tr key={tour.id} className="hover:bg-[#FFD93D]/5 transition-colors group">
@@ -319,7 +319,7 @@ const TourManager = () => {
                     <td className="px-6 py-5 font-bold text-[#4F200D]/70 capitalize">{tour.category}</td>
                     <td className="px-6 py-5">
                       <Badge className={`border-0 shadow-none px-3 py-1 font-bold ${tour.is_active ? 'bg-[#FFD93D]/30 text-[#4F200D]' : 'bg-gray-100 text-gray-500'}`}>
-                        {tour.is_active ? 'Active' : 'Inactive'}
+                        {tour.is_active ? 'เปิดใช้งาน' : 'ปิดใช้งาน'}
                       </Badge>
                     </td>
                     <td className="px-6 py-5 text-right">
@@ -342,14 +342,14 @@ const TourManager = () => {
         {/* Pagination */}
         <div className="px-6 py-4 flex items-center justify-between bg-white border-t-2 border-[#F6F1E9]">
           <p className="text-sm font-semibold text-[#4F200D]/50">
-            Showing <span className="text-[#FF8400]">{filteredTours.length === 0 ? 0 : (currentPage - 1) * itemsPerPage + 1}</span> to <span className="text-[#FF8400]">{Math.min(currentPage * itemsPerPage, filteredTours.length)}</span> of <span className="text-[#FF8400]">{filteredTours.length}</span> results
+            แสดง <span className="text-[#FF8400]">{filteredTours.length === 0 ? 0 : (currentPage - 1) * itemsPerPage + 1}</span> ถึง <span className="text-[#FF8400]">{Math.min(currentPage * itemsPerPage, filteredTours.length)}</span> จาก <span className="text-[#FF8400]">{filteredTours.length}</span> รายการ
           </p>
           <div className="flex gap-2">
             <Button variant="outline" size="sm" disabled={currentPage === 1} onClick={() => setCurrentPage((p) => Math.max(1, p - 1))} className="border-0 bg-[#F6F1E9]/50 text-[#4F200D] font-bold rounded-xl hover:bg-[#FFD93D]/30 hover:text-[#FF8400] transition-colors">
-              Previous
+              ก่อนหน้า
             </Button>
             <Button variant="outline" size="sm" disabled={currentPage === totalPages || totalPages === 0} onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))} className="border-0 bg-[#F6F1E9]/50 text-[#4F200D] font-bold rounded-xl hover:bg-[#FFD93D]/30 hover:text-[#FF8400] transition-colors">
-              Next
+              ถัดไป
             </Button>
           </div>
         </div>
@@ -363,7 +363,7 @@ const TourManager = () => {
             {/* Modal Header */}
             <div className="flex justify-between items-center p-6 border-b-2 border-[#F6F1E9] bg-white rounded-t-3xl">
               <h2 className="text-2xl font-black text-[#4F200D]">
-                {editingId ? 'Edit Tour' : 'Create New Tour'}
+                {editingId ? 'แก้ไขทัวร์' : 'สร้างทัวร์ใหม่'}
               </h2>
               <button onClick={() => setIsModalOpen(false)} className="text-[#4F200D]/40 hover:text-red-500 p-2 rounded-xl hover:bg-red-50 transition-colors">
                 <X className="w-6 h-6" />
@@ -374,49 +374,49 @@ const TourManager = () => {
 
               {/* Title */}
               <div className="space-y-2">
-                <label className="text-sm font-black text-[#4F200D] uppercase tracking-wider">Tour Title *</label>
-                <Input required value={formData.title} onChange={(e) => setFormData({ ...formData, title: e.target.value })} placeholder="e.g. Amazing Sea Trip" className="bg-[#F6F1E9]/50 border-0 rounded-xl focus:bg-white focus:ring-2 focus:ring-[#FFD93D] font-bold text-[#4F200D]" />
+                <label className="text-sm font-black text-[#4F200D] uppercase tracking-wider">ชื่อทัวร์ *</label>
+                <Input required value={formData.title} onChange={(e) => setFormData({ ...formData, title: e.target.value })} placeholder="เช่น ทริปดำน้ำสุดฟิน" className="bg-[#F6F1E9]/50 border-0 rounded-xl focus:bg-white focus:ring-2 focus:ring-[#FFD93D] font-bold text-[#4F200D]" />
               </div>
 
               {/* Price & Duration */}
               <div className="grid grid-cols-2 gap-5">
                 <div className="space-y-2">
-                  <label className="text-sm font-black text-[#4F200D] uppercase tracking-wider">Price (฿) *</label>
+                  <label className="text-sm font-black text-[#4F200D] uppercase tracking-wider">ราคา (฿) *</label>
                   <Input type="number" required min="0" value={formData.price} onChange={(e) => setFormData({ ...formData, price: e.target.value })} placeholder="0" className="bg-[#F6F1E9]/50 border-0 rounded-xl focus:bg-white focus:ring-2 focus:ring-[#FFD93D] font-bold text-[#4F200D]" />
                 </div>
                 <div className="space-y-2">
-                  <label className="text-sm font-black text-[#4F200D] uppercase tracking-wider">Duration *</label>
-                  <Input required value={formData.duration} onChange={(e) => setFormData({ ...formData, duration: e.target.value })} placeholder="e.g. 1 Day" className="bg-[#F6F1E9]/50 border-0 rounded-xl focus:bg-white focus:ring-2 focus:ring-[#FFD93D] font-bold text-[#4F200D]" />
+                  <label className="text-sm font-black text-[#4F200D] uppercase tracking-wider">ระยะเวลา *</label>
+                  <Input required value={formData.duration} onChange={(e) => setFormData({ ...formData, duration: e.target.value })} placeholder="เช่น 1 วัน" className="bg-[#F6F1E9]/50 border-0 rounded-xl focus:bg-white focus:ring-2 focus:ring-[#FFD93D] font-bold text-[#4F200D]" />
                 </div>
               </div>
 
               {/* Region & Province */}
               <div className="grid grid-cols-2 gap-5">
                 <div className="space-y-2">
-                  <label className="text-sm font-black text-[#4F200D] uppercase tracking-wider">Region *</label>
+                  <label className="text-sm font-black text-[#4F200D] uppercase tracking-wider">ภูมิภาค *</label>
                   <select className="w-full h-10 px-3 rounded-xl border-0 bg-[#F6F1E9]/50 text-[#4F200D] font-bold text-sm focus:bg-white focus:ring-2 focus:ring-[#FFD93D] outline-none" value={formData.region} onChange={(e) => setFormData({ ...formData, region: e.target.value as string })}>
                     {Object.values(TourRegion).map((r) => <option key={r} value={r}>{r}</option>)}
                   </select>
                 </div>
                 <div className="space-y-2">
-                  <label className="text-sm font-black text-[#4F200D] uppercase tracking-wider">Province *</label>
-                  <Input required value={formData.province} onChange={(e) => setFormData({ ...formData, province: e.target.value })} placeholder="e.g. Krabi" className="bg-[#F6F1E9]/50 border-0 rounded-xl focus:bg-white focus:ring-2 focus:ring-[#FFD93D] font-bold text-[#4F200D]" />
+                  <label className="text-sm font-black text-[#4F200D] uppercase tracking-wider">จังหวัด *</label>
+                  <Input required value={formData.province} onChange={(e) => setFormData({ ...formData, province: e.target.value })} placeholder="เช่น กระบี่" className="bg-[#F6F1E9]/50 border-0 rounded-xl focus:bg-white focus:ring-2 focus:ring-[#FFD93D] font-bold text-[#4F200D]" />
                 </div>
               </div>
 
               {/* Category & Status */}
               <div className="grid grid-cols-2 gap-5">
                 <div className="space-y-2">
-                  <label className="text-sm font-black text-[#4F200D] uppercase tracking-wider">Category *</label>
+                  <label className="text-sm font-black text-[#4F200D] uppercase tracking-wider">หมวดหมู่ *</label>
                   <select className="w-full h-10 px-3 rounded-xl border-0 bg-[#F6F1E9]/50 text-[#4F200D] font-bold text-sm focus:bg-white focus:ring-2 focus:ring-[#FFD93D] outline-none" value={formData.category} onChange={(e) => setFormData({ ...formData, category: e.target.value as string })}>
                     {Object.values(TourCategory).map((c) => <option key={c} value={c}>{c}</option>)}
                   </select>
                 </div>
                 <div className="space-y-2">
-                  <label className="text-sm font-black text-[#4F200D] uppercase tracking-wider">Status</label>
+                  <label className="text-sm font-black text-[#4F200D] uppercase tracking-wider">สถานะ</label>
                   <select className="w-full h-10 px-3 rounded-xl border-0 bg-[#F6F1E9]/50 text-[#4F200D] font-bold text-sm focus:bg-white focus:ring-2 focus:ring-[#FFD93D] outline-none" value={formData.is_active ? 'active' : 'inactive'} onChange={(e) => setFormData({ ...formData, is_active: e.target.value === 'active' })}>
-                    <option value="active">Active</option>
-                    <option value="inactive">Inactive</option>
+                    <option value="active">เปิดใช้งาน</option>
+                    <option value="inactive">ปิดใช้งาน</option>
                   </select>
                 </div>
               </div>
@@ -424,11 +424,11 @@ const TourManager = () => {
               {/* Max Group Size & Image URL */}
               <div className="grid grid-cols-2 gap-5">
                 <div className="space-y-2">
-                  <label className="text-sm font-black text-[#4F200D] uppercase tracking-wider">Max Group Size</label>
+                  <label className="text-sm font-black text-[#4F200D] uppercase tracking-wider">ขนาดกลุ่มสูงสุด</label>
                   <Input type="number" min="1" value={formData.max_group_size} onChange={(e) => setFormData({ ...formData, max_group_size: Number(e.target.value) })} className="bg-[#F6F1E9]/50 border-0 rounded-xl focus:bg-white focus:ring-2 focus:ring-[#FFD93D] font-bold text-[#4F200D]" />
                 </div>
                 <div className="space-y-2">
-                  <label className="text-sm font-black text-[#4F200D] uppercase tracking-wider">Cover Image URL</label>
+                  <label className="text-sm font-black text-[#4F200D] uppercase tracking-wider">ลิงก์รูปภาพหน้าปก</label>
                   <Input value={formData.image_cover} onChange={(e) => setFormData({ ...formData, image_cover: e.target.value })} placeholder="https://..." className="bg-[#F6F1E9]/50 border-0 rounded-xl focus:bg-white focus:ring-2 focus:ring-[#FFD93D] font-bold text-[#4F200D]" />
                 </div>
               </div>
@@ -447,10 +447,10 @@ const TourManager = () => {
 
               {/* Description */}
               <div className="space-y-2">
-                <label className="text-sm font-black text-[#4F200D] uppercase tracking-wider">Description</label>
+                <label className="text-sm font-black text-[#4F200D] uppercase tracking-wider">รายละเอียด</label>
                 <textarea
                   className="w-full p-4 border-0 bg-[#F6F1E9]/50 rounded-2xl text-[#4F200D] font-bold text-sm min-h-[100px] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#FFD93D] resize-none"
-                  placeholder="Describe the tour experience..."
+                  placeholder="อธิบายประสบการณ์ทัวร์นี้..."
                   value={formData.description}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                 />
@@ -459,11 +459,11 @@ const TourManager = () => {
               {/* Preparation */}
               <div className="space-y-2">
                 <label className="text-sm font-black text-[#4F200D] uppercase tracking-wider flex items-center gap-2">
-                  Preparation <span className="text-[#4F200D]/40 font-bold text-[10px]">(Comma separated)</span>
+                  สิ่งที่ต้องเตรียม <span className="text-[#4F200D]/40 font-bold text-[10px]">(คั่นด้วยคอมม่า)</span>
                 </label>
                 <textarea
                   className="w-full p-4 border-0 bg-[#F6F1E9]/50 rounded-2xl text-[#4F200D] font-bold text-sm min-h-[80px] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#FFD93D] resize-none"
-                  placeholder="e.g. Swimsuit, Sunscreen, Camera"
+                  placeholder="เช่น ชุดว่ายน้ำ, ครีมกันแดด, กล้องถ่ายรูป"
                   value={formData.preparation_str}
                   onChange={(e) => setFormData({ ...formData, preparation_str: e.target.value })}
                 />
@@ -472,13 +472,13 @@ const TourManager = () => {
               {/* Itinerary */}
               <div className="space-y-3 bg-[#F6F1E9]/30 p-5 rounded-2xl border-2 border-[#F6F1E9]">
                 <div className="flex justify-between items-center mb-2">
-                  <label className="text-sm font-black text-[#4F200D] uppercase tracking-wider">Itinerary</label>
+                  <label className="text-sm font-black text-[#4F200D] uppercase tracking-wider">แผนการเดินทาง</label>
                   <button
                     type="button"
                     onClick={addItineraryRow}
                     className="text-xs text-[#FF8400] hover:text-white font-bold bg-[#FFD93D]/30 hover:bg-[#FF8400] px-3 py-1.5 rounded-lg transition-colors"
                   >
-                    + Add Step
+                    + เพิ่มขั้นตอน
                   </button>
                 </div>
                 {formData.itinerary_data.map((item, index) => (
@@ -491,7 +491,7 @@ const TourManager = () => {
                     />
                     <Input
                       className="flex-1 bg-white border-0 rounded-xl focus:ring-2 focus:ring-[#FFD93D] font-bold text-[#4F200D]"
-                      placeholder="Activity detail..."
+                      placeholder="รายละเอียดกิจกรรม..."
                       value={item.detail}
                       onChange={(e) => updateItinerary(index, 'detail', e.target.value)}
                     />
@@ -510,12 +510,12 @@ const TourManager = () => {
               {/* Actions */}
               <div className="pt-6 pb-2 flex items-center justify-end gap-3 sticky bottom-0 bg-white border-t-2 border-[#F6F1E9] mt-6">
                 <Button type="button" variant="ghost" onClick={() => setIsModalOpen(false)} className="hover:bg-[#F6F1E9] text-[#4F200D] font-bold rounded-xl px-6">
-                  Cancel
+                  ยกเลิก
                 </Button>
                 <Button type="submit" className="bg-[#FF8400] hover:bg-[#e67600] text-white font-bold shadow-lg shadow-[#FF8400]/20 rounded-xl min-w-[130px] px-6" disabled={isSubmitting}>
                   {isSubmitting
-                    ? <><Loader2 className="w-5 h-5 mr-2 animate-spin" /> Saving...</>
-                    : editingId ? 'Update Tour' : 'Save New Tour'}
+                    ? <><Loader2 className="w-5 h-5 mr-2 animate-spin" /> กำลังบันทึก...</>
+                    : editingId ? 'อัปเดตทัวร์' : 'บันทึกทัวร์ใหม่'}
                 </Button>
               </div>
 

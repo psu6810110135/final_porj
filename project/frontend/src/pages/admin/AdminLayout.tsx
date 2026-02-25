@@ -7,15 +7,15 @@ export default function AdminLayout() {
   const navigate = useNavigate();
 
   const menuItems = [
-    { icon: LayoutDashboard, label: 'Dashboard', path: '/admin' },
-    { icon: Map, label: 'Manage Tours', path: '/admin/tours' },
-    { icon: Users, label: 'Manage Users', path: '/admin/users' },
-    { icon: CreditCard, label: 'Verify Payments', path: '/admin/payments' },
-    { icon: FileText, label: 'Booking History', path: '/admin/bookings' },
+    { icon: LayoutDashboard, label: 'แดชบอร์ด', path: '/admin' },
+    { icon: Map, label: 'จัดการทัวร์', path: '/admin/tours' },
+    { icon: Users, label: 'จัดการผู้ใช้งาน', path: '/admin/users' },
+    { icon: CreditCard, label: 'ตรวจสอบการชำระเงิน', path: '/admin/payments' },
+    { icon: FileText, label: 'ประวัติการจอง', path: '/admin/bookings' },
   ];
 
   const handleLogout = () => {
-    if (window.confirm("Are you sure you want to log out?")) {
+    if (window.confirm("คุณแน่ใจหรือไม่ว่าต้องการออกจากระบบ?")) {
       localStorage.removeItem('jwt_token');
       navigate('/login');
     }
@@ -28,7 +28,7 @@ export default function AdminLayout() {
       <aside className="w-64 bg-[#4F200D] shadow-xl flex flex-col h-full z-20 relative">
         <div className="p-6 border-b border-white/10">
           <h1 className="text-2xl font-extrabold text-[#FFD93D] tracking-wide flex items-center gap-2">
-            ThaiTour <span className="text-xs font-medium bg-[#FF8400] text-white px-2 py-1 rounded-md">Admin</span>
+            ThaiTour <span className="text-xs font-medium bg-[#FF8400] text-white px-2 py-1 rounded-md">ผู้ดูแล</span>
           </h1>
         </div>
         
@@ -53,7 +53,7 @@ export default function AdminLayout() {
         <div className="p-4 border-t border-white/10 flex flex-col gap-2">
           <Link to="/">
             <Button variant="ghost" className="w-full justify-start text-[#F6F1E9]/70 hover:bg-white/10 hover:text-[#FFD93D] transition-colors rounded-xl">
-              <Home size={18} className="mr-3 opacity-80" /> Back to Home
+              <Home size={18} className="mr-3 opacity-80" /> กลับหน้าหลัก
             </Button>
           </Link>
 
@@ -62,7 +62,7 @@ export default function AdminLayout() {
             onClick={handleLogout} 
             className="w-full justify-start text-[#FFD93D]/80 hover:bg-red-500/20 hover:text-red-400 transition-colors rounded-xl"
           >
-            <LogOut size={18} className="mr-3 opacity-80" /> Logout
+            <LogOut size={18} className="mr-3 opacity-80" /> ออกจากระบบ
           </Button>
         </div>
       </aside>

@@ -75,8 +75,8 @@ export default function UserManager() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
         <div>
-          <h1 className="text-3xl font-extrabold text-[#4F200D] tracking-tight">User Management</h1>
-          <p className="text-sm font-medium text-[#4F200D]/60 mt-1">View, edit, and manage user accounts and permissions.</p>
+          <h1 className="text-3xl font-extrabold text-[#4F200D] tracking-tight">จัดการผู้ใช้งาน</h1>
+          <p className="text-sm font-medium text-[#4F200D]/60 mt-1">ดู แก้ไข และจัดการบัญชีผู้ใช้งานและสิทธิ์ต่างๆ</p>
         </div>
       </div>
 
@@ -85,14 +85,14 @@ export default function UserManager() {
         <div className="relative w-full sm:w-96">
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-[#4F200D]/40 w-5 h-5" />
           <Input
-            placeholder="Search users by name or email..."
-            className="pl-12 py-6 bg-[#F6F1E9]/50 border-0 rounded-2xl font-medium focus:bg-white focus:ring-2 focus:ring-[#FFD93D] transition-all"
+            placeholder="ค้นหาด้วยชื่อหรืออีเมล..."
+            className="pl-12 py-6 bg-[#F6F1E9]/50 border-0 rounded-2xl font-bold text-[#4F200D] placeholder:font-medium focus:bg-white focus:ring-2 focus:ring-[#FFD93D] transition-all"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />
         </div>
         <div className="px-6 py-3 bg-[#F6F1E9]/50 rounded-xl text-sm font-bold text-[#4F200D]">
-          Total Users: <span className="text-[#FF8400]">{filteredUsers.length}</span>
+          ผู้ใช้งานทั้งหมด: <span className="text-[#FF8400]">{filteredUsers.length}</span>
         </div>
       </div>
 
@@ -102,11 +102,11 @@ export default function UserManager() {
           <table className="w-full text-left text-sm">
             <thead className="bg-[#F6F1E9]/80 border-b-2 border-[#F6F1E9]">
               <tr>
-                <th className="px-6 py-5 font-black text-[#4F200D] uppercase tracking-wider text-xs">User</th>
-                <th className="px-6 py-5 font-black text-[#4F200D] uppercase tracking-wider text-xs">Email</th>
-                <th className="px-6 py-5 font-black text-[#4F200D] uppercase tracking-wider text-xs">Role</th>
-                <th className="px-6 py-5 font-black text-[#4F200D] uppercase tracking-wider text-xs">Status</th>
-                <th className="px-6 py-5 font-black text-[#4F200D] uppercase tracking-wider text-xs text-right">Actions</th>
+                <th className="px-6 py-5 font-black text-[#4F200D] uppercase tracking-wider text-xs">ผู้ใช้งาน</th>
+                <th className="px-6 py-5 font-black text-[#4F200D] uppercase tracking-wider text-xs">อีเมล</th>
+                <th className="px-6 py-5 font-black text-[#4F200D] uppercase tracking-wider text-xs">บทบาท</th>
+                <th className="px-6 py-5 font-black text-[#4F200D] uppercase tracking-wider text-xs">สถานะ</th>
+                <th className="px-6 py-5 font-black text-[#4F200D] uppercase tracking-wider text-xs text-right">จัดการ</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-[#F6F1E9]">
@@ -114,14 +114,14 @@ export default function UserManager() {
                 <tr>
                   <td colSpan={5} className="px-6 py-12 text-center">
                     <div className="flex items-center justify-center gap-2 text-[#FF8400] font-bold">
-                      <Loader2 className="w-5 h-5 animate-spin" /> Loading users...
+                      <Loader2 className="w-5 h-5 animate-spin" /> กำลังโหลดข้อมูลผู้ใช้งาน...
                     </div>
                   </td>
                 </tr>
               ) : filteredUsers.length === 0 ? (
                 <tr>
                   <td colSpan={5} className="px-6 py-12 text-center text-[#4F200D]/40 font-medium">
-                    No users found matching "{searchQuery}"
+                    ไม่พบข้อมูลผู้ใช้ที่ตรงกับ "{searchQuery}"
                   </td>
                 </tr>
               ) : (
@@ -132,7 +132,7 @@ export default function UserManager() {
                         <div className="w-10 h-10 rounded-full bg-[#FFD93D]/30 flex items-center justify-center text-[#FF8400] shrink-0">
                           <User size={20} strokeWidth={2.5} />
                         </div>
-                        <span className="font-bold text-[#4F200D]">{user.full_name || 'No Name'}</span>
+                        <span className="font-bold text-[#4F200D]">{user.full_name || 'ไม่ระบุชื่อ'}</span>
                       </div>
                     </td>
                     <td className="px-6 py-5 font-medium text-[#4F200D]/70">{user.email}</td>
@@ -149,7 +149,7 @@ export default function UserManager() {
                           ? 'bg-[#FFD93D]/30 text-[#4F200D]' 
                           : 'bg-gray-100 text-gray-500'
                       }`}>
-                        <span className="capitalize">{user.is_active !== false ? 'Active' : 'Inactive'}</span>
+                        <span className="capitalize">{user.is_active !== false ? 'เปิดใช้งาน' : 'ระงับการใช้งาน'}</span>
                       </Badge>
                     </td>
                     <td className="px-6 py-5 text-right">

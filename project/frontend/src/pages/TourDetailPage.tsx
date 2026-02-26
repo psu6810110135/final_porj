@@ -31,9 +31,15 @@ interface Tour {
   duration: string;
   image_cover: string;
   category: string;
+  child_price?: number;
   max_group_size?: number;
+  highlights?: string[] | string;
   preparation?: string[] | string;
+  itinerary?: string;
   itinerary_data?: ItineraryStep[];
+  included?: string[] | string;
+  excluded?: string[] | string;
+  conditions?: string[] | string;
 }
 
 /* ─── Helpers ───────────────────────── */
@@ -45,6 +51,65 @@ function parsePreparation(raw?: string[] | string): string[] {
     .split(",")
     .map((s) => s.trim())
     .filter(Boolean);
+}
+
+function parseTextList(raw?: string[] | string): string[] {
+  if (!raw) return [];
+  if (Array.isArray(raw))
+    return raw.filter(Boolean).map((v) => String(v).trim());
+
+  return raw
+    .split(/\n|,|•|\u2022|;/)
+    .map((s) => s.trim())
+    .filter(Boolean);
+}
+
+function parseItinerary(
+  rawStructured?: ItineraryStep[] | null,
+  rawText?: string,
+): ItineraryStep[] {
+  if (Array.isArray(rawStructured) && rawStructured.length > 0) {
+    return rawStructured.filter((item) => item?.detail);
+  }
+
+  if (!rawText) return [];
+
+  const lines = rawText
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean);
+
+  return lines.map((line, index) => {
+    const [first, ...rest] = line.split(/[-–:]/);
+    if (rest.length > 0 && first.trim().length <= 20) {
+      return { time: first.trim(), detail: rest.join("-").trim() };
+    }
+    return { time: `ช่วงที่ ${index + 1}`, detail: line };
+  });
+}
+
+function normalizeTourPayload(raw: any): Tour {
+  return {
+    id: String(raw?.id ?? ""),
+    title: raw?.title ?? "",
+    description: raw?.description ?? "",
+    price: Number(raw?.price ?? 0),
+    province: raw?.province ?? "",
+    duration: raw?.duration ?? "",
+    image_cover: raw?.image_cover ?? raw?.coverImage ?? raw?.image ?? "",
+    category: raw?.category ?? "",
+    child_price: raw?.child_price ? Number(raw.child_price) : undefined,
+    max_group_size: raw?.max_group_size
+      ? Number(raw.max_group_size)
+      : undefined,
+    highlights: raw?.highlights,
+    preparation: raw?.preparation,
+    itinerary: raw?.itinerary,
+    itinerary_data: raw?.itinerary_data ?? raw?.itineraryData,
+    included: raw?.included,
+    excluded: raw?.excluded,
+    conditions: raw?.conditions,
+  };
 }
 
 /* ─── Icons ─────────────────────────── */
@@ -595,13 +660,20 @@ export default function TourDetailPage() {
   const [sheetOpen, setSheetOpen] = useState(false);
 
   const preparation = tour ? parsePreparation(tour.preparation) : [];
-  const itinerary = tour?.itinerary_data ?? [];
+  const highlights = tour ? parseTextList(tour.highlights) : [];
+  const includedItems = tour ? parseTextList(tour.included) : [];
+  const excludedItems = tour ? parseTextList(tour.excluded) : [];
+  const conditionItems = tour ? parseTextList(tour.conditions) : [];
+  const itinerary = parseItinerary(tour?.itinerary_data, tour?.itinerary);
 
   useEffect(() => {
     if (id) {
       axios
         .get(`http://localhost:3000/api/v1/tours/${id}`)
-        .then((res) => setTour(res.data))
+        .then((res) => {
+          const payload = res?.data?.data ?? res?.data;
+          setTour(normalizeTourPayload(payload));
+        })
         .catch(() => setError(true))
         .finally(() => setLoading(false));
     }
@@ -636,17 +708,6 @@ export default function TourDetailPage() {
           border-radius: 20px;
           padding: 20px;
           box-shadow: 0 1px 8px rgba(44,26,14,0.06);
-        }
-        .timeline-dot {
-          position: absolute;
-          left: -5px;
-          top: 6px;
-          width: 10px;
-          height: 10px;
-          border-radius: 50%;
-          background: #FF8400;
-          border: 2px solid white;
-          box-shadow: 0 0 0 2px #FF8400;
         }
       `}</style>
 
@@ -742,6 +803,26 @@ export default function TourDetailPage() {
               <div className="grid lg:grid-cols-3 gap-6">
                 {/* ── Left: Content ── */}
                 <div className="lg:col-span-2 space-y-4">
+                  {/* Highlights */}
+                  {highlights.length > 0 && (
+                    <div className="section-card bg-gradient-to-br from-white to-orange-50/40 border border-orange-100">
+                      <h2 className="text-base font-black text-[#2C1A0E] mb-3 flex items-center gap-2">
+                        <span className="w-1 h-5 bg-[#FF8400] rounded-full inline-block" />
+                        ไฮไลต์ของทัวร์
+                      </h2>
+                      <ul className="grid sm:grid-cols-2 gap-2.5">
+                        {highlights.map((item, i) => (
+                          <li
+                            key={i}
+                            className="text-sm text-gray-700 bg-white border border-orange-100 rounded-lg px-3 py-2"
+                          >
+                            ✨ {item}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
                   {/* Description */}
                   {tour.description && (
                     <div className="section-card">
@@ -762,14 +843,17 @@ export default function TourDetailPage() {
                         <span className="w-1 h-5 bg-[#FF8400] rounded-full inline-block" />
                         กำหนดการเดินทาง
                       </h2>
-                      <div className="relative pl-5 border-l-2 border-dashed border-[#FF8400]/25 space-y-5">
+                      <div className="relative pl-8 space-y-3 before:absolute before:left-[7px] before:top-2 before:bottom-2 before:w-[2px] before:rounded-full before:bg-[#FF8400]/20">
                         {itinerary.map((item, i) => (
-                          <div key={i} className="relative">
-                            <div className="timeline-dot" />
-                            <p className="text-xs font-bold text-[#FF8400] mb-0.5">
+                          <div
+                            key={i}
+                            className="relative rounded-xl border border-orange-100 bg-gradient-to-br from-orange-50/40 to-white p-3.5"
+                          >
+                            <span className="absolute -left-8 top-4 h-4 w-4 rounded-full bg-[#FF8400] border-2 border-white shadow-[0_0_0_3px_rgba(255,132,0,0.25)]" />
+                            <p className="text-[11px] font-extrabold text-[#FF8400] uppercase tracking-wide mb-1">
                               {item.time}
                             </p>
-                            <p className="text-sm text-gray-600 leading-relaxed">
+                            <p className="text-sm text-gray-700 leading-relaxed">
                               {item.detail}
                             </p>
                           </div>
@@ -795,6 +879,73 @@ export default function TourDetailPage() {
                               {i + 1}
                             </span>
                             {item}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
+                  {(includedItems.length > 0 || excludedItems.length > 0) && (
+                    <div className="grid md:grid-cols-2 gap-4">
+                      {includedItems.length > 0 && (
+                        <div className="section-card border border-green-100 bg-green-50/30">
+                          <h2 className="text-base font-black text-[#2C1A0E] mb-3 flex items-center gap-2">
+                            <span className="w-1 h-5 bg-green-500 rounded-full inline-block" />
+                            สิ่งที่รวมในแพ็กเกจ
+                          </h2>
+                          <ul className="space-y-2">
+                            {includedItems.map((item, i) => (
+                              <li
+                                key={i}
+                                className="text-sm text-gray-700 flex items-start gap-2"
+                              >
+                                <span className="text-green-600 font-bold">
+                                  ✓
+                                </span>
+                                <span>{item}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+
+                      {excludedItems.length > 0 && (
+                        <div className="section-card border border-red-100 bg-red-50/30">
+                          <h2 className="text-base font-black text-[#2C1A0E] mb-3 flex items-center gap-2">
+                            <span className="w-1 h-5 bg-red-500 rounded-full inline-block" />
+                            สิ่งที่ไม่รวม
+                          </h2>
+                          <ul className="space-y-2">
+                            {excludedItems.map((item, i) => (
+                              <li
+                                key={i}
+                                className="text-sm text-gray-700 flex items-start gap-2"
+                              >
+                                <span className="text-red-500 font-bold">
+                                  ✕
+                                </span>
+                                <span>{item}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {conditionItems.length > 0 && (
+                    <div className="section-card border border-gray-200">
+                      <h2 className="text-base font-black text-[#2C1A0E] mb-3 flex items-center gap-2">
+                        <span className="w-1 h-5 bg-[#FF8400] rounded-full inline-block" />
+                        เงื่อนไขการเดินทาง
+                      </h2>
+                      <ul className="space-y-2">
+                        {conditionItems.map((item, i) => (
+                          <li
+                            key={i}
+                            className="text-sm text-gray-600 leading-relaxed"
+                          >
+                            • {item}
                           </li>
                         ))}
                       </ul>

@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link, useNavigate } from "react-router-dom";
 import axios from "axios";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
@@ -191,6 +191,7 @@ const XIcon = () => (
 function BookingSheet({ tour, onClose }: { tour: Tour; onClose?: () => void }) {
   const baseURL = "http://localhost:3000";
   const api = axios.create({ baseURL });
+  const navigate = useNavigate();
   const [adults, setAdults] = useState(1);
   const [children, setChildren] = useState(0);
   const [schedules, setSchedules] = useState<Schedule[]>([]);
@@ -622,13 +623,18 @@ function BookingSheet({ tour, onClose }: { tour: Tour; onClose?: () => void }) {
             };
             try {
               setSubmitting(true);
-              await api.post("/api/v1/bookings", payload, {
+              const res = await api.post("/api/v1/bookings", payload, {
                 headers: { Authorization: `Bearer ${token}` },
               });
-              alert("จองสำเร็จ! กรุณาชำระเงินตามขั้นตอนที่ได้รับ");
-              setChildren(0);
-              setAdults(1);
-              setSelectedSchedule(null);
+              
+              const bookingId = res.data?.id || res.data?.data?.id;
+
+              if (bookingId) {
+                navigate(`/payment/${bookingId}`, { state: { amount: total } });
+              } else {
+                alert("จองสำเร็จ แต่ระบบไม่พบรหัสการจอง กรุณาตรวจสอบในประวัติการจองของคุณ");
+              }
+              
             } catch (err: any) {
               const msg = err?.response?.data?.message || "จองไม่สำเร็จ";
               alert(Array.isArray(msg) ? msg.join("\n") : msg);

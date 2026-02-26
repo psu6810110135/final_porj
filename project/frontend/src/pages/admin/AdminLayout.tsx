@@ -1,58 +1,49 @@
-import { Outlet, Link, useLocation, useNavigate } from "react-router-dom";
-import {
-  LayoutDashboard,
-  Map,
-  CreditCard,
-  FileText,
-  LogOut,
-  Home,
-  Calendar,
-} from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
+import { LayoutDashboard, Map, CreditCard, FileText, Users, LogOut, Home, Calendar } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
 export default function AdminLayout() {
   const location = useLocation();
   const navigate = useNavigate();
 
   const menuItems = [
-    { icon: LayoutDashboard, label: "Dashboard", path: "/admin" },
-    { icon: Map, label: "Manage Tours", path: "/admin/tours" },
-    { icon: Calendar, label: "Tour Schedules", path: "/admin/schedules" },
-    { icon: CreditCard, label: "Verify Payments", path: "/admin/payments" },
-    { icon: FileText, label: "Booking History", path: "/admin/bookings" },
+    { icon: LayoutDashboard, label: 'แดชบอร์ด', path: '/admin' },
+    { icon: Map, label: 'จัดการทัวร์', path: '/admin/tours' },
+    { icon: Calendar, label: 'ตารางทัวร์', path: '/admin/schedules' }, // 👈 เมนูใหม่จาก main
+    { icon: Users, label: 'จัดการผู้ใช้งาน', path: '/admin/users' },
+    { icon: CreditCard, label: 'ตรวจสอบการชำระเงิน', path: '/admin/payments' },
+    { icon: FileText, label: 'ประวัติการจอง', path: '/admin/bookings' },
   ];
 
-  // 👈 ฟังก์ชันออกจากระบบ (แถมให้!)
   const handleLogout = () => {
-    if (window.confirm("คุณต้องการออกจากระบบใช่ไหม?")) {
-      localStorage.removeItem("jwt_token");
-      navigate("/login");
+    if (window.confirm("คุณแน่ใจหรือไม่ว่าต้องการออกจากระบบ?")) {
+      localStorage.removeItem('jwt_token');
+      navigate('/login');
     }
   };
 
   return (
-    <div className="flex h-screen bg-gray-100 font-sans">
-      {/* Sidebar */}
-      <aside className="w-64 bg-white shadow-md flex flex-col fixed h-full z-10">
-        <div className="p-6 border-b">
-          <h1 className="text-2xl font-bold text-blue-600">
-            ThaiTour <span className="text-sm text-gray-500">Admin</span>
+    <div className="flex h-screen bg-[#F6F1E9] font-sans overflow-hidden">
+      
+      {/* Dark Sidebar */}
+      <aside className="w-64 bg-[#4F200D] shadow-xl flex flex-col h-full z-20 relative">
+        <div className="p-6 border-b border-white/10">
+          <h1 className="text-2xl font-extrabold text-[#FFD93D] tracking-wide flex items-center gap-2">
+            ThaiTour <span className="text-xs font-medium bg-[#FF8400] text-white px-2 py-1 rounded-md">ผู้ดูแล</span>
           </h1>
         </div>
-
-        <nav className="flex-1 p-4 space-y-2">
+        
+        <nav className="flex-1 p-4 space-y-2 overflow-y-auto custom-scrollbar">
           {menuItems.map((item) => {
             const isActive = location.pathname === item.path;
             return (
               <Link key={item.path} to={item.path}>
-                <div
-                  className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
-                    isActive
-                      ? "bg-blue-50 text-blue-600 font-medium"
-                      : "text-gray-600 hover:bg-gray-50"
-                  }`}
-                >
-                  <item.icon size={20} />
+                <div className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-300 ${
+                  isActive 
+                    ? 'bg-[#FF8400] text-white font-semibold shadow-md shadow-[#FF8400]/20' 
+                    : 'text-[#F6F1E9]/70 hover:bg-white/10 hover:text-[#FFD93D]'
+                }`}>
+                  <item.icon size={20} className={isActive ? "text-white" : "opacity-80"} />
                   <span>{item.label}</span>
                 </div>
               </Link>
@@ -60,32 +51,26 @@ export default function AdminLayout() {
           })}
         </nav>
 
-        {/* 🌟 โซนปุ่มด้านล่างที่เพิ่มปุ่ม Home เข้าไป */}
-        <div className="p-4 border-t flex flex-col gap-2">
-          {/* ปุ่มกลับหน้า Home */}
+        <div className="p-4 border-t border-white/10 flex flex-col gap-2">
           <Link to="/">
-            <Button
-              variant="ghost"
-              className="w-full justify-start text-gray-600 hover:bg-gray-100 hover:text-blue-600 transition-colors"
-            >
-              <Home size={18} className="mr-2" /> Back to Home
+            <Button variant="ghost" className="w-full justify-start text-[#F6F1E9]/70 hover:bg-white/10 hover:text-[#FFD93D] transition-colors rounded-xl">
+              <Home size={18} className="mr-3 opacity-80" /> กลับหน้าหลัก
             </Button>
           </Link>
 
-          {/* ปุ่ม Logout ที่ใส่ฟังก์ชันคลิกให้แล้ว */}
-          <Button
-            variant="ghost"
-            onClick={handleLogout}
-            className="w-full justify-start text-red-600 hover:bg-red-50 transition-colors"
+          <Button 
+            variant="ghost" 
+            onClick={handleLogout} 
+            className="w-full justify-start text-[#FFD93D]/80 hover:bg-red-500/20 hover:text-red-400 transition-colors rounded-xl"
           >
-            <LogOut size={18} className="mr-2" /> Logout
+            <LogOut size={18} className="mr-3 opacity-80" /> ออกจากระบบ
           </Button>
         </div>
       </aside>
 
       {/* Main Content Area */}
-      <main className="flex-1 ml-64 p-8 overflow-auto h-screen">
-        <div className="max-w-7xl mx-auto">
+      <main className="flex-1 p-8 overflow-y-auto h-screen relative">
+        <div className="max-w-7xl mx-auto pb-12">
           <Outlet />
         </div>
       </main>

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { DollarSign, Users, Calendar, AlertCircle } from 'lucide-react';
+import { Card, CardContent } from '@/components/ui/card';
+import { DollarSign, Users, Calendar, AlertCircle, TrendingUp, MoreHorizontal } from 'lucide-react';
 import axios from 'axios';
 
 export default function AdminDashboard() {
@@ -20,54 +20,110 @@ export default function AdminDashboard() {
   }, []);
 
   return (
-    <div className="space-y-6">
-      <h2 className="text-3xl font-bold tracking-tight">Dashboard Overview</h2>
+    <div className="w-full space-y-6 animate-in fade-in duration-500">
       
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        {/* Revenue Card */}
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
-            <DollarSign className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">฿{stats.totalRevenue.toLocaleString()}</div>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
+        <div>
+          <h1 className="text-3xl font-extrabold text-[#4F200D]">ภาพรวมระบบ</h1>
+          <p className="text-sm font-medium text-[#4F200D]/60 mt-1">ติดตามผลประกอบการของธุรกิจคุณแบบเรียลไทม์</p>
+        </div>
+        <div className="px-5 py-2.5 bg-white border-0 rounded-xl shadow-sm text-sm font-bold text-[#4F200D]">
+          {new Date().toLocaleDateString('th-TH', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' })}
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-6">
+        
+        {/* Total Revenue */}
+        <Card className="border-0 shadow-sm rounded-3xl bg-white overflow-hidden hover:shadow-lg transition-all duration-300">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-bold text-[#4F200D]/50 mb-1 uppercase tracking-wider">รายได้รวม</p>
+                <h3 className="text-3xl font-black text-[#4F200D]">฿{stats.totalRevenue.toLocaleString()}</h3>
+              </div>
+              <div className="w-14 h-14 rounded-2xl bg-[#FFD93D]/30 flex items-center justify-center text-[#FF8400]">
+                <DollarSign size={28} strokeWidth={2.5} />
+              </div>
+            </div>
           </CardContent>
         </Card>
 
         {/* Today's Bookings */}
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Today's Bookings</CardTitle>
-            <Calendar className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.todayBookings}</div>
+        <Card className="border-0 shadow-sm rounded-3xl bg-white overflow-hidden hover:shadow-lg transition-all duration-300">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-bold text-[#4F200D]/50 mb-1 uppercase tracking-wider">การจองวันนี้</p>
+                <h3 className="text-3xl font-black text-[#4F200D]">{stats.todayBookings}</h3>
+              </div>
+              <div className="w-14 h-14 rounded-2xl bg-[#FF8400]/10 flex items-center justify-center text-[#FF8400]">
+                <Calendar size={28} strokeWidth={2.5} />
+              </div>
+            </div>
           </CardContent>
         </Card>
 
-        {/* Pending Payments (Highlighted) */}
-        <Card className="bg-orange-50 border-orange-200">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-orange-800">Pending Verify</CardTitle>
-            <AlertCircle className="h-4 w-4 text-orange-600" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-orange-700">{stats.pendingPayments}</div>
-            <p className="text-xs text-orange-600">Action required</p>
+        {/* Pending Verify */}
+        <Card className="border-2 border-[#FF8400]/20 shadow-md rounded-3xl bg-[#FFD93D]/10 overflow-hidden relative hover:shadow-lg transition-all duration-300">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-bold text-[#FF8400] mb-1 uppercase tracking-wider">รอตรวจสอบ</p>
+                <h3 className="text-3xl font-black text-[#4F200D]">{stats.pendingPayments}</h3>
+              </div>
+              <div className="w-14 h-14 rounded-2xl bg-[#FF8400] flex items-center justify-center text-white shadow-inner animate-pulse">
+                <AlertCircle size={28} strokeWidth={2.5} />
+              </div>
+            </div>
           </CardContent>
         </Card>
 
         {/* Active Tours */}
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Active Tours</CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.activeTours}</div>
+        <Card className="border-0 shadow-sm rounded-3xl bg-white overflow-hidden hover:shadow-lg transition-all duration-300">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-bold text-[#4F200D]/50 mb-1 uppercase tracking-wider">ทัวร์ที่เปิดใช้งาน</p>
+                <h3 className="text-3xl font-black text-[#4F200D]">{stats.activeTours}</h3>
+              </div>
+              <div className="w-14 h-14 rounded-2xl bg-[#4F200D]/5 flex items-center justify-center text-[#4F200D]">
+                <Users size={28} strokeWidth={2.5} />
+              </div>
+            </div>
           </CardContent>
         </Card>
+
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 pt-4">
+        <div className="lg:col-span-2 bg-white rounded-3xl shadow-sm border-0 p-8 flex flex-col min-h-[360px]">
+          <div className="flex justify-between items-center mb-8">
+            <h3 className="text-xl font-bold text-[#4F200D]">วิเคราะห์รายได้</h3>
+            <button className="text-[#4F200D]/40 hover:text-[#FF8400] transition-colors"><MoreHorizontal size={24} /></button>
+          </div>
+          <div className="flex-1 bg-[#F6F1E9]/50 rounded-2xl border-2 border-dashed border-[#4F200D]/10 flex flex-col items-center justify-center text-[#4F200D]/40">
+            <TrendingUp size={40} className="mb-3 text-[#FFD93D]" />
+            <p className="text-sm font-bold">ข้อมูลแผนภูมิ</p>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-3xl shadow-sm border-0 p-8 flex flex-col min-h-[360px]">
+          <h3 className="text-xl font-bold text-[#4F200D] mb-8">กิจกรรมล่าสุด</h3>
+          <div className="flex-1 flex flex-col gap-6">
+            {[1, 2, 3, 4].map((i) => (
+              <div key={i} className="flex items-start gap-4">
+                <div className="w-10 h-10 rounded-full bg-[#FFD93D]/30 flex items-center justify-center text-[#FF8400] shrink-0 mt-0.5">
+                  <Calendar size={18} strokeWidth={2.5} />
+                </div>
+                <div>
+                  <p className="text-sm font-bold text-[#4F200D]">ได้รับการจองใหม่</p>
+                  <p className="text-xs font-medium text-[#4F200D]/50 mt-1">การจอง #{1020 + i} รอการตรวจสอบ</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
     </div>
   );

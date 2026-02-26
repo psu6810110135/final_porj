@@ -18,7 +18,7 @@ export default function PaymentPage() {
     const fetchQrCode = async () => {
       try {
         // ยิงไปที่ API ที่เราเพิ่งเขียนใน Backend
-        const res = await fetch(`http://localhost:3000/payments/qr/${id}`);
+        const res = await fetch(`http://localhost:3000/api/v1/payments/qr/${id}`);
         if (!res.ok) throw new Error('Failed to fetch QR');
         
         const data = await res.json();
@@ -74,7 +74,7 @@ export default function PaymentPage() {
         // *สมมติว่า Backend ค้นหาจาก BookingId ได้ หรือเราแก้ให้ส่ง paymentId กลับมาพร้อม QR*
         
         // ลองยิงไปที่ route นี้ (ถ้า Backend คุณใช้ bookingId ในการเช็ค)
-        const response = await fetch(`http://localhost:3000/bookings/${id}`); 
+        const response = await fetch(`http://localhost:3000/api/v1/bookings/${id}`); 
         // หรือถ้าต้องเช็คที่ payment โดยตรง ต้องแน่ใจว่าได้ paymentId มาแล้ว
         
         if (response.ok) {

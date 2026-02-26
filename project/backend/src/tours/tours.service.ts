@@ -1,7 +1,13 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { QueryFailedError, Repository } from 'typeorm';
 import { Tour } from './entities/tour.entity';
+import { TourSchedule } from './entities/tour-schedule.entity';
+import { Booking } from '../bookings/entities/booking.entity';
 import { CreateTourDto } from './dto/create-tour.dto';
 import { UpdateTourDto } from './dto/update-tour.dto';
 import { GetToursFilterDto } from './dto/get-tours-filter.dto';
@@ -11,6 +17,10 @@ export class ToursService {
   constructor(
     @InjectRepository(Tour)
     private toursRepository: Repository<Tour>,
+    @InjectRepository(TourSchedule)
+    private schedulesRepository: Repository<TourSchedule>,
+    @InjectRepository(Booking)
+    private bookingsRepository: Repository<Booking>,
   ) {}
 
   // 1. Get Tours with Filter
@@ -68,12 +78,27 @@ export class ToursService {
 
   // 3. Create Tour (Used by Admin)
   async create(createTourDto: CreateTourDto): Promise<Tour> {
+    const { schedules, ...tourData } = createTourDto;
+
     const tour = this.toursRepository.create({
-      ...createTourDto,
+      ...tourData,
       images: createTourDto.image_cover ? [createTourDto.image_cover] : [],
       is_active: true,
     });
-    return await this.toursRepository.save(tour);
+    const savedTour = await this.toursRepository.save(tour);
+
+    //
+    if (schedules && schedules.length > 0) {
+      const scheduleEntities = schedules.map((s) => ({
+        tour_id: savedTour.id,
+        available_date: new Date(s.date),
+        max_capacity_override: s.capacity ?? undefined,
+        is_available: true,
+      }));
+      await this.schedulesRepository.insert(scheduleEntities);
+    }
+
+    return savedTour;
   }
 
   // 4. Seed Data
@@ -90,6 +115,27 @@ export class ToursService {
 
   async remove(id: string) {
     const tour = await this.getTourById(id);
-    return this.toursRepository.remove(tour);
+
+    const bookingCount = await this.bookingsRepository.count({
+      where: { tourId: id },
+    });
+    if (bookingCount > 0) {
+      throw new BadRequestException(
+        'Cannot delete this tour because it has related bookings. Please cancel or remove bookings first.',
+      );
+    }
+
+    try {
+      await this.schedulesRepository.delete({ tour_id: id });
+      await this.toursRepository.remove(tour);
+      return { message: 'Tour deleted successfully' };
+    } catch (error) {
+      if (error instanceof QueryFailedError) {
+        throw new BadRequestException(
+          'Cannot delete this tour because it has related bookings. Please cancel or remove bookings first.',
+        );
+      }
+      throw error;
+    }
   }
 }

@@ -7,14 +7,18 @@ import TourDetailPage from "./pages/TourDetailPage";
 import PaymentPage from "./pages/PaymentPage";
 
 // --- ระบบ Auth ---
-import LoginPage from "./pages/loginpage"; // เช็คชื่อไฟล์ตัวพิมพ์เล็ก-ใหญ่ด้วยนะครับ
+import LoginPage from "./pages/loginpage"; 
 import RegisterPage from "./pages/RegisterPage";
+import LoginSuccess from "./pages/LoginSuccess";
 
 // --- ระบบ Admin ---
 import AdminLayout from "./pages/admin/AdminLayout";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import PendingPayments from "./pages/admin/PendingPayments";
 import TourManager from "./pages/admin/TourManager";
+import TourScheduleManager from "./pages/admin/TourScheduleManager"; // 👈 จาก main
+import UserManager from "./pages/admin/UserManager"; // 👈 จากฝั่ง Admin-Ui
+import BookingHistory from "./pages/admin/BookingHistory"; // 👈 จากฝั่ง Admin-Ui
 import AdminGuard from "./pages/AdminGuard";
 
 export default function App() {
@@ -23,21 +27,25 @@ export default function App() {
       <Routes>
         {/* --- หน้าบ้านทั่วไป --- */}
         <Route path="/" element={<HomePage />} />
-        <Route path="/login" element={<LoginPage />} />
-        <Route path="/register" element={<RegisterPage />} />
         <Route path="/tours" element={<ToursPage />} />
         <Route path="/tours/:id" element={<TourDetailPage />} />
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/login/success" element={<LoginSuccess />} />
+        <Route path="/register" element={<RegisterPage />} />
+        
         <Route path="/payment/:id" element={<PaymentPage />} />
 
         {/* --- 🛡️ โซนป้องกันแอดมิน --- */}
-        <Route element={<AdminGuard />}> 
+        <Route element={<AdminGuard />}>
           <Route path="/admin" element={<AdminLayout />}>
             <Route index element={<AdminDashboard />} />
             <Route path="tours" element={<TourManager />} />
+            <Route path="schedules" element={<TourScheduleManager />} /> {/* 👈 เพิ่ม Route Schedules */}
+            <Route path="users" element={<UserManager />} /> {/* 👈 เพิ่ม Route Users */}
             <Route path="payments" element={<PendingPayments />} />
+            <Route path="bookings" element={<BookingHistory />} /> {/* 👈 เพิ่ม Route Bookings */}
           </Route>
         </Route>
-
       </Routes>
     </BrowserRouter>
   );

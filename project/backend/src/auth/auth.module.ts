@@ -5,7 +5,7 @@ import { UsersModule } from '../users/users.module'; // Import เพื่อ�
 import { PassportModule } from '@nestjs/passport';
 import { JwtModule } from '@nestjs/jwt';
 import { JwtStrategy } from './jwt.strategy';
-
+import { GoogleStrategy } from './google.strategy';
 @Module({
   imports: [
     UsersModule, // เรียกใช้ความสามารถของ Users
@@ -16,7 +16,7 @@ import { JwtStrategy } from './jwt.strategy';
     }),
   ],
   controllers: [AuthController],
-  providers: [AuthService, JwtStrategy],
-  exports: [JwtStrategy, PassportModule],
+  providers: [AuthService, JwtStrategy,GoogleStrategy],
+  exports: [GoogleStrategy, JwtStrategy, PassportModule],
 })
 export class AuthModule {}

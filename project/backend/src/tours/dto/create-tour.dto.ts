@@ -8,6 +8,8 @@ import {
   IsEnum,
   IsArray,
   ValidateNested,
+  IsDateString,
+  IsInt,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { TourRegion, TourCategory } from '../entities/tour.entity';
@@ -23,14 +25,25 @@ class ItineraryItemDto {
   detail!: string;
 }
 
+// ✨ เพิ่ม Class สำหรับกำหนด Schedule (วันเปิดทัวร์)
+class ScheduleDto {
+  @IsDateString()
+  date!: string;
+
+  @IsInt()
+  @Min(1)
+  @IsOptional()
+  capacity?: number;
+}
+
 export class CreateTourDto {
   @IsString()
   @IsNotEmpty()
   title!: string;
 
   @IsString()
-  @IsOptional()
-  description?: string;
+  @IsNotEmpty()
+  description!: string;
 
   @IsNumber()
   @Min(0)
@@ -124,4 +137,11 @@ export class CreateTourDto {
   @IsBoolean()
   @IsOptional()
   is_active?: boolean;
+
+  // ✨ เพิ่ม: กำหนดวันเปิดทัวร์พร้อมจำนวนที่นั่งแต่ละวัน
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => ScheduleDto)
+  @IsOptional()
+  schedules?: ScheduleDto[];
 }

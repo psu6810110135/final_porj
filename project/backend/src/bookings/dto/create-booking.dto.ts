@@ -24,24 +24,11 @@ class ContactInfoDto {
 }
 
 export class CreateBookingDto {
-  @IsUUID('4')
+  @IsUUID()
   tourId!: string;
 
-  @IsUUID('4')
-  @IsOptional()
-  tourScheduleId?: string;
-
-  @IsDateString()
-  @IsOptional()
-  travelDate?: string; // one-day
-
-  @IsDateString()
-  @IsOptional()
-  startDate?: string; // multi-day start
-
-  @IsDateString()
-  @IsOptional()
-  endDate?: string; // multi-day end
+  @IsUUID()
+  tourScheduleId!: string;
 
   @Transform(({ value, obj }) =>
     value === undefined ? obj?.numberOfTravelers : value,

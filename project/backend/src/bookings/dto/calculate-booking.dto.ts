@@ -11,24 +11,11 @@ import {
 import { Transform, Type } from 'class-transformer';
 
 export class CalculateBookingDto {
-  @IsUUID('4')
+  @IsUUID()
   tourId!: string;
 
-  @IsUUID('4')
-  @IsOptional()
-  tourScheduleId?: string;
-
-  @IsDateString()
-  @IsOptional()
-  travelDate?: string;
-
-  @IsDateString()
-  @IsOptional()
-  startDate?: string;
-
-  @IsDateString()
-  @IsOptional()
-  endDate?: string;
+  @IsUUID()
+  tourScheduleId!: string;
 
   @Transform(({ value, obj }) =>
     value === undefined ? obj?.numberOfTravelers : value,

@@ -1,67 +1,95 @@
-import { useState, useEffect } from 'react';
-import { Plus, Search, Pencil, Trash2, MapPin, Calendar, Users, X, Loader2 } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
+import { useState, useEffect } from "react";
+import {
+  Plus,
+  Search,
+  Pencil,
+  Trash2,
+  MapPin,
+  Calendar,
+  Users,
+  X,
+  Loader2,
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
 
 /* ─── Auth Helper ────────────────────────────────── */
 const getAuthHeader = (): Record<string, string> => {
-  const token = localStorage.getItem('jwt_token');
+  const token = localStorage.getItem("jwt_token");
   return token ? { Authorization: `Bearer ${token}` } : {};
 };
 
 /* ─── Enums & Types ──────────────────────────────── */
 export const TourCategory = {
-  SEA: 'Sea',
-  MOUNTAIN: 'Mountain',
-  CULTURAL: 'Cultural',
-  NATURE: 'Nature',
-  CITY: 'City',
-  ADVENTURE: 'Adventure',
+  SEA: "Sea",
+  MOUNTAIN: "Mountain",
+  CULTURAL: "Cultural",
+  NATURE: "Nature",
+  CITY: "City",
+  ADVENTURE: "Adventure",
 };
 
-export const TourRegion =  {
-  NORTH: 'North',
-  SOUTH: 'South',
-  CENTRAL: 'Central',
-  EAST: 'East',
-  WEST: 'West',
-  NORTHEAST: 'Northeast',
+export const TourRegion = {
+  NORTH: "North",
+  SOUTH: "South",
+  CENTRAL: "Central",
+  EAST: "East",
+  WEST: "West",
+  NORTHEAST: "Northeast",
 };
 
 export interface Tour {
   id: string;
   title: string;
   price: number;
+  child_price?: number;
   province: string;
   duration: string;
   category: string;
   region: string;
   is_active: boolean;
   image_cover?: string;
+  images?: string[];
   description?: string;
   max_group_size?: number;
+  rating?: number;
+  review_count?: number;
+  highlights?: string[];
   preparation?: string[];
+  itinerary?: string;
   itinerary_data?: { time: string; detail: string }[];
+  included?: string;
+  excluded?: string;
+  conditions?: string;
 }
 
 /* ─── Initial Form State ─────────────────────────── */
 const initialFormState = {
-  title: '',
-  price: '',
-  province: '',
+  title: "",
+  price: "",
+  child_price: "",
+  province: "",
   region: TourRegion.CENTRAL,
-  duration: '',
+  duration: "",
   category: TourCategory.NATURE,
-  description: '',
-  image_cover: '',
+  description: "",
+  image_cover: "",
+  images_str: "",
   is_active: true,
   max_group_size: 15,
-  preparation_str: '',
-  itinerary_data: [{ time: '', detail: '' }],
+  rating: 0,
+  review_count: 0,
+  highlights_str: "",
+  preparation_str: "",
+  itinerary: "",
+  itinerary_data: [{ time: "", detail: "" }],
+  included: "",
+  excluded: "",
+  conditions: "",
 };
 
-const API_URL = 'http://localhost:3000/api/v1/tours';
+const API_URL = "http://localhost:3000/api/v1/tours";
 
 /* ─── Component ──────────────────────────────────── */
 const TourManager = () => {
@@ -69,11 +97,11 @@ const TourManager = () => {
   const [loading, setLoading] = useState(true);
   
   // States สำหรับการค้นหาและกรองข้อมูล
-  const [searchQuery, setSearchQuery] = useState('');
-  const [statusFilter, setStatusFilter] = useState<string>('all');
-  const [regionFilter, setRegionFilter] = useState<string>('all');
-  const [categoryFilter, setCategoryFilter] = useState<string>('all');
-  const [durationFilter, setDurationFilter] = useState<string>('all');
+  const [searchQuery, setSearchQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [regionFilter, setRegionFilter] = useState<string>("all");
+  const [categoryFilter, setCategoryFilter] = useState<string>("all");
+  const [durationFilter, setDurationFilter] = useState<string>("all");
   
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 7;
@@ -87,18 +115,22 @@ const TourManager = () => {
   const fetchTours = async () => {
     setLoading(true);
     try {
-      const response = await fetch(`${API_URL}?show_all=true`, { headers: getAuthHeader() });
-      if (!response.ok) throw new Error('Failed to fetch tours');
+      const response = await fetch(`${API_URL}?show_all=true`, {
+        headers: getAuthHeader(),
+      });
+      if (!response.ok) throw new Error("Failed to fetch tours");
       const data = await response.json();
       setTours(data);
     } catch (err) {
-      console.error('Could not load tours.', err);
+      console.error("Could not load tours:", err);
     } finally {
       setLoading(false);
     }
   };
 
-  useEffect(() => { fetchTours(); }, []);
+  useEffect(() => {
+    fetchTours();
+  }, []);
   
   // รีเซ็ตหน้ากลับไปหน้าแรกเมื่อมีการกรองข้อมูล
   useEffect(() => { 
@@ -117,18 +149,27 @@ const TourManager = () => {
     setFormData({
       title: tour.title,
       price: tour.price.toString(),
+      child_price: tour.child_price?.toString() || "",
       province: tour.province,
       region: tour.region,
       duration: tour.duration,
       category: tour.category,
-      description: tour.description || '',
-      image_cover: tour.image_cover || '',
+      description: tour.description || "",
+      image_cover: tour.image_cover || "",
+      images_str: tour.images?.join(", ") || "",
       is_active: tour.is_active,
       max_group_size: tour.max_group_size ?? 15,
-      preparation_str: tour.preparation?.join(', ') || '',
+      rating: tour.rating ?? 0,
+      review_count: tour.review_count ?? 0,
+      highlights_str: tour.highlights?.join(", ") || "",
+      preparation_str: tour.preparation?.join(", ") || "",
+      itinerary: tour.itinerary || "",
       itinerary_data: tour.itinerary_data?.length
         ? tour.itinerary_data
-        : [{ time: '', detail: '' }],
+        : [{ time: "", detail: "" }],
+      included: tour.included || "",
+      excluded: tour.excluded || "",
+      conditions: tour.conditions || "",
     });
     setIsModalOpen(true);
   };
@@ -140,31 +181,46 @@ const TourManager = () => {
     const payload = {
       title: formData.title,
       price: Number(formData.price),
+      child_price: formData.child_price ? Number(formData.child_price) : null,
       province: formData.province,
       region: formData.region,
       duration: formData.duration,
       category: formData.category,
       description: formData.description,
       image_cover: formData.image_cover,
+      images: formData.images_str
+        .split(",")
+        .map((s) => s.trim())
+        .filter((s) => s !== ""),
       is_active: formData.is_active,
       max_group_size: Number(formData.max_group_size),
-      preparation: formData.preparation_str
-        .split(',')
+      rating: Number(formData.rating),
+      review_count: Number(formData.review_count),
+      highlights: formData.highlights_str
+        .split(",")
         .map((s) => s.trim())
-        .filter((s) => s !== ''),
+        .filter((s) => s !== ""),
+      preparation: formData.preparation_str
+        .split(",")
+        .map((s) => s.trim())
+        .filter((s) => s !== ""),
+      itinerary: formData.itinerary,
       itinerary_data: formData.itinerary_data.filter((i) => i.time && i.detail),
+      included: formData.included,
+      excluded: formData.excluded,
+      conditions: formData.conditions,
     };
 
     try {
       const url = editingId ? `${API_URL}/${editingId}` : API_URL;
       const response = await fetch(url, {
-        method: editingId ? 'PATCH' : 'POST',
-        headers: { 'Content-Type': 'application/json', ...getAuthHeader() },
+        method: editingId ? "PATCH" : "POST",
+        headers: { "Content-Type": "application/json", ...getAuthHeader() },
         body: JSON.stringify(payload),
       });
       if (!response.ok) {
         const errData = await response.json();
-        throw new Error(errData.message || 'Failed to save tour');
+        throw new Error(errData.message || "Failed to save tour");
       }
       await fetchTours();
       setIsModalOpen(false);
@@ -177,33 +233,45 @@ const TourManager = () => {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm('คุณแน่ใจหรือไม่ว่าต้องการลบทัวร์นี้?')) return;
+    if (!confirm("คุณแน่ใจหรือไม่ว่าต้องการลบทัวร์นี้?")) return;
     try {
-      const res = await fetch(`${API_URL}/${id}`, { method: 'DELETE', headers: getAuthHeader() });
+      const res = await fetch(`${API_URL}/${id}`, {
+        method: "DELETE",
+        headers: getAuthHeader(),
+      });
       if (!res.ok) throw new Error();
       setTours((prev) => prev.filter((t) => t.id !== id));
     } catch {
-      alert('Failed to delete tour');
+      alert("Failed to delete tour");
     }
   };
 
   /* ── Itinerary helpers ─────────────────────────── */
-  const updateItinerary = (index: number, field: 'time' | 'detail', value: string) => {
+  const updateItinerary = (
+    index: number,
+    field: "time" | "detail",
+    value: string,
+  ) => {
     const updated = formData.itinerary_data.map((item, i) =>
-      i === index ? { ...item, [field]: value } : item
+      i === index ? { ...item, [field]: value } : item,
     );
     setFormData({ ...formData, itinerary_data: updated });
   };
 
   const addItineraryRow = () =>
-    setFormData({ ...formData, itinerary_data: [...formData.itinerary_data, { time: '', detail: '' }] });
+    setFormData({
+      ...formData,
+      itinerary_data: [...formData.itinerary_data, { time: "", detail: "" }],
+    });
 
   const removeItineraryRow = (index: number) =>
-    setFormData({ ...formData, itinerary_data: formData.itinerary_data.filter((_, i) => i !== index) });
+    setFormData({
+      ...formData,
+      itinerary_data: formData.itinerary_data.filter((_, i) => i !== index),
+    });
 
   /* ── Filtering Logic ────────────────────── */
   
-  // ดึงรายการระยะเวลาทัวร์ที่ไม่ซ้ำกันจากฐานข้อมูลอัตโนมัติ
   const uniqueDurations = Array.from(new Set(tours.map((t) => t.duration))).filter(Boolean);
 
   const processedTours = tours.filter((tour) => {
@@ -219,7 +287,7 @@ const TourManager = () => {
   const totalPages = Math.ceil(processedTours.length / itemsPerPage);
   const paginatedTours = processedTours.slice(
     (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage
+    currentPage * itemsPerPage,
   );
 
   /* ── Render ────────────────────────────────────── */
@@ -277,8 +345,6 @@ const TourManager = () => {
           </div>
           
           <div className="flex flex-wrap gap-3 w-full xl:w-auto justify-start xl:justify-end">
-            
-            {/* กรองภูมิภาค */}
             <select
               className="text-sm border-0 bg-[#F6F1E9]/50 px-4 py-3 rounded-2xl focus:ring-2 focus:ring-[#FFD93D] text-[#4F200D] font-bold cursor-pointer outline-none transition-all flex-1 sm:flex-none min-w-[140px]"
               value={regionFilter}
@@ -287,8 +353,6 @@ const TourManager = () => {
               <option value="all">ทุกภูมิภาค</option>
               {Object.values(TourRegion).map((r) => <option key={r} value={r}>{r}</option>)}
             </select>
-
-            {/* กรองหมวดหมู่ */}
             <select
               className="text-sm border-0 bg-[#F6F1E9]/50 px-4 py-3 rounded-2xl focus:ring-2 focus:ring-[#FFD93D] text-[#4F200D] font-bold cursor-pointer outline-none transition-all flex-1 sm:flex-none min-w-[140px]"
               value={categoryFilter}
@@ -297,8 +361,6 @@ const TourManager = () => {
               <option value="all">ทุกหมวดหมู่</option>
               {Object.values(TourCategory).map((c) => <option key={c} value={c}>{c}</option>)}
             </select>
-
-            {/* กรองระยะเวลา */}
             <select
               className="text-sm border-0 bg-[#F6F1E9]/50 px-4 py-3 rounded-2xl focus:ring-2 focus:ring-[#FFD93D] text-[#4F200D] font-bold cursor-pointer outline-none transition-all flex-1 sm:flex-none min-w-[140px]"
               value={durationFilter}
@@ -307,8 +369,6 @@ const TourManager = () => {
               <option value="all">ทุกระยะเวลา</option>
               {uniqueDurations.map((d) => <option key={d} value={d}>{d}</option>)}
             </select>
-
-            {/* กรองสถานะ */}
             <select
               className="text-sm border-0 bg-[#F6F1E9]/50 px-4 py-3 rounded-2xl focus:ring-2 focus:ring-[#FFD93D] text-[#4F200D] font-bold cursor-pointer outline-none transition-all flex-1 sm:flex-none min-w-[140px]"
               value={statusFilter}
@@ -318,7 +378,6 @@ const TourManager = () => {
               <option value="active">เปิดใช้งาน</option>
               <option value="inactive">ปิดใช้งาน</option>
             </select>
-
           </div>
         </div>
         
@@ -363,10 +422,10 @@ const TourManager = () => {
                       <div className="flex items-center gap-4">
                         <div className="w-12 h-12 rounded-xl overflow-hidden bg-[#F6F1E9] flex-shrink-0 shadow-sm">
                           <img
-                            src={tour.image_cover || 'https://placehold.co/80x80?text=Tour'}
+                            src={tour.image_cover || "https://placehold.co/80x80?text=Tour"}
                             alt=""
                             className="w-full h-full object-cover"
-                            onError={(e) => { (e.target as HTMLImageElement).src = 'https://placehold.co/80x80?text=No+Img'; }}
+                            onError={(e) => { (e.target as HTMLImageElement).src = "https://placehold.co/80x80?text=No+Img"; }}
                           />
                         </div>
                         <div>
@@ -423,7 +482,7 @@ const TourManager = () => {
           <div className="bg-white rounded-3xl shadow-2xl w-full max-w-2xl my-auto">
 
             {/* Modal Header */}
-            <div className="flex justify-between items-center p-6 border-b-2 border-[#F6F1E9] bg-white rounded-t-3xl">
+            <div className="flex justify-between items-center p-6 border-b-2 border-[#F6F1E9] bg-white rounded-t-3xl sticky top-0 z-10">
               <h2 className="text-2xl font-black text-[#4F200D]">
                 {editingId ? 'แก้ไขทัวร์' : 'สร้างทัวร์ใหม่'}
               </h2>
@@ -440,11 +499,15 @@ const TourManager = () => {
                 <Input required value={formData.title} onChange={(e) => setFormData({ ...formData, title: e.target.value })} placeholder="เช่น ทริปดำน้ำสุดฟิน" className="bg-[#F6F1E9]/50 border-0 rounded-xl focus:bg-white focus:ring-2 focus:ring-[#FFD93D] font-bold text-[#4F200D]" />
               </div>
 
-              {/* Price & Duration */}
-              <div className="grid grid-cols-2 gap-5">
+              {/* Price, Child Price, Duration */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
                 <div className="space-y-2">
                   <label className="text-sm font-black text-[#4F200D] uppercase tracking-wider">ราคา (฿) *</label>
-                  <Input type="number" required min="0" value={formData.price} onChange={(e) => setFormData({ ...formData, price: e.target.value })} placeholder="0" className="bg-[#F6F1E9]/50 border-0 rounded-xl focus:bg-white focus:ring-2 focus:ring-[#FFD93D] font-bold text-[#4F200D]" />
+                  <Input type="number" required min="0" step="0.01" value={formData.price} onChange={(e) => setFormData({ ...formData, price: e.target.value })} placeholder="0" className="bg-[#F6F1E9]/50 border-0 rounded-xl focus:bg-white focus:ring-2 focus:ring-[#FFD93D] font-bold text-[#4F200D]" />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-black text-[#4F200D] uppercase tracking-wider">ราคาเด็ก (฿)</label>
+                  <Input type="number" min="0" step="0.01" value={formData.child_price} onChange={(e) => setFormData({ ...formData, child_price: e.target.value })} placeholder="อัตโนมัติ: 60%" className="bg-[#F6F1E9]/50 border-0 rounded-xl focus:bg-white focus:ring-2 focus:ring-[#FFD93D] font-bold text-[#4F200D]" />
                 </div>
                 <div className="space-y-2">
                   <label className="text-sm font-black text-[#4F200D] uppercase tracking-wider">ระยะเวลา *</label>
@@ -483,7 +546,7 @@ const TourManager = () => {
                 </div>
               </div>
 
-              {/* Max Group Size & Image URL */}
+              {/* Max Group Size & Cover Image */}
               <div className="grid grid-cols-2 gap-5">
                 <div className="space-y-2">
                   <label className="text-sm font-black text-[#4F200D] uppercase tracking-wider">ขนาดกลุ่มสูงสุด</label>
@@ -493,6 +556,19 @@ const TourManager = () => {
                   <label className="text-sm font-black text-[#4F200D] uppercase tracking-wider">ลิงก์รูปภาพหน้าปก</label>
                   <Input value={formData.image_cover} onChange={(e) => setFormData({ ...formData, image_cover: e.target.value })} placeholder="https://..." className="bg-[#F6F1E9]/50 border-0 rounded-xl focus:bg-white focus:ring-2 focus:ring-[#FFD93D] font-bold text-[#4F200D]" />
                 </div>
+              </div>
+
+              {/* Additional Images */}
+              <div className="space-y-2">
+                <label className="text-sm font-black text-[#4F200D] uppercase tracking-wider flex items-center gap-2">
+                  รูปภาพเพิ่มเติม <span className="text-[#4F200D]/40 font-bold text-[10px]">(URLs คั่นด้วยคอมม่า)</span>
+                </label>
+                <textarea
+                  className="w-full p-4 border-0 bg-[#F6F1E9]/50 rounded-2xl text-[#4F200D] font-bold text-sm min-h-[60px] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#FFD93D] resize-none"
+                  placeholder="https://image1.jpg, https://image2.jpg"
+                  value={formData.images_str}
+                  onChange={(e) => setFormData({ ...formData, images_str: e.target.value })}
+                />
               </div>
 
               {/* Image Preview */}
@@ -518,6 +594,19 @@ const TourManager = () => {
                 />
               </div>
 
+              {/* Highlights */}
+              <div className="space-y-2">
+                <label className="text-sm font-black text-[#4F200D] uppercase tracking-wider flex items-center gap-2">
+                  ไฮไลท์ <span className="text-[#4F200D]/40 font-bold text-[10px]">(คั่นด้วยคอมม่า)</span>
+                </label>
+                <textarea
+                  className="w-full p-4 border-0 bg-[#F6F1E9]/50 rounded-2xl text-[#4F200D] font-bold text-sm min-h-[80px] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#FFD93D] resize-none"
+                  placeholder="เช่น ชมวิวพระอาทิตย์ตก, ดำน้ำดูปะการัง, อาหารกลางวันบนเรือ"
+                  value={formData.highlights_str}
+                  onChange={(e) => setFormData({ ...formData, highlights_str: e.target.value })}
+                />
+              </div>
+
               {/* Preparation */}
               <div className="space-y-2">
                 <label className="text-sm font-black text-[#4F200D] uppercase tracking-wider flex items-center gap-2">
@@ -531,10 +620,21 @@ const TourManager = () => {
                 />
               </div>
 
-              {/* Itinerary */}
+              {/* Itinerary (Text) */}
+              <div className="space-y-2">
+                <label className="text-sm font-black text-[#4F200D] uppercase tracking-wider">แผนการเดินทาง (แบบข้อความสรุป)</label>
+                <textarea
+                  className="w-full p-4 border-0 bg-[#F6F1E9]/50 rounded-2xl text-[#4F200D] font-bold text-sm min-h-[80px] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#FFD93D] resize-none"
+                  placeholder="อธิบายแผนการเดินทางแบบสรุป..."
+                  value={formData.itinerary}
+                  onChange={(e) => setFormData({ ...formData, itinerary: e.target.value })}
+                />
+              </div>
+
+              {/* Itinerary (Structured) */}
               <div className="space-y-3 bg-[#F6F1E9]/30 p-5 rounded-2xl border-2 border-[#F6F1E9]">
                 <div className="flex justify-between items-center mb-2">
-                  <label className="text-sm font-black text-[#4F200D] uppercase tracking-wider">แผนการเดินทาง</label>
+                  <label className="text-sm font-black text-[#4F200D] uppercase tracking-wider">แผนการเดินทาง (กำหนดเวลา)</label>
                   <button
                     type="button"
                     onClick={addItineraryRow}
@@ -549,13 +649,13 @@ const TourManager = () => {
                       className="w-28 bg-white border-0 rounded-xl focus:ring-2 focus:ring-[#FFD93D] font-bold text-[#4F200D]"
                       placeholder="08:30"
                       value={item.time}
-                      onChange={(e) => updateItinerary(index, 'time', e.target.value)}
+                      onChange={(e) => updateItinerary(index, "time", e.target.value)}
                     />
                     <Input
                       className="flex-1 bg-white border-0 rounded-xl focus:ring-2 focus:ring-[#FFD93D] font-bold text-[#4F200D]"
                       placeholder="รายละเอียดกิจกรรม..."
                       value={item.detail}
-                      onChange={(e) => updateItinerary(index, 'detail', e.target.value)}
+                      onChange={(e) => updateItinerary(index, "detail", e.target.value)}
                     />
                     <button
                       type="button"
@@ -567,6 +667,51 @@ const TourManager = () => {
                     </button>
                   </div>
                 ))}
+              </div>
+
+              {/* Included */}
+              <div className="space-y-2">
+                <label className="text-sm font-black text-[#4F200D] uppercase tracking-wider">ราคานี้รวม</label>
+                <textarea
+                  className="w-full p-4 border-0 bg-[#F6F1E9]/50 rounded-2xl text-[#4F200D] font-bold text-sm min-h-[80px] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#FFD93D] resize-none"
+                  placeholder="สิ่งที่รวมอยู่ในค่าทัวร์แล้ว..."
+                  value={formData.included}
+                  onChange={(e) => setFormData({ ...formData, included: e.target.value })}
+                />
+              </div>
+
+              {/* Excluded */}
+              <div className="space-y-2">
+                <label className="text-sm font-black text-[#4F200D] uppercase tracking-wider">ราคานี้ไม่รวม</label>
+                <textarea
+                  className="w-full p-4 border-0 bg-[#F6F1E9]/50 rounded-2xl text-[#4F200D] font-bold text-sm min-h-[80px] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#FFD93D] resize-none"
+                  placeholder="สิ่งที่ยังไม่รวม (เช่น ตั๋วเครื่องบินส่วนตัว)..."
+                  value={formData.excluded}
+                  onChange={(e) => setFormData({ ...formData, excluded: e.target.value })}
+                />
+              </div>
+
+              {/* Conditions */}
+              <div className="space-y-2">
+                <label className="text-sm font-black text-[#4F200D] uppercase tracking-wider">เงื่อนไขและข้อตกลง</label>
+                <textarea
+                  className="w-full p-4 border-0 bg-[#F6F1E9]/50 rounded-2xl text-[#4F200D] font-bold text-sm min-h-[80px] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#FFD93D] resize-none"
+                  placeholder="นโยบายการยกเลิก, เงื่อนไขต่างๆ..."
+                  value={formData.conditions}
+                  onChange={(e) => setFormData({ ...formData, conditions: e.target.value })}
+                />
+              </div>
+
+              {/* Rating & Review Count */}
+              <div className="grid grid-cols-2 gap-5">
+                <div className="space-y-2">
+                  <label className="text-sm font-black text-[#4F200D] uppercase tracking-wider">คะแนนรีวิว</label>
+                  <Input type="number" min="0" max="5" step="0.1" value={formData.rating} onChange={(e) => setFormData({ ...formData, rating: Number(e.target.value) })} placeholder="เช่น 4.5" className="bg-[#F6F1E9]/50 border-0 rounded-xl focus:bg-white focus:ring-2 focus:ring-[#FFD93D] font-bold text-[#4F200D]" />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-black text-[#4F200D] uppercase tracking-wider">จำนวนรีวิว</label>
+                  <Input type="number" min="0" value={formData.review_count} onChange={(e) => setFormData({ ...formData, review_count: Number(e.target.value) })} placeholder="เช่น 100" className="bg-[#F6F1E9]/50 border-0 rounded-xl focus:bg-white focus:ring-2 focus:ring-[#FFD93D] font-bold text-[#4F200D]" />
+                </div>
               </div>
 
               {/* Actions */}

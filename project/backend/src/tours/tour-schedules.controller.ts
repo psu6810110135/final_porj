@@ -11,6 +11,7 @@ import {
 import { TourSchedulesService } from './tour-schedules.service';
 import { CreateTourScheduleDto } from './dto/create-tour-schedule.dto';
 import { UpdateTourScheduleDto } from './dto/update-tour-schedule.dto';
+import { AuthGuard } from '@nestjs/passport';
 import { RolesGuard } from '../auth/roles.guard';
 import { Roles } from '../auth/roles.decorator';
 import { UserRole } from '../users/entities/user.entity';
@@ -20,7 +21,7 @@ export class TourSchedulesController {
   constructor(private readonly schedulesService: TourSchedulesService) {}
 
   @Post()
-  @UseGuards(RolesGuard)
+  @UseGuards(AuthGuard('jwt'), RolesGuard)
   @Roles(UserRole.ADMIN)
   create(
     @Param('tourId') tourId: string,
@@ -45,14 +46,14 @@ export class TourSchedulesController {
   }
 
   @Patch(':id')
-  @UseGuards(RolesGuard)
+  @UseGuards(AuthGuard('jwt'), RolesGuard)
   @Roles(UserRole.ADMIN)
   update(@Param('id') id: string, @Body() updateDto: UpdateTourScheduleDto) {
     return this.schedulesService.update(id, updateDto);
   }
 
   @Delete(':id')
-  @UseGuards(RolesGuard)
+  @UseGuards(AuthGuard('jwt'), RolesGuard)
   @Roles(UserRole.ADMIN)
   remove(@Param('id') id: string) {
     return this.schedulesService.remove(id);

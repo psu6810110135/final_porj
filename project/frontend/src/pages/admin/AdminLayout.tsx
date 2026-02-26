@@ -1,5 +1,5 @@
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, Map, CreditCard, FileText, Users, LogOut, Home } from 'lucide-react';
+import { LayoutDashboard, Map, CreditCard, FileText, Users, LogOut, Home, Calendar } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 export default function AdminLayout() {
@@ -9,6 +9,7 @@ export default function AdminLayout() {
   const menuItems = [
     { icon: LayoutDashboard, label: 'แดชบอร์ด', path: '/admin' },
     { icon: Map, label: 'จัดการทัวร์', path: '/admin/tours' },
+    { icon: Calendar, label: 'ตารางทัวร์', path: '/admin/schedules' }, // 👈 เมนูใหม่จาก main
     { icon: Users, label: 'จัดการผู้ใช้งาน', path: '/admin/users' },
     { icon: CreditCard, label: 'ตรวจสอบการชำระเงิน', path: '/admin/payments' },
     { icon: FileText, label: 'ประวัติการจอง', path: '/admin/bookings' },

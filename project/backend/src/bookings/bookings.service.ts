@@ -222,6 +222,7 @@ export class BookingsService {
   async findAllByUser(userId: string) {
     const bookings = await this.bookingsRepository.find({
       where: { userId },
+      relations: ['tour'],
       order: { createdAt: 'DESC' },
     });
 
@@ -237,6 +238,7 @@ export class BookingsService {
   async findOneById(id: string, userId?: string) {
     const booking = await this.bookingsRepository.findOne({
       where: { id },
+      relations: ['tour'],
     });
 
     if (!booking) {

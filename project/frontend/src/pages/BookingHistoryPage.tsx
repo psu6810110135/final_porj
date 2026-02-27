@@ -78,8 +78,8 @@ const getTravelDate = (booking: Booking) =>
   booking.travelDate ?? booking.startDate;
 
 const getTourTitle = (booking: Booking) =>
-  booking.tour?.nameTh ??
   booking.tour?.title ??
+  booking.tour?.nameTh ??
   `ทัวร์ #${booking.tourId ?? "-"}`;
 
 const getTourSubtitle = (booking: Booking) =>
@@ -163,67 +163,69 @@ export default function BookingHistoryPage() {
   }, [navigate]);
 
   return (
-    <div className="min-h-screen bg-[#F6F1E9]">
+    <div className="min-h-screen bg-[#F6F1E9] flex flex-col">
       <Navbar />
 
-      <div className="max-w-3xl mx-auto px-4 py-8">
-        {/* ── Page Title ── */}
-        <div className="mb-6">
-          <span className="inline-block bg-gradient-to-r from-[#FF8400] to-[#FF6B00] text-white font-bold text-base px-5 py-2 rounded-full shadow-md">
-            ทริปของฉัน
-          </span>
+      <main className="flex-1 w-full">
+        <div className="max-w-6xl mx-auto px-4 md:px-6 py-8">
+          {/* ── Page Title ── */}
+          <div className="mb-6">
+            <span className="inline-block bg-gradient-to-r from-[#FF8400] to-[#FF6B00] text-white font-bold text-base px-5 py-2 rounded-full shadow-md">
+              ทริปของฉัน
+            </span>
+          </div>
+
+          {/* ── Content ── */}
+          {loading ? (
+            <LoadingSkeleton />
+          ) : error ? (
+            <ErrorState message={error} />
+          ) : bookings.length === 0 ? (
+            <EmptyState />
+          ) : (
+            <>
+              {/* Mobile: Card list */}
+              <div className="md:hidden flex flex-col gap-3">
+                {bookings.map((booking) => (
+                  <MobileCard key={booking.id} booking={booking} />
+                ))}
+              </div>
+
+              {/* Desktop: Table */}
+              <div className="hidden md:block bg-white rounded-2xl shadow-sm border border-[#F0E8E0] overflow-hidden">
+                <table className="w-full">
+                  <thead>
+                    <tr className="bg-[#FFF3E0] border-b border-[#F0E8E0]">
+                      <th className="text-left px-6 py-4 text-[#4F200D] font-semibold text-sm">
+                        ทัวร์
+                      </th>
+                      <th className="text-left px-4 py-4 text-[#4F200D] font-semibold text-sm">
+                        วันที่
+                      </th>
+                      <th className="text-center px-4 py-4 text-[#4F200D] font-semibold text-sm">
+                        สถานะ
+                      </th>
+                      <th className="text-right px-6 py-4 text-[#4F200D] font-semibold text-sm">
+                        ราคา
+                      </th>
+                      <th className="px-4 py-4" />
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {bookings.map((booking, idx) => (
+                      <DesktopRow
+                        key={booking.id}
+                        booking={booking}
+                        isLast={idx === bookings.length - 1}
+                      />
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </>
+          )}
         </div>
-
-        {/* ── Content ── */}
-        {loading ? (
-          <LoadingSkeleton />
-        ) : error ? (
-          <ErrorState message={error} />
-        ) : bookings.length === 0 ? (
-          <EmptyState />
-        ) : (
-          <>
-            {/* Mobile: Card list */}
-            <div className="md:hidden flex flex-col gap-3">
-              {bookings.map((booking) => (
-                <MobileCard key={booking.id} booking={booking} />
-              ))}
-            </div>
-
-            {/* Desktop: Table */}
-            <div className="hidden md:block bg-white rounded-2xl shadow-sm border border-[#F0E8E0] overflow-hidden">
-              <table className="w-full">
-                <thead>
-                  <tr className="bg-[#FFF3E0] border-b border-[#F0E8E0]">
-                    <th className="text-left px-6 py-4 text-[#4F200D] font-semibold text-sm">
-                      ทัวร์
-                    </th>
-                    <th className="text-left px-4 py-4 text-[#4F200D] font-semibold text-sm">
-                      วันที่
-                    </th>
-                    <th className="text-center px-4 py-4 text-[#4F200D] font-semibold text-sm">
-                      สถานะ
-                    </th>
-                    <th className="text-right px-6 py-4 text-[#4F200D] font-semibold text-sm">
-                      ราคา
-                    </th>
-                    <th className="px-4 py-4" />
-                  </tr>
-                </thead>
-                <tbody>
-                  {bookings.map((booking, idx) => (
-                    <DesktopRow
-                      key={booking.id}
-                      booking={booking}
-                      isLast={idx === bookings.length - 1}
-                    />
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </>
-        )}
-      </div>
+      </main>
 
       <Footer />
     </div>

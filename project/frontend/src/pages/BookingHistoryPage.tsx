@@ -1,20 +1,20 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import Navbar from "../components/Navbar";
+import Footer from "../components/Footer";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
-interface Schedule {
-  startDate: string;
-}
-
 interface Tour {
+  title?: string;
   nameTh: string;
   nameEn: string;
 }
 
 interface Booking {
   id: string;
+  bookingReference?: string;
+  tourId?: string;
   status:
     | "pending_pay"
     | "pending_verify"
@@ -22,7 +22,8 @@ interface Booking {
     | "cancelled"
     | "expired";
   totalPrice: number;
-  schedule?: Schedule;
+  travelDate?: string;
+  startDate?: string;
   tour?: Tour;
 }
 
@@ -73,6 +74,17 @@ const formatDate = (dateStr?: string) => {
 const formatPrice = (price: number) =>
   new Intl.NumberFormat("th-TH").format(price);
 
+const getTravelDate = (booking: Booking) =>
+  booking.travelDate ?? booking.startDate;
+
+const getTourTitle = (booking: Booking) =>
+  booking.tour?.nameTh ??
+  booking.tour?.title ??
+  `ทัวร์ #${booking.tourId ?? "-"}`;
+
+const getTourSubtitle = (booking: Booking) =>
+  booking.tour?.nameEn ?? booking.bookingReference ?? "";
+
 // ─── Play Icon (orange circle with triangle) ──────────────────────────────────
 
 const PlayIcon = () => (
@@ -114,7 +126,32 @@ export default function BookingHistoryPage() {
         );
         if (!res.ok) throw new Error("Failed to fetch bookings");
         const data = await res.json();
-        setBookings(Array.isArray(data) ? data : []);
+        const bookingItems = Array.isArray(data)
+          ? data
+          : Array.isArray(data?.bookings)
+            ? data.bookings
+            : Array.isArray(data?.data)
+              ? data.data
+              : [];
+
+        const normalized: Booking[] = bookingItems.map((item: any) => ({
+          id: item.id,
+          bookingReference: item.bookingReference,
+          tourId: item.tourId ?? item.tour?.id,
+          status: item.status,
+          totalPrice: Number(item.totalPrice ?? 0),
+          travelDate: item.travelDate,
+          startDate: item.startDate,
+          tour: item.tour
+            ? {
+                title: item.tour.title,
+                nameTh: item.tour.nameTh ?? item.tour.title ?? "",
+                nameEn: item.tour.nameEn ?? "",
+              }
+            : undefined,
+        }));
+
+        setBookings(normalized);
       } catch (err) {
         setError("ไม่สามารถโหลดข้อมูลการจองได้");
       } finally {
@@ -188,7 +225,6 @@ export default function BookingHistoryPage() {
         )}
       </div>
 
-      {/* ── Footer ── */}
       <Footer />
     </div>
   );
@@ -198,19 +234,30 @@ export default function BookingHistoryPage() {
 
 function MobileCard({ booking }: { booking: Booking }) {
   const cfg = statusConfig[booking.status];
+  const tourLink = booking.tourId ? `/tours/${booking.tourId}` : undefined;
   return (
     <div className="bg-white rounded-2xl border border-[#F0E8E0] px-4 py-4 flex items-center gap-4 shadow-sm">
-      <PlayIcon />
+      {tourLink ? (
+        <Link
+          to={tourLink}
+          className="focus:outline-none focus-visible:ring-2 focus-visible:ring-[#FF8400]/40 rounded-full"
+          aria-label="ดูรายละเอียดทัวร์"
+        >
+          <PlayIcon />
+        </Link>
+      ) : (
+        <PlayIcon />
+      )}
 
       <div className="flex-1 min-w-0">
         <p className="font-bold text-[#4F200D] text-base leading-snug line-clamp-1">
-          {booking.tour?.nameTh ?? "ทัวร์"}
+          {getTourTitle(booking)}
         </p>
         <p className="text-gray-400 text-xs mt-0.5 line-clamp-1">
-          {booking.tour?.nameEn ?? ""}
+          {getTourSubtitle(booking)}
         </p>
         <p className="text-gray-400 text-xs mt-0.5">
-          {formatDate(booking.schedule?.startDate)}
+          {formatDate(getTravelDate(booking))}
         </p>
       </div>
 
@@ -246,25 +293,34 @@ function DesktopRow({
   isLast: boolean;
 }) {
   const cfg = statusConfig[booking.status];
+  const tourLink = booking.tourId ? `/tours/${booking.tourId}` : undefined;
   return (
     <tr
       className={`${!isLast ? "border-b border-[#F0E8E0]" : ""} hover:bg-[#FFFAF5] transition-colors`}
     >
       <td className="px-6 py-4">
         <div className="flex items-center gap-3">
-          <PlayIcon />
+          {tourLink ? (
+            <Link
+              to={tourLink}
+              className="focus:outline-none focus-visible:ring-2 focus-visible:ring-[#FF8400]/40 rounded-full"
+              aria-label="ดูรายละเอียดทัวร์"
+            >
+              <PlayIcon />
+            </Link>
+          ) : (
+            <PlayIcon />
+          )}
           <div>
             <p className="font-bold text-[#4F200D] text-sm">
-              {booking.tour?.nameTh ?? "ทัวร์"}
+              {getTourTitle(booking)}
             </p>
-            <p className="text-gray-400 text-xs">
-              {booking.tour?.nameEn ?? ""}
-            </p>
+            <p className="text-gray-400 text-xs">{getTourSubtitle(booking)}</p>
           </div>
         </div>
       </td>
       <td className="px-4 py-4 text-gray-500 text-sm whitespace-nowrap">
-        {formatDate(booking.schedule?.startDate)}
+        {formatDate(getTravelDate(booking))}
       </td>
       <td className="px-4 py-4 text-center">
         <span
@@ -376,61 +432,5 @@ function ErrorState({ message }: { message: string }) {
       </div>
       <p className="text-red-500 font-semibold">{message}</p>
     </div>
-  );
-}
-
-// ─── Footer ───────────────────────────────────────────────────────────────────
-
-function Footer() {
-  return (
-    <footer className="bg-[#4F200D] text-white mt-16">
-      <div className="max-w-6xl mx-auto px-6 py-12 grid grid-cols-2 md:grid-cols-4 gap-8">
-        <div className="col-span-2 md:col-span-1">
-          <p className="font-bold text-lg mb-2">THAI TOUR</p>
-          <p className="text-white/60 text-sm leading-relaxed">
-            เที่ยวอย่างมั่นใจไปกับเรา
-            <br />
-            สร้างความทรงจำดีๆ ประทับใจ
-            <br />
-            สัมผัสบริการระดับพรีเมียม
-          </p>
-        </div>
-        <div>
-          <p className="font-semibold mb-3">ข้อมูลองค์กร</p>
-          <ul className="space-y-2 text-white/60 text-sm">
-            <li>เกี่ยวกับเรา</li>
-            <li>สถานที่ท่องเที่ยว</li>
-          </ul>
-        </div>
-        <div>
-          <p className="font-semibold mb-3">Support</p>
-          <ul className="space-y-2 text-white/60 text-sm">
-            <li>ศูนย์ช่วยเหลือ</li>
-            <li>เงื่อนไขการให้บริการ</li>
-            <li>นโยบายความเป็นส่วนตัว</li>
-            <li>ติดต่อเรา</li>
-          </ul>
-        </div>
-        <div>
-          <p className="font-semibold mb-3">ติดตามข่าวสาร</p>
-          <p className="text-white/60 text-sm mb-3">
-            สมัครรับข่าวสารเพื่อไม่พลาดข้อมูลอัปเดต และข้อเสนอสุดพิเศษ
-          </p>
-          <div className="flex">
-            <input
-              type="email"
-              placeholder="กรอกอีเมลของคุณ"
-              className="flex-1 px-4 py-2 rounded-l-full text-[#4F200D] text-sm outline-none"
-            />
-            <button className="bg-[#FF8400] px-4 py-2 rounded-r-full font-bold text-sm hover:bg-[#e67600] transition-colors">
-              สมัคร
-            </button>
-          </div>
-        </div>
-      </div>
-      <div className="border-t border-white/10 text-center py-4 text-white/40 text-xs">
-        © 2026 Thai Tours Service All Rights Reserved
-      </div>
-    </footer>
   );
 }

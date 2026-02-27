@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import Navbar from "../components/Navbar";
+import Footer from "../components/Footer";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -229,6 +230,8 @@ export default function ProfilePage() {
           </div>
         ) : null}
       </div>
+
+      <Footer />
     </div>
   );
 }

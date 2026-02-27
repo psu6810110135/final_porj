@@ -5,9 +5,11 @@ import HomePage from "./pages/HomePage";
 import ToursPage from "./pages/ToursPage";
 import TourDetailPage from "./pages/TourDetailPage";
 import PaymentPage from "./pages/PaymentPage";
+import BookingHistoryPage from "./pages/BookingHistoryPage";
+import ProfilePage from "./pages/ProfilePage";
 
 // --- ระบบ Auth ---
-import LoginPage from "./pages/loginpage"; 
+import LoginPage from "./pages/loginpage";
 import RegisterPage from "./pages/RegisterPage";
 import LoginSuccess from "./pages/LoginSuccess";
 
@@ -32,18 +34,23 @@ export default function App() {
         <Route path="/login" element={<LoginPage />} />
         <Route path="/login/success" element={<LoginSuccess />} />
         <Route path="/register" element={<RegisterPage />} />
-        
+
         <Route path="/payment/:id" element={<PaymentPage />} />
+        <Route path="/booking-history" element={<BookingHistoryPage />} />
+        <Route path="/profile" element={<ProfilePage />} />
 
         {/* --- 🛡️ โซนป้องกันแอดมิน --- */}
         <Route element={<AdminGuard />}>
           <Route path="/admin" element={<AdminLayout />}>
             <Route index element={<AdminDashboard />} />
             <Route path="tours" element={<TourManager />} />
-            <Route path="schedules" element={<TourScheduleManager />} /> {/* 👈 เพิ่ม Route Schedules */}
-            <Route path="users" element={<UserManager />} /> {/* 👈 เพิ่ม Route Users */}
+            <Route path="schedules" element={<TourScheduleManager />} />{" "}
+            {/* 👈 เพิ่ม Route Schedules */}
+            <Route path="users" element={<UserManager />} />{" "}
+            {/* 👈 เพิ่ม Route Users */}
             <Route path="payments" element={<PendingPayments />} />
-            <Route path="bookings" element={<BookingHistory />} /> {/* 👈 เพิ่ม Route Bookings */}
+            <Route path="bookings" element={<BookingHistory />} />{" "}
+            {/* 👈 เพิ่ม Route Bookings */}
           </Route>
         </Route>
       </Routes>

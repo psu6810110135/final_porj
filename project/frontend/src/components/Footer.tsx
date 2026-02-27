@@ -47,7 +47,6 @@ export default function Footer() {
     <footer className="bg-[#4F200D] text-white py-6 md:py-9 rounded-t-[30px] md:rounded-t-[45px] lg:rounded-t-[60px]">
       <div className="max-w-[1920px] mx-auto px-4 md:px-8">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 md:gap-8 mb-6 md:mb-8">
-
           {/* Logo & Description */}
           <div className="lg:col-span-1">
             <div className="flex items-center gap-2 mb-3 md:mb-4">
@@ -56,7 +55,9 @@ export default function Footer() {
                 alt="Thai Tours Logo"
                 className="h-8 md:h-12 w-auto object-contain"
               />
-              <span className="text-lg md:text-xl font-bold">Thai Tours Service</span>
+              <span className="text-lg md:text-xl font-bold">
+                Thai Tours Service
+              </span>
             </div>
             <p className="text-xs md:text-sm xl:text-base font-extralight leading-relaxed text-white/80 max-w-xs md:max-w-sm">
               เที่ยวอย่างมั่นใจไปกับเรา สร้างความทรงจำที่ประทับใจมิรู้ลืม
@@ -72,7 +73,9 @@ export default function Footer() {
             <ul className="space-y-1 md:space-y-2">
               {orgLinks.map(({ label, to }) => (
                 <li key={to}>
-                  <Link to={to} className={linkClass}>{label}</Link>
+                  <Link to={to} className={linkClass}>
+                    {label}
+                  </Link>
                 </li>
               ))}
             </ul>
@@ -87,9 +90,13 @@ export default function Footer() {
               {supportLinks.map(({ label, href, to }) => (
                 <li key={label}>
                   {to ? (
-                    <Link to={to} className={linkClass}>{label}</Link>
+                    <Link to={to} className={linkClass}>
+                      {label}
+                    </Link>
                   ) : (
-                    <a href={href} className={linkClass}>{label}</a>
+                    <a href={href} className={linkClass}>
+                      {label}
+                    </a>
                   )}
                 </li>
               ))}
@@ -98,7 +105,9 @@ export default function Footer() {
 
           {/* Social */}
           <div>
-            <h3 className="text-base md:text-lg xl:text-xl font-bold mb-2 md:mb-3">ติดตามข่าวสาร</h3>
+            <h3 className="text-base md:text-lg xl:text-xl font-bold mb-2 md:mb-3">
+              ติดตามข่าวสาร
+            </h3>
             <p className="text-xs md:text-sm xl:text-base font-extralight mb-4 text-white/80 max-w-xs">
               สมัครรับข่าวสารเพื่อไม่พลาดข้อมูลอัปเดตและข้อเสนอสุดพิเศษ
             </p>
@@ -119,23 +128,9 @@ export default function Footer() {
 
         {/* Bottom */}
         <div className="border-t border-white/20 pt-4 md:pt-6">
-          <div className="flex flex-col md:flex-row justify-between items-center gap-3">
-            <p className="text-xs md:text-sm text-white/80 text-center md:text-left">
-              © {year} Thai Tours Service. All rights reserved.
-            </p>
-            <div className="flex gap-4">
-              {socialLinks.map(({ name, href, Icon }) => (
-                <a
-                  key={name}
-                  href={href}
-                  aria-label={name}
-                  className="text-white/80 hover:text-white transition-colors"
-                >
-                  <Icon />
-                </a>
-              ))}
-            </div>
-          </div>
+          <p className="text-xs md:text-sm text-white/80 text-center md:text-left">
+            © {year} Thai Tours Service. All rights reserved.
+          </p>
         </div>
       </div>
     </footer>

@@ -119,23 +119,9 @@ export default function Footer() {
 
         {/* Bottom */}
         <div className="border-t border-white/20 pt-4 md:pt-6">
-          <div className="flex flex-col md:flex-row justify-between items-center gap-3">
-            <p className="text-xs md:text-sm text-white/80 text-center md:text-left">
-              © {year} Thai Tours Service. All rights reserved.
-            </p>
-            <div className="flex gap-4">
-              {socialLinks.map(({ name, href, Icon }) => (
-                <a
-                  key={name}
-                  href={href}
-                  aria-label={name}
-                  className="text-white/80 hover:text-white transition-colors"
-                >
-                  <Icon />
-                </a>
-              ))}
-            </div>
-          </div>
+          <p className="text-xs md:text-sm text-white/80 text-center md:text-left">
+            © {year} Thai Tours Service. All rights reserved.
+          </p>
         </div>
       </div>
     </footer>

@@ -331,7 +331,7 @@ export default function Navbar({ activePage = "home" }: NavbarProps) {
         <div className="max-w-[1920px] mx-auto px-4 md:px-8">
           <div className="flex items-center h-16 md:h-24">
             {/* ── Logo (left) ── */}
-            <div className="flex items-center">
+            <div className="flex-1 flex items-center">
               <Link to="/" className="flex items-center gap-2">
                 <div className="relative h-10 md:h-16">
                   <img
@@ -346,43 +346,49 @@ export default function Navbar({ activePage = "home" }: NavbarProps) {
               </Link>
             </div>
 
-            {/* ── Center: Desktop nav / Mobile Home+Tour ── */}
-            <div className="flex-1 flex items-center justify-center">
-              {/* Desktop */}
+            {/* ── Center: Desktop nav / Mobile All 4 icons ── */}
+            <div className="flex-none flex items-center justify-center">
+              {/* Desktop: icons + text */}
               <div className="hidden md:flex items-center gap-4 lg:gap-8">
                 {[
-                  { to: "/", label: "หน้าหลัก", key: "home" },
-                  { to: "/tours", label: "ทัวร์", key: "tours" },
-                  { to: "/about", label: "เกี่ยวกับเรา", key: "about" },
-                  { to: "/contact", label: "ติดต่อเรา", key: "contact" },
+                  { to: "/", label: "หน้าหลัก", key: "home", Icon: HomeIcon },
+                  { to: "/tours", label: "ทัวร์", key: "tours", Icon: CompassIcon },
+                  { to: "/about", label: "เกี่ยวกับเรา", key: "about", Icon: InfoIcon },
+                  { to: "/contact", label: "ติดต่อเรา", key: "contact", Icon: PhoneIcon },
                 ].map((item) => (
                   <Link
                     key={item.key}
                     to={item.to}
-                    className={linkClass(item.key)}
+                    className={`flex items-center gap-1.5 ${linkClass(item.key)}`}
                   >
+                    <item.Icon className="w-4 h-4 flex-shrink-0" />
                     {item.label}
                   </Link>
                 ))}
               </div>
-              {/* Mobile: Home + Tour centered */}
-              <div className="flex md:hidden items-center gap-3">
+              {/* Mobile: All 4 nav icons centered */}
+              <div className="flex md:hidden items-center gap-1">
                 <Link to="/" className={mobileIconBtn(activePage === "home")}>
                   <HomeIcon className="w-5 h-5" />
                   <span className="mobile-nav-label">หน้าหลัก</span>
                 </Link>
-                <Link
-                  to="/tours"
-                  className={mobileIconBtn(activePage === "tours")}
-                >
+                <Link to="/tours" className={mobileIconBtn(activePage === "tours")}>
                   <CompassIcon className="w-5 h-5" />
                   <span className="mobile-nav-label">ทัวร์</span>
+                </Link>
+                <Link to="/about" className={mobileIconBtn(activePage === "about")}>
+                  <InfoIcon className="w-5 h-5" />
+                  <span className="mobile-nav-label">เกี่ยวกับ</span>
+                </Link>
+                <Link to="/contact" className={mobileIconBtn(activePage === "contact")}>
+                  <PhoneIcon className="w-5 h-5" />
+                  <span className="mobile-nav-label">ติดต่อ</span>
                 </Link>
               </div>
             </div>
 
             {/* ── Right: Cart + Hamburger (mobile) / Cart + Auth (desktop) ── */}
-            <div className="flex items-center gap-1 md:gap-2">
+            <div className="flex-1 flex items-center justify-end gap-1 md:gap-2">
               {/* Desktop only: Admin */}
               {isAdmin && (
                 <Link to="/admin" className="hidden md:flex">
@@ -484,38 +490,10 @@ export default function Navbar({ activePage = "home" }: NavbarProps) {
           </div>
         </div>
 
-        {/* ── Mobile Dropdown ── */}
+        {/* ── Mobile Dropdown (account only) ── */}
         {menuOpen && (
           <div className="md:hidden border-t border-[#F0E8E0] bg-white dropdown-enter">
             <div className="px-4 py-3 flex flex-col gap-1">
-              {/* เกี่ยวกับเรา */}
-              <Link
-                to="/about"
-                onClick={() => setMenuOpen(false)}
-                className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-colors ${
-                  activePage === "about"
-                    ? "bg-[#FF8400]/10 text-[#FF8400]"
-                    : "text-[#4F200D] hover:bg-[#FFF3E0] hover:text-[#FF8400]"
-                }`}
-              >
-                <InfoIcon className="w-5 h-5 flex-shrink-0" />
-                <span className="font-medium text-sm">เกี่ยวกับเรา</span>
-              </Link>
-
-              {/* ติดต่อเรา */}
-              <Link
-                to="/contact"
-                onClick={() => setMenuOpen(false)}
-                className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-colors ${
-                  activePage === "contact"
-                    ? "bg-[#FF8400]/10 text-[#FF8400]"
-                    : "text-[#4F200D] hover:bg-[#FFF3E0] hover:text-[#FF8400]"
-                }`}
-              >
-                <PhoneIcon className="w-5 h-5 flex-shrink-0" />
-                <span className="font-medium text-sm">ติดต่อเรา</span>
-              </Link>
-
               {/* Admin (ถ้ามี) */}
               {isAdmin && (
                 <Link
@@ -527,8 +505,6 @@ export default function Navbar({ activePage = "home" }: NavbarProps) {
                   <span className="font-medium text-sm">Admin Dashboard</span>
                 </Link>
               )}
-
-              <div className="border-t border-[#F0E8E0] my-1" />
 
               {/* Profile / Login */}
               {isLoggedIn ? (
@@ -549,6 +525,7 @@ export default function Navbar({ activePage = "home" }: NavbarProps) {
                     <CalendarIcon className="w-5 h-5 flex-shrink-0" />
                     <span className="font-medium text-sm">ประวัติการจอง</span>
                   </Link>
+                  <div className="border-t border-[#F0E8E0] my-1" />
                   <button
                     onClick={handleLogout}
                     className="flex items-center gap-3 px-4 py-3 rounded-xl text-red-500 hover:bg-red-50 transition-colors w-full text-left"

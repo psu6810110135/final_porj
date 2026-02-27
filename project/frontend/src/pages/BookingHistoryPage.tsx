@@ -108,6 +108,7 @@ export default function BookingHistoryPage() {
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const hasFewBookings = !loading && !error && bookings.length <= 2;
 
   useEffect(() => {
     const token = localStorage.getItem("jwt_token");
@@ -166,7 +167,7 @@ export default function BookingHistoryPage() {
     <div className="min-h-screen bg-[#F6F1E9] flex flex-col">
       <Navbar />
 
-      <main className="flex-1 w-full">
+      <main className="w-full flex-1 flex flex-col">
         <div className="max-w-6xl mx-auto px-4 md:px-6 py-8">
           {/* ── Page Title ── */}
           <div className="mb-6">
@@ -225,9 +226,17 @@ export default function BookingHistoryPage() {
             </>
           )}
         </div>
+
+        {hasFewBookings ? <div className="flex-1 min-h-20 md:min-h-0" /> : null}
       </main>
 
-      <Footer />
+      {hasFewBookings ? (
+        <div className="max-h-40 md:max-h-48 overflow-hidden">
+          <Footer />
+        </div>
+      ) : (
+        <Footer />
+      )}
     </div>
   );
 }
@@ -238,7 +247,7 @@ function MobileCard({ booking }: { booking: Booking }) {
   const cfg = statusConfig[booking.status];
   const tourLink = booking.tourId ? `/tours/${booking.tourId}` : undefined;
   return (
-    <div className="bg-white rounded-2xl border border-[#F0E8E0] px-4 py-4 flex items-center gap-4 shadow-sm">
+    <div className="bg-white rounded-2xl border border-[#F0E8E0] px-4 py-4 flex items-center gap-3 shadow-sm">
       {tourLink ? (
         <Link
           to={tourLink}
@@ -251,7 +260,7 @@ function MobileCard({ booking }: { booking: Booking }) {
         <PlayIcon />
       )}
 
-      <div className="flex-1 min-w-0">
+      <div className="flex-1 min-w-0 pr-1">
         <p className="font-bold text-[#4F200D] text-base leading-snug line-clamp-1">
           {getTourTitle(booking)}
         </p>
@@ -263,7 +272,7 @@ function MobileCard({ booking }: { booking: Booking }) {
         </p>
       </div>
 
-      <div className="flex flex-col items-end gap-2 flex-shrink-0">
+      <div className="flex flex-col items-end gap-2 flex-shrink-0 min-w-[96px]">
         <span
           className={`text-xs font-semibold px-3 py-1 rounded-full ${cfg.className}`}
         >

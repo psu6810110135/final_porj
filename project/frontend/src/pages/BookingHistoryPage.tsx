@@ -85,6 +85,9 @@ const getTourTitle = (booking: Booking) =>
 const getTourSubtitle = (booking: Booking) =>
   booking.tour?.nameEn ?? booking.bookingReference ?? "";
 
+const getBookingReference = (booking: Booking) =>
+  booking.bookingReference ?? booking.id;
+
 // ─── Play Icon (orange circle with triangle) ──────────────────────────────────
 
 const PlayIcon = () => (
@@ -264,6 +267,9 @@ function MobileCard({ booking }: { booking: Booking }) {
         <p className="font-bold text-[#4F200D] text-base leading-snug line-clamp-1">
           {getTourTitle(booking)}
         </p>
+        <p className="text-[#FF8400] text-xs mt-0.5 font-semibold line-clamp-1">
+          เลขอ้างอิง: {getBookingReference(booking)}
+        </p>
         <p className="text-gray-400 text-xs mt-0.5 line-clamp-1">
           {getTourSubtitle(booking)}
         </p>
@@ -325,6 +331,9 @@ function DesktopRow({
           <div>
             <p className="font-bold text-[#4F200D] text-sm">
               {getTourTitle(booking)}
+            </p>
+            <p className="text-[#FF8400] text-xs font-semibold">
+              เลขอ้างอิง: {getBookingReference(booking)}
             </p>
             <p className="text-gray-400 text-xs">{getTourSubtitle(booking)}</p>
           </div>

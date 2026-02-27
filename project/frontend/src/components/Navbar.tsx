@@ -352,9 +352,24 @@ export default function Navbar({ activePage = "home" }: NavbarProps) {
               <div className="hidden md:flex items-center gap-4 lg:gap-8">
                 {[
                   { to: "/", label: "หน้าหลัก", key: "home", Icon: HomeIcon },
-                  { to: "/tours", label: "ทัวร์", key: "tours", Icon: CompassIcon },
-                  { to: "/about", label: "เกี่ยวกับเรา", key: "about", Icon: InfoIcon },
-                  { to: "/contact", label: "ติดต่อเรา", key: "contact", Icon: PhoneIcon },
+                  {
+                    to: "/tours",
+                    label: "ทัวร์",
+                    key: "tours",
+                    Icon: CompassIcon,
+                  },
+                  {
+                    to: "/about",
+                    label: "เกี่ยวกับเรา",
+                    key: "about",
+                    Icon: InfoIcon,
+                  },
+                  {
+                    to: "/contact",
+                    label: "ติดต่อเรา",
+                    key: "contact",
+                    Icon: PhoneIcon,
+                  },
                 ].map((item) => (
                   <Link
                     key={item.key}
@@ -372,15 +387,24 @@ export default function Navbar({ activePage = "home" }: NavbarProps) {
                   <HomeIcon className="w-5 h-5" />
                   <span className="mobile-nav-label">หน้าหลัก</span>
                 </Link>
-                <Link to="/tours" className={mobileIconBtn(activePage === "tours")}>
+                <Link
+                  to="/tours"
+                  className={mobileIconBtn(activePage === "tours")}
+                >
                   <CompassIcon className="w-5 h-5" />
                   <span className="mobile-nav-label">ทัวร์</span>
                 </Link>
-                <Link to="/about" className={mobileIconBtn(activePage === "about")}>
+                <Link
+                  to="/about"
+                  className={mobileIconBtn(activePage === "about")}
+                >
                   <InfoIcon className="w-5 h-5" />
                   <span className="mobile-nav-label">เกี่ยวกับ</span>
                 </Link>
-                <Link to="/contact" className={mobileIconBtn(activePage === "contact")}>
+                <Link
+                  to="/contact"
+                  className={mobileIconBtn(activePage === "contact")}
+                >
                   <PhoneIcon className="w-5 h-5" />
                   <span className="mobile-nav-label">ติดต่อ</span>
                 </Link>

@@ -54,4 +54,13 @@ export class AdminService {
       order: { createdAt: 'DESC' }, // Newest first
     });
   }
+
+  async deleteBooking(id: string) {
+    const booking = await this.bookingRepo.findOne({ where: { id } });
+    if (!booking) {
+      throw new Error('Booking not found');
+    }
+    await this.bookingRepo.remove(booking);
+    return { success: true, message: 'ลบการจองเรียบร้อยแล้ว' };
+  }
 }

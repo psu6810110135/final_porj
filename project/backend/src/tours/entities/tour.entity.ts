@@ -100,6 +100,9 @@ export class Tour {
   @Column({ default: true })
   is_active: boolean;
 
+  @Column({ default: false })
+  is_recommended: boolean;
+
   @CreateDateColumn()
   created_at: Date;
 

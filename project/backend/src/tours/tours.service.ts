@@ -67,7 +67,16 @@ export class ToursService {
     return await query.getMany();
   }
 
-  // 2. Get Single Tour
+  // 2. Get Recommended Tours
+  async getRecommendedTours(): Promise<Tour[]> {
+    return this.toursRepository.find({
+      where: { is_recommended: true, is_active: true },
+      order: { created_at: 'DESC' },
+      take: 6,
+    });
+  }
+
+  // 3. Get Single Tour
   async getTourById(id: string): Promise<Tour> {
     const found = await this.toursRepository.findOne({ where: { id } });
     if (!found) {

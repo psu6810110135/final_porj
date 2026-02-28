@@ -49,6 +49,7 @@ export interface Tour {
   category: string;
   region: string;
   is_active: boolean;
+  is_recommended: boolean;
   image_cover?: string;
   images?: string[];
   description?: string;
@@ -77,6 +78,7 @@ const initialFormState = {
   image_cover: "",
   images_str: "",
   is_active: true,
+  is_recommended: false,
   max_group_size: 15,
   rating: 0,
   review_count: 0,
@@ -158,6 +160,7 @@ const TourManager = () => {
       image_cover: tour.image_cover || "",
       images_str: tour.images?.join(", ") || "",
       is_active: tour.is_active,
+      is_recommended: tour.is_recommended ?? false,
       max_group_size: tour.max_group_size ?? 15,
       rating: tour.rating ?? 0,
       review_count: tour.review_count ?? 0,
@@ -193,6 +196,7 @@ const TourManager = () => {
         .map((s) => s.trim())
         .filter((s) => s !== ""),
       is_active: formData.is_active,
+      is_recommended: formData.is_recommended,
       max_group_size: Number(formData.max_group_size),
       rating: Number(formData.rating),
       review_count: Number(formData.review_count),
@@ -545,11 +549,18 @@ const TourManager = () => {
                       {tour.category}
                     </td>
                     <td className="px-6 py-5">
-                      <Badge
-                        className={`border-0 shadow-none px-3 py-1 font-bold ${tour.is_active ? "bg-[#FFD93D]/30 text-[#4F200D]" : "bg-gray-100 text-gray-500"}`}
-                      >
-                        {tour.is_active ? "เปิดใช้งาน" : "ปิดใช้งาน"}
-                      </Badge>
+                      <div className="flex flex-col gap-1">
+                        <Badge
+                          className={`border-0 shadow-none px-3 py-1 font-bold ${tour.is_active ? "bg-[#FFD93D]/30 text-[#4F200D]" : "bg-gray-100 text-gray-500"}`}
+                        >
+                          {tour.is_active ? "เปิดใช้งาน" : "ปิดใช้งาน"}
+                        </Badge>
+                        {tour.is_recommended && (
+                          <Badge className="border-0 shadow-none px-3 py-1 font-bold bg-[#FF8400]/15 text-[#FF8400]">
+                            ⭐ แนะนำ
+                          </Badge>
+                        )}
+                      </div>
                     </td>
                     <td className="px-6 py-5 text-right">
                       <div className="flex justify-end gap-2">
@@ -783,6 +794,24 @@ const TourManager = () => {
                   >
                     <option value="active">เปิดใช้งาน</option>
                     <option value="inactive">ปิดใช้งาน</option>
+                  </select>
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-black text-[#4F200D] uppercase tracking-wider">
+                    แนะนำ
+                  </label>
+                  <select
+                    className="w-full h-10 px-3 rounded-xl border-0 bg-[#F6F1E9]/50 text-[#4F200D] font-bold text-sm focus:bg-white focus:ring-2 focus:ring-[#FFD93D] outline-none"
+                    value={formData.is_recommended ? "yes" : "no"}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        is_recommended: e.target.value === "yes",
+                      })
+                    }
+                  >
+                    <option value="no">ไม่แนะนำ</option>
+                    <option value="yes">⭐ แนะนำ</option>
                   </select>
                 </div>
               </div>

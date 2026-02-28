@@ -138,6 +138,10 @@ export class CreateTourDto {
   @IsOptional()
   is_active?: boolean;
 
+  @IsBoolean()
+  @IsOptional()
+  is_recommended?: boolean;
+
   // ✨ เพิ่ม: กำหนดวันเปิดทัวร์พร้อมจำนวนที่นั่งแต่ละวัน
   @IsArray()
   @ValidateNested({ each: true })

@@ -1135,12 +1135,7 @@ function BookingDetailModal({
                 </div>
               )}
               {b.refundAmount != null && Number(b.refundAmount) > 0 && (
-                <div className="flex items-center gap-2 pt-1">
-                  <Banknote size={14} className="text-red-500" />
-                  <span className="text-sm font-bold text-red-600">
-                    ยอดคืนเงิน: ฿{Number(b.refundAmount).toLocaleString()}
-                  </span>
-                </div>
+                <div className="flex items-center gap-2 pt-1"></div>
               )}
             </div>
           )}

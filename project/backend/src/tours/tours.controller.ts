@@ -24,7 +24,13 @@ export class ToursController {
     return this.toursService.getTours(filterDto);
   }
 
-  // 2. POST /tours (Create a new tour - REQUIRED FOR ADMIN)
+  // 2. GET /tours/recommended (Get recommended tours)
+  @Get('recommended')
+  getRecommendedTours(): Promise<Tour[]> {
+    return this.toursService.getRecommendedTours();
+  }
+
+  // 3. POST /tours (Create a new tour - REQUIRED FOR ADMIN)
   @Post()
   createTour(@Body() createTourDto: CreateTourDto): Promise<Tour> {
     return this.toursService.create(createTourDto);

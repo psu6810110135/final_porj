@@ -1,4 +1,11 @@
-import { Controller, Get, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Delete,
+  Param,
+  ParseUUIDPipe,
+  UseGuards,
+} from '@nestjs/common';
 import { AdminService } from './admin.service';
 // import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 // import { RolesGuard } from '../auth/roles.guard';
@@ -21,5 +28,12 @@ export class AdminController {
   // @Roles(Role.ADMIN)
   async getAllBookings() {
     return this.adminService.getAllBookings();
+  }
+
+  @Delete('bookings/:id')
+  // @UseGuards(JwtAuthGuard, RolesGuard)
+  // @Roles(Role.ADMIN)
+  async deleteBooking(@Param('id', ParseUUIDPipe) id: string) {
+    return this.adminService.deleteBooking(id);
   }
 }

@@ -30,7 +30,7 @@ export class AdminService {
 
     // 3. Count Pending Payments (To show "Action Required")
     const pendingPayments = await this.paymentRepo.count({
-      where: { status: 'pending_verify' }
+      where: { status: 'pending_verify' },
     });
 
     // 4. Count Active Tours
@@ -53,5 +53,14 @@ export class AdminService {
       relations: ['user', 'tour'],
       order: { createdAt: 'DESC' }, // Newest first
     });
+  }
+
+  async deleteBooking(id: string) {
+    const booking = await this.bookingRepo.findOne({ where: { id } });
+    if (!booking) {
+      throw new Error('Booking not found');
+    }
+    await this.bookingRepo.remove(booking);
+    return { success: true, message: 'ลบการจองเรียบร้อยแล้ว' };
   }
 }

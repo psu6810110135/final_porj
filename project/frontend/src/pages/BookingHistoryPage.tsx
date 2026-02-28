@@ -27,6 +27,13 @@ interface Booking {
   startDate?: string;
   endDate?: string;
   createdAt: string;
+  contactInfo?: {
+    name?: string;
+    email?: string;
+    phone?: string;
+  };
+  cancellationReason?: string;
+  refundAmount?: number;
   tour?: Tour;
 }
 
@@ -101,6 +108,17 @@ const getBookingReference = (b: Booking) => b.bookingReference ?? b.id;
 
 const ITEMS_PER_PAGE = 6;
 
+const CANCEL_REASON_OPTIONS = [
+  "เปลี่ยนแผนการเดินทาง",
+  "ติดธุระด่วน",
+  "จองผิดวัน",
+  "จำนวนผู้เดินทางเปลี่ยน",
+  "พบตัวเลือกที่เหมาะสมกว่า",
+  "อื่นๆ",
+] as const;
+
+type CancelReasonOption = (typeof CANCEL_REASON_OPTIONS)[number];
+
 // ─── Play Icon ────────────────────────────────────────────────────────────────
 
 const PlayIcon = () => (
@@ -171,6 +189,17 @@ export default function BookingHistoryPage() {
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
+  const [ticketBooking, setTicketBooking] = useState<Booking | null>(null);
+  const [actionLoadingId, setActionLoadingId] = useState<string | null>(null);
+  const [cancelModalBooking, setCancelModalBooking] = useState<Booking | null>(
+    null,
+  );
+  const [cancelReasonPreset, setCancelReasonPreset] =
+    useState<CancelReasonOption>("เปลี่ยนแผนการเดินทาง");
+  const [cancelReasonDetail, setCancelReasonDetail] = useState("");
+  const [cancelError, setCancelError] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
   // ── Filter / Search state ──
   const [searchQuery, setSearchQuery] = useState("");
@@ -181,57 +210,136 @@ export default function BookingHistoryPage() {
   // ── Pagination state ──
   const [currentPage, setCurrentPage] = useState(1);
 
-  // ── Fetch ──
-  useEffect(() => {
+  const fetchBookings = async () => {
     const token = localStorage.getItem("jwt_token");
     if (!token) {
       navigate("/login");
       return;
     }
 
-    (async () => {
-      try {
-        const res = await fetch(
-          "http://localhost:3000/api/v1/bookings/my-bookings",
-          { headers: { Authorization: `Bearer ${token}` } },
-        );
-        if (!res.ok) throw new Error("Failed to fetch bookings");
-        const data = await res.json();
-        const items = Array.isArray(data)
-          ? data
-          : Array.isArray(data?.bookings)
-            ? data.bookings
-            : Array.isArray(data?.data)
-              ? data.data
-              : [];
+    try {
+      const res = await fetch(
+        "http://localhost:3000/api/v1/bookings/my-bookings",
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        },
+      );
+      if (!res.ok) throw new Error("Failed to fetch bookings");
+      const data = await res.json();
+      const items = Array.isArray(data)
+        ? data
+        : Array.isArray(data?.bookings)
+          ? data.bookings
+          : Array.isArray(data?.data)
+            ? data.data
+            : [];
 
-        const normalized: Booking[] = items.map((item: any) => ({
-          id: item.id,
-          bookingReference: item.bookingReference,
-          tourId: item.tourId ?? item.tour?.id,
-          status: item.status,
-          totalPrice: Number(item.totalPrice ?? 0),
-          pax: Number(item.pax ?? item.numberOfTravelers ?? 1),
-          travelDate: item.travelDate,
-          startDate: item.startDate,
-          endDate: item.endDate,
-          createdAt: item.createdAt,
-          tour: item.tour
-            ? {
-                title: item.tour.title,
-                nameTh: item.tour.nameTh ?? item.tour.title ?? "",
-                nameEn: item.tour.nameEn ?? "",
-              }
-            : undefined,
-        }));
-        setBookings(normalized);
-      } catch {
-        setError("ไม่สามารถโหลดข้อมูลการจองได้");
-      } finally {
-        setLoading(false);
-      }
-    })();
+      const normalized: Booking[] = items.map((item: any) => ({
+        id: item.id,
+        bookingReference: item.bookingReference,
+        tourId: item.tourId ?? item.tour?.id,
+        status: item.status,
+        totalPrice: Number(item.totalPrice ?? 0),
+        pax: Number(item.pax ?? item.numberOfTravelers ?? 1),
+        travelDate: item.travelDate,
+        startDate: item.startDate,
+        endDate: item.endDate,
+        createdAt: item.createdAt,
+        contactInfo: item.contactInfo,
+        cancellationReason: item.cancellationReason,
+        refundAmount:
+          typeof item.refundAmount === "number"
+            ? item.refundAmount
+            : item.refundAmount
+              ? Number(item.refundAmount)
+              : undefined,
+        tour: item.tour
+          ? {
+              title: item.tour.title,
+              nameTh: item.tour.nameTh ?? item.tour.title ?? "",
+              nameEn: item.tour.nameEn ?? "",
+            }
+          : undefined,
+      }));
+      setBookings(normalized);
+    } catch {
+      setError("ไม่สามารถโหลดข้อมูลการจองได้");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // ── Fetch ──
+  useEffect(() => {
+    void fetchBookings();
   }, [navigate]);
+
+  const requestCancelBooking = (booking: Booking) => {
+    if (booking.status !== "pending_pay") return;
+    setCancelModalBooking(booking);
+    setCancelReasonPreset("เปลี่ยนแผนการเดินทาง");
+    setCancelReasonDetail("");
+    setCancelError(null);
+  };
+
+  const handleCancelBooking = async () => {
+    if (!cancelModalBooking) return;
+
+    const token = localStorage.getItem("jwt_token");
+    if (!token) {
+      navigate("/login");
+      return;
+    }
+
+    const detail = cancelReasonDetail.trim();
+    const reason =
+      cancelReasonPreset === "อื่นๆ"
+        ? detail
+        : detail
+          ? `${cancelReasonPreset}: ${detail}`
+          : cancelReasonPreset;
+
+    if (!reason) {
+      setCancelError("กรุณาระบุเหตุผลการยกเลิก");
+      return;
+    }
+
+    try {
+      setActionLoadingId(cancelModalBooking.id);
+      const res = await fetch(
+        `http://localhost:3000/api/v1/bookings/${cancelModalBooking.id}/cancel`,
+        {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ reason: reason.trim() }),
+        },
+      );
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => null);
+        const message = Array.isArray(err?.message)
+          ? err.message.join("\n")
+          : err?.message || "ยกเลิกการจองไม่สำเร็จ";
+        throw new Error(message);
+      }
+
+      await fetchBookings();
+      setSelectedBooking((prev) =>
+        prev?.id === cancelModalBooking.id ? null : prev,
+      );
+      setCancelModalBooking(null);
+      setCancelReasonDetail("");
+      setCancelError(null);
+      setSuccessMessage("ยกเลิกการจองเรียบร้อยแล้ว");
+    } catch (err: any) {
+      setCancelError(err?.message || "เกิดข้อผิดพลาดในการยกเลิกการจอง");
+    } finally {
+      setActionLoadingId(null);
+    }
+  };
 
   // ── Filtered bookings ──
   const filteredBookings = useMemo(() => {
@@ -407,7 +515,14 @@ export default function BookingHistoryPage() {
                   {/* Mobile: Card list */}
                   <div className="md:hidden flex flex-col gap-3">
                     {paginatedBookings.map((booking) => (
-                      <MobileCard key={booking.id} booking={booking} />
+                      <MobileCard
+                        key={booking.id}
+                        booking={booking}
+                        actionLoadingId={actionLoadingId}
+                        onViewDetail={setSelectedBooking}
+                        onViewTicket={setTicketBooking}
+                        onCancelBooking={requestCancelBooking}
+                      />
                     ))}
                   </div>
 
@@ -440,6 +555,10 @@ export default function BookingHistoryPage() {
                             key={booking.id}
                             booking={booking}
                             isLast={idx === paginatedBookings.length - 1}
+                            actionLoadingId={actionLoadingId}
+                            onViewDetail={setSelectedBooking}
+                            onViewTicket={setTicketBooking}
+                            onCancelBooking={requestCancelBooking}
                           />
                         ))}
                       </tbody>
@@ -471,6 +590,61 @@ export default function BookingHistoryPage() {
         </div>
       ) : (
         <Footer />
+      )}
+
+      {selectedBooking && (
+        <BookingDetailModal
+          booking={selectedBooking}
+          actionLoadingId={actionLoadingId}
+          onClose={() => setSelectedBooking(null)}
+          onCancelBooking={requestCancelBooking}
+          onViewTicket={() => {
+            setTicketBooking(selectedBooking);
+            setSelectedBooking(null);
+          }}
+        />
+      )}
+
+      {ticketBooking && (
+        <ETicketModal
+          booking={ticketBooking}
+          onClose={() => setTicketBooking(null)}
+        />
+      )}
+
+      {cancelModalBooking && (
+        <CancelBookingModal
+          booking={cancelModalBooking}
+          reasonPreset={cancelReasonPreset}
+          reasonDetail={cancelReasonDetail}
+          error={cancelError}
+          loading={actionLoadingId === cancelModalBooking.id}
+          onChangeReasonPreset={(value) => {
+            setCancelReasonPreset(value);
+            if (cancelError) setCancelError(null);
+          }}
+          onChangeReasonDetail={(value) => {
+            setCancelReasonDetail(value);
+            if (cancelError) setCancelError(null);
+          }}
+          onClose={() => {
+            if (actionLoadingId) return;
+            setCancelModalBooking(null);
+            setCancelError(null);
+          }}
+          onConfirm={() => {
+            void handleCancelBooking();
+          }}
+        />
+      )}
+
+      {successMessage && (
+        <InfoModal
+          title="สำเร็จ"
+          message={successMessage}
+          buttonText="ตกลง"
+          onClose={() => setSuccessMessage(null)}
+        />
       )}
     </div>
   );
@@ -571,10 +745,23 @@ function Pagination({
 // ─── Mobile Card ──────────────────────────────────────────────────────────────
 // ═══════════════════════════════════════════════════════════════════════════════
 
-function MobileCard({ booking }: { booking: Booking }) {
+function MobileCard({
+  booking,
+  actionLoadingId,
+  onViewDetail,
+  onViewTicket,
+  onCancelBooking,
+}: {
+  booking: Booking;
+  actionLoadingId: string | null;
+  onViewDetail: (booking: Booking) => void;
+  onViewTicket: (booking: Booking) => void;
+  onCancelBooking: (booking: Booking) => void;
+}) {
   const cfg = statusConfig[booking.status];
   const tourLink = booking.tourId ? `/tours/${booking.tourId}` : undefined;
   const travelDateStr = formatDate(getTravelDate(booking));
+  const isCancelling = actionLoadingId === booking.id;
 
   return (
     <div
@@ -655,15 +842,43 @@ function MobileCard({ booking }: { booking: Booking }) {
           <span className="font-bold text-[#4F200D] text-sm">
             ฿{formatPrice(booking.totalPrice)}
           </span>
-          {booking.status === "pending_pay" && (
+        </div>
+      </div>
+
+      <div className="px-4 pb-4 pt-1 flex flex-wrap gap-2 border-t border-[#F6F1E9]">
+        <button
+          onClick={() => onViewDetail(booking)}
+          className="text-[11px] font-bold px-3 py-1.5 rounded-full bg-[#4F200D]/10 text-[#4F200D] hover:bg-[#4F200D]/15 transition-colors"
+        >
+          ดูรายละเอียด
+        </button>
+
+        {booking.status === "pending_pay" && (
+          <>
             <Link
               to={`/payment/${booking.id}`}
               className="text-[11px] font-bold text-white bg-[#FF8400] px-3 py-1.5 rounded-full hover:bg-[#e67600] transition-colors"
             >
               ชำระเงิน
             </Link>
-          )}
-        </div>
+            <button
+              disabled={isCancelling}
+              onClick={() => onCancelBooking(booking)}
+              className="text-[11px] font-bold px-3 py-1.5 rounded-full bg-red-50 text-red-500 hover:bg-red-100 transition-colors disabled:opacity-50"
+            >
+              {isCancelling ? "กำลังยกเลิก..." : "ยกเลิก"}
+            </button>
+          </>
+        )}
+
+        {booking.status === "confirmed" && (
+          <button
+            onClick={() => onViewTicket(booking)}
+            className="text-[11px] font-bold px-3 py-1.5 rounded-full bg-green-50 text-green-600 hover:bg-green-100 transition-colors"
+          >
+            ดู E-ticket
+          </button>
+        )}
       </div>
     </div>
   );
@@ -676,13 +891,22 @@ function MobileCard({ booking }: { booking: Booking }) {
 function DesktopRow({
   booking,
   isLast,
+  actionLoadingId,
+  onViewDetail,
+  onViewTicket,
+  onCancelBooking,
 }: {
   booking: Booking;
   isLast: boolean;
+  actionLoadingId: string | null;
+  onViewDetail: (booking: Booking) => void;
+  onViewTicket: (booking: Booking) => void;
+  onCancelBooking: (booking: Booking) => void;
 }) {
   const cfg = statusConfig[booking.status];
   const tourLink = booking.tourId ? `/tours/${booking.tourId}` : undefined;
   const travelDateStr = formatDate(getTravelDate(booking));
+  const isCancelling = actionLoadingId === booking.id;
 
   return (
     <tr
@@ -730,16 +954,385 @@ function DesktopRow({
         ฿{formatPrice(booking.totalPrice)}
       </td>
       <td className="px-4 py-4">
-        {booking.status === "pending_pay" && (
-          <Link
-            to={`/payment/${booking.id}`}
-            className="text-xs font-bold text-white bg-[#FF8400] px-4 py-2 rounded-full hover:bg-[#e67600] transition-colors whitespace-nowrap"
+        <div className="flex items-center justify-end gap-2">
+          <button
+            onClick={() => onViewDetail(booking)}
+            className="text-xs font-bold px-3 py-2 rounded-full bg-[#4F200D]/10 text-[#4F200D] hover:bg-[#4F200D]/15 transition-colors whitespace-nowrap"
           >
-            ชำระเงิน
-          </Link>
-        )}
+            รายละเอียด
+          </button>
+
+          {booking.status === "pending_pay" && (
+            <>
+              <Link
+                to={`/payment/${booking.id}`}
+                className="text-xs font-bold text-white bg-[#FF8400] px-4 py-2 rounded-full hover:bg-[#e67600] transition-colors whitespace-nowrap"
+              >
+                ชำระเงิน
+              </Link>
+              <button
+                disabled={isCancelling}
+                onClick={() => onCancelBooking(booking)}
+                className="text-xs font-bold px-3 py-2 rounded-full bg-red-50 text-red-500 hover:bg-red-100 transition-colors whitespace-nowrap disabled:opacity-50"
+              >
+                {isCancelling ? "กำลังยกเลิก..." : "ยกเลิก"}
+              </button>
+            </>
+          )}
+
+          {booking.status === "confirmed" && (
+            <button
+              onClick={() => onViewTicket(booking)}
+              className="text-xs font-bold px-3 py-2 rounded-full bg-green-50 text-green-600 hover:bg-green-100 transition-colors whitespace-nowrap"
+            >
+              E-ticket
+            </button>
+          )}
+        </div>
       </td>
     </tr>
+  );
+}
+
+function BookingDetailModal({
+  booking,
+  actionLoadingId,
+  onClose,
+  onCancelBooking,
+  onViewTicket,
+}: {
+  booking: Booking;
+  actionLoadingId: string | null;
+  onClose: () => void;
+  onCancelBooking: (booking: Booking) => void;
+  onViewTicket: () => void;
+}) {
+  const cfg = statusConfig[booking.status];
+  const canCancel = booking.status === "pending_pay";
+  const canViewTicket = booking.status === "confirmed";
+
+  return (
+    <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4">
+      <div className="w-full max-w-lg bg-white rounded-2xl shadow-xl border border-[#F0E8E0] overflow-hidden">
+        <div className="px-5 py-4 border-b border-[#F0E8E0] flex items-center justify-between">
+          <h3 className="text-[#4F200D] font-bold text-lg">รายละเอียดการจอง</h3>
+          <button
+            onClick={onClose}
+            className="w-8 h-8 rounded-full bg-[#F6F1E9] text-[#4F200D] hover:bg-[#ede5dc]"
+            aria-label="ปิด"
+          >
+            ✕
+          </button>
+        </div>
+
+        <div className="px-5 py-4 space-y-3 text-sm">
+          <DetailRow label="เลขอ้างอิง" value={getBookingReference(booking)} />
+          <DetailRow label="ทัวร์" value={getTourTitle(booking)} />
+          <DetailRow
+            label="วันเดินทาง"
+            value={formatDate(getTravelDate(booking))}
+          />
+          <DetailRow label="จำนวนผู้เดินทาง" value={`${booking.pax} คน`} />
+          <DetailRow
+            label="ยอดชำระ"
+            value={`฿${formatPrice(booking.totalPrice)}`}
+          />
+          <div className="flex justify-between items-center py-2 border-b border-[#F6F1E9]">
+            <span className="text-[#4F200D]/55">สถานะ</span>
+            <span
+              className={`text-xs font-semibold px-3 py-1.5 rounded-full ${cfg.className}`}
+            >
+              {cfg.label}
+            </span>
+          </div>
+
+          {booking.contactInfo && (
+            <>
+              <DetailRow label="ชื่อ" value={booking.contactInfo.name || "-"} />
+              <DetailRow
+                label="อีเมล"
+                value={booking.contactInfo.email || "-"}
+              />
+              <DetailRow
+                label="เบอร์โทร"
+                value={booking.contactInfo.phone || "-"}
+              />
+            </>
+          )}
+
+          {booking.cancellationReason && (
+            <DetailRow
+              label="เหตุผลการยกเลิก"
+              value={booking.cancellationReason}
+            />
+          )}
+
+          {typeof booking.refundAmount === "number" && (
+            <DetailRow
+              label="ยอดคืนเงิน"
+              value={`฿${formatPrice(booking.refundAmount)}`}
+            />
+          )}
+        </div>
+
+        <div className="px-5 pb-5 pt-2 flex flex-wrap gap-2 justify-end">
+          {booking.status === "pending_pay" && (
+            <Link
+              to={`/payment/${booking.id}`}
+              className="text-xs font-bold text-white bg-[#FF8400] px-4 py-2 rounded-full hover:bg-[#e67600] transition-colors"
+            >
+              ไปหน้าชำระเงิน
+            </Link>
+          )}
+
+          {canViewTicket && (
+            <button
+              onClick={onViewTicket}
+              className="text-xs font-bold px-4 py-2 rounded-full bg-green-50 text-green-600 hover:bg-green-100"
+            >
+              ดู E-ticket
+            </button>
+          )}
+
+          {canCancel && (
+            <button
+              onClick={() => onCancelBooking(booking)}
+              disabled={actionLoadingId === booking.id}
+              className="text-xs font-bold px-4 py-2 rounded-full bg-red-50 text-red-500 hover:bg-red-100 disabled:opacity-50"
+            >
+              {actionLoadingId === booking.id
+                ? "กำลังยกเลิก..."
+                : "ยกเลิกการจอง"}
+            </button>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ETicketModal({
+  booking,
+  onClose,
+}: {
+  booking: Booking;
+  onClose: () => void;
+}) {
+  return (
+    <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4">
+      <div className="w-full max-w-lg bg-white rounded-2xl shadow-xl border border-[#F0E8E0] overflow-hidden">
+        <div className="px-5 py-4 border-b border-[#F0E8E0] flex items-center justify-between">
+          <h3 className="text-[#4F200D] font-bold text-lg">E-ticket</h3>
+          <button
+            onClick={onClose}
+            className="w-8 h-8 rounded-full bg-[#F6F1E9] text-[#4F200D] hover:bg-[#ede5dc]"
+            aria-label="ปิด"
+          >
+            ✕
+          </button>
+        </div>
+
+        <div className="px-5 py-5">
+          <div className="rounded-2xl border-2 border-dashed border-[#FF8400]/40 bg-[#FFF9F2] p-4 space-y-2">
+            <p className="text-xs font-bold text-[#FF8400] uppercase">
+              Thai Tour E-ticket
+            </p>
+            <p className="text-[#4F200D] font-bold text-base">
+              {getTourTitle(booking)}
+            </p>
+            <p className="text-sm text-[#4F200D]/70">
+              เลขอ้างอิง:{" "}
+              <span className="font-semibold">
+                {getBookingReference(booking)}
+              </span>
+            </p>
+            <p className="text-sm text-[#4F200D]/70">
+              วันเดินทาง:{" "}
+              <span className="font-semibold">
+                {formatDate(getTravelDate(booking))}
+              </span>
+            </p>
+            <p className="text-sm text-[#4F200D]/70">
+              ผู้เดินทาง:{" "}
+              <span className="font-semibold">{booking.pax} คน</span>
+            </p>
+            <p className="text-sm text-[#4F200D]/70">
+              ยอดชำระ:{" "}
+              <span className="font-semibold">
+                ฿{formatPrice(booking.totalPrice)}
+              </span>
+            </p>
+          </div>
+
+          <div className="mt-4 flex justify-end gap-2">
+            <button
+              onClick={() => window.print()}
+              className="text-xs font-bold px-4 py-2 rounded-full bg-[#4F200D]/10 text-[#4F200D] hover:bg-[#4F200D]/15"
+            >
+              พิมพ์ตั๋ว
+            </button>
+            <button
+              onClick={onClose}
+              className="text-xs font-bold px-4 py-2 rounded-full bg-[#FF8400] text-white hover:bg-[#e67600]"
+            >
+              ปิด
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function DetailRow({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex justify-between items-start gap-4 py-2 border-b border-[#F6F1E9]">
+      <span className="text-[#4F200D]/55">{label}</span>
+      <span className="text-[#4F200D] font-semibold text-right">{value}</span>
+    </div>
+  );
+}
+
+function CancelBookingModal({
+  booking,
+  reasonPreset,
+  reasonDetail,
+  error,
+  loading,
+  onChangeReasonPreset,
+  onChangeReasonDetail,
+  onClose,
+  onConfirm,
+}: {
+  booking: Booking;
+  reasonPreset: CancelReasonOption;
+  reasonDetail: string;
+  error: string | null;
+  loading: boolean;
+  onChangeReasonPreset: (value: CancelReasonOption) => void;
+  onChangeReasonDetail: (value: string) => void;
+  onClose: () => void;
+  onConfirm: () => void;
+}) {
+  const requireDetail = reasonPreset === "อื่นๆ";
+
+  return (
+    <div className="fixed inset-0 z-[60] bg-black/40 flex items-center justify-center p-4">
+      <div className="w-full max-w-md bg-white rounded-2xl shadow-xl border border-[#F0E8E0] overflow-hidden">
+        <div className="px-5 py-4 border-b border-[#F0E8E0] flex items-center justify-between">
+          <h3 className="text-[#4F200D] font-bold text-lg">
+            ยืนยันการยกเลิกการจอง
+          </h3>
+          <button
+            onClick={onClose}
+            disabled={loading}
+            className="w-8 h-8 rounded-full bg-[#F6F1E9] text-[#4F200D] hover:bg-[#ede5dc] disabled:opacity-50"
+            aria-label="ปิด"
+          >
+            ✕
+          </button>
+        </div>
+
+        <div className="px-5 py-4 space-y-3">
+          <p className="text-sm text-[#4F200D]/70">
+            การจอง{" "}
+            <span className="font-semibold">
+              {getBookingReference(booking)}
+            </span>
+          </p>
+
+          <label className="block text-sm font-semibold text-[#4F200D]">
+            เหตุผลการยกเลิก
+          </label>
+
+          <select
+            value={reasonPreset}
+            onChange={(e) =>
+              onChangeReasonPreset(e.target.value as CancelReasonOption)
+            }
+            disabled={loading}
+            className="w-full rounded-xl border border-[#EADFD3] px-3 py-2 text-sm text-[#4F200D] bg-white focus:outline-none focus:ring-2 focus:ring-[#FF8400]/30"
+          >
+            {CANCEL_REASON_OPTIONS.map((option) => (
+              <option key={option} value={option}>
+                {option}
+              </option>
+            ))}
+          </select>
+
+          <label className="block text-sm font-semibold text-[#4F200D]">
+            รายละเอียดเพิ่มเติม {requireDetail ? "(จำเป็น)" : "(ถ้ามี)"}
+          </label>
+          <textarea
+            value={reasonDetail}
+            onChange={(e) => onChangeReasonDetail(e.target.value)}
+            rows={4}
+            disabled={loading}
+            placeholder={
+              requireDetail
+                ? "กรุณาระบุเหตุผลการยกเลิก"
+                : "ระบุรายละเอียดเพิ่มเติม (ถ้ามี)"
+            }
+            className="w-full rounded-xl border border-[#EADFD3] px-3 py-2 text-sm text-[#4F200D] focus:outline-none focus:ring-2 focus:ring-[#FF8400]/30"
+          />
+
+          {error && (
+            <p className="text-xs font-semibold text-red-500">{error}</p>
+          )}
+        </div>
+
+        <div className="px-5 pb-5 pt-1 flex items-center justify-end gap-2">
+          <button
+            onClick={onClose}
+            disabled={loading}
+            className="text-xs font-bold px-4 py-2 rounded-full bg-[#4F200D]/10 text-[#4F200D] hover:bg-[#4F200D]/15 disabled:opacity-50"
+          >
+            ยกเลิก
+          </button>
+          <button
+            onClick={onConfirm}
+            disabled={loading}
+            className="text-xs font-bold px-4 py-2 rounded-full bg-red-500 text-white hover:bg-red-600 disabled:opacity-50"
+          >
+            {loading ? "กำลังดำเนินการ..." : "ยืนยันการยกเลิก"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function InfoModal({
+  title,
+  message,
+  buttonText,
+  onClose,
+}: {
+  title: string;
+  message: string;
+  buttonText?: string;
+  onClose: () => void;
+}) {
+  return (
+    <div className="fixed inset-0 z-[70] bg-black/40 flex items-center justify-center p-4">
+      <div className="w-full max-w-sm bg-white rounded-2xl shadow-xl border border-[#F0E8E0] overflow-hidden">
+        <div className="px-5 py-4 border-b border-[#F0E8E0]">
+          <h3 className="text-[#4F200D] font-bold text-lg">{title}</h3>
+        </div>
+
+        <div className="px-5 py-5">
+          <p className="text-sm text-[#4F200D]/75">{message}</p>
+          <div className="mt-5 flex justify-end">
+            <button
+              onClick={onClose}
+              className="text-xs font-bold px-5 py-2 rounded-full bg-[#FF8400] text-white hover:bg-[#e67600]"
+            >
+              {buttonText || "ปิด"}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
   );
 }
 

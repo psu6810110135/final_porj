@@ -25,24 +25,31 @@ const getAuthHeader = (): Record<string, string> => {
   return token ? { Authorization: `Bearer ${token}` } : {};
 };
 
-/* ─── Enums & Types ──────────────────────────────── */
-export const TourCategory = {
-  SEA: "Sea",
-  MOUNTAIN: "Mountain",
-  CULTURAL: "Cultural",
-  NATURE: "Nature",
-  CITY: "City",
-  ADVENTURE: "Adventure",
+/* ─── เคล็ดลับดึง URL รูปภาพให้ติดชัวร์ 100% ─────────── */
+const getImageUrl = (path?: string) => {
+  if (!path) return "https://placehold.co/80x80?text=No+Img";
+  if (path.startsWith("http")) return path;
+  return `http://localhost:3000/${path.replace(/^\//, '')}`;
 };
 
-export const TourRegion = {
-  NORTH: "North",
-  SOUTH: "South",
-  CENTRAL: "Central",
-  EAST: "East",
-  WEST: "West",
-  NORTHEAST: "Northeast",
-};
+/* ─── Enums mapped to Thai ───────────────────────── */
+export const tourCategories = [
+  { value: "Sea", label: "ทะเล" },
+  { value: "Mountain", label: "ภูเขา" },
+  { value: "Cultural", label: "ศิลปวัฒนธรรม" },
+  { value: "Nature", label: "ธรรมชาติ" },
+  { value: "City", label: "เมือง" },
+  { value: "Adventure", label: "ผจญภัย" },
+];
+
+export const tourRegions = [
+  { value: "North", label: "ภาคเหนือ" },
+  { value: "South", label: "ภาคใต้" },
+  { value: "Central", label: "ภาคกลาง" },
+  { value: "East", label: "ภาคตะวันออก" },
+  { value: "West", label: "ภาคตะวันตก" },
+  { value: "Northeast", label: "ภาคตะวันออกเฉียงเหนือ" },
+];
 
 export interface Tour {
   id: string;
@@ -76,9 +83,9 @@ const initialFormState = {
   price: "",
   child_price: "",
   province: "",
-  region: TourRegion.CENTRAL,
+  region: "Central",
   duration: "",
-  category: TourCategory.NATURE,
+  category: "Nature",
   description: "",
   is_active: true,
   is_recommended: false,
@@ -120,19 +127,14 @@ const CustomSelect = ({
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
-      if (ref.current && !ref.current.contains(event.target as Node)) {
-        setIsOpen(false);
-      }
+      if (ref.current && !ref.current.contains(event.target as Node)) setIsOpen(false);
     }
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
   const selectedOption = options.find((o) => String(o.value) === String(value)) || options[0];
-
-  const errorClasses = hasError 
-    ? "ring-2 ring-red-500 bg-red-50 border-red-500 text-red-700" 
-    : "";
+  const errorClasses = hasError ? "ring-2 ring-red-500 bg-red-50 border-red-500 text-red-700" : "";
 
   return (
     <div className="relative flex-1 sm:flex-none w-full" ref={ref}>
@@ -142,27 +144,17 @@ const CustomSelect = ({
       >
         <span className="truncate">{selectedOption?.label}</span>
         <ChevronDown
-          className={`w-4 h-4 ml-2 transition-transform duration-200 shrink-0 ${hasError ? 'text-red-500' : 'text-[#4F200D]/50'} ${
-            isOpen ? "rotate-180" : ""
-          }`}
+          className={`w-4 h-4 ml-2 transition-transform duration-200 shrink-0 ${hasError ? 'text-red-500' : 'text-[#4F200D]/50'} ${isOpen ? "rotate-180" : ""}`}
         />
       </div>
-
       {isOpen && (
         <div className="absolute z-50 w-full min-w-[140px] mt-2 bg-white border-2 border-[#F6F1E9] rounded-2xl shadow-xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
           <div className="max-h-60 overflow-y-auto custom-scrollbar py-2">
             {options.map((opt) => (
               <div
                 key={String(opt.value)}
-                className={`px-4 py-3 text-sm font-bold cursor-pointer transition-colors ${
-                  String(value) === String(opt.value)
-                    ? "bg-[#FFD93D]/30 text-[#FF8400]"
-                    : "text-[#4F200D] hover:bg-[#F6F1E9]"
-                }`}
-                onClick={() => {
-                  onChange(opt.value);
-                  setIsOpen(false);
-                }}
+                className={`px-4 py-3 text-sm font-bold cursor-pointer transition-colors ${String(value) === String(opt.value) ? "bg-[#FFD93D]/30 text-[#FF8400]" : "text-[#4F200D] hover:bg-[#F6F1E9]"}`}
+                onClick={() => { onChange(opt.value); setIsOpen(false); }}
               >
                 {opt.label}
               </div>
@@ -202,9 +194,7 @@ const TourManager = () => {
   const fetchTours = async () => {
     setLoading(true);
     try {
-      const response = await fetch(`${API_URL}?show_all=true`, {
-        headers: getAuthHeader(),
-      });
+      const response = await fetch(`${API_URL}?show_all=true`, { headers: getAuthHeader() });
       if (!response.ok) throw new Error("Failed to fetch tours");
       const data = await response.json();
       setTours(data);
@@ -215,13 +205,8 @@ const TourManager = () => {
     }
   };
 
-  useEffect(() => {
-    fetchTours();
-  }, []);
-
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [searchQuery, statusFilter, regionFilter, categoryFilter, durationFilter]);
+  useEffect(() => { fetchTours(); }, []);
+  useEffect(() => { setCurrentPage(1); }, [searchQuery, statusFilter, regionFilter, categoryFilter, durationFilter]);
 
   const handleAddNew = () => {
     setEditingId(null);
@@ -259,7 +244,7 @@ const TourManager = () => {
       conditions: tour.conditions || "",
     });
     setCoverFile(null);
-    setCoverPreview(tour.image_cover || "");
+    setCoverPreview(getImageUrl(tour.image_cover));
     setAdditionalFiles([]);
     setIsModalOpen(true);
   };
@@ -347,10 +332,7 @@ const TourManager = () => {
   const handleDelete = async (id: string) => {
     if (!confirm("คุณแน่ใจหรือไม่ว่าต้องการลบทัวร์นี้?")) return;
     try {
-      const res = await fetch(`${API_URL}/${id}`, {
-        method: "DELETE",
-        headers: getAuthHeader(),
-      });
+      const res = await fetch(`${API_URL}/${id}`, { method: "DELETE", headers: getAuthHeader() });
       if (!res.ok) throw new Error("Failed to delete tour");
       setTours((prev) => prev.filter((t) => t.id !== id));
     } catch (err: any) {
@@ -359,12 +341,9 @@ const TourManager = () => {
   };
 
   const updateItinerary = (index: number, field: "time" | "detail", value: string) => {
-    const updated = formData.itinerary_data.map((item, i) =>
-      i === index ? { ...item, [field]: value } : item,
-    );
+    const updated = formData.itinerary_data.map((item, i) => i === index ? { ...item, [field]: value } : item);
     setFormData({ ...formData, itinerary_data: updated });
   };
-
   const addItineraryRow = () => setFormData({ ...formData, itinerary_data: [...formData.itinerary_data, { time: "", detail: "" }] });
   const removeItineraryRow = (index: number) => setFormData({ ...formData, itinerary_data: formData.itinerary_data.filter((_, i) => i !== index) });
 
@@ -391,24 +370,16 @@ const TourManager = () => {
 
   const totalPages = Math.ceil(processedTours.length / itemsPerPage);
   const paginatedTours = processedTours.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
-
   const selectTriggerClass = "text-sm border-0 bg-[#F6F1E9]/50 px-4 py-3 rounded-2xl focus:ring-2 focus:ring-[#FFD93D] text-[#4F200D] font-bold cursor-pointer outline-none transition-all w-full";
 
   return (
     <div className="w-full space-y-6 animate-in fade-in duration-500">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 sm:mb-8">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-extrabold text-[#4F200D] tracking-tight">
-            จัดการทัวร์
-          </h1>
-          <p className="text-xs sm:text-sm font-medium text-[#4F200D]/60 mt-1">
-            จัดการทัวร์ของคุณ ดูความพร้อม และอัปเดตรายละเอียดต่างๆ
-          </p>
+          <h1 className="text-2xl sm:text-3xl font-extrabold text-[#4F200D] tracking-tight">จัดการทัวร์</h1>
+          <p className="text-xs sm:text-sm font-medium text-[#4F200D]/60 mt-1">จัดการทัวร์ของคุณ ดูความพร้อม และอัปเดตรายละเอียดต่างๆ</p>
         </div>
-        <Button
-          className="bg-[#FF8400] hover:bg-[#e67600] w-full sm:w-auto text-white shadow-lg shadow-[#FF8400]/20 rounded-xl px-6 py-5 text-sm font-bold transition-all"
-          onClick={handleAddNew}
-        >
+        <Button className="bg-[#FF8400] hover:bg-[#e67600] w-full sm:w-auto text-white shadow-lg shadow-[#FF8400]/20 rounded-xl px-6 py-5 text-sm font-bold transition-all" onClick={handleAddNew}>
           <Plus className="w-5 h-5 mr-2" strokeWidth={2.5} /> เพิ่มทัวร์ใหม่
         </Button>
       </div>
@@ -437,49 +408,22 @@ const TourManager = () => {
         </div>
       </div>
 
-      {/* Filters */}
       <div className="bg-white p-4 sm:p-5 rounded-3xl border-0 shadow-sm flex flex-col gap-4">
         <div className="flex flex-col lg:flex-row gap-4 justify-between items-start lg:items-center w-full">
           <div className="relative w-full lg:w-80 shrink-0">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-[#4F200D]/40 w-5 h-5" />
-            <Input
-              placeholder="ค้นหาทัวร์ด้วยชื่อ..."
-              className="pl-12 py-5 sm:py-6 bg-[#F6F1E9]/50 border-0 rounded-2xl font-bold text-[#4F200D] placeholder:font-medium focus:bg-white focus:ring-2 focus:ring-[#FFD93D] transition-all"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
+            <Input placeholder="ค้นหาทัวร์ด้วยชื่อ..." className="pl-12 py-5 sm:py-6 bg-[#F6F1E9]/50 border-0 rounded-2xl font-bold text-[#4F200D] placeholder:font-medium focus:bg-white focus:ring-2 focus:ring-[#FFD93D] transition-all" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
           </div>
 
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3 w-full lg:w-auto">
-            <CustomSelect
-              className={selectTriggerClass}
-              value={regionFilter}
-              onChange={setRegionFilter}
-              options={[{ value: "all", label: "ทุกภูมิภาค" }, ...Object.values(TourRegion).map((r) => ({ value: r, label: r }))]}
-            />
-            <CustomSelect
-              className={selectTriggerClass}
-              value={categoryFilter}
-              onChange={setCategoryFilter}
-              options={[{ value: "all", label: "ทุกหมวดหมู่" }, ...Object.values(TourCategory).map((c) => ({ value: c, label: c }))]}
-            />
-            <CustomSelect
-              className={selectTriggerClass}
-              value={durationFilter}
-              onChange={setDurationFilter}
-              options={[{ value: "all", label: "ทุกระยะเวลา" }, ...uniqueDurations.map((d) => ({ value: d, label: d }))]}
-            />
-            <CustomSelect
-              className={selectTriggerClass}
-              value={statusFilter}
-              onChange={setStatusFilter}
-              options={[{ value: "all", label: "สถานะทั้งหมด" }, { value: "active", label: "เปิดใช้งาน" }, { value: "inactive", label: "ปิดใช้งาน" }]}
-            />
+            <CustomSelect className={selectTriggerClass} value={regionFilter} onChange={setRegionFilter} options={[{ value: "all", label: "ทุกภูมิภาค" }, ...tourRegions]} />
+            <CustomSelect className={selectTriggerClass} value={categoryFilter} onChange={setCategoryFilter} options={[{ value: "all", label: "ทุกหมวดหมู่" }, ...tourCategories]} />
+            <CustomSelect className={selectTriggerClass} value={durationFilter} onChange={setDurationFilter} options={[{ value: "all", label: "ทุกระยะเวลา" }, ...uniqueDurations.map((d) => ({ value: d, label: d }))]} />
+            <CustomSelect className={selectTriggerClass} value={statusFilter} onChange={setStatusFilter} options={[{ value: "all", label: "สถานะทั้งหมด" }, { value: "active", label: "เปิดใช้งาน" }, { value: "inactive", label: "ปิดใช้งาน" }]} />
           </div>
         </div>
       </div>
 
-      {/* Table */}
       <div className="bg-white rounded-3xl border-0 shadow-sm overflow-hidden w-full">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm min-w-[800px]">
@@ -500,97 +444,67 @@ const TourManager = () => {
               ) : paginatedTours.length === 0 ? (
                 <tr><td colSpan={7} className="px-6 py-12 text-center font-bold text-[#4F200D]/40">ไม่พบข้อมูลทัวร์</td></tr>
               ) : (
-                paginatedTours.map((tour) => (
-                  <tr key={tour.id} className="hover:bg-[#FFD93D]/5 transition-colors group">
-                    <td className="px-6 py-5">
-                      <div className="flex items-center gap-4">
-                        <div className="w-12 h-12 rounded-xl overflow-hidden bg-[#F6F1E9] flex-shrink-0 shadow-sm">
-                          <img
-                            src={tour.image_cover || "https://placehold.co/80x80?text=Tour"}
-                            alt=""
-                            className="w-full h-full object-cover"
-                            onError={(e) => (e.target as HTMLImageElement).src = "https://placehold.co/80x80?text=No+Img"}
-                          />
+                paginatedTours.map((tour) => {
+                  const displayRegion = tourRegions.find(r => r.value === tour.region)?.label || tour.region;
+                  const displayCategory = tourCategories.find(c => c.value === tour.category)?.label || tour.category;
+                  
+                  return (
+                    <tr key={tour.id} className="hover:bg-[#FFD93D]/5 transition-colors group">
+                      <td className="px-6 py-5">
+                        <div className="flex items-center gap-4">
+                          <div className="w-12 h-12 rounded-xl overflow-hidden bg-[#F6F1E9] flex-shrink-0 shadow-sm">
+                            <img src={getImageUrl(tour.image_cover)} alt="" className="w-full h-full object-cover" onError={(e) => (e.target as HTMLImageElement).src = "https://placehold.co/80x80?text=No+Img"} />
+                          </div>
+                          <div>
+                            <p className="font-bold text-[#4F200D] group-hover:text-[#FF8400] transition-colors line-clamp-1">{tour.title}</p>
+                            <p className="text-xs font-semibold text-[#4F200D]/50 mt-0.5">{tour.province}</p>
+                          </div>
                         </div>
-                        <div>
-                          <p className="font-bold text-[#4F200D] group-hover:text-[#FF8400] transition-colors">{tour.title}</p>
-                          <p className="text-xs font-semibold text-[#4F200D]/50 mt-0.5">{tour.province}</p>
+                      </td>
+                      <td className="px-6 py-5 font-black text-[#4F200D]">฿{Number(tour.price).toLocaleString()}</td>
+                      <td className="px-6 py-5 font-bold text-[#4F200D]/70">{displayRegion}</td>
+                      <td className="px-6 py-5 font-bold text-[#4F200D]/70">{tour.duration}</td>
+                      <td className="px-6 py-5 font-bold text-[#4F200D]/70 capitalize">{displayCategory}</td>
+                      <td className="px-6 py-5">
+                        <div className="flex flex-col gap-1 items-start">
+                          <Badge className={`border-0 shadow-none px-3 py-1 font-bold ${tour.is_active ? "bg-[#FFD93D]/30 text-[#4F200D]" : "bg-gray-100 text-gray-500"}`}>
+                            {tour.is_active ? "เปิดใช้งาน" : "ปิดใช้งาน"}
+                          </Badge>
+                          {tour.is_recommended && <Badge className="border-0 shadow-none px-3 py-1 font-bold bg-[#FF8400]/15 text-[#FF8400]">⭐ แนะนำ</Badge>}
                         </div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-5 font-black text-[#4F200D]">฿{Number(tour.price).toLocaleString()}</td>
-                    <td className="px-6 py-5 font-bold text-[#4F200D]/70">{tour.region}</td>
-                    <td className="px-6 py-5 font-bold text-[#4F200D]/70">{tour.duration}</td>
-                    <td className="px-6 py-5 font-bold text-[#4F200D]/70 capitalize">{tour.category}</td>
-                    <td className="px-6 py-5">
-                      <div className="flex flex-col gap-1 items-start">
-                        <Badge className={`border-0 shadow-none px-3 py-1 font-bold ${tour.is_active ? "bg-[#FFD93D]/30 text-[#4F200D]" : "bg-gray-100 text-gray-500"}`}>
-                          {tour.is_active ? "เปิดใช้งาน" : "ปิดใช้งาน"}
-                        </Badge>
-                        {tour.is_recommended && <Badge className="border-0 shadow-none px-3 py-1 font-bold bg-[#FF8400]/15 text-[#FF8400]">⭐ แนะนำ</Badge>}
-                      </div>
-                    </td>
-                    <td className="px-6 py-5 text-right">
-                      <div className="flex justify-end gap-2">
-                        <Button variant="ghost" size="icon" className="h-9 w-9 text-[#4F200D]/40 hover:text-[#FF8400] hover:bg-[#FF8400]/10 rounded-xl" onClick={() => handleEdit(tour)}><Pencil className="w-4 h-4" /></Button>
-                        <Button variant="ghost" size="icon" className="h-9 w-9 text-[#4F200D]/40 hover:text-red-500 hover:bg-red-50 rounded-xl" onClick={() => handleDelete(tour.id)}><Trash2 className="w-4 h-4" /></Button>
-                      </div>
-                    </td>
-                  </tr>
-                ))
+                      </td>
+                      <td className="px-6 py-5 text-right">
+                        <div className="flex justify-end gap-2">
+                          <Button variant="ghost" size="icon" className="h-9 w-9 text-[#4F200D]/40 hover:text-[#FF8400] hover:bg-[#FF8400]/10 rounded-xl" onClick={() => handleEdit(tour)}><Pencil className="w-4 h-4" /></Button>
+                          <Button variant="ghost" size="icon" className="h-9 w-9 text-[#4F200D]/40 hover:text-red-500 hover:bg-red-50 rounded-xl" onClick={() => handleDelete(tour.id)}><Trash2 className="w-4 h-4" /></Button>
+                        </div>
+                      </td>
+                    </tr>
+                  )
+                })
               )}
             </tbody>
           </table>
         </div>
 
-        {/* ─── Cute & Easy Pagination ─── */}
         {totalPages > 0 && (
-          <div className="px-4 sm:px-6 py-4 flex flex-col sm:flex-row items-center justify-between gap-4 bg-white border-t-2 border-[#F6F1E9]">
-            <p className="text-xs sm:text-sm font-semibold text-[#4F200D]/50 text-center sm:text-left">
-              แสดง{" "}
-              <span className="text-[#FF8400]">
-                {processedTours.length === 0 ? 0 : (currentPage - 1) * itemsPerPage + 1}
-              </span>{" "}
-              ถึง{" "}
-              <span className="text-[#FF8400]">
-                {Math.min(currentPage * itemsPerPage, processedTours.length)}
-              </span>{" "}
-              จาก <span className="text-[#FF8400]">{processedTours.length}</span> รายการ
+          <div className="px-4 sm:px-6 py-5 flex flex-col sm:flex-row items-center justify-between sm:justify-center gap-4 bg-white border-t-2 border-[#F6F1E9] relative">
+            <p className="text-xs sm:text-sm font-semibold text-[#4F200D]/50 sm:absolute sm:left-6">
+              แสดง <span className="text-[#FF8400]">{processedTours.length === 0 ? 0 : (currentPage - 1) * itemsPerPage + 1}</span> ถึง <span className="text-[#FF8400]">{Math.min(currentPage * itemsPerPage, processedTours.length)}</span> จาก <span className="text-[#FF8400]">{processedTours.length}</span> รายการ
             </p>
-            
-            <div className="flex items-center gap-1 bg-[#F6F1E9]/30 p-1.5 rounded-2xl border-2 border-[#F6F1E9]">
-              <Button
-                variant="ghost" size="icon" disabled={currentPage === 1}
-                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-                className="h-8 w-8 text-[#4F200D] font-bold rounded-xl hover:bg-[#FFD93D]/30 hover:text-[#FF8400] transition-colors disabled:opacity-30"
-              >
-                <ChevronLeft className="w-4 h-4" />
-              </Button>
+            <div className="flex items-center gap-1 bg-[#F6F1E9]/30 p-1.5 rounded-2xl border-2 border-[#F6F1E9] z-10">
+              <Button variant="ghost" size="icon" disabled={currentPage === 1} onClick={() => setCurrentPage((p) => Math.max(1, p - 1))} className="h-8 w-8 text-[#4F200D] font-bold rounded-xl hover:bg-[#FFD93D]/30 hover:text-[#FF8400] transition-colors disabled:opacity-30"><ChevronLeft className="w-4 h-4" /></Button>
               <div className="flex items-center gap-1 mx-1 flex-wrap justify-center">
                 {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-                  <Button
-                    key={page} variant="ghost" onClick={() => setCurrentPage(page)}
-                    className={`h-8 w-8 p-0 text-sm font-black rounded-xl transition-all ${
-                      currentPage === page ? "bg-[#FF8400] text-white shadow-md shadow-[#FF8400]/20" : "text-[#4F200D]/60 hover:bg-[#FFD93D]/30 hover:text-[#FF8400]"
-                    }`}
-                  >
-                    {page}
-                  </Button>
+                  <Button key={page} variant="ghost" onClick={() => setCurrentPage(page)} className={`h-8 w-8 p-0 text-sm font-black rounded-xl transition-all ${currentPage === page ? "bg-[#FF8400] text-white shadow-md shadow-[#FF8400]/20" : "text-[#4F200D]/60 hover:bg-[#FFD93D]/30 hover:text-[#FF8400]"}`}>{page}</Button>
                 ))}
               </div>
-              <Button
-                variant="ghost" size="icon" disabled={currentPage === totalPages || totalPages === 0}
-                onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-                className="h-8 w-8 text-[#4F200D] font-bold rounded-xl hover:bg-[#FFD93D]/30 hover:text-[#FF8400] transition-colors disabled:opacity-30"
-              >
-                <ChevronRight className="w-4 h-4" />
-              </Button>
+              <Button variant="ghost" size="icon" disabled={currentPage === totalPages || totalPages === 0} onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))} className="h-8 w-8 text-[#4F200D] font-bold rounded-xl hover:bg-[#FFD93D]/30 hover:text-[#FF8400] transition-colors disabled:opacity-30"><ChevronRight className="w-4 h-4" /></Button>
             </div>
           </div>
         )}
       </div>
 
-      {/* Modal */}
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#4F200D]/60 backdrop-blur-sm p-4 overflow-y-auto pt-16 md:pt-4">
           <div className="bg-white rounded-3xl shadow-2xl w-full max-w-2xl my-auto">
@@ -609,104 +523,47 @@ const TourManager = () => {
             <form onSubmit={handleSubmit} id="tour-modal-content" className="p-5 sm:p-6 space-y-5 max-h-[65vh] sm:max-h-[70vh] overflow-y-auto custom-scrollbar">
               <div className="space-y-2">
                 <label className="text-xs sm:text-sm font-black text-[#4F200D] uppercase tracking-wider">ชื่อทัวร์ *</label>
-                <Input 
-                  value={formData.title} 
-                  onChange={(e) => {
-                    setFormData({ ...formData, title: e.target.value });
-                    if (errors.title) setErrors({...errors, title: false});
-                  }} 
-                  placeholder="เช่น ทริปดำน้ำสุดฟิน" 
-                  className={getInputClass("title", "rounded-xl font-bold text-[#4F200D]")} 
-                />
+                <Input value={formData.title} onChange={(e) => { setFormData({ ...formData, title: e.target.value }); if (errors.title) setErrors({...errors, title: false}); }} placeholder="เช่น ทริปดำน้ำสุดฟิน" className={getInputClass("title", "rounded-xl font-bold text-[#4F200D]")} />
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-5">
                 <div className="space-y-2">
                   <label className="text-xs sm:text-sm font-black text-[#4F200D] uppercase tracking-wider">ราคา (฿) *</label>
-                  <Input 
-                    type="number" min="0" step="0.01" 
-                    value={formData.price} 
-                    onChange={(e) => {
-                      setFormData({ ...formData, price: e.target.value });
-                      if (errors.price) setErrors({...errors, price: false});
-                    }} 
-                    className={getInputClass("price", "rounded-xl font-bold text-[#4F200D]")} 
-                  />
+                  <Input type="number" min="0" step="0.01" value={formData.price} onChange={(e) => { setFormData({ ...formData, price: e.target.value }); if (errors.price) setErrors({...errors, price: false}); }} className={getInputClass("price", "rounded-xl font-bold text-[#4F200D]")} />
                 </div>
                 <div className="space-y-2">
                   <label className="text-xs sm:text-sm font-black text-[#4F200D] uppercase tracking-wider">ราคาเด็ก (฿)</label>
-                  <Input 
-                    type="number" min="0" step="0.01" 
-                    value={formData.child_price} 
-                    onChange={(e) => setFormData({ ...formData, child_price: e.target.value })} 
-                    className="bg-[#F6F1E9]/50 border-0 rounded-xl focus:bg-white focus:ring-2 focus:ring-[#FFD93D] font-bold text-[#4F200D]" 
-                  />
+                  <Input type="number" min="0" step="0.01" value={formData.child_price} onChange={(e) => setFormData({ ...formData, child_price: e.target.value })} className="bg-[#F6F1E9]/50 border-0 rounded-xl focus:bg-white focus:ring-2 focus:ring-[#FFD93D] font-bold text-[#4F200D]" />
                 </div>
                 <div className="space-y-2">
                   <label className="text-xs sm:text-sm font-black text-[#4F200D] uppercase tracking-wider">ระยะเวลา *</label>
-                  <Input 
-                    value={formData.duration} 
-                    onChange={(e) => {
-                      setFormData({ ...formData, duration: e.target.value });
-                      if (errors.duration) setErrors({...errors, duration: false});
-                    }} 
-                    placeholder="เช่น 1 วัน" 
-                    className={getInputClass("duration", "rounded-xl font-bold text-[#4F200D]")} 
-                  />
+                  <Input value={formData.duration} onChange={(e) => { setFormData({ ...formData, duration: e.target.value }); if (errors.duration) setErrors({...errors, duration: false}); }} placeholder="เช่น 1 วัน" className={getInputClass("duration", "rounded-xl font-bold text-[#4F200D]")} />
                 </div>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-5">
                 <div className="space-y-2">
                   <label className="text-xs sm:text-sm font-black text-[#4F200D] uppercase tracking-wider">ภูมิภาค *</label>
-                  <CustomSelect
-                    className={selectTriggerClass}
-                    value={formData.region}
-                    onChange={(val) => setFormData({ ...formData, region: val })}
-                    options={Object.values(TourRegion).map((r) => ({ value: r, label: r }))}
-                  />
+                  <CustomSelect className={selectTriggerClass} value={formData.region} onChange={(val) => setFormData({ ...formData, region: val })} options={tourRegions} />
                 </div>
                 <div className="space-y-2">
                   <label className="text-xs sm:text-sm font-black text-[#4F200D] uppercase tracking-wider">จังหวัด *</label>
-                  <Input 
-                    value={formData.province} 
-                    onChange={(e) => {
-                      setFormData({ ...formData, province: e.target.value });
-                      if (errors.province) setErrors({...errors, province: false});
-                    }} 
-                    placeholder="เช่น กระบี่" 
-                    className={getInputClass("province", "rounded-xl font-bold text-[#4F200D]")} 
-                  />
+                  <Input value={formData.province} onChange={(e) => { setFormData({ ...formData, province: e.target.value }); if (errors.province) setErrors({...errors, province: false}); }} placeholder="เช่น กระบี่" className={getInputClass("province", "rounded-xl font-bold text-[#4F200D]")} />
                 </div>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-5">
                 <div className="space-y-2">
                   <label className="text-xs sm:text-sm font-black text-[#4F200D] uppercase tracking-wider">หมวดหมู่ *</label>
-                  <CustomSelect
-                    className={selectTriggerClass}
-                    value={formData.category}
-                    onChange={(val) => setFormData({ ...formData, category: val })}
-                    options={Object.values(TourCategory).map((c) => ({ value: c, label: c }))}
-                  />
+                  <CustomSelect className={selectTriggerClass} value={formData.category} onChange={(val) => setFormData({ ...formData, category: val })} options={tourCategories} />
                 </div>
                 <div className="space-y-2">
                   <label className="text-xs sm:text-sm font-black text-[#4F200D] uppercase tracking-wider">สถานะ</label>
-                  <CustomSelect
-                    className={selectTriggerClass}
-                    value={formData.is_active ? "active" : "inactive"}
-                    onChange={(val) => setFormData({ ...formData, is_active: val === "active" })}
-                    options={[{ value: "active", label: "เปิดใช้งาน" }, { value: "inactive", label: "ปิดใช้งาน" }]}
-                  />
+                  <CustomSelect className={selectTriggerClass} value={formData.is_active ? "active" : "inactive"} onChange={(val) => setFormData({ ...formData, is_active: val === "active" })} options={[{ value: "active", label: "เปิดใช้งาน" }, { value: "inactive", label: "ปิดใช้งาน" }]} />
                 </div>
                 <div className="space-y-2 sm:col-span-2">
                   <label className="text-xs sm:text-sm font-black text-[#4F200D] uppercase tracking-wider">แนะนำ</label>
-                  <CustomSelect
-                    className={selectTriggerClass}
-                    value={formData.is_recommended ? "yes" : "no"}
-                    onChange={(val) => setFormData({ ...formData, is_recommended: val === "yes" })}
-                    options={[{ value: "no", label: "ไม่แนะนำ" }, { value: "yes", label: "⭐ แนะนำ" }]}
-                  />
+                  <CustomSelect className={selectTriggerClass} value={formData.is_recommended ? "yes" : "no"} onChange={(val) => setFormData({ ...formData, is_recommended: val === "yes" })} options={[{ value: "no", label: "ไม่แนะนำ" }, { value: "yes", label: "⭐ แนะนำ" }]} />
                 </div>
               </div>
 
@@ -752,14 +609,7 @@ const TourManager = () => {
 
               <div className="space-y-2">
                 <label className="text-xs sm:text-sm font-black text-[#4F200D] uppercase tracking-wider">รายละเอียด *</label>
-                <textarea 
-                  className={getTextareaClass("description", "w-full p-4 border-0 rounded-2xl text-[#4F200D] font-bold text-xs sm:text-sm min-h-[100px] resize-none")} 
-                  value={formData.description} 
-                  onChange={(e) => {
-                    setFormData({ ...formData, description: e.target.value });
-                    if (errors.description) setErrors({...errors, description: false});
-                  }} 
-                />
+                <textarea className={getTextareaClass("description", "w-full p-4 border-0 rounded-2xl text-[#4F200D] font-bold text-xs sm:text-sm min-h-[100px] resize-none")} value={formData.description} onChange={(e) => { setFormData({ ...formData, description: e.target.value }); if (errors.description) setErrors({...errors, description: false}); }} />
               </div>
 
               <div className="space-y-2">

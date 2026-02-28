@@ -30,7 +30,7 @@ export class AdminService {
 
     // 3. Count Pending Payments (To show "Action Required")
     const pendingPayments = await this.paymentRepo.count({
-      where: { status: 'pending_verify' }
+      where: { status: 'pending_verify' },
     });
 
     // 4. Count Active Tours

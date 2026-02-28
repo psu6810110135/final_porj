@@ -766,16 +766,20 @@ export default function BookingHistory() {
                 ยืนยันการลบการจอง
               </h2>
               <p className="text-sm text-[#4F200D]/60 font-medium mt-2 text-center px-6">
-                คุณต้องการลบการจองนี้ใช่หรือไม่? การดำเนินการนี้ไม่สามารถย้อนกลับได้
+                คุณต้องการลบการจองนี้ใช่หรือไม่?
+                การดำเนินการนี้ไม่สามารถย้อนกลับได้
               </p>
             </div>
 
             {/* Booking summary */}
             <div className="mx-6 mt-4 p-4 bg-red-50 rounded-2xl border border-red-200 space-y-2">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-red-400">รหัสการจอง</span>
+                <span className="text-xs font-bold text-red-400">
+                  รหัสการจอง
+                </span>
                 <span className="font-black text-red-600 text-sm">
-                  {bookingToDelete.bookingReference || bookingToDelete.id.slice(0, 8)}
+                  {bookingToDelete.bookingReference ||
+                    bookingToDelete.id.slice(0, 8)}
                 </span>
               </div>
               <div className="flex items-center justify-between">
@@ -787,7 +791,9 @@ export default function BookingHistory() {
               <div className="flex items-center justify-between">
                 <span className="text-xs font-bold text-red-400">ลูกค้า</span>
                 <span className="font-bold text-[#4F200D] text-sm">
-                  {bookingToDelete.contactInfo?.name || bookingToDelete.user?.username || "-"}
+                  {bookingToDelete.contactInfo?.name ||
+                    bookingToDelete.user?.username ||
+                    "-"}
                 </span>
               </div>
               <div className="flex items-center justify-between">
@@ -902,7 +908,9 @@ function BookingDetailModal({
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className={`p-6 pb-4 rounded-t-3xl border-b-2 ${statusBgColor(b.status)}`}>
+        <div
+          className={`p-6 pb-4 rounded-t-3xl border-b-2 ${statusBgColor(b.status)}`}
+        >
           <div className="flex items-start justify-between gap-4">
             <div className="space-y-2">
               <div className="flex items-center gap-3">
@@ -934,7 +942,9 @@ function BookingDetailModal({
               <Map size={20} strokeWidth={2.5} />
             </div>
             <div>
-              <p className="text-xs font-bold text-[#4F200D]/50 uppercase tracking-wider">ทัวร์</p>
+              <p className="text-xs font-bold text-[#4F200D]/50 uppercase tracking-wider">
+                ทัวร์
+              </p>
               <p className="font-extrabold text-[#4F200D] text-lg mt-0.5">
                 {b.tour?.title || "ทัวร์ถูกลบ"}
               </p>
@@ -944,19 +954,34 @@ function BookingDetailModal({
           {/* --- Travel Dates & Pax --- */}
           <div className="grid grid-cols-3 gap-3">
             <div className="p-4 bg-emerald-50 rounded-2xl text-center">
-              <CalendarDays size={18} className="text-emerald-600 mx-auto mb-1.5" />
-              <p className="text-xs font-bold text-emerald-600/70">วันเริ่มทัวร์</p>
-              <p className="font-extrabold text-emerald-700 text-sm mt-0.5">{dates.start}</p>
+              <CalendarDays
+                size={18}
+                className="text-emerald-600 mx-auto mb-1.5"
+              />
+              <p className="text-xs font-bold text-emerald-600/70">
+                วันเริ่มทัวร์
+              </p>
+              <p className="font-extrabold text-emerald-700 text-sm mt-0.5">
+                {dates.start}
+              </p>
             </div>
             <div className="p-4 bg-red-50 rounded-2xl text-center">
               <CalendarDays size={18} className="text-red-500 mx-auto mb-1.5" />
-              <p className="text-xs font-bold text-red-500/70">วันสิ้นสุดทัวร์</p>
-              <p className="font-extrabold text-red-600 text-sm mt-0.5">{dates.end}</p>
+              <p className="text-xs font-bold text-red-500/70">
+                วันสิ้นสุดทัวร์
+              </p>
+              <p className="font-extrabold text-red-600 text-sm mt-0.5">
+                {dates.end}
+              </p>
             </div>
             <div className="p-4 bg-blue-50 rounded-2xl text-center">
               <Users size={18} className="text-blue-600 mx-auto mb-1.5" />
-              <p className="text-xs font-bold text-blue-600/70">จำนวนผู้เดินทาง</p>
-              <p className="font-extrabold text-blue-700 text-sm mt-0.5">{b.pax} คน</p>
+              <p className="text-xs font-bold text-blue-600/70">
+                จำนวนผู้เดินทาง
+              </p>
+              <p className="font-extrabold text-blue-700 text-sm mt-0.5">
+                {b.pax} คน
+              </p>
             </div>
           </div>
 
@@ -971,8 +996,12 @@ function BookingDetailModal({
                   <User size={14} className="text-[#FF8400]" />
                 </div>
                 <div>
-                  <p className="text-xs text-[#4F200D]/40 font-semibold">ชื่อ</p>
-                  <p className="font-bold text-[#4F200D] text-sm">{b.contactInfo?.name || "-"}</p>
+                  <p className="text-xs text-[#4F200D]/40 font-semibold">
+                    ชื่อ
+                  </p>
+                  <p className="font-bold text-[#4F200D] text-sm">
+                    {b.contactInfo?.name || "-"}
+                  </p>
                 </div>
               </div>
               <div className="flex items-center gap-2.5">
@@ -980,8 +1009,12 @@ function BookingDetailModal({
                   <Mail size={14} className="text-[#FF8400]" />
                 </div>
                 <div className="min-w-0">
-                  <p className="text-xs text-[#4F200D]/40 font-semibold">อีเมล</p>
-                  <p className="font-bold text-[#4F200D] text-sm truncate">{b.contactInfo?.email || "-"}</p>
+                  <p className="text-xs text-[#4F200D]/40 font-semibold">
+                    อีเมล
+                  </p>
+                  <p className="font-bold text-[#4F200D] text-sm truncate">
+                    {b.contactInfo?.email || "-"}
+                  </p>
                 </div>
               </div>
               <div className="flex items-center gap-2.5">
@@ -989,14 +1022,19 @@ function BookingDetailModal({
                   <Phone size={14} className="text-[#FF8400]" />
                 </div>
                 <div>
-                  <p className="text-xs text-[#4F200D]/40 font-semibold">เบอร์โทร</p>
-                  <p className="font-bold text-[#4F200D] text-sm">{b.contactInfo?.phone || "-"}</p>
+                  <p className="text-xs text-[#4F200D]/40 font-semibold">
+                    เบอร์โทร
+                  </p>
+                  <p className="font-bold text-[#4F200D] text-sm">
+                    {b.contactInfo?.phone || "-"}
+                  </p>
                 </div>
               </div>
             </div>
             {b.user && (
               <p className="text-xs text-[#4F200D]/40 font-semibold mt-1">
-                บัญชีผู้ใช้: <span className="text-[#4F200D]/60">{b.user.username}</span>
+                บัญชีผู้ใช้:{" "}
+                <span className="text-[#4F200D]/60">{b.user.username}</span>
               </p>
             )}
           </div>
@@ -1012,7 +1050,9 @@ function BookingDetailModal({
                   <CircleDollarSign size={14} className="text-[#4F200D]/40" />
                   ราคาฐาน
                 </span>
-                <span className="font-bold text-[#4F200D]">฿{Number(b.basePrice || 0).toLocaleString()}</span>
+                <span className="font-bold text-[#4F200D]">
+                  ฿{Number(b.basePrice || 0).toLocaleString()}
+                </span>
               </div>
               {Number(b.discount) > 0 && (
                 <div className="flex justify-between items-center">
@@ -1020,7 +1060,9 @@ function BookingDetailModal({
                     <Percent size={14} className="text-emerald-500" />
                     ส่วนลด
                   </span>
-                  <span className="font-bold text-emerald-600">-฿{Number(b.discount).toLocaleString()}</span>
+                  <span className="font-bold text-emerald-600">
+                    -฿{Number(b.discount).toLocaleString()}
+                  </span>
                 </div>
               )}
               <div className="border-t border-[#4F200D]/10 pt-2 flex justify-between items-center">
@@ -1028,27 +1070,35 @@ function BookingDetailModal({
                   <Banknote size={14} className="text-[#FF8400]" />
                   ยอดรวมทั้งหมด
                 </span>
-                <span className="font-black text-[#FF8400] text-lg">฿{Number(b.totalPrice).toLocaleString()}</span>
+                <span className="font-black text-[#FF8400] text-lg">
+                  ฿{Number(b.totalPrice).toLocaleString()}
+                </span>
               </div>
             </div>
           </div>
 
           {/* --- Payment Deadline --- */}
           {b.paymentDeadline && (
-            <div className={`p-4 rounded-2xl flex items-center gap-3 ${
-              isDeadlinePassed
-                ? "bg-red-50 border border-red-200"
-                : "bg-amber-50 border border-amber-200"
-            }`}>
+            <div
+              className={`p-4 rounded-2xl flex items-center gap-3 ${
+                isDeadlinePassed
+                  ? "bg-red-50 border border-red-200"
+                  : "bg-amber-50 border border-amber-200"
+              }`}
+            >
               <Clock
                 size={18}
                 className={isDeadlinePassed ? "text-red-500" : "text-amber-600"}
               />
               <div>
-                <p className="text-xs font-bold text-[#4F200D]/50">กำหนดชำระเงิน</p>
-                <p className={`font-extrabold text-sm ${
-                  isDeadlinePassed ? "text-red-600" : "text-amber-700"
-                }`}>
+                <p className="text-xs font-bold text-[#4F200D]/50">
+                  กำหนดชำระเงิน
+                </p>
+                <p
+                  className={`font-extrabold text-sm ${
+                    isDeadlinePassed ? "text-red-600" : "text-amber-700"
+                  }`}
+                >
                   {formatDateTime(b.paymentDeadline)}
                   {isDeadlinePassed && " (เลยกำหนดแล้ว)"}
                 </p>
@@ -1076,8 +1126,12 @@ function BookingDetailModal({
               </p>
               {b.cancellationReason && (
                 <div>
-                  <p className="text-xs font-bold text-red-400">เหตุผลที่ยกเลิก:</p>
-                  <p className="text-sm text-red-700 font-semibold mt-0.5">{b.cancellationReason}</p>
+                  <p className="text-xs font-bold text-red-400">
+                    เหตุผลที่ยกเลิก:
+                  </p>
+                  <p className="text-sm text-red-700 font-semibold mt-0.5">
+                    {b.cancellationReason}
+                  </p>
                 </div>
               )}
               {b.refundAmount != null && Number(b.refundAmount) > 0 && (

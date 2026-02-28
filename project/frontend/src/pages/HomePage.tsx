@@ -48,28 +48,6 @@ function useRevealOnScroll(threshold = 0.15) {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// ─── Animated counter hook ────────────────────────────────────────────────────
-// ═══════════════════════════════════════════════════════════════════════════════
-
-function useCounter(target: number, run: boolean, duration = 1500) {
-  const [count, setCount] = useState(0);
-  useEffect(() => {
-    if (!run) return;
-    let start = 0;
-    const startTime = performance.now();
-    const tick = (now: number) => {
-      const progress = Math.min((now - startTime) / duration, 1);
-      const eased = 1 - Math.pow(1 - progress, 3);
-      start = Math.round(eased * target);
-      setCount(start);
-      if (progress < 1) requestAnimationFrame(tick);
-    };
-    requestAnimationFrame(tick);
-  }, [run, target, duration]);
-  return count;
-}
-
-// ═══════════════════════════════════════════════════════════════════════════════
 // ─── SVG Icon Components ──────────────────────────────────────────────────────
 // ═══════════════════════════════════════════════════════════════════════════════
 
@@ -360,13 +338,7 @@ export default function HomePage() {
   const planReveal = useRevealOnScroll(0.1);
   const destReveal = useRevealOnScroll(0.1);
   const testimonialReveal = useRevealOnScroll(0.1);
-  const statsReveal = useRevealOnScroll(0.2);
   const newsletterReveal = useRevealOnScroll(0.1);
-
-  // ── Animated stat counters ──
-  const tourCount = useCounter(150, statsReveal.visible);
-  const customerCount = useCounter(3200, statsReveal.visible);
-  const ratingVal = useCounter(49, statsReveal.visible, 1200);
 
   // ── Fetch filter options ──
   useEffect(() => {
@@ -683,107 +655,9 @@ export default function HomePage() {
                 ค้นหา
               </Button>
             </div>
-
-            {/* Quick filter chips */}
-            {(selectedProvince || selectedCategory || selectedDuration) && (
-              <div className="flex flex-wrap gap-2 mt-3 justify-center">
-                {selectedProvince && (
-                  <button
-                    onClick={() => setSelectedProvince("")}
-                    className="flex items-center gap-1 bg-white/80 backdrop-blur-sm text-[#4F200D] text-xs font-semibold px-3 py-1.5 rounded-full hover:bg-white transition-colors shadow-sm"
-                  >
-                    {selectedProvince}
-                    <svg
-                      width="12"
-                      height="12"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="3"
-                      strokeLinecap="round"
-                    >
-                      <line x1="18" y1="6" x2="6" y2="18" />
-                      <line x1="6" y1="6" x2="18" y2="18" />
-                    </svg>
-                  </button>
-                )}
-                {selectedCategory && (
-                  <button
-                    onClick={() => setSelectedCategory("")}
-                    className="flex items-center gap-1 bg-white/80 backdrop-blur-sm text-[#4F200D] text-xs font-semibold px-3 py-1.5 rounded-full hover:bg-white transition-colors shadow-sm"
-                  >
-                    {selectedCategory}
-                    <svg
-                      width="12"
-                      height="12"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="3"
-                      strokeLinecap="round"
-                    >
-                      <line x1="18" y1="6" x2="6" y2="18" />
-                      <line x1="6" y1="6" x2="18" y2="18" />
-                    </svg>
-                  </button>
-                )}
-                {selectedDuration && (
-                  <button
-                    onClick={() => setSelectedDuration("")}
-                    className="flex items-center gap-1 bg-white/80 backdrop-blur-sm text-[#4F200D] text-xs font-semibold px-3 py-1.5 rounded-full hover:bg-white transition-colors shadow-sm"
-                  >
-                    {selectedDuration}
-                    <svg
-                      width="12"
-                      height="12"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="3"
-                      strokeLinecap="round"
-                    >
-                      <line x1="18" y1="6" x2="6" y2="18" />
-                      <line x1="6" y1="6" x2="18" y2="18" />
-                    </svg>
-                  </button>
-                )}
-              </div>
-            )}
           </div>
         </div>
       </section>
-
-      {/* ════════════════════════════════════════════════════════════════════ */}
-      {/* Stats Counter Bar                                                  */}
-      {/* ════════════════════════════════════════════════════════════════════ */}
-      <div ref={statsReveal.ref} className="bg-[#4F200D] py-5 md:py-7">
-        <div className="max-w-5xl mx-auto px-4 grid grid-cols-3 gap-4 text-center">
-          <div>
-            <p className="text-2xl md:text-4xl lg:text-5xl font-extrabold text-[#FFD93D]">
-              {tourCount}+
-            </p>
-            <p className="text-xs md:text-sm text-white/60 font-medium mt-1">
-              เส้นทางทัวร์
-            </p>
-          </div>
-          <div>
-            <p className="text-2xl md:text-4xl lg:text-5xl font-extrabold text-[#FFD93D]">
-              {customerCount.toLocaleString()}+
-            </p>
-            <p className="text-xs md:text-sm text-white/60 font-medium mt-1">
-              นักเดินทางไว้วางใจ
-            </p>
-          </div>
-          <div>
-            <p className="text-2xl md:text-4xl lg:text-5xl font-extrabold text-[#FFD93D]">
-              {(ratingVal / 10).toFixed(1)}
-            </p>
-            <p className="text-xs md:text-sm text-white/60 font-medium mt-1">
-              คะแนนรีวิว
-            </p>
-          </div>
-        </div>
-      </div>
 
       {/* ════════════════════════════════════════════════════════════════════ */}
       {/* Best Services Section                                              */}
@@ -959,7 +833,7 @@ export default function HomePage() {
             {topTours.map((tour, idx) => (
               <Card
                 key={tour.id}
-                className={`overflow-hidden border-0 shadow-xl rounded-2xl md:rounded-3xl bg-[#FFFDFA] group cursor-pointer hover:shadow-2xl hover:-translate-y-1 transition-all duration-300`}
+                className={`overflow-hidden border-0 shadow-xl rounded-2xl md:rounded-3xl bg-[#FFFDFA] group cursor-pointer hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 flex flex-col h-full`}
                 style={{ transitionDelay: `${idx * 100}ms` }}
                 onClick={() => navigate(`/tours/${tour.id}`)}
               >
@@ -987,16 +861,16 @@ export default function HomePage() {
                     </div>
                   )}
                 </div>
-                <CardContent className="p-4 md:p-5">
+                <CardContent className="p-4 md:p-5 flex flex-col flex-1">
                   <div className="border-b border-[#E3DCD4] pb-3 mb-3">
                     <h3 className="text-lg md:text-xl xl:text-2xl font-bold text-[#4F200D] mb-1 line-clamp-1">
                       {tour.title}
                     </h3>
-                    <p className="text-xs md:text-sm text-[#4F200D]/60 font-light line-clamp-2">
+                    <p className="text-xs md:text-sm text-[#4F200D]/60 font-light line-clamp-2 h-[2.5rem] md:h-[2.75rem]">
                       {tour.description || "เส้นทางยอดนิยม"}
                     </p>
                   </div>
-                  <div className="flex items-center justify-between">
+                  <div className="flex items-center justify-between mt-auto">
                     <div>
                       <p className="text-[11px] md:text-xs text-[#4F200D]/50 font-medium">
                         {tour.duration || "กำลังจัดตาราง"}

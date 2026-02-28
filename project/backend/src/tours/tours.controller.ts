@@ -7,7 +7,11 @@ import {
   Patch,
   Delete,
   Body,
+  UseInterceptors,
+  UploadedFiles,
 } from '@nestjs/common';
+import { AnyFilesInterceptor } from '@nestjs/platform-express';
+import type { Multer } from 'multer';
 import { ToursService } from './tours.service';
 import { GetToursFilterDto } from './dto/get-tours-filter.dto';
 import { Tour } from './entities/tour.entity';
@@ -18,38 +22,46 @@ import { CreateTourDto } from './dto/create-tour.dto';
 export class ToursController {
   constructor(private readonly toursService: ToursService) {}
 
-  // 1. GET /tours (Get all tours + Filter)
   @Get()
   getTours(@Query() filterDto: GetToursFilterDto): Promise<Tour[]> {
     return this.toursService.getTours(filterDto);
   }
 
-  // 2. GET /tours/recommended (Get recommended tours)
   @Get('recommended')
   getRecommendedTours(): Promise<Tour[]> {
     return this.toursService.getRecommendedTours();
   }
 
-  // 3. POST /tours (Create a new tour - REQUIRED FOR ADMIN)
+  // ✨ Added Interceptor to handle FormData (Images + Text)
   @Post()
-  createTour(@Body() createTourDto: CreateTourDto): Promise<Tour> {
+  @UseInterceptors(AnyFilesInterceptor())
+  createTour(
+    @Body() createTourDto: CreateTourDto,
+    @UploadedFiles() files: Array<Multer.File>
+  ): Promise<Tour> {
+    // Note: The 'files' array contains your uploaded images.
+    // You can pass them to toursService if you have an upload logic set up!
     return this.toursService.create(createTourDto);
   }
 
-  // 3. POST /tours/seed (Generate mock data)
   @Post('seed')
   seedTours() {
     return this.toursService.seedTours();
   }
 
-  // 4. GET /tours/:id (Get single tour details)
   @Get(':id')
   getTourById(@Param('id') id: string): Promise<Tour> {
     return this.toursService.getTourById(id);
   }
 
+  // ✨ Added Interceptor here too for updates
   @Patch(':id')
-  update(@Param('id') id: string, @Body() updateTourDto: UpdateTourDto) {
+  @UseInterceptors(AnyFilesInterceptor())
+  update(
+    @Param('id') id: string, 
+    @Body() updateTourDto: UpdateTourDto,
+    @UploadedFiles() files: Array<Multer.File>
+  ) {
     return this.toursService.update(id, updateTourDto);
   }
 

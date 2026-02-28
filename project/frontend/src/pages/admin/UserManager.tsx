@@ -9,13 +9,18 @@ import { Badge } from '@/components/ui/badge';
 interface UserData {
   id: string;
   email: string;
-  full_name: string;
   role: string;
   is_active: boolean;
-  phone?: string;
+  provider?: string;
   created_at?: string;
   updated_at?: string;
-  provider?: string;
+  // Make sure we can handle flat or nested profile fields
+  full_name?: string;
+  phone?: string;
+  profile?: {
+    full_name?: string;
+    phone?: string;
+  };
 }
 
 /* ─── Auth Helper ────────────────────────────────── */
@@ -78,10 +83,11 @@ export default function UserManager() {
   // 3. Handle Edit Modal Open
   const handleEdit = (user: UserData) => {
     setEditingUser(user);
+    // ✨ Handle both flat fields and nested profile objects depending on API response
     setFormData({
-      full_name: user.full_name || '',
+      full_name: user.full_name || user.profile?.full_name || '',
       email: user.email || '',
-      phone: user.phone || '',
+      phone: user.phone || user.profile?.phone || '',
       role: user.role || 'user',
       is_active: user.is_active !== false,
     });
@@ -95,7 +101,6 @@ export default function UserManager() {
     
     setIsSubmitting(true);
     try {
-      // Create explicit payload to ensure booleans/strings are sent correctly
       const payload = {
         full_name: formData.full_name,
         email: formData.email,
@@ -109,7 +114,7 @@ export default function UserManager() {
       });
       
       setIsModalOpen(false);
-      await fetchUsers(); // Await to make sure table refetches immediately
+      await fetchUsers(); // Refresh the data
     } catch (error) {
       alert('Failed to update user.');
       console.error(error);
@@ -121,11 +126,12 @@ export default function UserManager() {
   // 5. Search Filter Logic
   const filteredUsers = users.filter((user) => {
     const searchLower = searchQuery.toLowerCase();
-    const nameMatch = (user.full_name || '').toLowerCase().includes(searchLower);
+    const displayName = (user.full_name || user.profile?.full_name || '').toLowerCase();
     const emailMatch = (user.email || '').toLowerCase().includes(searchLower);
-    const phoneMatch = (user.phone || '').toLowerCase().includes(searchLower);
+    const phoneMatch = (user.phone || user.profile?.phone || '').toLowerCase().includes(searchLower);
     const idMatch = (user.id || '').toLowerCase().includes(searchLower);
-    return nameMatch || emailMatch || phoneMatch || idMatch;
+    
+    return displayName.includes(searchLower) || emailMatch || phoneMatch || idMatch;
   });
 
   return (
@@ -186,7 +192,11 @@ export default function UserManager() {
                   </td>
                 </tr>
               ) : (
-                filteredUsers.map((user) => (
+                filteredUsers.map((user) => {
+                  const displayName = user.full_name || user.profile?.full_name || 'ไม่ระบุชื่อ';
+                  const displayPhone = user.phone || user.profile?.phone;
+                  
+                  return (
                   <tr key={user.id} className="hover:bg-[#FFD93D]/5 transition-colors group">
                     <td className="px-6 py-5">
                       <div className="flex items-center gap-1.5 text-xs font-bold text-[#4F200D]/40 hover:text-[#FF8400] cursor-pointer" title={user.id}>
@@ -199,7 +209,7 @@ export default function UserManager() {
                         <div className="w-10 h-10 rounded-full bg-[#FFD93D]/30 flex items-center justify-center text-[#FF8400] shrink-0">
                           <User size={20} strokeWidth={2.5} />
                         </div>
-                        <span className="font-bold text-[#4F200D]">{user.full_name || 'ไม่ระบุชื่อ'}</span>
+                        <span className="font-bold text-[#4F200D]">{displayName}</span>
                       </div>
                     </td>
                     <td className="px-6 py-5">
@@ -207,9 +217,9 @@ export default function UserManager() {
                         <span className="font-medium text-[#4F200D]/80 flex items-center gap-2 text-xs">
                           <Mail className="w-3.5 h-3.5 text-[#FF8400]" /> {user.email}
                         </span>
-                        {user.phone ? (
+                        {displayPhone ? (
                           <span className="text-xs font-semibold text-[#4F200D]/60 flex items-center gap-2">
-                            <Phone className="w-3.5 h-3.5" /> {user.phone}
+                            <Phone className="w-3.5 h-3.5" /> {displayPhone}
                           </span>
                         ) : (
                           <span className="text-xs text-[#4F200D]/30 flex items-center gap-2">
@@ -279,7 +289,8 @@ export default function UserManager() {
                       </div>
                     </td>
                   </tr>
-                ))
+                );
+                })
               )}
             </tbody>
           </table>

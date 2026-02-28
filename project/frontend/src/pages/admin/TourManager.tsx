@@ -280,6 +280,7 @@ const TourManager = () => {
     if (!formData.price || Number(formData.price) <= 0) newErrors.price = true;
     if (!formData.duration.trim()) newErrors.duration = true;
     if (!formData.province.trim()) newErrors.province = true;
+    if (!formData.description.trim()) newErrors.description = true; // ✨ Added description check
 
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
@@ -391,6 +392,14 @@ const TourManager = () => {
       return `${baseClass} ring-2 ring-red-500 bg-red-50 border-red-500 text-red-900 placeholder:text-red-300 transition-all`;
     }
     return `${baseClass} bg-[#F6F1E9]/50 border-0 focus:bg-white focus:ring-2 focus:ring-[#FFD93D]`;
+  };
+
+  // Helper to apply red classes to textareas
+  const getTextareaClass = (fieldName: string, baseClass: string) => {
+    if (errors[fieldName]) {
+      return `${baseClass} ring-2 ring-red-500 bg-red-50 border-red-500 text-red-900 placeholder:text-red-300 transition-all outline-none`;
+    }
+    return `${baseClass} bg-[#F6F1E9]/50 border-0 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#FFD93D]`;
   };
 
   const uniqueDurations = Array.from(new Set(tours.map((t) => t.duration))).filter(Boolean);
@@ -804,9 +813,17 @@ const TourManager = () => {
                 </div>
               </div>
 
+              {/* ✨ Updated Description block to use getTextareaClass */}
               <div className="space-y-2">
-                <label className="text-sm font-black text-[#4F200D] uppercase tracking-wider">รายละเอียด</label>
-                <textarea className="w-full p-4 border-0 bg-[#F6F1E9]/50 rounded-2xl text-[#4F200D] font-bold text-sm min-h-[100px] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#FFD93D] resize-none" value={formData.description} onChange={(e) => setFormData({ ...formData, description: e.target.value })} />
+                <label className="text-sm font-black text-[#4F200D] uppercase tracking-wider">รายละเอียด *</label>
+                <textarea 
+                  className={getTextareaClass("description", "w-full p-4 border-0 rounded-2xl text-[#4F200D] font-bold text-sm min-h-[100px] resize-none")} 
+                  value={formData.description} 
+                  onChange={(e) => {
+                    setFormData({ ...formData, description: e.target.value });
+                    if (errors.description) setErrors({...errors, description: false});
+                  }} 
+                />
               </div>
 
               <div className="space-y-2">

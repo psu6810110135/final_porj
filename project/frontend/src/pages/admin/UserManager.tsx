@@ -14,12 +14,12 @@ interface UserData {
   provider?: string;
   created_at?: string;
   updated_at?: string;
-  // Make sure we can handle flat or nested profile fields
   full_name?: string;
   phone?: string;
   profile?: {
     full_name?: string;
     phone?: string;
+    phoneNumber?: string; // Add this since TypeORM names it phoneNumber
   };
 }
 
@@ -46,7 +46,6 @@ export default function UserManager() {
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // 1. Fetch Users from Database
   const fetchUsers = async () => {
     setLoading(true);
     try {
@@ -67,7 +66,6 @@ export default function UserManager() {
     fetchUsers();
   }, []);
 
-  // 2. Handle Delete
   const handleDelete = async (id: string) => {
     if (!confirm('Are you sure you want to delete this user?')) return;
     try {
@@ -80,27 +78,30 @@ export default function UserManager() {
     }
   };
 
-  // 3. Handle Edit Modal Open
   const handleEdit = (user: UserData) => {
     setEditingUser(user);
-    // ✨ Handle both flat fields and nested profile objects depending on API response
+    
+    // ✨ FIX: Properly map the database's `phoneNumber` to our frontend state 
+    // so the input field doesn't show up empty.
+    const userPhone = user.phone || user.profile?.phone || user.profile?.phoneNumber || '';
+    
     setFormData({
       full_name: user.full_name || user.profile?.full_name || '',
       email: user.email || '',
-      phone: user.phone || user.profile?.phone || '',
+      phone: userPhone,
       role: user.role || 'user',
       is_active: user.is_active !== false,
     });
     setIsModalOpen(true);
   };
 
-  // 4. Handle Submit Update
   const handleUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingUser) return;
     
     setIsSubmitting(true);
     try {
+      // Create explicit payload to ensure booleans/strings are sent correctly
       const payload = {
         full_name: formData.full_name,
         email: formData.email,
@@ -114,7 +115,7 @@ export default function UserManager() {
       });
       
       setIsModalOpen(false);
-      await fetchUsers(); // Refresh the data
+      await fetchUsers(); // Await to make sure table refetches immediately
     } catch (error) {
       alert('Failed to update user.');
       console.error(error);
@@ -123,12 +124,12 @@ export default function UserManager() {
     }
   };
 
-  // 5. Search Filter Logic
   const filteredUsers = users.filter((user) => {
     const searchLower = searchQuery.toLowerCase();
     const displayName = (user.full_name || user.profile?.full_name || '').toLowerCase();
     const emailMatch = (user.email || '').toLowerCase().includes(searchLower);
-    const phoneMatch = (user.phone || user.profile?.phone || '').toLowerCase().includes(searchLower);
+    const userPhone = user.phone || user.profile?.phone || user.profile?.phoneNumber || '';
+    const phoneMatch = userPhone.toLowerCase().includes(searchLower);
     const idMatch = (user.id || '').toLowerCase().includes(searchLower);
     
     return displayName.includes(searchLower) || emailMatch || phoneMatch || idMatch;
@@ -137,34 +138,33 @@ export default function UserManager() {
   return (
     <div className="w-full space-y-6 animate-in fade-in duration-500">
       
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 sm:mb-8">
         <div>
-          <h1 className="text-3xl font-extrabold text-[#4F200D] tracking-tight">จัดการผู้ใช้งาน</h1>
-          <p className="text-sm font-medium text-[#4F200D]/60 mt-1">ดู แก้ไข และจัดการบัญชีผู้ใช้งานและสิทธิ์ต่างๆ</p>
+          <h1 className="text-2xl sm:text-3xl font-extrabold text-[#4F200D] tracking-tight">จัดการผู้ใช้งาน</h1>
+          <p className="text-xs sm:text-sm font-medium text-[#4F200D]/60 mt-1">ดู แก้ไข และจัดการบัญชีผู้ใช้งานและสิทธิ์ต่างๆ</p>
         </div>
       </div>
 
-      {/* Search Bar */}
-      <div className="bg-white p-5 rounded-3xl border-0 shadow-sm flex flex-col sm:flex-row gap-4 items-center justify-between mb-6">
+      <div className="bg-white p-4 sm:p-5 rounded-3xl border-0 shadow-sm flex flex-col sm:flex-row gap-4 items-center justify-between mb-6">
         <div className="relative w-full sm:w-96">
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-[#4F200D]/40 w-5 h-5" />
           <Input
-            placeholder="ค้นหาด้วยชื่อ อีเมล เบอร์โทร หรือ ID..."
-            className="pl-12 py-6 bg-[#F6F1E9]/50 border-0 rounded-2xl font-bold text-[#4F200D] placeholder:font-medium focus:bg-white focus:ring-2 focus:ring-[#FFD93D] transition-all"
+            placeholder="ค้นหาด้วยชื่อ อีเมล หรือ ID..."
+            className="pl-12 py-5 sm:py-6 bg-[#F6F1E9]/50 border-0 rounded-2xl font-bold text-[#4F200D] placeholder:font-medium focus:bg-white focus:ring-2 focus:ring-[#FFD93D] transition-all"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />
         </div>
-        <div className="px-6 py-3 bg-[#F6F1E9]/50 rounded-xl text-sm font-bold text-[#4F200D]">
+        <div className="w-full sm:w-auto text-center px-6 py-3 bg-[#F6F1E9]/50 rounded-xl text-sm font-bold text-[#4F200D]">
           ผู้ใช้งานทั้งหมด: <span className="text-[#FF8400]">{filteredUsers.length}</span>
         </div>
       </div>
 
       {/* Data Table */}
-      <div className="bg-white rounded-3xl border-0 shadow-sm overflow-hidden">
+      <div className="bg-white rounded-3xl border-0 shadow-sm overflow-hidden w-full">
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm whitespace-nowrap">
+          {/* ✨ ADDED min-w-[800px] to prevent squeezing on mobile screens */}
+          <table className="w-full text-left text-sm whitespace-nowrap min-w-[800px]">
             <thead className="bg-[#F6F1E9]/80 border-b-2 border-[#F6F1E9]">
               <tr>
                 <th className="px-6 py-5 font-black text-[#4F200D] uppercase tracking-wider text-xs">ID ผู้ใช้งาน</th>
@@ -194,7 +194,7 @@ export default function UserManager() {
               ) : (
                 filteredUsers.map((user) => {
                   const displayName = user.full_name || user.profile?.full_name || 'ไม่ระบุชื่อ';
-                  const displayPhone = user.phone || user.profile?.phone;
+                  const displayPhone = user.phone || user.profile?.phone || user.profile?.phoneNumber;
                   
                   return (
                   <tr key={user.id} className="hover:bg-[#FFD93D]/5 transition-colors group">
@@ -271,16 +271,14 @@ export default function UserManager() {
                     <td className="px-6 py-5 text-right">
                       <div className="flex justify-end gap-2">
                         <Button 
-                          variant="ghost" 
-                          size="icon" 
+                          variant="ghost" size="icon" 
                           className="h-9 w-9 text-[#4F200D]/40 hover:text-[#FF8400] hover:bg-[#FF8400]/10 rounded-xl transition-colors"
                           onClick={() => handleEdit(user)}
                         >
                           <Pencil className="w-4 h-4" />
                         </Button>
                         <Button 
-                          variant="ghost" 
-                          size="icon" 
+                          variant="ghost" size="icon" 
                           className="h-9 w-9 text-[#4F200D]/40 hover:text-red-500 hover:bg-red-50 rounded-xl transition-colors"
                           onClick={() => handleDelete(user.id)}
                         >
@@ -297,13 +295,12 @@ export default function UserManager() {
         </div>
       </div>
 
-      {/* ─── Edit Modal ───────────────────────────────────── */}
+      {/* Edit Modal */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#4F200D]/60 backdrop-blur-sm p-4 overflow-y-auto">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#4F200D]/60 backdrop-blur-sm p-4 overflow-y-auto pt-16 md:pt-4">
           <div className="bg-white rounded-3xl shadow-2xl w-full max-w-lg my-auto animate-in zoom-in-95 duration-200">
-            {/* Modal Header */}
-            <div className="flex justify-between items-center p-6 border-b-2 border-[#F6F1E9]">
-              <h2 className="text-2xl font-black text-[#4F200D]">แก้ไขข้อมูลผู้ใช้</h2>
+            <div className="flex justify-between items-center p-5 sm:p-6 border-b-2 border-[#F6F1E9]">
+              <h2 className="text-xl sm:text-2xl font-black text-[#4F200D]">แก้ไขข้อมูลผู้ใช้</h2>
               <button
                 onClick={() => setIsModalOpen(false)}
                 className="text-[#4F200D]/40 hover:text-red-500 p-2 rounded-xl hover:bg-red-50 transition-colors"
@@ -312,15 +309,14 @@ export default function UserManager() {
               </button>
             </div>
 
-            <form onSubmit={handleUpdate} className="p-6 space-y-5">
-              
-              <div className="flex items-center gap-2 mb-2 p-3 bg-[#F6F1E9]/30 rounded-xl">
-                <Hash className="w-4 h-4 text-[#FF8400]" />
-                <span className="text-xs font-bold text-[#4F200D]/60">ID: {editingUser?.id}</span>
+            <form onSubmit={handleUpdate} className="p-5 sm:p-6 space-y-4 sm:space-y-5 max-h-[75vh] overflow-y-auto custom-scrollbar">
+              <div className="flex items-center gap-2 mb-2 p-3 bg-[#F6F1E9]/30 rounded-xl w-full overflow-hidden">
+                <Hash className="w-4 h-4 text-[#FF8400] shrink-0" />
+                <span className="text-xs font-bold text-[#4F200D]/60 truncate">ID: {editingUser?.id}</span>
               </div>
 
               <div className="space-y-2">
-                <label className="text-sm font-black text-[#4F200D] uppercase tracking-wider">ชื่อ-นามสกุล</label>
+                <label className="text-xs sm:text-sm font-black text-[#4F200D] uppercase tracking-wider">ชื่อ-นามสกุล</label>
                 <Input
                   required
                   value={formData.full_name}
@@ -331,7 +327,7 @@ export default function UserManager() {
               </div>
 
               <div className="space-y-2">
-                <label className="text-sm font-black text-[#4F200D] uppercase tracking-wider">อีเมล</label>
+                <label className="text-xs sm:text-sm font-black text-[#4F200D] uppercase tracking-wider">อีเมล</label>
                 <Input
                   type="email"
                   required
@@ -343,7 +339,7 @@ export default function UserManager() {
               </div>
 
               <div className="space-y-2">
-                <label className="text-sm font-black text-[#4F200D] uppercase tracking-wider">เบอร์โทรศัพท์</label>
+                <label className="text-xs sm:text-sm font-black text-[#4F200D] uppercase tracking-wider">เบอร์โทรศัพท์</label>
                 <Input
                   type="tel"
                   value={formData.phone}
@@ -353,9 +349,10 @@ export default function UserManager() {
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-5">
+              {/* ✨ Make the form grid stack to 1 column on small mobile screens */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-5">
                 <div className="space-y-2">
-                  <label className="text-sm font-black text-[#4F200D] uppercase tracking-wider">บทบาท</label>
+                  <label className="text-xs sm:text-sm font-black text-[#4F200D] uppercase tracking-wider">บทบาท</label>
                   <select
                     className="w-full h-11 px-4 rounded-xl border-0 bg-[#F6F1E9]/50 text-[#4F200D] font-bold text-sm focus:bg-white focus:ring-2 focus:ring-[#FFD93D] outline-none transition-all cursor-pointer"
                     value={formData.role}
@@ -367,7 +364,7 @@ export default function UserManager() {
                 </div>
                 
                 <div className="space-y-2">
-                  <label className="text-sm font-black text-[#4F200D] uppercase tracking-wider">สถานะบัญชี</label>
+                  <label className="text-xs sm:text-sm font-black text-[#4F200D] uppercase tracking-wider">สถานะบัญชี</label>
                   <select
                     className="w-full h-11 px-4 rounded-xl border-0 bg-[#F6F1E9]/50 text-[#4F200D] font-bold text-sm focus:bg-white focus:ring-2 focus:ring-[#FFD93D] outline-none transition-all cursor-pointer"
                     value={formData.is_active ? "active" : "inactive"}
@@ -382,25 +379,16 @@ export default function UserManager() {
               {/* Actions */}
               <div className="pt-6 pb-2 flex items-center justify-end gap-3 border-t-2 border-[#F6F1E9] mt-6">
                 <Button
-                  type="button"
-                  variant="ghost"
-                  onClick={() => setIsModalOpen(false)}
-                  className="hover:bg-[#F6F1E9] text-[#4F200D] font-bold rounded-xl px-6"
+                  type="button" variant="ghost" onClick={() => setIsModalOpen(false)}
+                  className="hover:bg-[#F6F1E9] text-[#4F200D] font-bold rounded-xl px-4 sm:px-6"
                 >
                   ยกเลิก
                 </Button>
                 <Button
-                  type="submit"
-                  className="bg-[#FF8400] hover:bg-[#e67600] text-white font-bold shadow-lg shadow-[#FF8400]/20 rounded-xl min-w-[130px] px-6"
-                  disabled={isSubmitting}
+                  type="submit" disabled={isSubmitting}
+                  className="bg-[#FF8400] hover:bg-[#e67600] text-white font-bold shadow-lg shadow-[#FF8400]/20 rounded-xl min-w-[130px] px-4 sm:px-6"
                 >
-                  {isSubmitting ? (
-                    <>
-                      <Loader2 className="w-5 h-5 mr-2 animate-spin" /> กำลังบันทึก...
-                    </>
-                  ) : (
-                    "บันทึกข้อมูล"
-                  )}
+                  {isSubmitting ? <><Loader2 className="w-5 h-5 mr-2 animate-spin" /> กำลังบันทึก...</> : "บันทึกข้อมูล"}
                 </Button>
               </div>
             </form>

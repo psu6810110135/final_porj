@@ -96,7 +96,7 @@ const initialFormState = {
 
 const API_URL = "http://localhost:3000/api/v1/tours";
 
-/* ─── Custom Select Component for Cute Dropdown Block ─── */
+/* ─── Custom Select Component ─── */
 interface Option {
   value: string | boolean;
   label: string;
@@ -135,14 +135,14 @@ const CustomSelect = ({
     : "";
 
   return (
-    <div className="relative flex-1 sm:flex-none" ref={ref}>
+    <div className="relative flex-1 sm:flex-none w-full" ref={ref}>
       <div
         className={`flex items-center justify-between ${className} ${errorClasses}`}
         onClick={() => setIsOpen(!isOpen)}
       >
         <span className="truncate">{selectedOption?.label}</span>
         <ChevronDown
-          className={`w-4 h-4 ml-2 transition-transform duration-200 ${hasError ? 'text-red-500' : 'text-[#4F200D]/50'} ${
+          className={`w-4 h-4 ml-2 transition-transform duration-200 shrink-0 ${hasError ? 'text-red-500' : 'text-[#4F200D]/50'} ${
             isOpen ? "rotate-180" : ""
           }`}
         />
@@ -179,7 +179,6 @@ const TourManager = () => {
   const [tours, setTours] = useState<Tour[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // States สำหรับการค้นหาและกรองข้อมูล
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [regionFilter, setRegionFilter] = useState<string>("all");
@@ -194,15 +193,12 @@ const TourManager = () => {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [formData, setFormData] = useState(initialFormState);
   
-  // Validation State (Red Highlights)
   const [errors, setErrors] = useState<Record<string, boolean>>({});
   
-  // States for File Uploads
   const [coverFile, setCoverFile] = useState<File | null>(null);
   const [coverPreview, setCoverPreview] = useState<string>("");
   const [additionalFiles, setAdditionalFiles] = useState<File[]>([]);
 
-  /* ── Fetch ─────────────────────────────────────── */
   const fetchTours = async () => {
     setLoading(true);
     try {
@@ -227,7 +223,6 @@ const TourManager = () => {
     setCurrentPage(1);
   }, [searchQuery, statusFilter, regionFilter, categoryFilter, durationFilter]);
 
-  /* ── Handlers ──────────────────────────────────── */
   const handleAddNew = () => {
     setEditingId(null);
     setFormData(initialFormState);
@@ -258,9 +253,7 @@ const TourManager = () => {
       highlights_str: tour.highlights?.join(", ") || "",
       preparation_str: tour.preparation?.join(", ") || "",
       itinerary: tour.itinerary || "",
-      itinerary_data: tour.itinerary_data?.length
-        ? tour.itinerary_data
-        : [{ time: "", detail: "" }],
+      itinerary_data: tour.itinerary_data?.length ? tour.itinerary_data : [{ time: "", detail: "" }],
       included: tour.included || "",
       excluded: tour.excluded || "",
       conditions: tour.conditions || "",
@@ -274,17 +267,15 @@ const TourManager = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // ─── VALIDATION LOGIC ───
     const newErrors: Record<string, boolean> = {};
     if (!formData.title.trim()) newErrors.title = true;
     if (!formData.price || Number(formData.price) <= 0) newErrors.price = true;
     if (!formData.duration.trim()) newErrors.duration = true;
     if (!formData.province.trim()) newErrors.province = true;
-    if (!formData.description.trim()) newErrors.description = true; // ✨ Added description check
+    if (!formData.description.trim()) newErrors.description = true; 
 
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
-      // Scroll to top of modal if there's an error
       const modalContent = document.getElementById("tour-modal-content");
       if (modalContent) modalContent.scrollTo({ top: 0, behavior: 'smooth' });
       return;
@@ -374,31 +365,16 @@ const TourManager = () => {
     setFormData({ ...formData, itinerary_data: updated });
   };
 
-  const addItineraryRow = () =>
-    setFormData({
-      ...formData,
-      itinerary_data: [...formData.itinerary_data, { time: "", detail: "" }],
-    });
+  const addItineraryRow = () => setFormData({ ...formData, itinerary_data: [...formData.itinerary_data, { time: "", detail: "" }] });
+  const removeItineraryRow = (index: number) => setFormData({ ...formData, itinerary_data: formData.itinerary_data.filter((_, i) => i !== index) });
 
-  const removeItineraryRow = (index: number) =>
-    setFormData({
-      ...formData,
-      itinerary_data: formData.itinerary_data.filter((_, i) => i !== index),
-    });
-
-  // Helper to apply red classes to standard inputs
   const getInputClass = (fieldName: string, baseClass: string) => {
-    if (errors[fieldName]) {
-      return `${baseClass} ring-2 ring-red-500 bg-red-50 border-red-500 text-red-900 placeholder:text-red-300 transition-all`;
-    }
+    if (errors[fieldName]) return `${baseClass} ring-2 ring-red-500 bg-red-50 border-red-500 text-red-900 placeholder:text-red-300 transition-all`;
     return `${baseClass} bg-[#F6F1E9]/50 border-0 focus:bg-white focus:ring-2 focus:ring-[#FFD93D]`;
   };
 
-  // Helper to apply red classes to textareas
   const getTextareaClass = (fieldName: string, baseClass: string) => {
-    if (errors[fieldName]) {
-      return `${baseClass} ring-2 ring-red-500 bg-red-50 border-red-500 text-red-900 placeholder:text-red-300 transition-all outline-none`;
-    }
+    if (errors[fieldName]) return `${baseClass} ring-2 ring-red-500 bg-red-50 border-red-500 text-red-900 placeholder:text-red-300 transition-all outline-none`;
     return `${baseClass} bg-[#F6F1E9]/50 border-0 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#FFD93D]`;
   };
 
@@ -416,110 +392,97 @@ const TourManager = () => {
   const totalPages = Math.ceil(processedTours.length / itemsPerPage);
   const paginatedTours = processedTours.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
-  const selectTriggerClass = "text-sm border-0 bg-[#F6F1E9]/50 px-4 py-3 rounded-2xl focus:ring-2 focus:ring-[#FFD93D] text-[#4F200D] font-bold cursor-pointer outline-none transition-all w-full min-w-[140px]";
+  const selectTriggerClass = "text-sm border-0 bg-[#F6F1E9]/50 px-4 py-3 rounded-2xl focus:ring-2 focus:ring-[#FFD93D] text-[#4F200D] font-bold cursor-pointer outline-none transition-all w-full";
 
   return (
     <div className="w-full space-y-6 animate-in fade-in duration-500">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 sm:mb-8">
         <div>
-          <h1 className="text-3xl font-extrabold text-[#4F200D] tracking-tight">
+          <h1 className="text-2xl sm:text-3xl font-extrabold text-[#4F200D] tracking-tight">
             จัดการทัวร์
           </h1>
-          <p className="text-sm font-medium text-[#4F200D]/60 mt-1">
+          <p className="text-xs sm:text-sm font-medium text-[#4F200D]/60 mt-1">
             จัดการทัวร์ของคุณ ดูความพร้อม และอัปเดตรายละเอียดต่างๆ
           </p>
         </div>
         <Button
-          className="bg-[#FF8400] hover:bg-[#e67600] text-white shadow-lg shadow-[#FF8400]/20 rounded-xl px-6 py-5 text-sm font-bold transition-all"
+          className="bg-[#FF8400] hover:bg-[#e67600] w-full sm:w-auto text-white shadow-lg shadow-[#FF8400]/20 rounded-xl px-6 py-5 text-sm font-bold transition-all"
           onClick={handleAddNew}
         >
           <Plus className="w-5 h-5 mr-2" strokeWidth={2.5} /> เพิ่มทัวร์ใหม่
         </Button>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="bg-white p-6 rounded-3xl border-0 shadow-sm flex items-center justify-between hover:shadow-md transition-shadow">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+        <div className="bg-white p-5 sm:p-6 rounded-3xl border-0 shadow-sm flex items-center justify-between hover:shadow-md transition-shadow">
           <div>
-            <p className="text-sm font-bold text-[#4F200D]/50 uppercase tracking-wider">ทัวร์ทั้งหมด</p>
-            <p className="text-3xl font-black text-[#4F200D] mt-1">{tours.length}</p>
+            <p className="text-xs sm:text-sm font-bold text-[#4F200D]/50 uppercase tracking-wider">ทัวร์ทั้งหมด</p>
+            <p className="text-2xl sm:text-3xl font-black text-[#4F200D] mt-1">{tours.length}</p>
           </div>
-          <div className="p-4 bg-[#FFD93D]/30 rounded-2xl text-[#FF8400]"><MapPin className="w-7 h-7" strokeWidth={2.5} /></div>
+          <div className="p-3 sm:p-4 bg-[#FFD93D]/30 rounded-2xl text-[#FF8400]"><MapPin className="w-6 h-6 sm:w-7 sm:h-7" strokeWidth={2.5} /></div>
         </div>
-        <div className="bg-white p-6 rounded-3xl border-0 shadow-sm flex items-center justify-between hover:shadow-md transition-shadow">
+        <div className="bg-white p-5 sm:p-6 rounded-3xl border-0 shadow-sm flex items-center justify-between hover:shadow-md transition-shadow">
           <div>
-            <p className="text-sm font-bold text-[#4F200D]/50 uppercase tracking-wider">เปิดใช้งาน</p>
-            <p className="text-3xl font-black text-emerald-600 mt-1">{tours.filter((t) => t.is_active).length}</p>
+            <p className="text-xs sm:text-sm font-bold text-[#4F200D]/50 uppercase tracking-wider">เปิดใช้งาน</p>
+            <p className="text-2xl sm:text-3xl font-black text-emerald-600 mt-1">{tours.filter((t) => t.is_active).length}</p>
           </div>
-          <div className="p-4 bg-[#FF8400]/10 rounded-2xl text-[#FF8400]"><Calendar className="w-7 h-7" strokeWidth={2.5} /></div>
+          <div className="p-3 sm:p-4 bg-[#FF8400]/10 rounded-2xl text-[#FF8400]"><Calendar className="w-6 h-6 sm:w-7 sm:h-7" strokeWidth={2.5} /></div>
         </div>
-        <div className="bg-white p-6 rounded-3xl border-0 shadow-sm flex items-center justify-between hover:shadow-md transition-shadow">
+        <div className="bg-white p-5 sm:p-6 rounded-3xl border-0 shadow-sm flex items-center justify-between hover:shadow-md transition-shadow sm:col-span-2 lg:col-span-1">
           <div>
-            <p className="text-sm font-bold text-[#4F200D]/50 uppercase tracking-wider">หมวดหมู่</p>
-            <p className="text-3xl font-black text-[#4F200D] mt-1">{new Set(tours.map((t) => t.category)).size}</p>
+            <p className="text-xs sm:text-sm font-bold text-[#4F200D]/50 uppercase tracking-wider">หมวดหมู่</p>
+            <p className="text-2xl sm:text-3xl font-black text-[#4F200D] mt-1">{new Set(tours.map((t) => t.category)).size}</p>
           </div>
-          <div className="p-4 bg-[#4F200D]/5 rounded-2xl text-[#4F200D]"><Users className="w-7 h-7" strokeWidth={2.5} /></div>
+          <div className="p-3 sm:p-4 bg-[#4F200D]/5 rounded-2xl text-[#4F200D]"><Users className="w-6 h-6 sm:w-7 sm:h-7" strokeWidth={2.5} /></div>
         </div>
       </div>
 
       {/* Filters */}
-      <div className="bg-white p-5 rounded-3xl border-0 shadow-sm flex flex-col gap-4">
-        <div className="flex flex-col xl:flex-row gap-4 justify-between items-center w-full">
-          <div className="relative w-full xl:w-80 shrink-0">
+      <div className="bg-white p-4 sm:p-5 rounded-3xl border-0 shadow-sm flex flex-col gap-4">
+        <div className="flex flex-col lg:flex-row gap-4 justify-between items-start lg:items-center w-full">
+          <div className="relative w-full lg:w-80 shrink-0">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-[#4F200D]/40 w-5 h-5" />
             <Input
               placeholder="ค้นหาทัวร์ด้วยชื่อ..."
-              className="pl-12 py-6 bg-[#F6F1E9]/50 border-0 rounded-2xl font-bold text-[#4F200D] placeholder:font-medium focus:bg-white focus:ring-2 focus:ring-[#FFD93D] transition-all"
+              className="pl-12 py-5 sm:py-6 bg-[#F6F1E9]/50 border-0 rounded-2xl font-bold text-[#4F200D] placeholder:font-medium focus:bg-white focus:ring-2 focus:ring-[#FFD93D] transition-all"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
           </div>
 
-          <div className="flex flex-wrap gap-3 w-full xl:w-auto justify-start xl:justify-end">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 w-full lg:w-auto">
             <CustomSelect
               className={selectTriggerClass}
               value={regionFilter}
               onChange={setRegionFilter}
-              options={[
-                { value: "all", label: "ทุกภูมิภาค" },
-                ...Object.values(TourRegion).map((r) => ({ value: r, label: r }))
-              ]}
+              options={[{ value: "all", label: "ทุกภูมิภาค" }, ...Object.values(TourRegion).map((r) => ({ value: r, label: r }))]}
             />
             <CustomSelect
               className={selectTriggerClass}
               value={categoryFilter}
               onChange={setCategoryFilter}
-              options={[
-                { value: "all", label: "ทุกหมวดหมู่" },
-                ...Object.values(TourCategory).map((c) => ({ value: c, label: c }))
-              ]}
+              options={[{ value: "all", label: "ทุกหมวดหมู่" }, ...Object.values(TourCategory).map((c) => ({ value: c, label: c }))]}
             />
             <CustomSelect
               className={selectTriggerClass}
               value={durationFilter}
               onChange={setDurationFilter}
-              options={[
-                { value: "all", label: "ทุกระยะเวลา" },
-                ...uniqueDurations.map((d) => ({ value: d, label: d }))
-              ]}
+              options={[{ value: "all", label: "ทุกระยะเวลา" }, ...uniqueDurations.map((d) => ({ value: d, label: d }))]}
             />
             <CustomSelect
               className={selectTriggerClass}
               value={statusFilter}
               onChange={setStatusFilter}
-              options={[
-                { value: "all", label: "สถานะทั้งหมด" },
-                { value: "active", label: "เปิดใช้งาน" },
-                { value: "inactive", label: "ปิดใช้งาน" }
-              ]}
+              options={[{ value: "all", label: "สถานะทั้งหมด" }, { value: "active", label: "เปิดใช้งาน" }, { value: "inactive", label: "ปิดใช้งาน" }]}
             />
           </div>
         </div>
       </div>
 
       {/* Table */}
-      <div className="bg-white rounded-3xl border-0 shadow-sm overflow-hidden">
+      <div className="bg-white rounded-3xl border-0 shadow-sm overflow-hidden w-full">
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm">
+          <table className="w-full text-left text-sm min-w-[800px]">
             <thead className="bg-[#F6F1E9]/80 border-b-2 border-[#F6F1E9]">
               <tr>
                 <th className="px-6 py-5 font-black text-[#4F200D] uppercase tracking-wider text-xs">ชื่อทัวร์</th>
@@ -582,8 +545,8 @@ const TourManager = () => {
 
         {/* ─── Cute & Easy Pagination ─── */}
         {totalPages > 0 && (
-          <div className="px-6 py-4 flex flex-col sm:flex-row items-center justify-between gap-4 bg-white border-t-2 border-[#F6F1E9]">
-            <p className="text-sm font-semibold text-[#4F200D]/50">
+          <div className="px-4 sm:px-6 py-4 flex flex-col sm:flex-row items-center justify-between gap-4 bg-white border-t-2 border-[#F6F1E9]">
+            <p className="text-xs sm:text-sm font-semibold text-[#4F200D]/50 text-center sm:text-left">
               แสดง{" "}
               <span className="text-[#FF8400]">
                 {processedTours.length === 0 ? 0 : (currentPage - 1) * itemsPerPage + 1}
@@ -592,42 +555,31 @@ const TourManager = () => {
               <span className="text-[#FF8400]">
                 {Math.min(currentPage * itemsPerPage, processedTours.length)}
               </span>{" "}
-              จาก <span className="text-[#FF8400]">{processedTours.length}</span>{" "}
-              รายการ
+              จาก <span className="text-[#FF8400]">{processedTours.length}</span> รายการ
             </p>
             
             <div className="flex items-center gap-1 bg-[#F6F1E9]/30 p-1.5 rounded-2xl border-2 border-[#F6F1E9]">
               <Button
-                variant="ghost"
-                size="icon"
-                disabled={currentPage === 1}
+                variant="ghost" size="icon" disabled={currentPage === 1}
                 onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
                 className="h-8 w-8 text-[#4F200D] font-bold rounded-xl hover:bg-[#FFD93D]/30 hover:text-[#FF8400] transition-colors disabled:opacity-30"
               >
                 <ChevronLeft className="w-4 h-4" />
               </Button>
-
-              <div className="flex items-center gap-1 mx-1">
+              <div className="flex items-center gap-1 mx-1 flex-wrap justify-center">
                 {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
                   <Button
-                    key={page}
-                    variant="ghost"
-                    onClick={() => setCurrentPage(page)}
+                    key={page} variant="ghost" onClick={() => setCurrentPage(page)}
                     className={`h-8 w-8 p-0 text-sm font-black rounded-xl transition-all ${
-                      currentPage === page
-                        ? "bg-[#FF8400] text-white shadow-md shadow-[#FF8400]/20"
-                        : "text-[#4F200D]/60 hover:bg-[#FFD93D]/30 hover:text-[#FF8400]"
+                      currentPage === page ? "bg-[#FF8400] text-white shadow-md shadow-[#FF8400]/20" : "text-[#4F200D]/60 hover:bg-[#FFD93D]/30 hover:text-[#FF8400]"
                     }`}
                   >
                     {page}
                   </Button>
                 ))}
               </div>
-
               <Button
-                variant="ghost"
-                size="icon"
-                disabled={currentPage === totalPages || totalPages === 0}
+                variant="ghost" size="icon" disabled={currentPage === totalPages || totalPages === 0}
                 onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
                 className="h-8 w-8 text-[#4F200D] font-bold rounded-xl hover:bg-[#FFD93D]/30 hover:text-[#FF8400] transition-colors disabled:opacity-30"
               >
@@ -640,23 +592,23 @@ const TourManager = () => {
 
       {/* Modal */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#4F200D]/60 backdrop-blur-sm p-4 overflow-y-auto">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#4F200D]/60 backdrop-blur-sm p-4 overflow-y-auto pt-16 md:pt-4">
           <div className="bg-white rounded-3xl shadow-2xl w-full max-w-2xl my-auto">
-            <div className="flex justify-between items-center p-6 border-b-2 border-[#F6F1E9] bg-white rounded-t-3xl sticky top-0 z-10">
-              <h2 className="text-2xl font-black text-[#4F200D]">{editingId ? "แก้ไขทัวร์" : "สร้างทัวร์ใหม่"}</h2>
+            <div className="flex justify-between items-center p-5 sm:p-6 border-b-2 border-[#F6F1E9] bg-white rounded-t-3xl sticky top-0 z-10">
+              <h2 className="text-xl sm:text-2xl font-black text-[#4F200D]">{editingId ? "แก้ไขทัวร์" : "สร้างทัวร์ใหม่"}</h2>
               <button onClick={() => setIsModalOpen(false)} className="text-[#4F200D]/40 hover:text-red-500 p-2 rounded-xl hover:bg-red-50 transition-colors"><X className="w-6 h-6" /></button>
             </div>
 
             {Object.keys(errors).length > 0 && (
-              <div className="mx-6 mt-6 p-4 bg-red-50 border-l-4 border-red-500 rounded-r-xl flex items-center gap-3 text-red-800">
-                <AlertCircle className="w-5 h-5" />
-                <p className="text-sm font-bold">กรุณากรอกข้อมูลในช่องที่มีสีแดงให้ครบถ้วนและถูกต้อง</p>
+              <div className="mx-5 sm:mx-6 mt-6 p-4 bg-red-50 border-l-4 border-red-500 rounded-r-xl flex items-center gap-3 text-red-800">
+                <AlertCircle className="w-5 h-5 shrink-0" />
+                <p className="text-xs sm:text-sm font-bold">กรุณากรอกข้อมูลในช่องที่มีสีแดงให้ครบถ้วนและถูกต้อง</p>
               </div>
             )}
 
-            <form onSubmit={handleSubmit} id="tour-modal-content" className="p-6 space-y-5 max-h-[70vh] overflow-y-auto custom-scrollbar">
+            <form onSubmit={handleSubmit} id="tour-modal-content" className="p-5 sm:p-6 space-y-5 max-h-[65vh] sm:max-h-[70vh] overflow-y-auto custom-scrollbar">
               <div className="space-y-2">
-                <label className="text-sm font-black text-[#4F200D] uppercase tracking-wider">ชื่อทัวร์ *</label>
+                <label className="text-xs sm:text-sm font-black text-[#4F200D] uppercase tracking-wider">ชื่อทัวร์ *</label>
                 <Input 
                   value={formData.title} 
                   onChange={(e) => {
@@ -668,13 +620,11 @@ const TourManager = () => {
                 />
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-5">
                 <div className="space-y-2">
-                  <label className="text-sm font-black text-[#4F200D] uppercase tracking-wider">ราคา (฿) *</label>
+                  <label className="text-xs sm:text-sm font-black text-[#4F200D] uppercase tracking-wider">ราคา (฿) *</label>
                   <Input 
-                    type="number" 
-                    min="0" 
-                    step="0.01" 
+                    type="number" min="0" step="0.01" 
                     value={formData.price} 
                     onChange={(e) => {
                       setFormData({ ...formData, price: e.target.value });
@@ -684,18 +634,16 @@ const TourManager = () => {
                   />
                 </div>
                 <div className="space-y-2">
-                  <label className="text-sm font-black text-[#4F200D] uppercase tracking-wider">ราคาเด็ก (฿)</label>
+                  <label className="text-xs sm:text-sm font-black text-[#4F200D] uppercase tracking-wider">ราคาเด็ก (฿)</label>
                   <Input 
-                    type="number" 
-                    min="0" 
-                    step="0.01" 
+                    type="number" min="0" step="0.01" 
                     value={formData.child_price} 
                     onChange={(e) => setFormData({ ...formData, child_price: e.target.value })} 
                     className="bg-[#F6F1E9]/50 border-0 rounded-xl focus:bg-white focus:ring-2 focus:ring-[#FFD93D] font-bold text-[#4F200D]" 
                   />
                 </div>
                 <div className="space-y-2">
-                  <label className="text-sm font-black text-[#4F200D] uppercase tracking-wider">ระยะเวลา *</label>
+                  <label className="text-xs sm:text-sm font-black text-[#4F200D] uppercase tracking-wider">ระยะเวลา *</label>
                   <Input 
                     value={formData.duration} 
                     onChange={(e) => {
@@ -708,9 +656,9 @@ const TourManager = () => {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-5">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-5">
                 <div className="space-y-2">
-                  <label className="text-sm font-black text-[#4F200D] uppercase tracking-wider">ภูมิภาค *</label>
+                  <label className="text-xs sm:text-sm font-black text-[#4F200D] uppercase tracking-wider">ภูมิภาค *</label>
                   <CustomSelect
                     className={selectTriggerClass}
                     value={formData.region}
@@ -719,7 +667,7 @@ const TourManager = () => {
                   />
                 </div>
                 <div className="space-y-2">
-                  <label className="text-sm font-black text-[#4F200D] uppercase tracking-wider">จังหวัด *</label>
+                  <label className="text-xs sm:text-sm font-black text-[#4F200D] uppercase tracking-wider">จังหวัด *</label>
                   <Input 
                     value={formData.province} 
                     onChange={(e) => {
@@ -732,9 +680,9 @@ const TourManager = () => {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-5">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-5">
                 <div className="space-y-2">
-                  <label className="text-sm font-black text-[#4F200D] uppercase tracking-wider">หมวดหมู่ *</label>
+                  <label className="text-xs sm:text-sm font-black text-[#4F200D] uppercase tracking-wider">หมวดหมู่ *</label>
                   <CustomSelect
                     className={selectTriggerClass}
                     value={formData.category}
@@ -743,69 +691,58 @@ const TourManager = () => {
                   />
                 </div>
                 <div className="space-y-2">
-                  <label className="text-sm font-black text-[#4F200D] uppercase tracking-wider">สถานะ</label>
+                  <label className="text-xs sm:text-sm font-black text-[#4F200D] uppercase tracking-wider">สถานะ</label>
                   <CustomSelect
                     className={selectTriggerClass}
                     value={formData.is_active ? "active" : "inactive"}
                     onChange={(val) => setFormData({ ...formData, is_active: val === "active" })}
-                    options={[
-                      { value: "active", label: "เปิดใช้งาน" },
-                      { value: "inactive", label: "ปิดใช้งาน" }
-                    ]}
+                    options={[{ value: "active", label: "เปิดใช้งาน" }, { value: "inactive", label: "ปิดใช้งาน" }]}
                   />
                 </div>
-                <div className="space-y-2 col-span-2">
-                  <label className="text-sm font-black text-[#4F200D] uppercase tracking-wider">แนะนำ</label>
+                <div className="space-y-2 sm:col-span-2">
+                  <label className="text-xs sm:text-sm font-black text-[#4F200D] uppercase tracking-wider">แนะนำ</label>
                   <CustomSelect
                     className={selectTriggerClass}
                     value={formData.is_recommended ? "yes" : "no"}
                     onChange={(val) => setFormData({ ...formData, is_recommended: val === "yes" })}
-                    options={[
-                      { value: "no", label: "ไม่แนะนำ" },
-                      { value: "yes", label: "⭐ แนะนำ" }
-                    ]}
+                    options={[{ value: "no", label: "ไม่แนะนำ" }, { value: "yes", label: "⭐ แนะนำ" }]}
                   />
                 </div>
               </div>
 
               {/* Upload Fields */}
-              <div className="p-5 bg-[#F6F1E9]/30 rounded-2xl border-2 border-[#F6F1E9] space-y-4">
-                <div className="space-y-2">
-                  <label className="text-sm font-black text-[#4F200D] uppercase tracking-wider flex items-center gap-2">
+              <div className="p-4 sm:p-5 bg-[#F6F1E9]/30 rounded-2xl border-2 border-[#F6F1E9] space-y-4">
+                <div className="space-y-2 overflow-hidden">
+                  <label className="text-xs sm:text-sm font-black text-[#4F200D] uppercase tracking-wider flex items-center gap-2">
                     <ImageIcon className="w-4 h-4 text-[#FF8400]" /> รูปภาพหน้าปก
                   </label>
                   <Input 
-                    type="file" 
-                    accept="image/*"
+                    type="file" accept="image/*"
                     onChange={(e) => {
                       if (e.target.files && e.target.files[0]) {
                         setCoverFile(e.target.files[0]);
                         setCoverPreview(URL.createObjectURL(e.target.files[0]));
                       }
                     }} 
-                    className="bg-white border-0 rounded-xl file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-bold file:bg-[#FFD93D]/30 file:text-[#FF8400] hover:file:bg-[#FFD93D]/50" 
+                    className="bg-white border-0 rounded-xl text-xs sm:text-sm w-full file:mr-2 file:py-1.5 file:px-3 file:rounded-full file:border-0 file:text-xs file:font-bold file:bg-[#FFD93D]/30 file:text-[#FF8400] hover:file:bg-[#FFD93D]/50" 
                   />
                   {coverPreview && (
-                    <div className="mt-3 rounded-2xl overflow-hidden border-2 border-[#F6F1E9] w-full max-w-xs">
-                      <img src={coverPreview} alt="preview" className="h-40 w-full object-cover" />
+                    <div className="mt-3 rounded-2xl overflow-hidden border-2 border-[#F6F1E9] w-full max-w-[200px] sm:max-w-xs">
+                      <img src={coverPreview} alt="preview" className="h-32 sm:h-40 w-full object-cover" />
                     </div>
                   )}
                 </div>
 
-                <div className="space-y-2">
-                  <label className="text-sm font-black text-[#4F200D] uppercase tracking-wider flex items-center gap-2">
-                    <ImageIcon className="w-4 h-4 text-[#FF8400]" /> รูปภาพเพิ่มเติม (เลือกได้หลายรูป)
+                <div className="space-y-2 overflow-hidden">
+                  <label className="text-xs sm:text-sm font-black text-[#4F200D] uppercase tracking-wider flex items-center gap-2">
+                    <ImageIcon className="w-4 h-4 text-[#FF8400]" /> รูปภาพเพิ่มเติม
                   </label>
                   <Input 
-                    type="file" 
-                    multiple 
-                    accept="image/*"
+                    type="file" multiple accept="image/*"
                     onChange={(e) => {
-                      if (e.target.files) {
-                        setAdditionalFiles(Array.from(e.target.files));
-                      }
+                      if (e.target.files) setAdditionalFiles(Array.from(e.target.files));
                     }} 
-                    className="bg-white border-0 rounded-xl file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-bold file:bg-[#F6F1E9] file:text-[#4F200D] hover:file:bg-[#e2ddd5]" 
+                    className="bg-white border-0 rounded-xl text-xs sm:text-sm w-full file:mr-2 file:py-1.5 file:px-3 file:rounded-full file:border-0 file:text-xs file:font-bold file:bg-[#F6F1E9] file:text-[#4F200D] hover:file:bg-[#e2ddd5]" 
                   />
                   {additionalFiles.length > 0 && (
                     <p className="text-xs font-bold text-[#FF8400] mt-1">เลือกไว้ {additionalFiles.length} รูปภาพ</p>
@@ -813,11 +750,10 @@ const TourManager = () => {
                 </div>
               </div>
 
-              {/* ✨ Updated Description block to use getTextareaClass */}
               <div className="space-y-2">
-                <label className="text-sm font-black text-[#4F200D] uppercase tracking-wider">รายละเอียด *</label>
+                <label className="text-xs sm:text-sm font-black text-[#4F200D] uppercase tracking-wider">รายละเอียด *</label>
                 <textarea 
-                  className={getTextareaClass("description", "w-full p-4 border-0 rounded-2xl text-[#4F200D] font-bold text-sm min-h-[100px] resize-none")} 
+                  className={getTextareaClass("description", "w-full p-4 border-0 rounded-2xl text-[#4F200D] font-bold text-xs sm:text-sm min-h-[100px] resize-none")} 
                   value={formData.description} 
                   onChange={(e) => {
                     setFormData({ ...formData, description: e.target.value });
@@ -827,53 +763,55 @@ const TourManager = () => {
               </div>
 
               <div className="space-y-2">
-                <label className="text-sm font-black text-[#4F200D] uppercase tracking-wider flex items-center gap-2">ไฮไลท์ <span className="text-[#4F200D]/40 font-bold text-[10px]">(คั่นด้วยคอมม่า)</span></label>
-                <textarea className="w-full p-4 border-0 bg-[#F6F1E9]/50 rounded-2xl text-[#4F200D] font-bold text-sm min-h-[80px] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#FFD93D] resize-none" value={formData.highlights_str} onChange={(e) => setFormData({ ...formData, highlights_str: e.target.value })} />
+                <label className="text-xs sm:text-sm font-black text-[#4F200D] uppercase tracking-wider flex items-center gap-2">ไฮไลท์ <span className="text-[#4F200D]/40 font-bold text-[10px]">(คั่นด้วยคอมม่า)</span></label>
+                <textarea className="w-full p-4 border-0 bg-[#F6F1E9]/50 rounded-2xl text-[#4F200D] font-bold text-xs sm:text-sm min-h-[80px] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#FFD93D] resize-none" value={formData.highlights_str} onChange={(e) => setFormData({ ...formData, highlights_str: e.target.value })} />
               </div>
 
               <div className="space-y-2">
-                <label className="text-sm font-black text-[#4F200D] uppercase tracking-wider flex items-center gap-2">สิ่งที่ต้องเตรียม <span className="text-[#4F200D]/40 font-bold text-[10px]">(คั่นด้วยคอมม่า)</span></label>
-                <textarea className="w-full p-4 border-0 bg-[#F6F1E9]/50 rounded-2xl text-[#4F200D] font-bold text-sm min-h-[80px] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#FFD93D] resize-none" value={formData.preparation_str} onChange={(e) => setFormData({ ...formData, preparation_str: e.target.value })} />
+                <label className="text-xs sm:text-sm font-black text-[#4F200D] uppercase tracking-wider flex items-center gap-2">สิ่งที่ต้องเตรียม <span className="text-[#4F200D]/40 font-bold text-[10px]">(คั่นด้วยคอมม่า)</span></label>
+                <textarea className="w-full p-4 border-0 bg-[#F6F1E9]/50 rounded-2xl text-[#4F200D] font-bold text-xs sm:text-sm min-h-[80px] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#FFD93D] resize-none" value={formData.preparation_str} onChange={(e) => setFormData({ ...formData, preparation_str: e.target.value })} />
               </div>
 
               <div className="space-y-2">
-                <label className="text-sm font-black text-[#4F200D] uppercase tracking-wider">แผนการเดินทาง (แบบข้อความสรุป)</label>
-                <textarea className="w-full p-4 border-0 bg-[#F6F1E9]/50 rounded-2xl text-[#4F200D] font-bold text-sm min-h-[80px] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#FFD93D] resize-none" value={formData.itinerary} onChange={(e) => setFormData({ ...formData, itinerary: e.target.value })} />
+                <label className="text-xs sm:text-sm font-black text-[#4F200D] uppercase tracking-wider">แผนการเดินทาง (แบบข้อความสรุป)</label>
+                <textarea className="w-full p-4 border-0 bg-[#F6F1E9]/50 rounded-2xl text-[#4F200D] font-bold text-xs sm:text-sm min-h-[80px] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#FFD93D] resize-none" value={formData.itinerary} onChange={(e) => setFormData({ ...formData, itinerary: e.target.value })} />
               </div>
 
-              <div className="space-y-3 bg-[#F6F1E9]/30 p-5 rounded-2xl border-2 border-[#F6F1E9]">
+              <div className="space-y-3 bg-[#F6F1E9]/30 p-4 sm:p-5 rounded-2xl border-2 border-[#F6F1E9]">
                 <div className="flex justify-between items-center mb-2">
-                  <label className="text-sm font-black text-[#4F200D] uppercase tracking-wider">แผนการเดินทาง (กำหนดเวลา)</label>
-                  <button type="button" onClick={addItineraryRow} className="text-xs text-[#FF8400] hover:text-white font-bold bg-[#FFD93D]/30 hover:bg-[#FF8400] px-3 py-1.5 rounded-lg transition-colors">+ เพิ่มขั้นตอน</button>
+                  <label className="text-xs sm:text-sm font-black text-[#4F200D] uppercase tracking-wider">แผนการเดินทาง (กำหนดเวลา)</label>
+                  <button type="button" onClick={addItineraryRow} className="text-[10px] sm:text-xs text-[#FF8400] hover:text-white font-bold bg-[#FFD93D]/30 hover:bg-[#FF8400] px-2 sm:px-3 py-1.5 rounded-lg transition-colors">+ เพิ่มขั้นตอน</button>
                 </div>
                 {formData.itinerary_data.map((item, index) => (
-                  <div key={index} className="flex gap-3 items-center">
-                    <Input className="w-28 bg-white border-0 rounded-xl focus:ring-2 focus:ring-[#FFD93D] font-bold text-[#4F200D]" placeholder="08:30" value={item.time} onChange={(e) => updateItinerary(index, "time", e.target.value)} />
-                    <Input className="flex-1 bg-white border-0 rounded-xl focus:ring-2 focus:ring-[#FFD93D] font-bold text-[#4F200D]" placeholder="รายละเอียดกิจกรรม..." value={item.detail} onChange={(e) => updateItinerary(index, "detail", e.target.value)} />
-                    <button type="button" onClick={() => removeItineraryRow(index)} disabled={formData.itinerary_data.length === 1} className="p-2 hover:bg-red-100 rounded-xl transition-colors disabled:opacity-30 text-red-500"><X className="w-5 h-5" /></button>
+                  <div key={index} className="flex flex-col sm:flex-row gap-2 sm:gap-3 items-start sm:items-center">
+                    <Input className="w-full sm:w-28 bg-white border-0 rounded-xl focus:ring-2 focus:ring-[#FFD93D] font-bold text-[#4F200D]" placeholder="08:30" value={item.time} onChange={(e) => updateItinerary(index, "time", e.target.value)} />
+                    <div className="flex w-full gap-2 items-center">
+                      <Input className="flex-1 bg-white border-0 rounded-xl focus:ring-2 focus:ring-[#FFD93D] font-bold text-[#4F200D]" placeholder="รายละเอียดกิจกรรม..." value={item.detail} onChange={(e) => updateItinerary(index, "detail", e.target.value)} />
+                      <button type="button" onClick={() => removeItineraryRow(index)} disabled={formData.itinerary_data.length === 1} className="p-2 hover:bg-red-100 rounded-xl transition-colors disabled:opacity-30 text-red-500 shrink-0"><X className="w-5 h-5" /></button>
+                    </div>
                   </div>
                 ))}
               </div>
 
               <div className="space-y-2">
-                <label className="text-sm font-black text-[#4F200D] uppercase tracking-wider">ราคานี้รวม</label>
-                <textarea className="w-full p-4 border-0 bg-[#F6F1E9]/50 rounded-2xl text-[#4F200D] font-bold text-sm min-h-[80px] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#FFD93D] resize-none" value={formData.included} onChange={(e) => setFormData({ ...formData, included: e.target.value })} />
+                <label className="text-xs sm:text-sm font-black text-[#4F200D] uppercase tracking-wider">ราคานี้รวม</label>
+                <textarea className="w-full p-4 border-0 bg-[#F6F1E9]/50 rounded-2xl text-[#4F200D] font-bold text-xs sm:text-sm min-h-[80px] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#FFD93D] resize-none" value={formData.included} onChange={(e) => setFormData({ ...formData, included: e.target.value })} />
               </div>
 
               <div className="space-y-2">
-                <label className="text-sm font-black text-[#4F200D] uppercase tracking-wider">ราคานี้ไม่รวม</label>
-                <textarea className="w-full p-4 border-0 bg-[#F6F1E9]/50 rounded-2xl text-[#4F200D] font-bold text-sm min-h-[80px] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#FFD93D] resize-none" value={formData.excluded} onChange={(e) => setFormData({ ...formData, excluded: e.target.value })} />
+                <label className="text-xs sm:text-sm font-black text-[#4F200D] uppercase tracking-wider">ราคานี้ไม่รวม</label>
+                <textarea className="w-full p-4 border-0 bg-[#F6F1E9]/50 rounded-2xl text-[#4F200D] font-bold text-xs sm:text-sm min-h-[80px] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#FFD93D] resize-none" value={formData.excluded} onChange={(e) => setFormData({ ...formData, excluded: e.target.value })} />
               </div>
 
               <div className="space-y-2">
-                <label className="text-sm font-black text-[#4F200D] uppercase tracking-wider">เงื่อนไขและข้อตกลง</label>
-                <textarea className="w-full p-4 border-0 bg-[#F6F1E9]/50 rounded-2xl text-[#4F200D] font-bold text-sm min-h-[80px] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#FFD93D] resize-none" value={formData.conditions} onChange={(e) => setFormData({ ...formData, conditions: e.target.value })} />
+                <label className="text-xs sm:text-sm font-black text-[#4F200D] uppercase tracking-wider">เงื่อนไขและข้อตกลง</label>
+                <textarea className="w-full p-4 border-0 bg-[#F6F1E9]/50 rounded-2xl text-[#4F200D] font-bold text-xs sm:text-sm min-h-[80px] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#FFD93D] resize-none" value={formData.conditions} onChange={(e) => setFormData({ ...formData, conditions: e.target.value })} />
               </div>
 
               <div className="pt-6 pb-2 flex items-center justify-end gap-3 sticky bottom-0 bg-white border-t-2 border-[#F6F1E9] mt-6">
-                <Button type="button" variant="ghost" onClick={() => setIsModalOpen(false)} className="hover:bg-[#F6F1E9] text-[#4F200D] font-bold rounded-xl px-6">ยกเลิก</Button>
-                <Button type="submit" className="bg-[#FF8400] hover:bg-[#e67600] text-white font-bold shadow-lg shadow-[#FF8400]/20 rounded-xl min-w-[130px] px-6" disabled={isSubmitting}>
-                  {isSubmitting ? <><Loader2 className="w-5 h-5 mr-2 animate-spin" /> กำลังบันทึก...</> : editingId ? "อัปเดตทัวร์" : "บันทึกทัวร์ใหม่"}
+                <Button type="button" variant="ghost" onClick={() => setIsModalOpen(false)} className="hover:bg-[#F6F1E9] text-[#4F200D] font-bold rounded-xl px-4 sm:px-6">ยกเลิก</Button>
+                <Button type="submit" className="bg-[#FF8400] hover:bg-[#e67600] text-white font-bold shadow-lg shadow-[#FF8400]/20 rounded-xl min-w-[130px] px-4 sm:px-6" disabled={isSubmitting}>
+                  {isSubmitting ? <><Loader2 className="w-5 h-5 mr-2 animate-spin" /> กำลังบันทึก...</> : editingId ? "อัปเดตทัวร์" : "บันทึกทัวร์"}
                 </Button>
               </div>
             </form>

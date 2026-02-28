@@ -6,8 +6,14 @@ import { UsersService } from './users/users.service';
 import { UserRole } from './users/entities/user.entity';
 import * as bcrypt from 'bcrypt';
 
+// ✨ Added imports for serving static files
+import { NestExpressApplication } from '@nestjs/platform-express';
+import { join } from 'path';
+
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  // ✨ Cast app to NestExpressApplication so it can use static assets
+  const app = await NestFactory.create<NestExpressApplication>(AppModule);
+  
   const configService = app.get(ConfigService);
   const usersService = app.get(UsersService);
 
@@ -25,6 +31,11 @@ async function bootstrap() {
       transform: true,
     }),
   );
+
+  // ✨ 3. Enable serving static files (This makes your uploaded pictures accessible via URL)
+  app.useStaticAssets(join(__dirname, '..', 'uploads'), {
+    prefix: '/uploads/',
+  });
 
   // Seed default admin if missing (username: admin, password: admin1234)
   try {
@@ -48,6 +59,7 @@ async function bootstrap() {
   } catch (err) {
     console.error('Admin seed failed:', err);
   }
+  
   const port = configService.get<number>('PORT') || 3000;
   await app.listen(port);
   console.log(`Application is running on: http://localhost:${port}`);

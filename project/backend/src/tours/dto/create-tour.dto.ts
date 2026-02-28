@@ -11,10 +11,9 @@ import {
   IsDateString,
   IsInt,
 } from 'class-validator';
-import { Type } from 'class-transformer';
+import { Type, Transform } from 'class-transformer'; // ✨ Added Transform
 import { TourRegion, TourCategory } from '../entities/tour.entity';
 
-// ✨ เพิ่ม Class สำหรับตรวจสอบข้อมูลใน Itinerary Array
 class ItineraryItemDto {
   @IsString()
   @IsNotEmpty()
@@ -25,7 +24,6 @@ class ItineraryItemDto {
   detail!: string;
 }
 
-// ✨ เพิ่ม Class สำหรับกำหนด Schedule (วันเปิดทัวร์)
 class ScheduleDto {
   @IsDateString()
   date!: string;
@@ -66,7 +64,6 @@ export class CreateTourDto {
   @IsNotEmpty()
   category!: TourCategory;
 
-  // ✨ เพิ่ม: จำนวนคนสูงสุด
   @IsNumber()
   @Min(1)
   @IsOptional()
@@ -100,26 +97,40 @@ export class CreateTourDto {
   @IsOptional()
   images?: string[];
 
+  // ✨ Transform single strings into arrays if necessary
   @IsArray()
   @IsString({ each: true })
   @IsOptional()
+  @Transform(({ value }) => {
+    if (!value) return [];
+    return Array.isArray(value) ? value : [value];
+  })
   highlights?: string[];
 
-  // ✨ เพิ่ม: รายการการเตรียมตัว
   @IsArray()
   @IsString({ each: true })
   @IsOptional()
+  @Transform(({ value }) => {
+    if (!value) return [];
+    return Array.isArray(value) ? value : [value];
+  })
   preparation?: string[];
 
   @IsString()
   @IsOptional()
-  itinerary?: string; // ข้อความยาวแบบเดิม
+  itinerary?: string;
 
-  // ✨ เพิ่ม: แผนการเดินทางแบบ JSON (Array ของวัตถุ)
+  // ✨ Parse JSON string from FormData back into an Array of Objects
   @IsArray()
   @ValidateNested({ each: true })
   @Type(() => ItineraryItemDto)
   @IsOptional()
+  @Transform(({ value }) => {
+    if (typeof value === 'string') {
+      try { return JSON.parse(value); } catch (e) { return value; }
+    }
+    return value;
+  })
   itinerary_data?: ItineraryItemDto[];
 
   @IsString()
@@ -134,18 +145,26 @@ export class CreateTourDto {
   @IsOptional()
   conditions?: string;
 
+  // ✨ Convert FormData string "true"/"false" to actual boolean
   @IsBoolean()
   @IsOptional()
+  @Transform(({ value }) => value === 'true' || value === true)
   is_active?: boolean;
 
   @IsBoolean()
   @IsOptional()
+  @Transform(({ value }) => value === 'true' || value === true)
   is_recommended?: boolean;
 
-  // ✨ เพิ่ม: กำหนดวันเปิดทัวร์พร้อมจำนวนที่นั่งแต่ละวัน
   @IsArray()
   @ValidateNested({ each: true })
   @Type(() => ScheduleDto)
   @IsOptional()
+  @Transform(({ value }) => {
+    if (typeof value === 'string') {
+      try { return JSON.parse(value); } catch (e) { return value; }
+    }
+    return value;
+  })
   schedules?: ScheduleDto[];
 }

@@ -28,7 +28,6 @@ export class User {
   @Column()
   password: string;
 
-  // 👇 แก้ไข: เพิ่ม { nullable: true } ตรงนี้
   @OneToOne(() => UserProfile, (profile) => profile.user, { cascade: true, nullable: true })
   @JoinColumn()
   profile: UserProfile;
@@ -45,6 +44,10 @@ export class User {
     default: UserRole.USER,
   })
   role: UserRole;
+
+  // ✨ Added is_active column to support suspending users
+  @Column({ default: true })
+  is_active: boolean;
 
   @CreateDateColumn()
   created_at: Date;

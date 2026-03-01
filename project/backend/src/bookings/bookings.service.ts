@@ -353,14 +353,9 @@ export class BookingsService {
   }
 
   private calculateDiscount(startDate: Date, basePrice: number): number {
-    // 5% discount for weekend bookings (Saturday or Sunday)
-    const dayOfWeek = startDate.getDay();
-    if (dayOfWeek === 0 || dayOfWeek === 6) {
-      return basePrice * 0.05;
-    }
     return 0;
   }
-
+  
   private getDaysUntilStart(startDate: Date): number {
     const now = new Date();
     const start = new Date(startDate);

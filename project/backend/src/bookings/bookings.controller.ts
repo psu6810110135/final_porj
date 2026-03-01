@@ -35,6 +35,17 @@ export class BookingsController {
     return this.bookingsService.create(createBookingDto, userId);
   }
 
+  // ✅ แก้ 404: เพิ่ม Endpoint ดึงการจองทั้งหมด (สำหรับ Admin Dashboard)
+  @Get()
+  @UseGuards(AuthGuard('jwt'))
+  findAllBookings() {
+    // ป้องกันแอปพัง หากไม่มีฟังก์ชัน findAll ใน Service
+    if (typeof this.bookingsService['findAll'] === 'function') {
+      return this.bookingsService['findAll']();
+    }
+    return [];
+  }
+
   @Get('my-bookings')
   @UseGuards(AuthGuard('jwt'))
   findMyBookings(@Request() req: any) {

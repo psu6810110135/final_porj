@@ -40,3 +40,5 @@ temp/
 .stop.sh
 run.sh
 stop.sh
+
+project/backend/uploads

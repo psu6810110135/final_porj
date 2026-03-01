@@ -30,6 +30,7 @@ interface Tour {
   province: string;
   duration: string;
   image_cover: string;
+  images?: string[]; // รองรับ Array ของภาพเพิ่มเติม
   category: string;
   child_price?: number;
   max_group_size?: number;
@@ -43,6 +44,12 @@ interface Tour {
 }
 
 /* ─── Helpers ───────────────────────── */
+
+const getImageUrl = (path?: string) => {
+  if (!path) return "https://placehold.co/80x80?text=No+Img";
+  if (path.startsWith("http")) return path;
+  return `http://localhost:3000/${path.replace(/^\//, '')}`;
+};
 
 function parsePreparation(raw?: string[] | string): string[] {
   if (!raw) return [];
@@ -97,6 +104,7 @@ function normalizeTourPayload(raw: any): Tour {
     province: raw?.province ?? "",
     duration: raw?.duration ?? "",
     image_cover: raw?.image_cover ?? raw?.coverImage ?? raw?.image ?? "",
+    images: raw?.images || [],
     category: raw?.category ?? "",
     child_price: raw?.child_price ? Number(raw.child_price) : undefined,
     max_group_size: raw?.max_group_size
@@ -211,7 +219,6 @@ function BookingSheet({ tour, onClose }: { tour: Tour; onClose?: () => void }) {
         setLoadingSchedules(true);
         const res = await api.get(`/api/v1/tours/${tour.id}/schedules`);
         const data = res.data || [];
-        // Filter out past dates and sort by date
         const today = new Date();
         today.setHours(0, 0, 0, 0);
         const validSchedules = data
@@ -234,7 +241,6 @@ function BookingSheet({ tour, onClose }: { tour: Tour; onClose?: () => void }) {
       }
     };
     fetchSchedules();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tour.id]);
 
   // Prefill contact info from logged-in user
@@ -258,10 +264,8 @@ function BookingSheet({ tour, onClose }: { tour: Tour; onClose?: () => void }) {
   const childPrice = Math.floor(tour.price * 0.6);
   const pax = adults + children;
   
-  // ✅ กลับมาใช้ total คิดราคาตรงๆ แบบเดิม
   const total = (tour.price * adults) + (childPrice * children);
 
-  // Schedule-based capacity (one-day tours)
   const availableSeats = selectedSchedule?.available_seats ?? 0;
   const remainingCapacity = availableSeats - pax;
   const visibleSchedules = schedules.filter(
@@ -520,7 +524,7 @@ function BookingSheet({ tour, onClose }: { tour: Tour; onClose?: () => void }) {
           />
         </div>
 
-{/* Price Summary */}
+        {/* Price Summary */}
         <div className="bg-gradient-to-br from-amber-50 to-orange-50 rounded-xl p-4 border border-amber-100 space-y-2">
           {adults > 0 && (
             <div className="flex justify-between text-sm">
@@ -620,8 +624,8 @@ function BookingSheet({ tour, onClose }: { tour: Tour; onClose?: () => void }) {
             const payload = {
               tourId: tour.id,
               tourScheduleId: selectedSchedule.id,
-              pax: pax, // ส่งจำนวนรวมไป
-              numberOfTravelers: pax, // ส่งไปอีกชื่อกันเหนียว
+              pax: pax, 
+              numberOfTravelers: pax, 
               contactInfo: {
                 name: contactName,
                 email: contactEmail,
@@ -633,8 +637,6 @@ function BookingSheet({ tour, onClose }: { tour: Tour; onClose?: () => void }) {
               }
             };
             
-            console.log("📦 กำลังส่งของไปหลังบ้าน:", payload);
-
             try {
               setSubmitting(true);
               const res = await api.post("/api/v1/bookings", payload, {
@@ -758,7 +760,7 @@ export default function TourDetailPage() {
             {/* ── Hero Image (full-bleed, title overlay) ── */}
             <div className="relative w-full h-[55vw] min-h-[240px] max-h-[480px] overflow-hidden">
               <img
-                src={tour.image_cover}
+                src={getImageUrl(tour.image_cover)}
                 alt={tour.title}
                 className="w-full h-full object-cover"
               />
@@ -971,6 +973,24 @@ export default function TourDetailPage() {
                       </ul>
                     </div>
                   )}
+
+                  {/* Gallery รูปภาพเพิ่มเติม */}
+                  {tour.images && tour.images.length > 0 && (
+                    <div className="section-card mt-4 border border-gray-100">
+                      <h2 className="text-base font-black text-[#2C1A0E] mb-3 flex items-center gap-2">
+                        <span className="w-1 h-5 bg-[#FF8400] rounded-full inline-block" />
+                        รูปภาพเพิ่มเติม
+                      </h2>
+                      <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                        {tour.images.map((img, i) => (
+                          <div key={i} className="aspect-square rounded-xl overflow-hidden bg-gray-100">
+                            <img src={getImageUrl(img)} alt={`รูปเพิ่มเติม ${i+1}`} className="w-full h-full object-cover hover:scale-110 transition-transform duration-300" />
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
                 </div>
 
                 {/* ── Right: Booking (Desktop only) ── */}

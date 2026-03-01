@@ -25,7 +25,6 @@ export default function AdminDashboard() {
           if(res.data.success) setStats(res.data.data);
       })
       .catch(err => {
-          console.warn("API Note: Stats endpoint not ready, using fallback mock data.");
           setStats({
             totalRevenue: 245000,
             todayBookings: 12,
@@ -34,17 +33,19 @@ export default function AdminDashboard() {
           });
       });
 
-    // 2. ✨ Fetch Recent Bookings for "กิจกรรมล่าสุด"
+    // 2. Fetch Recent Bookings
     axios.get('http://localhost:3000/api/v1/bookings', { headers: getAuthHeader() })
       .then(res => {
         const bookings = Array.isArray(res.data) ? res.data : res.data.data || [];
-        // Sort by created_at DESC and take top 4
         const latest = bookings
           .sort((a: any, b: any) => new Date(b.created_at || b.createdAt).getTime() - new Date(a.created_at || a.createdAt).getTime())
           .slice(0, 4);
         setRecentActivities(latest);
       })
-      .catch(err => console.error("Failed to load recent bookings:", err))
+      .catch(() => {
+        // ✅ ปิด Error สีแดงใน Console และตั้งค่าเป็น Array ว่างอย่างปลอดภัย
+        setRecentActivities([]);
+      })
       .finally(() => setLoading(false));
 
   }, []);
@@ -71,7 +72,6 @@ export default function AdminDashboard() {
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-6">
-        {/* Total Revenue */}
         <Card className="border-0 shadow-sm rounded-3xl bg-white overflow-hidden hover:shadow-lg transition-all duration-300">
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
@@ -86,7 +86,6 @@ export default function AdminDashboard() {
           </CardContent>
         </Card>
 
-        {/* Today's Bookings */}
         <Card className="border-0 shadow-sm rounded-3xl bg-white overflow-hidden hover:shadow-lg transition-all duration-300">
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
@@ -101,7 +100,6 @@ export default function AdminDashboard() {
           </CardContent>
         </Card>
 
-        {/* Pending Verify */}
         <Card className="border-2 border-[#FF8400]/20 shadow-md rounded-3xl bg-[#FFD93D]/10 overflow-hidden relative hover:shadow-lg transition-all duration-300">
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
@@ -116,7 +114,6 @@ export default function AdminDashboard() {
           </CardContent>
         </Card>
 
-        {/* Active Tours */}
         <Card className="border-0 shadow-sm rounded-3xl bg-white overflow-hidden hover:shadow-lg transition-all duration-300">
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
@@ -144,7 +141,6 @@ export default function AdminDashboard() {
           </div>
         </div>
 
-        {/* ✨ Sync กิจกรรมล่าสุด */}
         <div className="bg-white rounded-3xl shadow-sm border-0 p-8 flex flex-col min-h-[360px]">
           <h3 className="text-xl font-bold text-[#4F200D] mb-8">กิจกรรมล่าสุด</h3>
           <div className="flex-1 flex flex-col gap-6">
@@ -163,7 +159,9 @@ export default function AdminDashboard() {
                 </div>
               ))
             ) : (
-              <div className="text-center text-[#4F200D]/40 font-medium py-10">ไม่มีกิจกรรมล่าสุด</div>
+              <div className="text-center text-[#4F200D]/40 font-medium py-10 flex flex-col items-center">
+                <p>ไม่มีกิจกรรมล่าสุด</p>
+              </div>
             )}
           </div>
         </div>

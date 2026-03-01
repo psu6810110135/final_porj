@@ -68,13 +68,13 @@ export interface Tour {
   max_group_size?: number;
   rating?: number;
   review_count?: number;
-  highlights?: string[];
-  preparation?: string[];
+  highlights?: string[] | string;
+  preparation?: string[] | string;
   itinerary?: string;
-  itinerary_data?: { time: string; detail: string }[];
-  included?: string;
-  excluded?: string;
-  conditions?: string;
+  itinerary_data?: any;
+  included?: string[] | string;
+  excluded?: string[] | string;
+  conditions?: string[] | string;
 }
 
 /* ─── Initial Form State ─────────────────────────── */
@@ -187,9 +187,22 @@ const TourManager = () => {
   
   const [errors, setErrors] = useState<Record<string, boolean>>({});
   
+  // รูปภาพ
   const [coverFile, setCoverFile] = useState<File | null>(null);
   const [coverPreview, setCoverPreview] = useState<string>("");
   const [additionalFiles, setAdditionalFiles] = useState<File[]>([]);
+  const [existingImages, setExistingImages] = useState<string[]>([]);
+
+  // 🛡️ ใช้ useRef อ้างอิง Input โดยตรง หมดปัญหา "กดปุ่มไม่ติด"
+  const coverInputRef = useRef<HTMLInputElement>(null);
+  const additionalImagesRef = useRef<HTMLInputElement>(null);
+
+  const getSafeItinerary = () => {
+    if (Array.isArray(formData.itinerary_data)) {
+      return formData.itinerary_data.length > 0 ? formData.itinerary_data : [{ time: "", detail: "" }];
+    }
+    return [{ time: "", detail: "" }];
+  };
 
   const fetchTours = async () => {
     setLoading(true);
@@ -215,37 +228,74 @@ const TourManager = () => {
     setCoverFile(null);
     setCoverPreview("");
     setAdditionalFiles([]);
+    setExistingImages([]);
     setIsModalOpen(true);
   };
 
   const handleEdit = (tour: Tour) => {
     setEditingId(tour.id);
     setErrors({});
+
+    // 🛡️ ฟังก์ชันสุดแกร่ง: แปลงข้อมูล Array ทนทาน 100% แม้ฐานข้อมูลจะเพี้ยนมา
+    const safeParseArray = (data: any): any[] => {
+      if (!data) return [];
+      if (Array.isArray(data)) return data;
+      if (typeof data === "string") {
+        try { 
+          const parsed = JSON.parse(data); 
+          return Array.isArray(parsed) ? parsed : [parsed]; 
+        } catch { 
+          // กรณี TypeORM พ่น String Postgres แบบ: "{img1.jpg, img2.jpg}"
+          if (data.startsWith('{') && data.endsWith('}')) {
+             return data.slice(1, -1).split(',').map(s => s.trim().replace(/^"|"$/g, '')).filter(Boolean);
+          }
+          return [data]; 
+        }
+      }
+      return [data];
+    };
+
+    let parsedItinerary = safeParseArray(tour.itinerary_data);
+    parsedItinerary = parsedItinerary.map((item: any) => {
+        if (typeof item === 'string') return { time: "", detail: item };
+        if (typeof item === 'object' && item !== null) {
+            return { time: item.time || "", detail: item.detail || "" };
+        }
+        return { time: "", detail: "" };
+    });
+
+    const finalItinerary = parsedItinerary.length > 0 ? parsedItinerary : [{ time: "", detail: "" }];
+
     setFormData({
-      title: tour.title,
-      price: tour.price.toString(),
+      title: tour.title || "",
+      price: tour.price?.toString() || "",
       child_price: tour.child_price?.toString() || "",
-      province: tour.province,
-      region: tour.region,
-      duration: tour.duration,
-      category: tour.category,
+      province: tour.province || "",
+      region: tour.region || "Central",
+      duration: tour.duration || "",
+      category: tour.category || "Nature",
       description: tour.description || "",
-      is_active: tour.is_active,
+      is_active: tour.is_active ?? true,
       is_recommended: tour.is_recommended ?? false,
       max_group_size: tour.max_group_size ?? 15,
       rating: tour.rating ?? 0,
       review_count: tour.review_count ?? 0,
-      highlights_str: tour.highlights?.join(", ") || "",
-      preparation_str: tour.preparation?.join(", ") || "",
+      
+      highlights_str: safeParseArray(tour.highlights).join(", "),
+      preparation_str: safeParseArray(tour.preparation).join(", "),
+      
       itinerary: tour.itinerary || "",
-      itinerary_data: tour.itinerary_data?.length ? tour.itinerary_data : [{ time: "", detail: "" }],
-      included: tour.included || "",
-      excluded: tour.excluded || "",
-      conditions: tour.conditions || "",
+      itinerary_data: finalItinerary, 
+      
+      included: safeParseArray(tour.included).join(", ") || (typeof tour.included === 'string' ? tour.included : ""),
+      excluded: safeParseArray(tour.excluded).join(", ") || (typeof tour.excluded === 'string' ? tour.excluded : ""),
+      conditions: safeParseArray(tour.conditions).join(", ") || (typeof tour.conditions === 'string' ? tour.conditions : ""),
     });
+    
     setCoverFile(null);
     setCoverPreview(getImageUrl(tour.image_cover));
     setAdditionalFiles([]);
+    setExistingImages(safeParseArray(tour.images));
     setIsModalOpen(true);
   };
 
@@ -278,8 +328,10 @@ const TourManager = () => {
     payload.append("duration", formData.duration);
     payload.append("category", formData.category);
     payload.append("description", formData.description);
-    payload.append("is_active", String(formData.is_active));
-    payload.append("is_recommended", String(formData.is_recommended));
+    
+    payload.append("is_active", formData.is_active ? "true" : "false");
+    payload.append("is_recommended", formData.is_recommended ? "true" : "false");
+    
     payload.append("max_group_size", String(Number(formData.max_group_size)));
     payload.append("rating", String(Number(formData.rating)));
     payload.append("review_count", String(Number(formData.review_count)));
@@ -291,15 +343,25 @@ const TourManager = () => {
     preparation.forEach(p => payload.append("preparation", p));
 
     payload.append("itinerary", formData.itinerary);
-    payload.append("itinerary_data", JSON.stringify(formData.itinerary_data.filter((i) => i.time && i.detail)));
+
+    const safeItinerary = getSafeItinerary();
+    payload.append("itinerary_data", JSON.stringify(safeItinerary.filter((i: any) => i.time && i.detail)));
     
     payload.append("included", formData.included);
     payload.append("excluded", formData.excluded);
     payload.append("conditions", formData.conditions);
 
+    // 📦 แนบไฟล์
     if (coverFile) {
       payload.append("image_cover", coverFile);
     }
+    
+    payload.append("images_updated", "true");
+    
+    existingImages.forEach((img) => {
+      payload.append("existing_images", img);
+    });
+    
     additionalFiles.forEach((file) => {
       payload.append("images", file);
     });
@@ -322,6 +384,7 @@ const TourManager = () => {
       setFormData(initialFormState);
       setCoverFile(null);
       setAdditionalFiles([]);
+      setExistingImages([]);
     } catch (err: any) {
       alert(`Error: ${err.message}`);
     } finally {
@@ -341,11 +404,11 @@ const TourManager = () => {
   };
 
   const updateItinerary = (index: number, field: "time" | "detail", value: string) => {
-    const updated = formData.itinerary_data.map((item, i) => i === index ? { ...item, [field]: value } : item);
+    const updated = getSafeItinerary().map((item: any, i: number) => i === index ? { ...item, [field]: value } : item);
     setFormData({ ...formData, itinerary_data: updated });
   };
-  const addItineraryRow = () => setFormData({ ...formData, itinerary_data: [...formData.itinerary_data, { time: "", detail: "" }] });
-  const removeItineraryRow = (index: number) => setFormData({ ...formData, itinerary_data: formData.itinerary_data.filter((_, i) => i !== index) });
+  const addItineraryRow = () => setFormData({ ...formData, itinerary_data: [...getSafeItinerary(), { time: "", detail: "" }] });
+  const removeItineraryRow = (index: number) => setFormData({ ...formData, itinerary_data: getSafeItinerary().filter((_: any, i: number) => i !== index) });
 
   const getInputClass = (fieldName: string, baseClass: string) => {
     if (errors[fieldName]) return `${baseClass} ring-2 ring-red-500 bg-red-50 border-red-500 text-red-900 placeholder:text-red-300 transition-all`;
@@ -567,43 +630,97 @@ const TourManager = () => {
                 </div>
               </div>
 
-              {/* Upload Fields */}
-              <div className="p-4 sm:p-5 bg-[#F6F1E9]/30 rounded-2xl border-2 border-[#F6F1E9] space-y-4">
+              {/* 📸 ส่วนอัปโหลดรูปภาพที่ถูกแก้ไขให้สมบูรณ์แล้ว */}
+              <div className="p-4 sm:p-5 bg-[#F6F1E9]/30 rounded-2xl border-2 border-[#F6F1E9] space-y-5">
+                
+                {/* 1. รูปหน้าปก */}
                 <div className="space-y-2 overflow-hidden">
                   <label className="text-xs sm:text-sm font-black text-[#4F200D] uppercase tracking-wider flex items-center gap-2">
                     <ImageIcon className="w-4 h-4 text-[#FF8400]" /> รูปภาพหน้าปก
                   </label>
-                  <Input 
+                  <input 
+                    ref={coverInputRef}
                     type="file" accept="image/*"
+                    className="hidden"
                     onChange={(e) => {
                       if (e.target.files && e.target.files[0]) {
                         setCoverFile(e.target.files[0]);
                         setCoverPreview(URL.createObjectURL(e.target.files[0]));
                       }
                     }} 
-                    className="bg-white border-0 rounded-xl text-xs sm:text-sm w-full file:mr-2 file:py-1.5 file:px-3 file:rounded-full file:border-0 file:text-xs file:font-bold file:bg-[#FFD93D]/30 file:text-[#FF8400] hover:file:bg-[#FFD93D]/50" 
                   />
-                  {coverPreview && (
-                    <div className="mt-3 rounded-2xl overflow-hidden border-2 border-[#F6F1E9] w-full max-w-[200px] sm:max-w-xs">
-                      <img src={coverPreview} alt="preview" className="h-32 sm:h-40 w-full object-cover" />
-                    </div>
-                  )}
+                  <div className="flex flex-wrap gap-3 mt-3 items-center">
+                    {coverPreview && (
+                      <div className="relative rounded-2xl overflow-hidden border-2 border-[#F6F1E9] w-32 h-32 group">
+                        <img src={coverPreview} alt="preview" className="h-full w-full object-cover" />
+                        <button type="button" onClick={() => { setCoverPreview(''); setCoverFile(null); }} className="absolute top-2 right-2 bg-red-500/90 text-white p-1.5 rounded-full opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-600">
+                          <X className="w-3 h-3" />
+                        </button>
+                      </div>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => coverInputRef.current?.click()}
+                      className="w-32 h-32 rounded-2xl border-2 border-dashed border-[#4F200D]/20 bg-white flex flex-col items-center justify-center text-[#4F200D]/50 hover:bg-[#F6F1E9] hover:border-[#FF8400] hover:text-[#FF8400] transition-colors"
+                    >
+                      <Plus className="w-6 h-6 mb-2" />
+                      <span className="text-xs font-bold">{coverPreview ? "เปลี่ยนรูปหน้าปก" : "เพิ่มรูปหน้าปก"}</span>
+                    </button>
+                  </div>
                 </div>
 
+                <div className="h-px bg-[#F6F1E9] w-full" />
+
+                {/* 2. รูปภาพเพิ่มเติม */}
                 <div className="space-y-2 overflow-hidden">
                   <label className="text-xs sm:text-sm font-black text-[#4F200D] uppercase tracking-wider flex items-center gap-2">
-                    <ImageIcon className="w-4 h-4 text-[#FF8400]" /> รูปภาพเพิ่มเติม
+                    <ImageIcon className="w-4 h-4 text-[#FF8400]" /> รูปภาพเพิ่มเติม (อัปโหลดหลายไฟล์ได้)
                   </label>
-                  <Input 
+                  
+                  {/* 🛡️ Input ซ่อนที่ทำงานด้วย useRef แบบชัวร์ๆ */}
+                  <input 
+                    ref={additionalImagesRef}
                     type="file" multiple accept="image/*"
+                    className="hidden"
                     onChange={(e) => {
-                      if (e.target.files) setAdditionalFiles(Array.from(e.target.files));
+                      if (e.target.files && e.target.files.length > 0) {
+                        const newFiles = Array.from(e.target.files);
+                        setAdditionalFiles(prev => [...prev, ...newFiles]);
+                        
+                        // เคลียร์ค่าปลอดภัย ป้องกันการเลือกรูปเดิมซ้ำแล้วไม่ติด
+                        setTimeout(() => {
+                          if (additionalImagesRef.current) {
+                            additionalImagesRef.current.value = '';
+                          }
+                        }, 0);
+                      }
                     }} 
-                    className="bg-white border-0 rounded-xl text-xs sm:text-sm w-full file:mr-2 file:py-1.5 file:px-3 file:rounded-full file:border-0 file:text-xs file:font-bold file:bg-[#F6F1E9] file:text-[#4F200D] hover:file:bg-[#e2ddd5]" 
                   />
-                  {additionalFiles.length > 0 && (
-                    <p className="text-xs font-bold text-[#FF8400] mt-1">เลือกไว้ {additionalFiles.length} รูปภาพ</p>
-                  )}
+                  
+                  <div className="flex flex-wrap gap-3 mt-3 items-center">
+                    {existingImages.map((img, idx) => (
+                      <div key={`exist-${idx}`} className="relative w-20 h-20 rounded-xl overflow-hidden border-2 border-[#F6F1E9] group shadow-sm">
+                        <img src={getImageUrl(img)} alt="" className="w-full h-full object-cover" />
+                        <button type="button" onClick={() => setExistingImages(prev => prev.filter((_, i) => i !== idx))} className="absolute top-1 right-1 bg-red-500/90 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-600 shadow-sm"><X className="w-3 h-3" /></button>
+                      </div>
+                    ))}
+                    
+                    {additionalFiles.map((file, idx) => (
+                      <div key={`new-${idx}`} className="relative w-20 h-20 rounded-xl overflow-hidden border-2 border-[#FFD93D] group shadow-sm">
+                        <img src={URL.createObjectURL(file)} alt="" className="w-full h-full object-cover" />
+                        <button type="button" onClick={() => setAdditionalFiles(prev => prev.filter((_, i) => i !== idx))} className="absolute top-1 right-1 bg-red-500/90 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-600 shadow-sm"><X className="w-3 h-3" /></button>
+                      </div>
+                    ))}
+                    
+                    <button
+                      type="button"
+                      onClick={() => additionalImagesRef.current?.click()}
+                      className="w-20 h-20 rounded-xl border-2 border-dashed border-[#FF8400] bg-[#FF8400]/5 flex flex-col items-center justify-center text-[#FF8400] hover:bg-[#FF8400]/20 transition-colors shadow-sm"
+                    >
+                      <Plus className="w-6 h-6 mb-1" />
+                      <span className="text-[10px] font-bold">เพิ่มรูป</span>
+                    </button>
+                  </div>
                 </div>
               </div>
 
@@ -632,12 +749,13 @@ const TourManager = () => {
                   <label className="text-xs sm:text-sm font-black text-[#4F200D] uppercase tracking-wider">แผนการเดินทาง (กำหนดเวลา)</label>
                   <button type="button" onClick={addItineraryRow} className="text-[10px] sm:text-xs text-[#FF8400] hover:text-white font-bold bg-[#FFD93D]/30 hover:bg-[#FF8400] px-2 sm:px-3 py-1.5 rounded-lg transition-colors">+ เพิ่มขั้นตอน</button>
                 </div>
-                {formData.itinerary_data.map((item, index) => (
+                {/* 🛡️ ใช้ฟังก์ชัน getSafeItinerary() ตรงนี้ เพื่อการันตีว่าค่าจะเป็น Array แน่นอน ไม่เกิดบัค `.map is not a function` */}
+                {getSafeItinerary().map((item: any, index: number) => (
                   <div key={index} className="flex flex-col sm:flex-row gap-2 sm:gap-3 items-start sm:items-center">
-                    <Input className="w-full sm:w-28 bg-white border-0 rounded-xl focus:ring-2 focus:ring-[#FFD93D] font-bold text-[#4F200D]" placeholder="08:30" value={item.time} onChange={(e) => updateItinerary(index, "time", e.target.value)} />
+                    <Input className="w-full sm:w-28 bg-white border-0 rounded-xl focus:ring-2 focus:ring-[#FFD93D] font-bold text-[#4F200D]" placeholder="08:30" value={item.time || ""} onChange={(e) => updateItinerary(index, "time", e.target.value)} />
                     <div className="flex w-full gap-2 items-center">
-                      <Input className="flex-1 bg-white border-0 rounded-xl focus:ring-2 focus:ring-[#FFD93D] font-bold text-[#4F200D]" placeholder="รายละเอียดกิจกรรม..." value={item.detail} onChange={(e) => updateItinerary(index, "detail", e.target.value)} />
-                      <button type="button" onClick={() => removeItineraryRow(index)} disabled={formData.itinerary_data.length === 1} className="p-2 hover:bg-red-100 rounded-xl transition-colors disabled:opacity-30 text-red-500 shrink-0"><X className="w-5 h-5" /></button>
+                      <Input className="flex-1 bg-white border-0 rounded-xl focus:ring-2 focus:ring-[#FFD93D] font-bold text-[#4F200D]" placeholder="รายละเอียดกิจกรรม..." value={item.detail || ""} onChange={(e) => updateItinerary(index, "detail", e.target.value)} />
+                      <button type="button" onClick={() => removeItineraryRow(index)} disabled={getSafeItinerary().length === 1} className="p-2 hover:bg-red-100 rounded-xl transition-colors disabled:opacity-30 text-red-500 shrink-0"><X className="w-5 h-5" /></button>
                     </div>
                   </div>
                 ))}

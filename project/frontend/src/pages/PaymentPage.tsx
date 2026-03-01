@@ -171,10 +171,11 @@ export default function PaymentPage() {
           {/* ปุ่มรีโหลด */}
           {paymentStatus === 'expired' && (
             <button 
-              onClick={() => window.location.reload()}
-              className="px-6 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg text-sm font-medium shadow-md"
+              // ⚠️ เปลี่ยน path '/my-bookings' ให้ตรงกับ URL หน้าประวัติการจองของคุณนะครับ
+              onClick={() => navigate('/booking-history')} 
+              className="w-full bg-orange-500 hover:bg-orange-600 text-white font-bold py-3 rounded-lg mt-4"
             >
-              ขอ QR Code ใหม่
+              กลับไปหน้าประวัติการจอง
             </button>
           )}
         </div>

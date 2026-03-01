@@ -255,22 +255,11 @@ function BookingSheet({ tour, onClose }: { tour: Tour; onClose?: () => void }) {
       .catch(() => {});
   }, []);
 
- const childPrice = Math.floor(tour.price * 0.6);
+  const childPrice = Math.floor(tour.price * 0.6);
   const pax = adults + children;
-  const baseTotal = (tour.price * adults) + (childPrice * children);
-
-  // คำนวณส่วนลด 5% ถ้าเป็นวันเสาร์ (6) หรือ วันอาทิตย์ (0)
-  let discount = 0;
-  let isWeekend = false;
-  if (selectedSchedule) {
-    const date = new Date(selectedSchedule.available_date);
-    const dayOfWeek = date.getDay();
-    if (dayOfWeek === 0 || dayOfWeek === 6) {
-      isWeekend = true;
-      discount = baseTotal * 0.05;
-    }
-  }
-  const total = baseTotal - discount;
+  
+  // ✅ กลับมาใช้ total คิดราคาตรงๆ แบบเดิม
+  const total = (tour.price * adults) + (childPrice * children);
 
   // Schedule-based capacity (one-day tours)
   const availableSeats = selectedSchedule?.available_seats ?? 0;
@@ -531,7 +520,7 @@ function BookingSheet({ tour, onClose }: { tour: Tour; onClose?: () => void }) {
           />
         </div>
 
-        {/* Price Summary */}
+{/* Price Summary */}
         <div className="bg-gradient-to-br from-amber-50 to-orange-50 rounded-xl p-4 border border-amber-100 space-y-2">
           {adults > 0 && (
             <div className="flex justify-between text-sm">
@@ -547,14 +536,6 @@ function BookingSheet({ tour, onClose }: { tour: Tour; onClose?: () => void }) {
               <span className="font-semibold">
                 ฿{(childPrice * children).toLocaleString()}
               </span>
-            </div>
-          )}
-          
-          {/* 🎉 แถวใหม่: โชว์ส่วนลดวันหยุดถ้าเข้าเงื่อนไข */}
-          {isWeekend && (
-            <div className="flex justify-between text-sm text-green-600 font-bold pt-1 border-t border-amber-100/50">
-              <span>✨ ส่วนลดวันหยุด (5%)</span>
-              <span>- ฿{discount.toLocaleString()}</span>
             </div>
           )}
 
@@ -577,11 +558,6 @@ function BookingSheet({ tour, onClose }: { tour: Tour; onClose?: () => void }) {
           <div className="border-t border-amber-200 pt-2 flex justify-between items-center font-black text-[#2C1A0E]">
             <span>รวมทั้งหมด</span>
             <div className="text-right">
-              {isWeekend && (
-                <span className="text-xs text-gray-400 line-through mr-2 font-normal">
-                  ฿{baseTotal.toLocaleString()}
-                </span>
-              )}
               <span className="text-[#FF8400] text-lg">
                 ฿{total.toLocaleString()}
               </span>

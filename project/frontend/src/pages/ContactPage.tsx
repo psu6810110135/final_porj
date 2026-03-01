@@ -61,8 +61,8 @@ const ContactPage = () => {
 
                 <form className="space-y-4 md:space-y-5" onSubmit={(e) => e.preventDefault()}>
                   <div className="flex flex-col sm:flex-row gap-3 md:gap-4">
-                    <input type="text" placeholder="ชื่อจริง" className="flex-1 p-3.5 rounded-2xl md:rounded-full border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#FF8A00] text-sm bg-gray-50/50" />
-                    <input type="text" placeholder="นามสกุล" className="flex-1 p-3.5 rounded-2xl md:rounded-full border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#FF8A00] text-sm bg-gray-50/50" />
+                    <input type="text" placeholder="ชื่อจริง" className="flex-1 min-w-0 p-3.5 rounded-2xl md:rounded-full border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#FF8A00] text-sm bg-gray-50/50" />
+                    <input type="text" placeholder="นามสกุล" className="flex-1 min-w-0 p-3.5 rounded-2xl md:rounded-full border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#FF8A00] text-sm bg-gray-50/50" />
                   </div>
                   
                   <div className="relative">

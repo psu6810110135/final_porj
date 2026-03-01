@@ -255,9 +255,22 @@ function BookingSheet({ tour, onClose }: { tour: Tour; onClose?: () => void }) {
       .catch(() => {});
   }, []);
 
-  const childPrice = Math.floor(tour.price * 0.6);
+ const childPrice = Math.floor(tour.price * 0.6);
   const pax = adults + children;
-  const total = tour.price * adults + childPrice * children;
+  const baseTotal = (tour.price * adults) + (childPrice * children);
+
+  // คำนวณส่วนลด 5% ถ้าเป็นวันเสาร์ (6) หรือ วันอาทิตย์ (0)
+  let discount = 0;
+  let isWeekend = false;
+  if (selectedSchedule) {
+    const date = new Date(selectedSchedule.available_date);
+    const dayOfWeek = date.getDay();
+    if (dayOfWeek === 0 || dayOfWeek === 6) {
+      isWeekend = true;
+      discount = baseTotal * 0.05;
+    }
+  }
+  const total = baseTotal - discount;
 
   // Schedule-based capacity (one-day tours)
   const availableSeats = selectedSchedule?.available_seats ?? 0;
@@ -536,6 +549,15 @@ function BookingSheet({ tour, onClose }: { tour: Tour; onClose?: () => void }) {
               </span>
             </div>
           )}
+          
+          {/* 🎉 แถวใหม่: โชว์ส่วนลดวันหยุดถ้าเข้าเงื่อนไข */}
+          {isWeekend && (
+            <div className="flex justify-between text-sm text-green-600 font-bold pt-1 border-t border-amber-100/50">
+              <span>✨ ส่วนลดวันหยุด (5%)</span>
+              <span>- ฿{discount.toLocaleString()}</span>
+            </div>
+          )}
+
           <div className="flex justify-between text-[11px] text-gray-500">
             <span>ผู้เดินทางรวม</span>
             <span>
@@ -552,11 +574,18 @@ function BookingSheet({ tour, onClose }: { tour: Tour; onClose?: () => void }) {
               )}
             </span>
           </div>
-          <div className="border-t border-amber-200 pt-2 flex justify-between font-black text-[#2C1A0E]">
+          <div className="border-t border-amber-200 pt-2 flex justify-between items-center font-black text-[#2C1A0E]">
             <span>รวมทั้งหมด</span>
-            <span className="text-[#FF8400] text-lg">
-              ฿{total.toLocaleString()}
-            </span>
+            <div className="text-right">
+              {isWeekend && (
+                <span className="text-xs text-gray-400 line-through mr-2 font-normal">
+                  ฿{baseTotal.toLocaleString()}
+                </span>
+              )}
+              <span className="text-[#FF8400] text-lg">
+                ฿{total.toLocaleString()}
+              </span>
+            </div>
           </div>
         </div>
 
@@ -611,16 +640,25 @@ function BookingSheet({ tour, onClose }: { tour: Tour; onClose?: () => void }) {
               localStorage.getItem("token") ||
               localStorage.getItem("accessToken");
             if (!token) return alert("กรุณาเข้าสู่ระบบก่อนจองทัวร์");
+            
             const payload = {
               tourId: tour.id,
               tourScheduleId: selectedSchedule.id,
-              pax,
+              pax: pax, // ส่งจำนวนรวมไป
+              numberOfTravelers: pax, // ส่งไปอีกชื่อกันเหนียว
               contactInfo: {
                 name: contactName,
                 email: contactEmail,
                 phone: contactPhone,
               },
+              selectedOptions: {
+                adults: adults,
+                children: children,
+              }
             };
+            
+            console.log("📦 กำลังส่งของไปหลังบ้าน:", payload);
+
             try {
               setSubmitting(true);
               const res = await api.post("/api/v1/bookings", payload, {

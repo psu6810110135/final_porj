@@ -11,7 +11,7 @@ export default function PaymentPage() {
   const [amount, setAmount] = useState(location.state?.amount || 0);
   const [qrPayload, setQrPayload] = useState(''); // เก็บโค้ดยาวๆ สำหรับสร้าง QR
   const [paymentStatus, setPaymentStatus] = useState<'pending' | 'approved' | 'rejected' | 'expired'>('pending');
-  const [timeLeft, setTimeLeft] = useState(600); // 15 นาที
+  const [timeLeft, setTimeLeft] = useState(900); // 15 นาที
 
   // 1. ดึงข้อมูล QR Code จาก Backend (ทำงานครั้งแรกครั้งเดียว)
   useEffect(() => {

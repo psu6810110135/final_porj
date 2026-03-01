@@ -63,10 +63,29 @@ export class BookingsService {
       throw new BadRequestException('Schedule does not belong to this tour');
     }
 
-    const basePricePerPerson = Number.isFinite(Number(tour.price))
-      ? Number(tour.price)
-      : 5000;
-    const basePrice = basePricePerPerson * paxValue;
+    // --- ส่วนที่ใช้คำนวณราคา (แก้ปัญหา TypeScript แล้ว) ---
+    const adultPrice = Number.isFinite(Number(tour.price)) ? Number(tour.price) : 5000;
+    const childPrice = tour.child_price ? Number(tour.child_price) : Math.floor(adultPrice * 0.6); 
+
+    let basePrice = 0;
+    let adultsCount = paxValue;
+    let childrenCount = 0;
+
+    // เลี่ยง Error ตัวแปร options
+    const options = (calculateBookingDto as any).selectedOptions;
+
+    if (options && options.adults !== undefined) {
+      adultsCount = Number(options.adults);
+      childrenCount = Number(options.children || 0);
+      
+      if (adultsCount + childrenCount !== paxValue) {
+        throw new BadRequestException('จำนวนผู้ใหญ่และเด็กไม่ตรงกับจำนวนผู้เดินทางรวม');
+      }
+      
+      basePrice = (adultsCount * adultPrice) + (childrenCount * childPrice);
+    } else {
+      basePrice = adultPrice * paxValue;
+    }
 
     const refDate = new Date(schedule.available_date);
     const discount = this.calculateDiscount(refDate, basePrice);
@@ -77,8 +96,10 @@ export class BookingsService {
       discount,
       totalPrice,
       breakdown: {
-        pricePerPerson: basePricePerPerson,
+        pricePerPerson: adultPrice, // ✅ เปลี่ยนมาใช้ adultPrice แล้ว
         pax: paxValue,
+        adults: adultsCount,        // ✅ แนบจำนวนผู้ใหญ่กลับไปในบิลด้วย
+        children: childrenCount,    // ✅ แนบจำนวนเด็กกลับไปในบิลด้วย
         subtotal: basePrice,
         discountPercentage: discount > 0 ? 5 : 0,
         discountAmount: discount,
@@ -88,6 +109,7 @@ export class BookingsService {
   }
 
   async create(createBookingDto: CreateBookingDto, userId: string) {
+    console.log('📥 หลังบ้านได้รับข้อมูล:', createBookingDto);
     return this.dataSource.transaction(async (manager) => {
       const paxValue =
         createBookingDto.pax ?? createBookingDto.numberOfTravelers;

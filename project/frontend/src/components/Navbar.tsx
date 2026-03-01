@@ -117,6 +117,7 @@ export default function Navbar({ activePage = "home" }: NavbarProps) {
     window.addEventListener("scroll", handleScroll, { passive: true });
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
+
   const token = localStorage.getItem("jwt_token");
   const isLoggedIn = !!token;
 
@@ -335,6 +336,7 @@ export default function Navbar({ activePage = "home" }: NavbarProps) {
           </div>
         )}
       </nav>
+
       {/* ── Logout Confirmation Modal ── */}
       {showLogoutModal && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center px-4">

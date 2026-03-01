@@ -4,11 +4,12 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import HomePage from "./pages/HomePage";
 import ToursPage from "./pages/ToursPage";
 import TourDetailPage from "./pages/TourDetailPage";
+import ContactPage from "./pages/ContactPage";
 
 // --- ระบบ Auth ---
 import LoginPage from "./pages/loginpage"; 
 import RegisterPage from "./pages/RegisterPage";
-import LoginSuccess from "./pages/loginsuccess";
+import LoginSuccess from "./pages/LoginSuccess";
 
 // --- ระบบ Admin ---
 import AdminLayout from "./pages/admin/AdminLayout";
@@ -31,6 +32,7 @@ export default function App() {
         <Route path="/login" element={<LoginPage />} />
         <Route path="/login/success" element={<LoginSuccess />} />
         <Route path="/register" element={<RegisterPage />} />
+        <Route path="/contact" element={<ContactPage />} />
         
         {/* --- 🛡️ โซนป้องกันแอดมิน --- */}
         <Route element={<AdminGuard />}>

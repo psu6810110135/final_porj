@@ -86,7 +86,12 @@ export default function ProfilePage() {
 
     if (!token || !file) return;
 
-    const allowedTypes = ["image/png", "image/jpeg", "image/jpg"];
+    const allowedTypes = [
+      "image/png",
+      "image/jpeg",
+      "image/jpg",
+      "image/pjpeg",
+    ];
     if (!allowedTypes.includes(file.type)) {
       setUploadError("รองรับเฉพาะไฟล์ PNG หรือ JPG เท่านั้น");
       return;

@@ -11,6 +11,7 @@ import {
   UseInterceptors,
   UploadedFile,
   ParseFilePipeBuilder,
+  BadRequestException,
 } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
@@ -69,10 +70,30 @@ export class UsersController {
         },
       }),
       fileFilter: (_, file, callback) => {
-        const isAllowedType = ['image/png', 'image/jpeg', 'image/jpg'].includes(
-          file.mimetype,
-        );
-        callback(null, isAllowedType);
+        const mimeType = (file.mimetype || '').toLowerCase();
+        const extension = extname(file.originalname || '').toLowerCase();
+        const allowedMimeTypes = [
+          'image/png',
+          'image/jpeg',
+          'image/jpg',
+          'image/pjpeg',
+        ];
+        const allowedExtensions = ['.png', '.jpg', '.jpeg'];
+
+        const isAllowedType =
+          allowedMimeTypes.includes(mimeType) &&
+          allowedExtensions.includes(extension);
+
+        if (!isAllowedType) {
+          return callback(
+            new BadRequestException(
+              'รองรับเฉพาะไฟล์ PNG, JPG หรือ JPEG เท่านั้น',
+            ),
+            false,
+          );
+        }
+
+        callback(null, true);
       },
       limits: {
         fileSize: 2 * 1024 * 1024,
@@ -86,9 +107,6 @@ export class UsersController {
         .addMaxSizeValidator({
           maxSize: 2 * 1024 * 1024,
           message: 'รูปโปรไฟล์ต้องมีขนาดไม่เกิน 2MB',
-        })
-        .addFileTypeValidator({
-          fileType: /^image\/(jpeg|jpg|png)$/,
         })
         .build({
           fileIsRequired: true,

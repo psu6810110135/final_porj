@@ -49,7 +49,10 @@ export class UsersController {
   @UseGuards(AuthGuard('jwt'))
   @Patch('me')
   updateMe(@Request() req, @Body() updateProfileDto: UpdateProfileDto) {
-    return this.usersService.updateCurrentUserProfile(req.user.id, updateProfileDto);
+    return this.usersService.updateCurrentUserProfile(
+      req.user.id,
+      updateProfileDto,
+    );
   }
 
   @UseGuards(AuthGuard('jwt'))

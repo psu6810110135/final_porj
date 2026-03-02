@@ -59,7 +59,11 @@ describe('UsersController', () => {
 
   it('should update current user profile from users service', async () => {
     const req = { user: { id: 'user-999' } };
-    const payload = { first_name: 'Jane', last_name: 'Doe', phone: '0811111111' };
+    const payload = {
+      first_name: 'Jane',
+      last_name: 'Doe',
+      phone: '0811111111',
+    };
     const expectedProfile = {
       id: 'user-999',
       email: 'jane@example.com',
@@ -70,7 +74,9 @@ describe('UsersController', () => {
       phone: '0811111111',
       avatarUrl: null,
     };
-    usersServiceMock.updateCurrentUserProfile.mockResolvedValue(expectedProfile);
+    usersServiceMock.updateCurrentUserProfile.mockResolvedValue(
+      expectedProfile,
+    );
 
     const result = await controller.updateMe(req, payload);
 

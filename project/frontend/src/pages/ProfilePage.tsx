@@ -126,7 +126,7 @@ export default function ProfilePage() {
       setUploadError(
         err instanceof Error
           ? err.message
-          : "อัปโหลดรูปโปรไฟล์ไม่สำเร็จ กรุณาลองใหม่"
+          : "อัปโหลดรูปโปรไฟล์ไม่สำเร็จ กรุณาลองใหม่",
       );
     } finally {
       setUploading(false);
@@ -169,7 +169,9 @@ export default function ProfilePage() {
       setLastName(updatedProfile.lastName ?? "");
       setPhone(updatedProfile.phone ?? "");
     } catch (err) {
-      setSaveError(err instanceof Error ? err.message : "บันทึกข้อมูลไม่สำเร็จ");
+      setSaveError(
+        err instanceof Error ? err.message : "บันทึกข้อมูลไม่สำเร็จ",
+      );
     } finally {
       setSaving(false);
     }

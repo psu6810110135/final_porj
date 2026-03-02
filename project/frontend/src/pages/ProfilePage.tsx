@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ChangeEvent } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
@@ -13,6 +13,7 @@ interface UserProfile {
   role?: string;
   createdAt?: string;
   phone?: string;
+  avatarUrl?: string;
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -43,6 +44,8 @@ export default function ProfilePage() {
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
 
   useEffect(() => {
     const token = localStorage.getItem("jwt_token");
@@ -56,23 +59,11 @@ export default function ProfilePage() {
         const res = await fetch("http://localhost:3000/api/v1/users/me", {
           headers: { Authorization: `Bearer ${token}` },
         });
-        if (!res.ok) throw new Error("Failed to fetch profile");
+        if (!res.ok) throw new Error("ไม่สามารถดึงข้อมูลผู้ใช้จากฐานข้อมูลได้");
         const data = await res.json();
         setProfile(data);
       } catch {
-        // Fallback: decode from token
-        try {
-          const payload = JSON.parse(atob(token.split(".")[1]));
-          setProfile({
-            id: payload.sub ?? payload.id ?? "",
-            email: payload.email ?? "",
-            firstName: payload.firstName,
-            lastName: payload.lastName,
-            role: payload.role,
-          });
-        } catch {
-          setError("ไม่สามารถโหลดข้อมูลโปรไฟล์ได้");
-        }
+        setError("ไม่สามารถโหลดข้อมูลโปรไฟล์จากฐานข้อมูลได้");
       } finally {
         setLoading(false);
       }
@@ -80,6 +71,56 @@ export default function ProfilePage() {
 
     fetchProfile();
   }, [navigate]);
+
+  const handleUploadAvatar = async (event: ChangeEvent<HTMLInputElement>) => {
+    const token = localStorage.getItem("jwt_token");
+    const file = event.target.files?.[0];
+
+    if (!token || !file) return;
+
+    const allowedTypes = ["image/png", "image/jpeg", "image/jpg"];
+    if (!allowedTypes.includes(file.type)) {
+      setUploadError("รองรับเฉพาะไฟล์ PNG หรือ JPG เท่านั้น");
+      return;
+    }
+
+    if (file.size > 2 * 1024 * 1024) {
+      setUploadError("ขนาดรูปต้องไม่เกิน 2MB");
+      return;
+    }
+
+    setUploadError(null);
+    setUploading(true);
+
+    try {
+      const formData = new FormData();
+      formData.append("avatar", file);
+
+      const res = await fetch("http://localhost:3000/api/v1/users/me/avatar", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        body: formData,
+      });
+
+      if (!res.ok) {
+        throw new Error("อัปโหลดรูปไม่สำเร็จ");
+      }
+
+      const updatedProfile = await res.json();
+      setProfile(updatedProfile);
+    } catch {
+      setUploadError("อัปโหลดรูปโปรไฟล์ไม่สำเร็จ กรุณาลองใหม่");
+    } finally {
+      setUploading(false);
+      event.target.value = "";
+    }
+  };
+
+  const avatarSrc = profile?.avatarUrl
+    ? `http://localhost:3000${profile.avatarUrl}`
+    : null;
 
   return (
     <div className="min-h-screen bg-[#F6F1E9]">
@@ -103,9 +144,17 @@ export default function ProfilePage() {
             <div className="bg-white rounded-2xl border border-[#F0E8E0] p-6 shadow-sm flex flex-col sm:flex-row items-center sm:items-start gap-5">
               {/* Avatar */}
               <div className="w-20 h-20 rounded-full bg-gradient-to-br from-[#FF8400] to-[#FF6B00] flex items-center justify-center shadow-lg flex-shrink-0">
-                <span className="text-white text-3xl font-bold">
-                  {getInitials(profile)}
-                </span>
+                {avatarSrc ? (
+                  <img
+                    src={avatarSrc}
+                    alt="Profile"
+                    className="w-20 h-20 rounded-full object-cover"
+                  />
+                ) : (
+                  <span className="text-white text-3xl font-bold">
+                    {getInitials(profile)}
+                  </span>
+                )}
               </div>
               {/* Name & Role */}
               <div className="text-center sm:text-left">
@@ -126,6 +175,24 @@ export default function ProfilePage() {
                     {profile.role === "admin" ? "ผู้ดูแลระบบ" : "สมาชิก"}
                   </span>
                 )}
+                <div className="mt-3">
+                  <label className="inline-flex items-center gap-2 text-xs font-medium text-[#4F200D] cursor-pointer bg-[#FFF3E0] hover:bg-[#FFE8CC] px-3 py-1.5 rounded-full transition-colors">
+                    <input
+                      type="file"
+                      accept=".png,.jpg,.jpeg,image/png,image/jpeg"
+                      className="hidden"
+                      onChange={handleUploadAvatar}
+                      disabled={uploading}
+                    />
+                    {uploading ? "กำลังอัปโหลด..." : "อัปโหลดรูปโปรไฟล์"}
+                  </label>
+                  <p className="text-[11px] text-gray-400 mt-1">
+                    รองรับ PNG/JPG และขนาดไม่เกิน 2MB
+                  </p>
+                  {uploadError && (
+                    <p className="text-[11px] text-red-500 mt-1">{uploadError}</p>
+                  )}
+                </div>
               </div>
             </div>
 

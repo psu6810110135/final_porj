@@ -31,6 +31,8 @@ export class AuthService {
         username: email, // 👈 ใช้อีเมลเป็น Username
         email: email,
         password: hashedPassword,
+        first_name: firstName,
+        last_name: lastName,
         full_name: `${firstName} ${lastName}`, // เอาชื่อ-นามสกุลมาต่อกัน
       });
     }

@@ -44,8 +44,13 @@ export default function ProfilePage() {
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [phone, setPhone] = useState("");
 
   useEffect(() => {
     const token = localStorage.getItem("jwt_token");
@@ -62,6 +67,9 @@ export default function ProfilePage() {
         if (!res.ok) throw new Error("ไม่สามารถดึงข้อมูลผู้ใช้จากฐานข้อมูลได้");
         const data = await res.json();
         setProfile(data);
+        setFirstName(data.firstName ?? "");
+        setLastName(data.lastName ?? "");
+        setPhone(data.phone ?? "");
       } catch {
         setError("ไม่สามารถโหลดข้อมูลโปรไฟล์จากฐานข้อมูลได้");
       } finally {
@@ -105,16 +113,65 @@ export default function ProfilePage() {
       });
 
       if (!res.ok) {
-        throw new Error("อัปโหลดรูปไม่สำเร็จ");
+        const errorData = await res.json().catch(() => null);
+        const message = Array.isArray(errorData?.message)
+          ? errorData.message.join(", ")
+          : errorData?.message || "อัปโหลดรูปไม่สำเร็จ";
+        throw new Error(message);
       }
 
       const updatedProfile = await res.json();
       setProfile(updatedProfile);
-    } catch {
-      setUploadError("อัปโหลดรูปโปรไฟล์ไม่สำเร็จ กรุณาลองใหม่");
+    } catch (err) {
+      setUploadError(
+        err instanceof Error
+          ? err.message
+          : "อัปโหลดรูปโปรไฟล์ไม่สำเร็จ กรุณาลองใหม่"
+      );
     } finally {
       setUploading(false);
       event.target.value = "";
+    }
+  };
+
+  const handleSaveProfile = async () => {
+    const token = localStorage.getItem("jwt_token");
+    if (!token || !profile) return;
+
+    setSaveError(null);
+    setSaving(true);
+
+    try {
+      const res = await fetch("http://localhost:3000/api/v1/users/me", {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          first_name: firstName,
+          last_name: lastName,
+          phone,
+        }),
+      });
+
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => null);
+        const message = Array.isArray(errorData?.message)
+          ? errorData.message.join(", ")
+          : errorData?.message || "บันทึกข้อมูลไม่สำเร็จ";
+        throw new Error(message);
+      }
+
+      const updatedProfile = await res.json();
+      setProfile(updatedProfile);
+      setFirstName(updatedProfile.firstName ?? "");
+      setLastName(updatedProfile.lastName ?? "");
+      setPhone(updatedProfile.phone ?? "");
+    } catch (err) {
+      setSaveError(err instanceof Error ? err.message : "บันทึกข้อมูลไม่สำเร็จ");
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -190,7 +247,9 @@ export default function ProfilePage() {
                     รองรับ PNG/JPG และขนาดไม่เกิน 2MB
                   </p>
                   {uploadError && (
-                    <p className="text-[11px] text-red-500 mt-1">{uploadError}</p>
+                    <p className="text-[11px] text-red-500 mt-1">
+                      {uploadError}
+                    </p>
                   )}
                 </div>
               </div>
@@ -199,6 +258,47 @@ export default function ProfilePage() {
             {/* Info Card */}
             <div className="bg-white rounded-2xl border border-[#F0E8E0] p-6 shadow-sm">
               <h3 className="font-bold text-[#4F200D] mb-4">ข้อมูลส่วนตัว</h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
+                <div>
+                  <label className="text-xs text-gray-500">ชื่อ</label>
+                  <input
+                    value={firstName}
+                    onChange={(e) => setFirstName(e.target.value)}
+                    className="mt-1 w-full rounded-xl border border-[#F0E8E0] px-3 py-2 text-sm text-[#4F200D] focus:outline-none focus:ring-2 focus:ring-[#FF8400]/30"
+                    placeholder="ชื่อ"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs text-gray-500">นามสกุล</label>
+                  <input
+                    value={lastName}
+                    onChange={(e) => setLastName(e.target.value)}
+                    className="mt-1 w-full rounded-xl border border-[#F0E8E0] px-3 py-2 text-sm text-[#4F200D] focus:outline-none focus:ring-2 focus:ring-[#FF8400]/30"
+                    placeholder="นามสกุล"
+                  />
+                </div>
+                <div className="sm:col-span-2">
+                  <label className="text-xs text-gray-500">เบอร์โทร</label>
+                  <input
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                    className="mt-1 w-full rounded-xl border border-[#F0E8E0] px-3 py-2 text-sm text-[#4F200D] focus:outline-none focus:ring-2 focus:ring-[#FF8400]/30"
+                    placeholder="เบอร์โทร"
+                  />
+                </div>
+              </div>
+              <div className="mb-4">
+                <button
+                  onClick={handleSaveProfile}
+                  disabled={saving}
+                  className="inline-flex items-center justify-center px-4 py-2 rounded-xl text-sm font-semibold text-white bg-[#FF8400] hover:bg-[#E67600] transition-colors disabled:opacity-70"
+                >
+                  {saving ? "กำลังบันทึก..." : "บันทึกข้อมูล"}
+                </button>
+                {saveError && (
+                  <p className="text-[11px] text-red-500 mt-2">{saveError}</p>
+                )}
+              </div>
               <div className="divide-y divide-[#F0E8E0]">
                 <InfoRow label="ชื่อ" value={profile.firstName ?? "-"} />
                 <InfoRow label="นามสกุล" value={profile.lastName ?? "-"} />

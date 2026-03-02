@@ -14,16 +14,16 @@ export class AuthService {
     if (!req.user) {
       throw new UnauthorizedException('ไม่พบข้อมูลจาก Google');
     }
-    
+
     const { email, firstName, lastName } = req.user;
-    
+
     // 1. ลองหา User ในระบบ (เพื่อความชัวร์ไม่ซ้ำ เราจะใช้อีเมลเป็น username ไปเลย)
     let user = await this.usersService.findOne(email);
 
     if (!user) {
       // 2. ถ้าไม่เคยมีไอดี -> สมัครสมาชิกให้ใหม่ทันที!
       // สุ่มรหัสผ่านให้ไปก่อน เพราะเขา Login ผ่าน Google
-      const randomPassword = Math.random().toString(36).slice(-10); 
+      const randomPassword = Math.random().toString(36).slice(-10);
       const salt = await bcrypt.genSalt();
       const hashedPassword = await bcrypt.hash(randomPassword, salt);
 
@@ -46,7 +46,7 @@ export class AuthService {
   // สมัครสมาชิก (เหมือนเดิม)
   async signUp(authCredentialsDto: AuthCredentialsDto): Promise<void> {
     const { username, password } = authCredentialsDto;
-    
+
     const salt = await bcrypt.genSalt();
     const hashedPassword = await bcrypt.hash(password, salt);
 
@@ -57,25 +57,25 @@ export class AuthService {
   }
 
   // เข้าสู่ระบบ (จุดที่ต้องแก้!)
-  async signIn(authCredentialsDto: AuthCredentialsDto): Promise<{ accessToken: string }> {
+  async signIn(
+    authCredentialsDto: AuthCredentialsDto,
+  ): Promise<{ accessToken: string }> {
     const { username, password } = authCredentialsDto;
-    
+
     // 1. หา User จาก Database
     const user = await this.usersService.findOne(username);
 
     // 2. เช็ครหัสผ่าน
     if (user && (await bcrypt.compare(password, user.password))) {
-      
       // 👇👇 จุดสำคัญ: ยัด Role ลงไปใน Payload ตรงนี้ครับ 👇👇
-      const payload = { 
-        username, 
+      const payload = {
+        username,
         role: user.role, // <--- เพิ่มบรรทัดนี้! หน้าบ้านจะได้รู้ว่าเป็น Admin
-        sub: user.id     // (แถม) ปกติควรใส่ ID ด้วย
+        sub: user.id, // (แถม) ปกติควรใส่ ID ด้วย
       };
-      
+
       const accessToken = await this.jwtService.sign(payload);
       return { accessToken };
-
     } else {
       throw new UnauthorizedException('Please check your login credentials');
     }

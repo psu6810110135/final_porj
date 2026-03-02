@@ -15,6 +15,7 @@ import {
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
+import { UpdateProfileDto } from './dto/update-profile.dto';
 import { UseGuards } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { FileInterceptor } from '@nestjs/platform-express';
@@ -46,6 +47,12 @@ export class UsersController {
   }
 
   @UseGuards(AuthGuard('jwt'))
+  @Patch('me')
+  updateMe(@Request() req, @Body() updateProfileDto: UpdateProfileDto) {
+    return this.usersService.updateCurrentUserProfile(req.user.id, updateProfileDto);
+  }
+
+  @UseGuards(AuthGuard('jwt'))
   @Post('me/avatar')
   @UseInterceptors(
     FileInterceptor('avatar', {
@@ -59,7 +66,9 @@ export class UsersController {
         },
       }),
       fileFilter: (_, file, callback) => {
-        const isAllowedType = ['image/png', 'image/jpeg', 'image/jpg'].includes(file.mimetype);
+        const isAllowedType = ['image/png', 'image/jpeg', 'image/jpg'].includes(
+          file.mimetype,
+        );
         callback(null, isAllowedType);
       },
       limits: {
@@ -76,7 +85,7 @@ export class UsersController {
           message: 'รูปโปรไฟล์ต้องมีขนาดไม่เกิน 2MB',
         })
         .addFileTypeValidator({
-          fileType: /\.(jpg|jpeg|png)$/i,
+          fileType: /^image\/(jpeg|jpg|png)$/,
         })
         .build({
           fileIsRequired: true,
@@ -95,7 +104,10 @@ export class UsersController {
   }
 
   @Patch(':id')
-  update(@Param('id', ParseUUIDPipe) id: string, @Body() updateUserDto: UpdateUserDto) {
+  update(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() updateUserDto: UpdateUserDto,
+  ) {
     return this.usersService.update(id, updateUserDto);
   }
 

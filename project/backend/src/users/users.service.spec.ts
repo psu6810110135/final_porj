@@ -73,6 +73,48 @@ describe('UsersService', () => {
   it('should throw when current user profile does not exist', async () => {
     repository.findOne.mockResolvedValue(null);
 
-    await expect(service.getCurrentUserProfile('missing')).rejects.toThrow(NotFoundException);
+    await expect(service.getCurrentUserProfile('missing')).rejects.toThrow(
+      NotFoundException,
+    );
+  });
+
+  it('should update current user profile first name last name and phone', async () => {
+    const existingUser: User = {
+      id: 'u-2',
+      username: 'bob',
+      password: 'hashed',
+      email: 'bob@example.com',
+      first_name: 'Bob',
+      last_name: 'Old',
+      full_name: 'Bob Old',
+      role: UserRole.USER,
+      is_active: true,
+      created_at: new Date('2026-01-01T00:00:00.000Z'),
+      updated_at: new Date('2026-01-02T00:00:00.000Z'),
+      phone: '0800000000',
+      avatar_url: null as any,
+    };
+
+    const savedUser: User = {
+      ...existingUser,
+      first_name: 'Robert',
+      last_name: 'Lee',
+      phone: '0899999999',
+      full_name: 'Robert Lee',
+    };
+
+    repository.findOne.mockResolvedValue(existingUser);
+    repository.save.mockResolvedValue(savedUser as any);
+
+    const result = await service.updateCurrentUserProfile('u-2', {
+      first_name: 'Robert',
+      last_name: 'Lee',
+      phone: '0899999999',
+    });
+
+    expect(repository.save).toHaveBeenCalled();
+    expect(result.firstName).toBe('Robert');
+    expect(result.lastName).toBe('Lee');
+    expect(result.phone).toBe('0899999999');
   });
 });

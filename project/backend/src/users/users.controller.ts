@@ -12,6 +12,7 @@ import {
   UploadedFile,
   ParseFilePipeBuilder,
   BadRequestException,
+  ForbiddenException,
 } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
@@ -19,6 +20,7 @@ import { UpdateUserDto } from './dto/update-user.dto';
 import { UpdateProfileDto } from './dto/update-profile.dto';
 import { UseGuards } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
+import { UserRole } from './entities/user.entity';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import { extname, join } from 'path';
@@ -31,13 +33,23 @@ mkdirSync(AVATAR_UPLOAD_DIR, { recursive: true });
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
+  private ensureAdmin(req: any) {
+    if (req.user?.role !== UserRole.ADMIN) {
+      throw new ForbiddenException('เฉพาะผู้ดูแลระบบเท่านั้นที่เข้าถึงได้');
+    }
+  }
+
+  @UseGuards(AuthGuard('jwt'))
   @Post()
-  create(@Body() createUserDto: CreateUserDto) {
+  create(@Request() req, @Body() createUserDto: CreateUserDto) {
+    this.ensureAdmin(req);
     return this.usersService.create(createUserDto);
   }
 
+  @UseGuards(AuthGuard('jwt'))
   @Get()
-  findAll() {
+  findAll(@Request() req) {
+    this.ensureAdmin(req);
     return this.usersService.findAll();
   }
 
@@ -119,21 +131,28 @@ export class UsersController {
     return this.usersService.updateAvatar(req.user.id, avatarUrl);
   }
 
+  @UseGuards(AuthGuard('jwt'))
   @Get(':id')
-  findOne(@Param('id', ParseUUIDPipe) id: string) {
+  findOne(@Request() req, @Param('id', ParseUUIDPipe) id: string) {
+    this.ensureAdmin(req);
     return this.usersService.findById(id);
   }
 
+  @UseGuards(AuthGuard('jwt'))
   @Patch(':id')
   update(
+    @Request() req,
     @Param('id', ParseUUIDPipe) id: string,
     @Body() updateUserDto: UpdateUserDto,
   ) {
+    this.ensureAdmin(req);
     return this.usersService.update(id, updateUserDto);
   }
 
+  @UseGuards(AuthGuard('jwt'))
   @Delete(':id')
-  remove(@Param('id', ParseUUIDPipe) id: string) {
+  remove(@Request() req, @Param('id', ParseUUIDPipe) id: string) {
+    this.ensureAdmin(req);
     return this.usersService.remove(id);
   }
 }

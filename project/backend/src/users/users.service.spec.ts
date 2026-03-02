@@ -2,7 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { UsersService } from './users.service';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { User, UserRole } from './entities/user.entity';
-import { Repository } from 'typeorm';
+import { DataSource, Repository } from 'typeorm';
 import { NotFoundException } from '@nestjs/common';
 
 describe('UsersService', () => {
@@ -16,6 +16,10 @@ describe('UsersService', () => {
     save: jest.fn(),
   };
 
+  const dataSourceMock = {
+    query: jest.fn().mockResolvedValue([]),
+  };
+
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -24,12 +28,17 @@ describe('UsersService', () => {
           provide: getRepositoryToken(User),
           useValue: usersRepositoryMock,
         },
+        {
+          provide: DataSource,
+          useValue: dataSourceMock,
+        },
       ],
     }).compile();
 
     service = module.get<UsersService>(UsersService);
     repository = module.get(getRepositoryToken(User));
     jest.clearAllMocks();
+    dataSourceMock.query.mockResolvedValue([]);
   });
 
   it('should be defined', () => {

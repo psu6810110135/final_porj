@@ -5,7 +5,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { DataSource, Repository } from 'typeorm';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { UpdateProfileDto } from './dto/update-profile.dto';
@@ -27,6 +27,7 @@ export class UsersService {
   constructor(
     @InjectRepository(User)
     private usersRepository: Repository<User>,
+    private dataSource: DataSource,
   ) {}
 
   async findOne(username: string): Promise<User | null> {
@@ -56,11 +57,16 @@ export class UsersService {
   }
 
   async findAll(): Promise<User[]> {
-    return this.usersRepository.find();
+    const users = await this.usersRepository.find();
+    return this.enrichUsersWithLegacyData(users);
   }
 
   async findById(id: string): Promise<User | null> {
-    return this.usersRepository.findOne({ where: { id } });
+    const user = await this.usersRepository.findOne({ where: { id } });
+    if (!user) return null;
+
+    const [enriched] = await this.enrichUsersWithLegacyData([user]);
+    return enriched;
   }
 
   async getCurrentUserProfile(id: string): Promise<UserProfileResponse> {
@@ -141,6 +147,15 @@ export class UsersService {
     if (updateUserDto.phone !== undefined) user.phone = updateUserDto.phone;
 
     if (
+      updateUserDto.first_name !== undefined ||
+      updateUserDto.last_name !== undefined
+    ) {
+      const fullName =
+        `${user.first_name ?? ''} ${user.last_name ?? ''}`.trim();
+      user.full_name = fullName;
+    }
+
+    if (
       (updateUserDto.first_name === undefined ||
         updateUserDto.last_name === undefined) &&
       user.full_name
@@ -199,5 +214,75 @@ export class UsersService {
       phone: user.phone ?? null,
       avatarUrl: user.avatar_url ?? null,
     };
+  }
+
+  private async enrichUsersWithLegacyData(users: User[]): Promise<User[]> {
+    if (users.length === 0) return users;
+
+    const legacyMap = await this.getLegacyProfilesByUserId();
+
+    return users.map((user) => {
+      const legacy = legacyMap.get(user.id);
+
+      if (!user.first_name && legacy?.first_name) {
+        user.first_name = legacy.first_name;
+      }
+
+      if (!user.last_name && legacy?.last_name) {
+        user.last_name = legacy.last_name;
+      }
+
+      if (!user.phone && legacy?.phone) {
+        user.phone = legacy.phone;
+      }
+
+      if (!user.full_name) {
+        const fullName =
+          `${user.first_name ?? ''} ${user.last_name ?? ''}`.trim();
+        user.full_name = fullName;
+      }
+
+      if (!user.email) {
+        user.email = user.username;
+      }
+
+      return user;
+    });
+  }
+
+  private async getLegacyProfilesByUserId(): Promise<
+    Map<string, { first_name?: string; last_name?: string; phone?: string }>
+  > {
+    try {
+      const rows: Array<{
+        user_id: string;
+        first_name: string | null;
+        last_name: string | null;
+        phone: string | null;
+      }> = await this.dataSource.query(`
+        SELECT
+          u.id AS user_id,
+          up."firstName" AS first_name,
+          up."lastName" AS last_name,
+          up."phoneNumber" AS phone
+        FROM users u
+        INNER JOIN user_profiles up ON u."profileId" = up.id
+      `);
+
+      const map = new Map<
+        string,
+        { first_name?: string; last_name?: string; phone?: string }
+      >();
+      for (const row of rows) {
+        map.set(row.user_id, {
+          first_name: row.first_name ?? undefined,
+          last_name: row.last_name ?? undefined,
+          phone: row.phone ?? undefined,
+        });
+      }
+      return map;
+    } catch {
+      return new Map();
+    }
   }
 }

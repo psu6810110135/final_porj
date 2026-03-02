@@ -10,6 +10,8 @@ import {
   CheckCircle,
   XCircle,
   AlertCircle,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -38,6 +40,7 @@ interface Schedule {
 }
 
 const API_BASE = "http://localhost:3000/api/v1";
+const ITEMS_PER_PAGE = 10;
 
 const toDateInputValue = (date: Date) => {
   const year = date.getFullYear();
@@ -87,6 +90,7 @@ const TourScheduleManager = () => {
   const [submitSuccess, setSubmitSuccess] = useState<string | null>(null);
   const [bulkMode, setBulkMode] = useState(true);
   const [endDate, setEndDate] = useState(getTomorrowValue());
+  const [currentPage, setCurrentPage] = useState(1);
 
   const [formData, setFormData] = useState({
     available_date: "",
@@ -105,6 +109,17 @@ const TourScheduleManager = () => {
       setSchedules([]);
     }
   }, [selectedTourId]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [selectedTourId]);
+
+  useEffect(() => {
+    const maxPage = Math.max(1, Math.ceil(schedules.length / ITEMS_PER_PAGE));
+    if (currentPage > maxPage) {
+      setCurrentPage(maxPage);
+    }
+  }, [schedules.length, currentPage]);
 
   const fetchTours = async () => {
     setLoadingTours(true);
@@ -253,17 +268,20 @@ const TourScheduleManager = () => {
         const dates = getDateRange(formData.available_date, endDate);
         const results = await Promise.allSettled(
           dates.map(async (dateValue) => {
-            const res = await fetch(`${API_BASE}/tours/${selectedTourId}/schedules`, {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-                ...getAuthHeader(),
+            const res = await fetch(
+              `${API_BASE}/tours/${selectedTourId}/schedules`,
+              {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                  ...getAuthHeader(),
+                },
+                body: JSON.stringify({
+                  ...payload,
+                  available_date: dateValue,
+                }),
               },
-              body: JSON.stringify({
-                ...payload,
-                available_date: dateValue,
-              }),
-            });
+            );
 
             if (!res.ok) {
               const errData = await res.json().catch(() => ({}));
@@ -273,11 +291,17 @@ const TourScheduleManager = () => {
           }),
         );
 
-        const successCount = results.filter((result) => result.status === "fulfilled").length;
-        const failedResults = results.filter((result) => result.status === "rejected");
+        const successCount = results.filter(
+          (result) => result.status === "fulfilled",
+        ).length;
+        const failedResults = results.filter(
+          (result) => result.status === "rejected",
+        );
 
         if (successCount === 0) {
-          throw new Error("ไม่สามารถสร้างรอบทัวร์ได้ กรุณาตรวจสอบว่ามีวันที่ซ้ำหรือไม่");
+          throw new Error(
+            "ไม่สามารถสร้างรอบทัวร์ได้ กรุณาตรวจสอบว่ามีวันที่ซ้ำหรือไม่",
+          );
         }
 
         if (failedResults.length > 0) {
@@ -288,14 +312,17 @@ const TourScheduleManager = () => {
           setSubmitSuccess(`สร้างรอบทัวร์สำเร็จ ${successCount} วัน`);
         }
       } else {
-        const response = await fetch(`${API_BASE}/tours/${selectedTourId}/schedules`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            ...getAuthHeader(),
+        const response = await fetch(
+          `${API_BASE}/tours/${selectedTourId}/schedules`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              ...getAuthHeader(),
+            },
+            body: JSON.stringify(payload),
           },
-          body: JSON.stringify(payload),
-        });
+        );
 
         if (!response.ok) {
           const errData = await response.json();
@@ -346,6 +373,17 @@ const TourScheduleManager = () => {
       new Date(a.available_date).getTime() -
       new Date(b.available_date).getTime(),
   );
+
+  const totalPages = Math.max(
+    1,
+    Math.ceil(sortedSchedules.length / ITEMS_PER_PAGE),
+  );
+  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+  const endIndexSafe = Math.min(
+    startIndex + ITEMS_PER_PAGE,
+    sortedSchedules.length,
+  );
+  const paginatedSchedules = sortedSchedules.slice(startIndex, endIndexSafe);
 
   const selectedDatePreview = formData.available_date
     ? formatThaiDate(formData.available_date)
@@ -486,7 +524,8 @@ const TourScheduleManager = () => {
                   <tr>
                     <td colSpan={6} className="px-6 py-12 text-center">
                       <div className="flex items-center justify-center gap-2 text-[#FF8400] font-bold">
-                        <Loader2 className="w-4 h-4 animate-spin" /> กำลังโหลดตารางทัวร์...
+                        <Loader2 className="w-4 h-4 animate-spin" />{" "}
+                        กำลังโหลดตารางทัวร์...
                       </div>
                     </td>
                   </tr>
@@ -500,7 +539,7 @@ const TourScheduleManager = () => {
                     </td>
                   </tr>
                 ) : (
-                  sortedSchedules.map((schedule) => {
+                  paginatedSchedules.map((schedule) => {
                     const dateStr = formatThaiDate(schedule.available_date);
                     const maxCapacity =
                       schedule.max_capacity_override ??
@@ -593,6 +632,65 @@ const TourScheduleManager = () => {
               </tbody>
             </table>
           </div>
+
+          {!loading && sortedSchedules.length > 0 && (
+            <div className="px-4 sm:px-6 py-5 flex flex-col sm:flex-row items-center justify-between sm:justify-center gap-4 bg-white border-t-2 border-[#F6F1E9] relative">
+              <p className="text-xs sm:text-sm font-semibold text-[#4F200D]/50 sm:absolute sm:left-6">
+                แสดง{" "}
+                <span className="text-[#FF8400]">
+                  {sortedSchedules.length === 0 ? 0 : startIndex + 1}
+                </span>{" "}
+                ถึง <span className="text-[#FF8400]">{endIndexSafe}</span> จาก{" "}
+                <span className="text-[#FF8400]">{sortedSchedules.length}</span>{" "}
+                รายการ
+              </p>
+
+              <div className="flex items-center gap-1 bg-[#F6F1E9]/30 p-1.5 rounded-2xl border-2 border-[#F6F1E9] z-10">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8 text-[#4F200D] font-bold rounded-xl hover:bg-[#FFD93D]/30 hover:text-[#FF8400] transition-colors disabled:opacity-30"
+                  onClick={() =>
+                    setCurrentPage((prev) => Math.max(1, prev - 1))
+                  }
+                  disabled={currentPage === 1}
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                </Button>
+
+                <div className="flex items-center gap-1 mx-1 flex-wrap justify-center">
+                  {Array.from({ length: totalPages }, (_, i) => i + 1).map(
+                    (page) => (
+                      <Button
+                        key={page}
+                        variant="ghost"
+                        onClick={() => setCurrentPage(page)}
+                        className={`h-8 w-8 p-0 text-sm font-black rounded-xl transition-all ${
+                          currentPage === page
+                            ? "bg-[#FF8400] text-white shadow-md shadow-[#FF8400]/20"
+                            : "text-[#4F200D]/60 hover:bg-[#FFD93D]/30 hover:text-[#FF8400]"
+                        }`}
+                      >
+                        {page}
+                      </Button>
+                    ),
+                  )}
+                </div>
+
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8 text-[#4F200D] font-bold rounded-xl hover:bg-[#FFD93D]/30 hover:text-[#FF8400] transition-colors disabled:opacity-30"
+                  onClick={() =>
+                    setCurrentPage((prev) => Math.min(totalPages, prev + 1))
+                  }
+                  disabled={currentPage === totalPages}
+                >
+                  <ChevronRight className="w-4 h-4" />
+                </Button>
+              </div>
+            </div>
+          )}
         </div>
       )}
 
@@ -611,7 +709,10 @@ const TourScheduleManager = () => {
               </button>
             </div>
 
-            <form onSubmit={handleSubmit} className="p-5 sm:p-6 space-y-4 sm:space-y-5 max-h-[75vh] overflow-y-auto">
+            <form
+              onSubmit={handleSubmit}
+              className="p-5 sm:p-6 space-y-4 sm:space-y-5 max-h-[75vh] overflow-y-auto"
+            >
               <div className="p-3 bg-[#FFF3E0] rounded-xl border border-[#FFE0B2]">
                 <p className="text-xs font-black text-[#FF8400] uppercase tracking-wider">
                   ทัวร์ที่เลือก
@@ -671,7 +772,12 @@ const TourScheduleManager = () => {
                     type="button"
                     variant="ghost"
                     className="h-8 px-3 text-xs font-bold rounded-lg bg-[#F6F1E9] hover:bg-[#EFE6DA]"
-                    onClick={() => setFormData({ ...formData, available_date: toDateInputValue(new Date()) })}
+                    onClick={() =>
+                      setFormData({
+                        ...formData,
+                        available_date: toDateInputValue(new Date()),
+                      })
+                    }
                   >
                     วันนี้
                   </Button>
@@ -679,7 +785,12 @@ const TourScheduleManager = () => {
                     type="button"
                     variant="ghost"
                     className="h-8 px-3 text-xs font-bold rounded-lg bg-[#F6F1E9] hover:bg-[#EFE6DA]"
-                    onClick={() => setFormData({ ...formData, available_date: getTomorrowValue() })}
+                    onClick={() =>
+                      setFormData({
+                        ...formData,
+                        available_date: getTomorrowValue(),
+                      })
+                    }
                   >
                     พรุ่งนี้
                   </Button>
@@ -744,7 +855,9 @@ const TourScheduleManager = () => {
               </div>
 
               <div className="p-3 rounded-xl bg-[#F6F1E9]/50 border border-[#F0E8E0]">
-                <p className="text-xs font-black text-[#4F200D] uppercase tracking-wider mb-2">สรุปก่อนบันทึก</p>
+                <p className="text-xs font-black text-[#4F200D] uppercase tracking-wider mb-2">
+                  สรุปก่อนบันทึก
+                </p>
                 <div className="text-sm text-[#4F200D] space-y-1 font-semibold">
                   {bulkMode && !editingId ? (
                     <>
@@ -756,7 +869,7 @@ const TourScheduleManager = () => {
                     <p>วันที่: {selectedDatePreview}</p>
                   )}
                   <p>ความจุ: {effectiveCapacity} คน</p>
-                  <p>สถานะ: {formData.is_available ? 'เปิดจอง' : 'ปิดจอง'}</p>
+                  <p>สถานะ: {formData.is_available ? "เปิดจอง" : "ปิดจอง"}</p>
                 </div>
               </div>
 

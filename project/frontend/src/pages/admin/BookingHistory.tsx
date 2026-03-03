@@ -102,14 +102,20 @@ const CustomSelect = ({
   options,
   className,
   containerClassName,
+  menuPlacement = "bottom",
 }: {
   value: string | number;
   onChange: (val: any) => void;
   options: Option[];
   className?: string;
   containerClassName?: string;
+  menuPlacement?: "top" | "bottom" | "auto";
 }) => {
   const [isOpen, setIsOpen] = useState(false);
+  const [resolvedPlacement, setResolvedPlacement] = useState<"top" | "bottom">(
+    "bottom",
+  );
+  const [menuMaxHeight, setMenuMaxHeight] = useState(240);
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -121,6 +127,41 @@ const CustomSelect = ({
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
+
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const updateMenuLayout = () => {
+      if (!ref.current) return;
+
+      const rect = ref.current.getBoundingClientRect();
+      const spaceAbove = rect.top - 12;
+      const spaceBelow = window.innerHeight - rect.bottom - 12;
+
+      const nextPlacement =
+        menuPlacement === "auto"
+          ? spaceBelow < 220 && spaceAbove > spaceBelow
+            ? "top"
+            : "bottom"
+          : menuPlacement;
+
+      setResolvedPlacement(nextPlacement === "top" ? "top" : "bottom");
+
+      const availableSpace = nextPlacement === "top" ? spaceAbove : spaceBelow;
+      setMenuMaxHeight(
+        Math.max(120, Math.min(240, Math.floor(availableSpace))),
+      );
+    };
+
+    updateMenuLayout();
+    window.addEventListener("resize", updateMenuLayout);
+    window.addEventListener("scroll", updateMenuLayout, true);
+
+    return () => {
+      window.removeEventListener("resize", updateMenuLayout);
+      window.removeEventListener("scroll", updateMenuLayout, true);
+    };
+  }, [isOpen, menuPlacement]);
 
   const selectedOption =
     options.find((o) => String(o.value) === String(value)) || options[0];
@@ -145,8 +186,15 @@ const CustomSelect = ({
       </div>
 
       {isOpen && (
-        <div className="absolute z-50 w-full min-w-[140px] mt-2 bg-white border-2 border-[#F6F1E9] rounded-2xl shadow-xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
-          <div className="max-h-60 overflow-y-auto custom-scrollbar py-2">
+        <div
+          className={`absolute z-[80] w-full min-w-[140px] bg-white border-2 border-[#F6F1E9] rounded-2xl shadow-xl overflow-hidden animate-in fade-in zoom-in-95 duration-200 ${
+            resolvedPlacement === "top" ? "bottom-full mb-2" : "top-full mt-2"
+          }`}
+        >
+          <div
+            className="overflow-y-auto custom-scrollbar py-2"
+            style={{ maxHeight: `${menuMaxHeight}px` }}
+          >
             {options.map((opt) => (
               <div
                 key={String(opt.value)}
@@ -597,8 +645,8 @@ export default function BookingHistory() {
 
       {/* Bookings Table */}
       {!loading && !error && (
-        <div className="bg-white rounded-3xl border-0 shadow-sm overflow-hidden w-full">
-          <div className="overflow-x-auto w-full">
+        <div className="bg-white rounded-3xl border-0 shadow-sm overflow-visible w-full">
+          <div className="overflow-x-auto overflow-y-visible w-full">
             <table className="w-full text-left text-sm min-w-[900px]">
               <thead className="bg-[#F6F1E9]/80 border-b-2 border-[#F6F1E9]">
                 <tr>
@@ -726,6 +774,7 @@ export default function BookingHistory() {
                                 <CustomSelect
                                   containerClassName="relative w-[128px]"
                                   className="text-xs border border-[#F6F1E9] bg-[#F6F1E9]/50 px-2.5 py-1.5 rounded-lg text-[#4F200D] font-bold cursor-pointer outline-none transition-all"
+                                  menuPlacement="auto"
                                   value={draftStatus}
                                   onChange={(val) =>
                                     setStatusDrafts((prev) => ({

@@ -2,6 +2,7 @@ import { useEffect, useState, useMemo } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
+import logoImage from "../assets/logo.png";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -1421,68 +1422,142 @@ function ETicketModal({
   onClose: () => void;
 }) {
   return (
-    <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4">
-      <div className="w-full max-w-lg bg-white rounded-2xl shadow-xl border border-[#F0E8E0] overflow-hidden">
-        <div className="px-5 py-4 border-b border-[#F0E8E0] flex items-center justify-between">
-          <h3 className="text-[#4F200D] font-bold text-lg">E-ticket</h3>
-          <button
-            onClick={onClose}
-            className="w-8 h-8 rounded-full bg-[#F6F1E9] text-[#4F200D] hover:bg-[#ede5dc]"
-            aria-label="ปิด"
-          >
-            ✕
-          </button>
-        </div>
+    <>
+      <style>{`
+        @media print {
+          @page {
+            size: A4;
+            margin: 10mm;
+          }
 
-        <div className="px-5 py-5">
-          <div className="rounded-2xl border-2 border-dashed border-[#FF8400]/40 bg-[#FFF9F2] p-4 space-y-2">
-            <p className="text-xs font-bold text-[#FF8400] uppercase">
-              Thai Tour E-ticket
-            </p>
-            <p className="text-[#4F200D] font-bold text-base">
-              {getTourTitle(booking)}
-            </p>
-            <p className="text-sm text-[#4F200D]/70">
-              เลขอ้างอิง:{" "}
-              <span className="font-semibold">
-                {getBookingReference(booking)}
-              </span>
-            </p>
-            <p className="text-sm text-[#4F200D]/70">
-              วันเดินทาง:{" "}
-              <span className="font-semibold">
-                {formatDate(getTravelDate(booking))}
-              </span>
-            </p>
-            <p className="text-sm text-[#4F200D]/70">
-              ผู้เดินทาง:{" "}
-              <span className="font-semibold">{booking.pax} คน</span>
-            </p>
-            <p className="text-sm text-[#4F200D]/70">
-              ยอดชำระ:{" "}
-              <span className="font-semibold">
-                ฿{formatPrice(booking.totalPrice)}
-              </span>
-            </p>
-          </div>
+          body * {
+            visibility: hidden !important;
+          }
 
-          <div className="mt-4 flex justify-end gap-2">
-            <button
-              onClick={() => window.print()}
-              className="text-xs font-bold px-4 py-2 rounded-full bg-[#4F200D]/10 text-[#4F200D] hover:bg-[#4F200D]/15"
-            >
-              พิมพ์ตั๋ว
-            </button>
+          .ticket-print-only,
+          .ticket-print-only * {
+            visibility: visible !important;
+          }
+
+          .ticket-print-only {
+            position: fixed !important;
+            top: 10mm !important;
+            left: 10mm !important;
+            right: 10mm !important;
+            width: auto !important;
+            max-width: none !important;
+            margin: 0 !important;
+            z-index: 99999 !important;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+          }
+
+          .ticket-print-ticket {
+            break-inside: avoid;
+            page-break-inside: avoid;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+          }
+        }
+      `}</style>
+
+      <div className="ticket-print-root fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4">
+        <div className="ticket-print-card w-full max-w-2xl bg-white rounded-2xl shadow-xl border border-[#F0E8E0] overflow-hidden">
+          <div className="ticket-print-header px-5 py-4 border-b border-[#F0E8E0] flex items-center justify-between">
+            <h3 className="text-[#4F200D] font-bold text-lg">E-ticket</h3>
             <button
               onClick={onClose}
-              className="text-xs font-bold px-4 py-2 rounded-full bg-[#FF8400] text-white hover:bg-[#e67600]"
+              className="w-8 h-8 rounded-full bg-[#F6F1E9] text-[#4F200D] hover:bg-[#ede5dc]"
+              aria-label="ปิด"
             >
-              ปิด
+              ✕
             </button>
+          </div>
+
+          <div className="ticket-print-body px-5 py-5">
+            <div className="ticket-print-only ticket-print-ticket rounded-2xl overflow-hidden border border-[#FFD8B0] bg-[#FFF9F2] shadow-sm">
+              <div className="bg-[#FF8400] px-4 py-3 flex items-center justify-between">
+                <p className="text-white text-xs font-extrabold tracking-wider uppercase">
+                  บัตรขึ้นทัวร์
+                </p>
+                <p className="text-white/90 text-[11px] font-bold uppercase">
+                  ชั้นมาตรฐาน
+                </p>
+              </div>
+
+              <div className="grid grid-cols-[1fr_140px]">
+                <div className="px-4 py-4 bg-white/75">
+                  <p className="text-[#4F200D] font-extrabold text-lg leading-tight">
+                    {getTourTitle(booking)}
+                  </p>
+
+                  <div className="mt-4 grid grid-cols-2 gap-x-6 gap-y-3">
+                    <div>
+                      <p className="text-[10px] uppercase tracking-wider text-[#4F200D]/45 font-bold">
+                        รหัสการจอง
+                      </p>
+                      <p className="text-sm font-extrabold text-[#4F200D]">
+                        {getBookingReference(booking)}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-[10px] uppercase tracking-wider text-[#4F200D]/45 font-bold">
+                        วันเดินทาง
+                      </p>
+                      <p className="text-sm font-extrabold text-[#4F200D]">
+                        {formatDate(getTravelDate(booking))}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-[10px] uppercase tracking-wider text-[#4F200D]/45 font-bold">
+                        ผู้เดินทาง
+                      </p>
+                      <p className="text-sm font-extrabold text-[#4F200D]">
+                        {booking.pax} คน
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-[10px] uppercase tracking-wider text-[#4F200D]/45 font-bold">
+                        ยอดชำระ
+                      </p>
+                      <p className="text-sm font-extrabold text-[#4F200D]">
+                        ฿{formatPrice(booking.totalPrice)}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="relative border-l-2 border-dashed border-[#FFD8B0] bg-[#FFF3E6] px-3 py-4 flex flex-col items-center justify-center">
+                  <div className="absolute -left-3 top-5 w-5 h-5 rounded-full bg-white border border-[#FFE4CC]" />
+                  <div className="absolute -left-3 bottom-5 w-5 h-5 rounded-full bg-white border border-[#FFE4CC]" />
+
+                  <img
+                    src={logoImage}
+                    alt="โลโก้ทัวร์"
+                    className="w-24 h-24 object-contain drop-shadow-sm"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="ticket-print-actions mt-4 flex justify-end gap-2">
+              <button
+                onClick={() => window.print()}
+                className="text-xs font-bold px-4 py-2 rounded-full bg-[#4F200D]/10 text-[#4F200D] hover:bg-[#4F200D]/15"
+              >
+                พิมพ์ตั๋ว
+              </button>
+              <button
+                onClick={onClose}
+                className="text-xs font-bold px-4 py-2 rounded-full bg-[#FF8400] text-white hover:bg-[#e67600]"
+              >
+                ปิด
+              </button>
+            </div>
           </div>
         </div>
       </div>
-    </div>
+    </>
   );
 }
 

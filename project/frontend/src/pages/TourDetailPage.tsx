@@ -41,6 +41,24 @@ interface Tour {
   included?: string[] | string;
   excluded?: string[] | string;
   conditions?: string[] | string;
+  rating?: number;
+  review_count?: number;
+}
+
+interface ReviewUser {
+  id: string;
+  username?: string;
+  full_name?: string;
+  first_name?: string;
+  last_name?: string;
+}
+
+interface ReviewItem {
+  id: string;
+  rating: number;
+  comment?: string;
+  createdAt: string;
+  user?: ReviewUser;
 }
 
 /* ─── Helpers ───────────────────────── */
@@ -117,6 +135,8 @@ function normalizeTourPayload(raw: any): Tour {
     included: raw?.included,
     excluded: raw?.excluded,
     conditions: raw?.conditions,
+    rating: raw?.rating ? Number(raw.rating) : 0,
+    review_count: raw?.review_count ? Number(raw.review_count) : 0,
   };
 }
 
@@ -677,6 +697,8 @@ function BookingSheet({ tour, onClose }: { tour: Tour; onClose?: () => void }) {
 export default function TourDetailPage() {
   const { id } = useParams();
   const [tour, setTour] = useState<Tour | null>(null);
+  const [reviews, setReviews] = useState<ReviewItem[]>([]);
+  const [reviewsLoading, setReviewsLoading] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
   const [sheetOpen, setSheetOpen] = useState(false);
@@ -699,6 +721,24 @@ export default function TourDetailPage() {
         .catch(() => setError(true))
         .finally(() => setLoading(false));
     }
+  }, [id]);
+
+  useEffect(() => {
+    if (!id) return;
+    setReviewsLoading(true);
+    axios
+      .get(`http://localhost:3000/api/v1/reviews/tour/${id}`)
+      .then((res) => {
+        const payload = res?.data;
+        const items = Array.isArray(payload)
+          ? payload
+          : Array.isArray(payload?.data)
+            ? payload.data
+            : [];
+        setReviews(items);
+      })
+      .catch(() => setReviews([]))
+      .finally(() => setReviewsLoading(false));
   }, [id]);
 
   // Lock scroll when sheet open
@@ -973,6 +1013,64 @@ export default function TourDetailPage() {
                       </ul>
                     </div>
                   )}
+
+                  <div className="section-card border border-[#F0E8E0]">
+                    <h2 className="text-base font-black text-[#2C1A0E] mb-3 flex items-center gap-2">
+                      <span className="w-1 h-5 bg-[#FF8400] rounded-full inline-block" />
+                      รีวิวจากนักท่องเที่ยว
+                    </h2>
+
+                    <div className="flex items-center gap-3 mb-4">
+                      <span className="text-2xl font-black text-[#FF8400]">
+                        {(tour.rating ?? 0).toFixed(1)}
+                      </span>
+                      <span className="text-sm text-[#4F200D]/60">
+                        จาก {tour.review_count ?? 0} รีวิว
+                      </span>
+                    </div>
+
+                    {reviewsLoading ? (
+                      <p className="text-sm text-[#4F200D]/55">กำลังโหลดรีวิว...</p>
+                    ) : reviews.length === 0 ? (
+                      <p className="text-sm text-[#4F200D]/55">
+                        ยังไม่มีรีวิวสำหรับทัวร์นี้
+                      </p>
+                    ) : (
+                      <div className="space-y-3">
+                        {reviews.map((review) => {
+                          const name =
+                            review.user?.full_name ||
+                            [review.user?.first_name, review.user?.last_name]
+                              .filter(Boolean)
+                              .join(" ") ||
+                            review.user?.username ||
+                            "ผู้ใช้งาน";
+
+                          return (
+                            <div
+                              key={review.id}
+                              className="rounded-xl border border-[#F0E8E0] bg-[#FFFCF8] px-4 py-3"
+                            >
+                              <div className="flex items-center justify-between gap-2">
+                                <p className="text-sm font-bold text-[#4F200D]">{name}</p>
+                                <p className="text-xs text-[#4F200D]/45">
+                                  {new Date(review.createdAt).toLocaleDateString("th-TH")}
+                                </p>
+                              </div>
+                              <p className="text-sm text-[#FF8400] mt-1">
+                                {"★".repeat(Math.max(1, Math.min(5, Number(review.rating || 0))))}
+                              </p>
+                              {review.comment && (
+                                <p className="text-sm text-[#4F200D]/75 mt-2 leading-relaxed">
+                                  {review.comment}
+                                </p>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
 
                   {/* Gallery รูปภาพเพิ่มเติม */}
                   {tour.images && tour.images.length > 0 && (

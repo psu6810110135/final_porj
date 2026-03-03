@@ -20,6 +20,7 @@ import { User } from './users/entities/user.entity';
 import { Booking } from './bookings/entities/booking.entity';
 import { Payment } from './payments/entities/payment.entity';
 import { Tour } from './tours/entities/tour.entity';
+import { ReviewsModule } from './reviews/reviews.module';
 
 @Module({
   imports: [
@@ -58,6 +59,7 @@ import { Tour } from './tours/entities/tour.entity';
     BookingsModule,
     PaymentsModule,
     TypeOrmModule.forFeature([Booking, Payment, Tour]),
+    ReviewsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

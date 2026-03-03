@@ -101,6 +101,20 @@ const formatPrice = (price: number) =>
 
 const getTravelDate = (b: Booking) => b.travelDate ?? b.startDate;
 
+const getTourCompletedDate = (b: Booking) => b.endDate ?? b.travelDate ?? b.startDate;
+
+const hasTourEnded = (b: Booking) => {
+  const dateStr = getTourCompletedDate(b);
+  if (!dateStr) return false;
+  const completedDate = new Date(dateStr);
+  completedDate.setHours(0, 0, 0, 0);
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  return completedDate <= today;
+};
+
 const getTourTitle = (b: Booking) =>
   b.tour?.title ?? b.tour?.nameTh ?? `ทัวร์ #${b.tourId ?? "-"}`;
 
@@ -200,6 +214,16 @@ export default function BookingHistoryPage() {
   const [cancelReasonDetail, setCancelReasonDetail] = useState("");
   const [cancelError, setCancelError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [reviewModalBooking, setReviewModalBooking] = useState<Booking | null>(
+    null,
+  );
+  const [reviewRating, setReviewRating] = useState(5);
+  const [reviewComment, setReviewComment] = useState("");
+  const [reviewError, setReviewError] = useState<string | null>(null);
+  const [reviewSubmitting, setReviewSubmitting] = useState(false);
+  const [reviewedBookingIds, setReviewedBookingIds] = useState<Set<string>>(
+    () => new Set(),
+  );
 
   // ── Filter / Search state ──
   const [searchQuery, setSearchQuery] = useState("");
@@ -338,6 +362,70 @@ export default function BookingHistoryPage() {
       setCancelError(err?.message || "เกิดข้อผิดพลาดในการยกเลิกการจอง");
     } finally {
       setActionLoadingId(null);
+    }
+  };
+
+  const canWriteReview = (booking: Booking) => {
+    if (booking.status !== "confirmed") return false;
+    if (reviewedBookingIds.has(booking.id)) return false;
+    return hasTourEnded(booking);
+  };
+
+  const openReviewModal = (booking: Booking) => {
+    if (!canWriteReview(booking)) return;
+    setReviewModalBooking(booking);
+    setReviewRating(5);
+    setReviewComment("");
+    setReviewError(null);
+  };
+
+  const submitReview = async () => {
+    if (!reviewModalBooking) return;
+
+    const token = localStorage.getItem("jwt_token");
+    if (!token) {
+      navigate("/login");
+      return;
+    }
+
+    try {
+      setReviewSubmitting(true);
+      setReviewError(null);
+
+      const res = await fetch("http://localhost:3000/api/v1/reviews", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          bookingId: reviewModalBooking.id,
+          rating: reviewRating,
+          comment: reviewComment.trim() || undefined,
+        }),
+      });
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => null);
+        const message = Array.isArray(err?.message)
+          ? err.message.join("\n")
+          : err?.message || "ส่งรีวิวไม่สำเร็จ";
+        throw new Error(message);
+      }
+
+      setReviewedBookingIds((prev) => {
+        const next = new Set(prev);
+        next.add(reviewModalBooking.id);
+        return next;
+      });
+      setReviewModalBooking(null);
+      setReviewComment("");
+      setReviewRating(5);
+      setSuccessMessage("ส่งรีวิวเรียบร้อยแล้ว ขอบคุณสำหรับความคิดเห็นของคุณ");
+    } catch (err: any) {
+      setReviewError(err?.message || "เกิดข้อผิดพลาดในการส่งรีวิว");
+    } finally {
+      setReviewSubmitting(false);
     }
   };
 
@@ -518,10 +606,13 @@ export default function BookingHistoryPage() {
                       <MobileCard
                         key={booking.id}
                         booking={booking}
+                        canWriteReview={canWriteReview(booking)}
+                        hasReviewed={reviewedBookingIds.has(booking.id)}
                         actionLoadingId={actionLoadingId}
                         onViewDetail={setSelectedBooking}
                         onViewTicket={setTicketBooking}
                         onCancelBooking={requestCancelBooking}
+                        onWriteReview={openReviewModal}
                       />
                     ))}
                   </div>
@@ -554,11 +645,14 @@ export default function BookingHistoryPage() {
                           <DesktopRow
                             key={booking.id}
                             booking={booking}
+                            canWriteReview={canWriteReview(booking)}
+                            hasReviewed={reviewedBookingIds.has(booking.id)}
                             isLast={idx === paginatedBookings.length - 1}
                             actionLoadingId={actionLoadingId}
                             onViewDetail={setSelectedBooking}
                             onViewTicket={setTicketBooking}
                             onCancelBooking={requestCancelBooking}
+                            onWriteReview={openReviewModal}
                           />
                         ))}
                       </tbody>
@@ -595,12 +689,35 @@ export default function BookingHistoryPage() {
       {selectedBooking && (
         <BookingDetailModal
           booking={selectedBooking}
+          canWriteReview={canWriteReview(selectedBooking)}
+          hasReviewed={reviewedBookingIds.has(selectedBooking.id)}
           actionLoadingId={actionLoadingId}
           onClose={() => setSelectedBooking(null)}
           onCancelBooking={requestCancelBooking}
+          onWriteReview={openReviewModal}
           onViewTicket={() => {
             setTicketBooking(selectedBooking);
             setSelectedBooking(null);
+          }}
+        />
+      )}
+
+      {reviewModalBooking && (
+        <WriteReviewModal
+          booking={reviewModalBooking}
+          rating={reviewRating}
+          comment={reviewComment}
+          error={reviewError}
+          loading={reviewSubmitting}
+          onChangeRating={setReviewRating}
+          onChangeComment={setReviewComment}
+          onClose={() => {
+            if (reviewSubmitting) return;
+            setReviewModalBooking(null);
+            setReviewError(null);
+          }}
+          onConfirm={() => {
+            void submitReview();
           }}
         />
       )}
@@ -747,16 +864,22 @@ function Pagination({
 
 function MobileCard({
   booking,
+  canWriteReview,
+  hasReviewed,
   actionLoadingId,
   onViewDetail,
   onViewTicket,
   onCancelBooking,
+  onWriteReview,
 }: {
   booking: Booking;
+  canWriteReview: boolean;
+  hasReviewed: boolean;
   actionLoadingId: string | null;
   onViewDetail: (booking: Booking) => void;
   onViewTicket: (booking: Booking) => void;
   onCancelBooking: (booking: Booking) => void;
+  onWriteReview: (booking: Booking) => void;
 }) {
   const cfg = statusConfig[booking.status];
   const tourLink = booking.tourId ? `/tours/${booking.tourId}` : undefined;
@@ -872,12 +995,27 @@ function MobileCard({
         )}
 
         {booking.status === "confirmed" && (
-          <button
-            onClick={() => onViewTicket(booking)}
-            className="text-[11px] font-bold px-3 py-1.5 rounded-full bg-green-50 text-green-600 hover:bg-green-100 transition-colors"
-          >
-            ดู E-ticket
-          </button>
+          <>
+            <button
+              onClick={() => onViewTicket(booking)}
+              className="text-[11px] font-bold px-3 py-1.5 rounded-full bg-green-50 text-green-600 hover:bg-green-100 transition-colors"
+            >
+              ดู E-ticket
+            </button>
+            {canWriteReview && (
+              <button
+                onClick={() => onWriteReview(booking)}
+                className="text-[11px] font-bold px-3 py-1.5 rounded-full bg-[#FF8400]/10 text-[#FF8400] hover:bg-[#FF8400]/20 transition-colors"
+              >
+                รีวิวทัวร์
+              </button>
+            )}
+            {hasReviewed && (
+              <span className="text-[11px] font-bold px-3 py-1.5 rounded-full bg-[#4F200D]/10 text-[#4F200D]/70">
+                รีวิวแล้ว
+              </span>
+            )}
+          </>
         )}
       </div>
     </div>
@@ -890,18 +1028,24 @@ function MobileCard({
 
 function DesktopRow({
   booking,
+  canWriteReview,
+  hasReviewed,
   isLast,
   actionLoadingId,
   onViewDetail,
   onViewTicket,
   onCancelBooking,
+  onWriteReview,
 }: {
   booking: Booking;
+  canWriteReview: boolean;
+  hasReviewed: boolean;
   isLast: boolean;
   actionLoadingId: string | null;
   onViewDetail: (booking: Booking) => void;
   onViewTicket: (booking: Booking) => void;
   onCancelBooking: (booking: Booking) => void;
+  onWriteReview: (booking: Booking) => void;
 }) {
   const cfg = statusConfig[booking.status];
   const tourLink = booking.tourId ? `/tours/${booking.tourId}` : undefined;
@@ -981,12 +1125,27 @@ function DesktopRow({
           )}
 
           {booking.status === "confirmed" && (
-            <button
-              onClick={() => onViewTicket(booking)}
-              className="text-xs font-bold px-3 py-2 rounded-full bg-green-50 text-green-600 hover:bg-green-100 transition-colors whitespace-nowrap"
-            >
-              E-ticket
-            </button>
+            <>
+              <button
+                onClick={() => onViewTicket(booking)}
+                className="text-xs font-bold px-3 py-2 rounded-full bg-green-50 text-green-600 hover:bg-green-100 transition-colors whitespace-nowrap"
+              >
+                E-ticket
+              </button>
+              {canWriteReview && (
+                <button
+                  onClick={() => onWriteReview(booking)}
+                  className="text-xs font-bold px-3 py-2 rounded-full bg-[#FF8400]/10 text-[#FF8400] hover:bg-[#FF8400]/20 transition-colors whitespace-nowrap"
+                >
+                  รีวิวทัวร์
+                </button>
+              )}
+              {hasReviewed && (
+                <span className="text-xs font-bold px-3 py-2 rounded-full bg-[#4F200D]/10 text-[#4F200D]/70 whitespace-nowrap">
+                  รีวิวแล้ว
+                </span>
+              )}
+            </>
           )}
         </div>
       </td>
@@ -996,15 +1155,21 @@ function DesktopRow({
 
 function BookingDetailModal({
   booking,
+  canWriteReview,
+  hasReviewed,
   actionLoadingId,
   onClose,
   onCancelBooking,
+  onWriteReview,
   onViewTicket,
 }: {
   booking: Booking;
+  canWriteReview: boolean;
+  hasReviewed: boolean;
   actionLoadingId: string | null;
   onClose: () => void;
   onCancelBooking: (booking: Booking) => void;
+  onWriteReview: (booking: Booking) => void;
   onViewTicket: () => void;
 }) {
   const cfg = statusConfig[booking.status];
@@ -1094,6 +1259,21 @@ function BookingDetailModal({
             </button>
           )}
 
+          {canWriteReview && (
+            <button
+              onClick={() => onWriteReview(booking)}
+              className="text-xs font-bold px-4 py-2 rounded-full bg-[#FF8400]/10 text-[#FF8400] hover:bg-[#FF8400]/20"
+            >
+              เขียนรีวิว
+            </button>
+          )}
+
+          {hasReviewed && (
+            <span className="text-xs font-bold px-4 py-2 rounded-full bg-[#4F200D]/10 text-[#4F200D]/70">
+              รีวิวแล้ว
+            </span>
+          )}
+
           {canCancel && (
             <button
               onClick={() => onCancelBooking(booking)}
@@ -1105,6 +1285,121 @@ function BookingDetailModal({
                 : "ยกเลิกการจอง"}
             </button>
           )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function WriteReviewModal({
+  booking,
+  rating,
+  comment,
+  error,
+  loading,
+  onChangeRating,
+  onChangeComment,
+  onClose,
+  onConfirm,
+}: {
+  booking: Booking;
+  rating: number;
+  comment: string;
+  error: string | null;
+  loading: boolean;
+  onChangeRating: (value: number) => void;
+  onChangeComment: (value: string) => void;
+  onClose: () => void;
+  onConfirm: () => void;
+}) {
+  const tourLink = booking.tourId ? `/tours/${booking.tourId}` : "/tours";
+
+  return (
+    <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4">
+      <div className="w-full max-w-lg bg-white rounded-2xl shadow-xl border border-[#F0E8E0] overflow-hidden">
+        <div className="px-5 py-4 border-b border-[#F0E8E0] flex items-center justify-between">
+          <h3 className="text-[#4F200D] font-bold text-lg">เขียนรีวิวทัวร์</h3>
+          <button
+            onClick={onClose}
+            className="w-8 h-8 rounded-full bg-[#F6F1E9] text-[#4F200D] hover:bg-[#ede5dc]"
+            aria-label="ปิด"
+          >
+            ✕
+          </button>
+        </div>
+
+        <div className="px-5 py-4 space-y-4">
+          <div>
+            <p className="text-sm font-semibold text-[#4F200D]">{getTourTitle(booking)}</p>
+            <p className="text-xs text-[#4F200D]/50 mt-1">
+              เลขอ้างอิง: {getBookingReference(booking)}
+            </p>
+          </div>
+
+          <div>
+            <p className="text-sm font-semibold text-[#4F200D] mb-2">ให้คะแนน (1-5)</p>
+            <div className="flex items-center gap-2">
+              {[1, 2, 3, 4, 5].map((star) => (
+                <button
+                  key={star}
+                  type="button"
+                  onClick={() => onChangeRating(star)}
+                  className={`text-2xl leading-none ${star <= rating ? "text-[#FF8400]" : "text-[#E6D8CA]"}`}
+                  aria-label={`ให้คะแนน ${star} ดาว`}
+                >
+                  ★
+                </button>
+              ))}
+              <span className="text-sm font-semibold text-[#4F200D]/70 ml-1">
+                {rating}/5
+              </span>
+            </div>
+          </div>
+
+          <div>
+            <p className="text-sm font-semibold text-[#4F200D] mb-2">ความคิดเห็น</p>
+            <textarea
+              value={comment}
+              onChange={(e) => onChangeComment(e.target.value)}
+              rows={4}
+              placeholder="เล่าประสบการณ์ทัวร์ของคุณ..."
+              className="w-full rounded-xl border border-[#E9DCCF] px-3 py-2 text-sm text-[#4F200D] focus:outline-none focus:ring-2 focus:ring-[#FF8400]/40"
+            />
+          </div>
+
+          {error && (
+            <div className="text-sm text-red-500 bg-red-50 border border-red-100 rounded-lg px-3 py-2">
+              {error}
+            </div>
+          )}
+
+          <div className="flex items-center justify-between gap-2">
+            <Link
+              to={tourLink}
+              className="text-sm font-semibold text-[#4F200D]/70 hover:text-[#FF8400]"
+            >
+              ไปหน้ารายละเอียดทัวร์
+            </Link>
+
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={onClose}
+                disabled={loading}
+                className="text-sm font-semibold px-4 py-2 rounded-full bg-[#F6F1E9] text-[#4F200D] hover:bg-[#ede5dc] disabled:opacity-50"
+              >
+                ยกเลิก
+              </button>
+              <button
+                type="button"
+                onClick={onConfirm}
+                disabled={loading}
+                className="text-sm font-bold px-4 py-2 rounded-full bg-[#FF8400] text-white hover:bg-[#e67600] disabled:opacity-50"
+              >
+                {loading ? "กำลังส่ง..." : "ส่งรีวิว"}
+              </button>
+            </div>
+          </div>
         </div>
       </div>
     </div>

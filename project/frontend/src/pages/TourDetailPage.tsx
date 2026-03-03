@@ -66,7 +66,7 @@ interface ReviewItem {
 const getImageUrl = (path?: string) => {
   if (!path) return "https://placehold.co/80x80?text=No+Img";
   if (path.startsWith("http")) return path;
-  return `http://localhost:3000/${path.replace(/^\//, '')}`;
+  return `http://localhost:3000/${path.replace(/^\//, "")}`;
 };
 
 function parsePreparation(raw?: string[] | string): string[] {
@@ -283,8 +283,8 @@ function BookingSheet({ tour, onClose }: { tour: Tour; onClose?: () => void }) {
 
   const childPrice = Math.floor(tour.price * 0.6);
   const pax = adults + children;
-  
-  const total = (tour.price * adults) + (childPrice * children);
+
+  const total = tour.price * adults + childPrice * children;
 
   const availableSeats = selectedSchedule?.available_seats ?? 0;
   const remainingCapacity = availableSeats - pax;
@@ -640,12 +640,12 @@ function BookingSheet({ tour, onClose }: { tour: Tour; onClose?: () => void }) {
               localStorage.getItem("token") ||
               localStorage.getItem("accessToken");
             if (!token) return alert("กรุณาเข้าสู่ระบบก่อนจองทัวร์");
-            
+
             const payload = {
               tourId: tour.id,
               tourScheduleId: selectedSchedule.id,
-              pax: pax, 
-              numberOfTravelers: pax, 
+              pax: pax,
+              numberOfTravelers: pax,
               contactInfo: {
                 name: contactName,
                 email: contactEmail,
@@ -654,23 +654,24 @@ function BookingSheet({ tour, onClose }: { tour: Tour; onClose?: () => void }) {
               selectedOptions: {
                 adults: adults,
                 children: children,
-              }
+              },
             };
-            
+
             try {
               setSubmitting(true);
               const res = await api.post("/api/v1/bookings", payload, {
                 headers: { Authorization: `Bearer ${token}` },
               });
-              
+
               const bookingId = res.data?.id || res.data?.data?.id;
 
               if (bookingId) {
                 navigate(`/payment/${bookingId}`, { state: { amount: total } });
               } else {
-                alert("จองสำเร็จ แต่ระบบไม่พบรหัสการจอง กรุณาตรวจสอบในประวัติการจองของคุณ");
+                alert(
+                  "จองสำเร็จ แต่ระบบไม่พบรหัสการจอง กรุณาตรวจสอบในประวัติการจองของคุณ",
+                );
               }
-              
             } catch (err: any) {
               const msg = err?.response?.data?.message || "จองไม่สำเร็จ";
               alert(Array.isArray(msg) ? msg.join("\n") : msg);
@@ -1030,7 +1031,9 @@ export default function TourDetailPage() {
                     </div>
 
                     {reviewsLoading ? (
-                      <p className="text-sm text-[#4F200D]/55">กำลังโหลดรีวิว...</p>
+                      <p className="text-sm text-[#4F200D]/55">
+                        กำลังโหลดรีวิว...
+                      </p>
                     ) : reviews.length === 0 ? (
                       <p className="text-sm text-[#4F200D]/55">
                         ยังไม่มีรีวิวสำหรับทัวร์นี้
@@ -1052,13 +1055,22 @@ export default function TourDetailPage() {
                               className="rounded-xl border border-[#F0E8E0] bg-[#FFFCF8] px-4 py-3"
                             >
                               <div className="flex items-center justify-between gap-2">
-                                <p className="text-sm font-bold text-[#4F200D]">{name}</p>
+                                <p className="text-sm font-bold text-[#4F200D]">
+                                  {name}
+                                </p>
                                 <p className="text-xs text-[#4F200D]/45">
-                                  {new Date(review.createdAt).toLocaleDateString("th-TH")}
+                                  {new Date(
+                                    review.createdAt,
+                                  ).toLocaleDateString("th-TH")}
                                 </p>
                               </div>
                               <p className="text-sm text-[#FF8400] mt-1">
-                                {"★".repeat(Math.max(1, Math.min(5, Number(review.rating || 0))))}
+                                {"★".repeat(
+                                  Math.max(
+                                    1,
+                                    Math.min(5, Number(review.rating || 0)),
+                                  ),
+                                )}
                               </p>
                               {review.comment && (
                                 <p className="text-sm text-[#4F200D]/75 mt-2 leading-relaxed">
@@ -1081,14 +1093,20 @@ export default function TourDetailPage() {
                       </h2>
                       <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                         {tour.images.map((img, i) => (
-                          <div key={i} className="aspect-square rounded-xl overflow-hidden bg-gray-100">
-                            <img src={getImageUrl(img)} alt={`รูปเพิ่มเติม ${i+1}`} className="w-full h-full object-cover hover:scale-110 transition-transform duration-300" />
+                          <div
+                            key={i}
+                            className="aspect-square rounded-xl overflow-hidden bg-gray-100"
+                          >
+                            <img
+                              src={getImageUrl(img)}
+                              alt={`รูปเพิ่มเติม ${i + 1}`}
+                              className="w-full h-full object-cover hover:scale-110 transition-transform duration-300"
+                            />
                           </div>
                         ))}
                       </div>
                     </div>
                   )}
-
                 </div>
 
                 {/* ── Right: Booking (Desktop only) ── */}

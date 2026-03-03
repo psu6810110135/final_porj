@@ -101,7 +101,8 @@ const formatPrice = (price: number) =>
 
 const getTravelDate = (b: Booking) => b.travelDate ?? b.startDate;
 
-const getTourCompletedDate = (b: Booking) => b.endDate ?? b.travelDate ?? b.startDate;
+const getTourCompletedDate = (b: Booking) =>
+  b.endDate ?? b.travelDate ?? b.startDate;
 
 const hasTourEnded = (b: Booking) => {
   const dateStr = getTourCompletedDate(b);
@@ -1330,14 +1331,18 @@ function WriteReviewModal({
 
         <div className="px-5 py-4 space-y-4">
           <div>
-            <p className="text-sm font-semibold text-[#4F200D]">{getTourTitle(booking)}</p>
+            <p className="text-sm font-semibold text-[#4F200D]">
+              {getTourTitle(booking)}
+            </p>
             <p className="text-xs text-[#4F200D]/50 mt-1">
               เลขอ้างอิง: {getBookingReference(booking)}
             </p>
           </div>
 
           <div>
-            <p className="text-sm font-semibold text-[#4F200D] mb-2">ให้คะแนน (1-5)</p>
+            <p className="text-sm font-semibold text-[#4F200D] mb-2">
+              ให้คะแนน (1-5)
+            </p>
             <div className="flex items-center gap-2">
               {[1, 2, 3, 4, 5].map((star) => (
                 <button
@@ -1357,7 +1362,9 @@ function WriteReviewModal({
           </div>
 
           <div>
-            <p className="text-sm font-semibold text-[#4F200D] mb-2">ความคิดเห็น</p>
+            <p className="text-sm font-semibold text-[#4F200D] mb-2">
+              ความคิดเห็น
+            </p>
             <textarea
               value={comment}
               onChange={(e) => onChangeComment(e.target.value)}

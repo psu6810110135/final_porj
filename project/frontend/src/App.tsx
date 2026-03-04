@@ -17,11 +17,11 @@ import LoginSuccess from "./pages/LoginSuccess";
 // --- ระบบ Admin ---
 import AdminLayout from "./pages/admin/AdminLayout";
 import AdminDashboard from "./pages/admin/AdminDashboard";
-import PendingPayments from "./pages/admin/PendingPayments";
 import TourManager from "./pages/admin/TourManager";
-import TourScheduleManager from "./pages/admin/TourScheduleManager"; // 👈 จาก main
-import UserManager from "./pages/admin/UserManager"; // 👈 จากฝั่ง Admin-Ui
-import BookingHistory from "./pages/admin/BookingHistory"; // 👈 จากฝั่ง Admin-Ui
+import TourScheduleManager from "./pages/admin/TourScheduleManager";
+import UserManager from "./pages/admin/UserManager";
+import BookingHistory from "./pages/admin/BookingHistory";
+import TicketManager from "./pages/admin/TicketManager"; // 👈 นำเข้า TicketManager
 import AdminGuard from "./pages/AdminGuard";
 
 export default function App() {
@@ -45,13 +45,10 @@ export default function App() {
           <Route path="/admin" element={<AdminLayout />}>
             <Route index element={<AdminDashboard />} />
             <Route path="tours" element={<TourManager />} />
-            <Route path="schedules" element={<TourScheduleManager />} />{" "}
-            {/* 👈 เพิ่ม Route Schedules */}
-            <Route path="users" element={<UserManager />} />{" "}
-            {/* 👈 เพิ่ม Route Users */}
-            <Route path="payments" element={<PendingPayments />} />
-            <Route path="bookings" element={<BookingHistory />} />{" "}
-            {/* 👈 เพิ่ม Route Bookings */}
+            <Route path="schedules" element={<TourScheduleManager />} />
+            <Route path="users" element={<UserManager />} />
+            <Route path="tickets" element={<TicketManager />} /> {/* 👈 เพิ่ม Route Tickets */}
+            <Route path="bookings" element={<BookingHistory />} />
           </Route>
         </Route>
       </Routes>

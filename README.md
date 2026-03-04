@@ -130,11 +130,11 @@ VITE_API_URL=http://localhost:3000/api/v1
 - `POST /api/v1/auth/login` - Login with email/password
 
 ### Tours
-- `GET /api/v1/tours` - List all tours (with filters)
-- `GET /api/v1/tours/:id` - Get tour details
-- `POST /api/v1/tours` - Create new tour (Admin only)
-- `PATCH /api/v1/tours/:id` - Update tour (Admin only)
-- `DELETE /api/v1/tours/:id` - Soft delete tour (Admin only)
+- `GET /api/tours` - List all tours (with filters)
+- `GET /api/tours/:id` - Get tour details
+- `POST /api/tours` - Create new tour (Admin only)
+- `PATCH /api/tours/:id` - Update tour (Admin only)
+- `DELETE /api/tours/:id` - Soft delete tour (Admin only)
 
 ### Bookings
 - `POST /api/v1/bookings/calculate` - Calculate price

@@ -243,7 +243,7 @@ function BookingSheet({ tour, onClose, showToast }: {
   const [showLoginModal, setShowLoginModal] = useState(false);
 
   useEffect(() => {
-    api.get(`/api/v1/tours/${tour.id}/schedules`).then((res) => {
+    api.get(`/api/tours/${tour.id}/schedules`).then((res) => {
       const today = new Date(); today.setHours(0, 0, 0, 0);
       const valid = (res.data || [])
         .filter((s: Schedule) => { const d = new Date(s.available_date); d.setHours(0,0,0,0); return d >= today; })
@@ -489,7 +489,7 @@ export default function TourDetailPage() {
 
   useEffect(() => {
     if (!id) return;
-    axios.get(`http://localhost:3000/api/v1/tours/${id}`)
+    axios.get(`http://localhost:3000/api/tours/${id}`)
       .then((res) => setTour(normalizeTourPayload(res?.data?.data ?? res?.data)))
       .catch(() => setError(true))
       .finally(() => setLoading(false));

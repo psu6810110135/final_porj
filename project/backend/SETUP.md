@@ -138,11 +138,11 @@ POST   /api/v1/auth/logout
 
 ### Tours
 ```
-GET    /api/v1/tours
-GET    /api/v1/tours/:id
-POST   /api/v1/tours         (Admin only)
-PATCH  /api/v1/tours/:id     (Admin only)
-DELETE /api/v1/tours/:id     (Admin only)
+GET    /api/tours
+GET    /api/tours/:id
+POST   /api/tours         (Admin only)
+PATCH  /api/tours/:id     (Admin only)
+DELETE /api/tours/:id     (Admin only)
 ```
 
 ### Bookings

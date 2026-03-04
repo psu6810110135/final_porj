@@ -104,7 +104,7 @@ classDiagram
     Backend_API *-- PaymentService
     Backend_API *-- EmailService
 
-    CustomerPortal ..> TourService : "GET /api/v1/tours"
+    CustomerPortal ..> TourService : "GET /api/tours"
     CustomerPortal ..> BookingEngine : "POST /api/v1/bookings"
     CustomerPortal ..> PaymentService : "POST /api/v1/payments"
 
@@ -159,18 +159,18 @@ POST /api/v1/auth/login
 
 | Method | Endpoint | Description | Auth Required |
 |---|---|---|---|
-| GET | `/api/v1/tours` | List all tours (with filters) | ❌ |
-| GET | `/api/v1/tours/one-day` | List one-day trips only | ❌ |
-| GET | `/api/v1/tours/multi-day` | List multi-day packages only | ❌ |
-| GET | `/api/v1/tours/:id` | Get tour details | ❌ |
-| POST | `/api/v1/tours` | Create new tour | ✅ Admin |
-| PATCH | `/api/v1/tours/:id` | Update tour | ✅ Admin |
-| DELETE | `/api/v1/tours/:id` | Soft delete tour | ✅ Admin |
+| GET | `/api/tours` | List all tours (with filters) | ❌ |
+| GET | `/api/tours/one-day` | List one-day trips only | ❌ |
+| GET | `/api/tours/multi-day` | List multi-day packages only | ❌ |
+| GET | `/api/tours/:id` | Get tour details | ❌ |
+| POST | `/api/tours` | Create new tour | ✅ Admin |
+| PATCH | `/api/tours/:id` | Update tour | ✅ Admin |
+| DELETE | `/api/tours/:id` | Soft delete tour | ✅ Admin |
 
 **Query Parameters Example:**
 
 ```
-GET /api/v1/tours?region=south&category=adventure&minPrice=1000&maxPrice=5000&tour_type=multi_day
+GET /api/tours?region=south&category=adventure&minPrice=1000&maxPrice=5000&tour_type=multi_day
 ```
 
 ---

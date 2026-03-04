@@ -295,7 +295,7 @@ export default function HomePage() {
   const [categories, setCategories] = useState<string[]>([]);
   const [durations, setDurations] = useState<string[]>([]);
 
-  const API_BASE = "http://localhost:3000/api/v1";
+  const API_BASE = "http://localhost:3000/api";
 
   const defaultDestinations: TourCardData[] = [
     {

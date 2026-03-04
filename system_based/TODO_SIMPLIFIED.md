@@ -342,24 +342,24 @@ CREATE TRIGGER update_reviews_updated_at BEFORE UPDATE ON reviews
 - [ ] Create Tour Service: `nest g service tours`
 - [ ] Create Tour Controller: `nest g controller tours`
 - [ ] Implement endpoints:
-  - [ ] `GET /api/v1/tours` - List all tours (with filters: region, category, tour_type, is_featured)
-  - [ ] `GET /api/v1/tours/one-day` - List one-day tours only
-  - [ ] `GET /api/v1/tours/multi-day` - List multi-day tours only
-  - [ ] `GET /api/v1/tours/featured` - List featured tours (for Home page)
-  - [ ] `GET /api/v1/tours/:id` - Get tour details
-  - [ ] `GET /api/v1/tours/:id/schedules` - Get available dates for a tour
-  - [ ] `POST /api/v1/tours` - Create new tour (Admin only)
-  - [ ] `PATCH /api/v1/tours/:id` - Update tour (Admin only)
-  - [ ] `DELETE /api/v1/tours/:id` - Soft delete tour (Admin only)
+  - [ ] `GET /api/tours` - List all tours (with filters: region, category, tour_type, is_featured)
+  - [ ] `GET /api/tours/one-day` - List one-day tours only
+  - [ ] `GET /api/tours/multi-day` - List multi-day tours only
+  - [ ] `GET /api/tours/featured` - List featured tours (for Home page)
+  - [ ] `GET /api/tours/:id` - Get tour details
+  - [ ] `GET /api/tours/:id/schedules` - Get available dates for a tour
+  - [ ] `POST /api/tours` - Create new tour (Admin only)
+  - [ ] `PATCH /api/tours/:id` - Update tour (Admin only)
+  - [ ] `DELETE /api/tours/:id` - Soft delete tour (Admin only)
 
 ### 2.2b Tour Schedule Module
 
 - [ ] Create Schedule Module: `nest g module schedules`
 - [ ] Create Schedule Service: `nest g service schedules`
 - [ ] Implement endpoints:
-  - [ ] `POST /api/v1/tours/:id/schedules` - Add schedule date (Admin only)
-  - [ ] `PATCH /api/v1/tours/:id/schedules/:scheduleId` - Update schedule (Admin only)
-  - [ ] `DELETE /api/v1/tours/:id/schedules/:scheduleId` - Remove schedule (Admin only)
+  - [ ] `POST /api/tours/:id/schedules` - Add schedule date (Admin only)
+  - [ ] `PATCH /api/tours/:id/schedules/:scheduleId` - Update schedule (Admin only)
+  - [ ] `DELETE /api/tours/:id/schedules/:scheduleId` - Remove schedule (Admin only)
 
 ### 2.3 Booking Module
 
@@ -470,7 +470,7 @@ async uploadSlip(file, bookingId) {
 - [ ] Create Review Controller: `nest g controller reviews`
 - [ ] Implement endpoints:
   - [ ] `POST /api/v1/reviews` - Create review (must have confirmed booking)
-  - [ ] `GET /api/v1/tours/:id/reviews` - Get reviews for a tour
+  - [ ] `GET /api/tours/:id/reviews` - Get reviews for a tour
 - [ ] Auto-update `tours.average_rating` and `tours.review_count` after review created
 
 ### 2.6 Admin Module (Simple)

@@ -1,8 +1,8 @@
 import { useState, useEffect } from "react";
 import axios from "axios";
-import { Search, Mail, Phone, Calendar, Loader2, CheckCircle, Clock, XCircle, Hash } from "lucide-react";
+import { Search, Mail, Phone, Calendar, Loader2, Hash } from "lucide-react";
 import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 
 interface TicketData {
   id: string;
@@ -35,8 +35,8 @@ export default function TicketManager() {
       console.error("Failed to fetch tickets:", error);
       // Fallback dummy data if API endpoint is not ready yet
       setTickets([
-        { id: "tk1", first_name: "สมชาย", last_name: "ใจดี", email: "somchai@mail.com", phone: "0812345678", message: "อยากสอบถามเรื่องทัวร์เกาะพีพีค่ะ", status: "pending", created_at: new Date().toISOString() },
-        { id: "tk2", first_name: "มานี", last_name: "รักดี", email: "manee@mail.com", phone: "0898765432", message: "ขอเลื่อนวันเดินทางได้ไหมคะ", status: "resolved", created_at: new Date().toISOString() }
+        { id: "tk1", first_name: "สมชาย", last_name: "ใจดี", email: "somchai@mail.com", phone: "0812345678", message: "อยากสอบถามเรื่องทัวร์เกาะพีพีค่ะ ว่าสามารถพาเด็กอายุ 5 ขวบไปได้ไหม?", status: "pending", created_at: new Date().toISOString() },
+        { id: "tk2", first_name: "มานี", last_name: "รักดี", email: "manee@mail.com", phone: "0898765432", message: "ขอเลื่อนวันเดินทางได้ไหมคะ พอดีติดธุระด่วน", status: "resolved", created_at: new Date().toISOString() }
       ]);
     } finally {
       setLoading(false);
@@ -53,9 +53,22 @@ export default function TicketManager() {
       setTickets(tickets.map(t => t.id === id ? { ...t, status: newStatus as any } : t));
     } catch (error) {
       alert("อัปเดตสถานะล้มเหลว");
-      // Fallback for UI if API is not yet available
       setTickets(tickets.map(t => t.id === id ? { ...t, status: newStatus as any } : t));
     }
+  };
+
+  // ฟังก์ชันสำหรับการเปิดตอบกลับทาง Gmail
+  const handleReplyGmail = (ticket: TicketData) => {
+    const subject = encodeURIComponent(`ตอบกลับข้อความติดต่อ: ThaiTour`);
+    const body = encodeURIComponent(
+      `สวัสดีคุณ ${ticket.first_name} ${ticket.last_name},\n\n` +
+      `จากข้อความที่คุณสอบถามเข้ามาว่า:\n"${ticket.message}"\n\n` +
+      `[พิมพ์ข้อความตอบกลับของคุณที่นี่...]\n\n` +
+      `ขอแสดงความนับถือ,\nทีมงาน ThaiTour`
+    );
+    // URL สำหรับเปิดหน้าเขียนจดหมายของ Gmail อัตโนมัติ (view=cm)
+    const gmailUrl = `https://mail.google.com/mail/?view=cm&fs=1&to=${ticket.email}&su=${subject}&body=${body}`;
+    window.open(gmailUrl, '_blank');
   };
 
   const filteredTickets = tickets.filter((t) => {
@@ -73,7 +86,7 @@ export default function TicketManager() {
         <div>
           <h1 className="text-2xl sm:text-3xl font-extrabold text-[#4F200D] tracking-tight">ข้อความติดต่อ (Tickets)</h1>
           <p className="text-xs sm:text-sm font-medium text-[#4F200D]/60 mt-1">
-            จัดการข้อความสอบถามและปัญหาจากลูกค้า
+            จัดการและตอบกลับข้อความสอบถามจากลูกค้า
           </p>
         </div>
       </div>
@@ -102,7 +115,7 @@ export default function TicketManager() {
                 <th className="px-6 py-5 font-black text-[#4F200D] uppercase tracking-wider text-xs w-[25%]">ข้อมูลลูกค้า</th>
                 <th className="px-6 py-5 font-black text-[#4F200D] uppercase tracking-wider text-xs w-[35%]">ข้อความ</th>
                 <th className="px-6 py-5 font-black text-[#4F200D] uppercase tracking-wider text-xs w-[15%]">เวลา</th>
-                <th className="px-6 py-5 font-black text-[#4F200D] uppercase tracking-wider text-xs w-[15%] text-right">สถานะ</th>
+                <th className="px-6 py-5 font-black text-[#4F200D] uppercase tracking-wider text-xs w-[15%] text-right">จัดการ</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-[#F6F1E9]">
@@ -148,18 +161,28 @@ export default function TicketManager() {
                       </div>
                     </td>
                     <td className="px-6 py-5 align-top text-right">
-                      <select
-                        className={`px-3 py-1.5 rounded-lg border-0 font-bold text-xs cursor-pointer outline-none transition-colors
-                          ${ticket.status === 'resolved' ? 'bg-green-100 text-green-700' : 
-                            ticket.status === 'cancelled' ? 'bg-red-100 text-red-700' : 
-                            'bg-yellow-100 text-yellow-700'}`}
-                        value={ticket.status}
-                        onChange={(e) => handleStatusChange(ticket.id, e.target.value)}
-                      >
-                        <option value="pending">รอดำเนินการ</option>
-                        <option value="resolved">แก้ไขแล้ว</option>
-                        <option value="cancelled">ยกเลิก</option>
-                      </select>
+                      <div className="flex flex-col gap-2 items-end w-full max-w-[140px] ml-auto">
+                        <select
+                          className={`w-full px-3 py-2 rounded-xl border-0 font-bold text-xs cursor-pointer outline-none transition-colors
+                            ${ticket.status === 'resolved' ? 'bg-green-100 text-green-700 focus:ring-2 focus:ring-green-400' : 
+                              ticket.status === 'cancelled' ? 'bg-red-100 text-red-700 focus:ring-2 focus:ring-red-400' : 
+                              'bg-[#FFD93D]/30 text-[#4F200D] focus:ring-2 focus:ring-[#FF8400]'}`}
+                          value={ticket.status}
+                          onChange={(e) => handleStatusChange(ticket.id, e.target.value)}
+                        >
+                          <option value="pending">รอดำเนินการ</option>
+                          <option value="resolved">แก้ไขแล้ว</option>
+                          <option value="cancelled">ยกเลิก</option>
+                        </select>
+
+                        {/* ปุ่มเปิดส่งอีเมลผ่าน Gmail */}
+                        <Button 
+                          onClick={() => handleReplyGmail(ticket)} 
+                          className="w-full flex items-center justify-center gap-1.5 bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 text-xs h-8 px-2 rounded-xl font-bold transition-all shadow-sm"
+                        >
+                          <Mail size={14} /> ตอบด้วย Gmail
+                        </Button>
+                      </div>
                     </td>
                   </tr>
                 ))

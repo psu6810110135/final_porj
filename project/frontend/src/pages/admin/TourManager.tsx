@@ -101,7 +101,7 @@ const initialFormState = {
   conditions: "",
 };
 
-const API_URL = "http://localhost:3000/api/v1/tours";
+const API_URL = "http://localhost:3000/api/tours";
 
 /* ─── Custom Select Component ─── */
 interface Option {

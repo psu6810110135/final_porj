@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import axios from "axios";
 import Navbar from "@/components/Navbar";
@@ -30,7 +30,7 @@ interface Tour {
   province: string;
   duration: string;
   image_cover: string;
-  images?: string[]; // รองรับ Array ของภาพเพิ่มเติม
+  images?: string[];
   category: string;
   child_price?: number;
   max_group_size?: number;
@@ -41,6 +41,112 @@ interface Tour {
   included?: string[] | string;
   excluded?: string[] | string;
   conditions?: string[] | string;
+}
+
+/* ─── Toast Notification ───────────────────────── */
+
+type ToastType = "error" | "warning" | "success" | "info";
+
+interface ToastProps {
+  message: string;
+  type: ToastType;
+  onClose: () => void;
+}
+
+function Toast({ message, type, onClose }: ToastProps) {
+  useEffect(() => {
+    const timer = setTimeout(onClose, 4000);
+    return () => clearTimeout(timer);
+  }, [onClose]);
+
+  const styles: Record<ToastType, { bg: string; icon: string; border: string }> = {
+    error: { bg: "bg-red-50", icon: "❌", border: "border-red-200" },
+    warning: { bg: "bg-yellow-50", icon: "⚠️", border: "border-yellow-200" },
+    success: { bg: "bg-green-50", icon: "✅", border: "border-green-200" },
+    info: { bg: "bg-blue-50", icon: "ℹ️", border: "border-blue-200" },
+  };
+
+  const s = styles[type];
+
+  return (
+    <div
+      className={`fixed top-4 left-1/2 -translate-x-1/2 z-[200] flex items-start gap-3 px-4 py-3 rounded-2xl border shadow-xl ${s.bg} ${s.border} max-w-[90vw] w-max min-w-[260px]`}
+      style={{ animation: "toastIn 0.3s cubic-bezier(0.32,0.72,0,1)" }}
+    >
+      <span className="text-lg shrink-0">{s.icon}</span>
+      <p className="text-sm font-semibold text-gray-800 flex-1">{message}</p>
+      <button
+        onClick={onClose}
+        className="text-gray-400 hover:text-gray-600 shrink-0 ml-1"
+      >
+        ✕
+      </button>
+    </div>
+  );
+}
+
+function useToast() {
+  const [toast, setToast] = useState<{ message: string; type: ToastType } | null>(null);
+
+  const showToast = useCallback((message: string, type: ToastType = "info") => {
+    setToast({ message, type });
+  }, []);
+
+  const closeToast = useCallback(() => setToast(null), []);
+
+  return { toast, showToast, closeToast };
+}
+
+/* ─── Login Required Modal ───────────────────────── */
+
+function LoginRequiredModal({ onClose, onLogin }: { onClose: () => void; onLogin: () => void }) {
+  return (
+    <div className="fixed inset-0 z-[300] flex items-center justify-center px-4">
+      {/* Backdrop */}
+      <div
+        className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+        onClick={onClose}
+        style={{ animation: "fadeIn 0.2s ease" }}
+      />
+      {/* Modal */}
+      <div
+        className="relative bg-white rounded-3xl shadow-2xl p-6 w-full max-w-sm text-center"
+        style={{ animation: "popIn 0.3s cubic-bezier(0.32,0.72,0,1)" }}
+      >
+        {/* Icon */}
+        <div className="w-16 h-16 rounded-full bg-orange-100 flex items-center justify-center mx-auto mb-4">
+          <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#FF8400" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4" />
+            <polyline points="10 17 15 12 10 7" />
+            <line x1="15" y1="12" x2="3" y2="12" />
+          </svg>
+        </div>
+
+        <h3 className="text-lg font-black text-[#2C1A0E] mb-2">
+          กรุณาเข้าสู่ระบบก่อน
+        </h3>
+        <p className="text-sm text-gray-500 mb-6 leading-relaxed">
+          คุณต้องเข้าสู่ระบบก่อนจึงจะสามารถจองทัวร์ได้<br />
+          หากยังไม่มีบัญชี สามารถสมัครสมาชิกได้เลย
+        </p>
+
+        <div className="flex flex-col gap-2.5">
+          <button
+            onClick={onLogin}
+            className="w-full bg-gradient-to-r from-[#FF8400] to-[#FF6B00] text-white font-black py-3.5 rounded-xl text-sm shadow-lg shadow-orange-200 hover:shadow-xl transition-all active:scale-[0.98]"
+          >
+            เข้าสู่ระบบ →
+          </button>
+          <button
+            onClick={onClose}
+            className="w-full border-2 border-gray-100 text-gray-500 font-semibold py-3 rounded-xl text-sm hover:border-gray-200 hover:bg-gray-50 transition-all"
+          >
+            ยกเลิก
+          </button>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 /* ─── Helpers ───────────────────────── */
@@ -123,17 +229,7 @@ function normalizeTourPayload(raw: any): Tour {
 /* ─── Icons ─────────────────────────── */
 
 const MapPinIcon = () => (
-  <svg
-    xmlns="http://www.w3.org/2000/svg"
-    width="14"
-    height="14"
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-  >
+  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <path stroke="none" d="M0 0h24v24H0z" fill="none" />
     <path d="M9 11a3 3 0 1 0 6 0a3 3 0 0 0 -6 0" />
     <path d="M17.657 16.657l-4.243 4.243a2 2 0 0 1 -2.827 0l-4.244 -4.243a8 8 0 1 1 11.314 0z" />
@@ -141,17 +237,7 @@ const MapPinIcon = () => (
 );
 
 const ClockIcon = () => (
-  <svg
-    xmlns="http://www.w3.org/2000/svg"
-    width="14"
-    height="14"
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-  >
+  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <path stroke="none" d="M0 0h24v24H0z" fill="none" />
     <path d="M3 12a9 9 0 1 0 18 0a9 9 0 0 0 -18 0" />
     <path d="M12 7v5l3 3" />
@@ -159,17 +245,7 @@ const ClockIcon = () => (
 );
 
 const UsersIcon = () => (
-  <svg
-    xmlns="http://www.w3.org/2000/svg"
-    width="14"
-    height="14"
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-  >
+  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <path stroke="none" d="M0 0h24v24H0z" fill="none" />
     <path d="M9 7m-4 0a4 4 0 1 0 8 0a4 4 0 1 0 -8 0" />
     <path d="M3 21v-2a4 4 0 0 1 4 -4h4a4 4 0 0 1 4 4v2" />
@@ -179,38 +255,35 @@ const UsersIcon = () => (
 );
 
 const XIcon = () => (
-  <svg
-    xmlns="http://www.w3.org/2000/svg"
-    width="20"
-    height="20"
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2.5"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-  >
+  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
     <path d="M18 6L6 18M6 6l12 12" />
   </svg>
 );
 
-/* ─── Booking Sheet (Mobile bottom sheet + Desktop sidebar) ── */
+/* ─── Booking Sheet ── */
 
-function BookingSheet({ tour, onClose }: { tour: Tour; onClose?: () => void }) {
+function BookingSheet({
+  tour,
+  onClose,
+  showToast,
+}: {
+  tour: Tour;
+  onClose?: () => void;
+  showToast: (msg: string, type: ToastType) => void;
+}) {
   const baseURL = "http://localhost:3000";
   const api = axios.create({ baseURL });
   const navigate = useNavigate();
   const [adults, setAdults] = useState(1);
   const [children, setChildren] = useState(0);
   const [schedules, setSchedules] = useState<Schedule[]>([]);
-  const [selectedSchedule, setSelectedSchedule] = useState<Schedule | null>(
-    null,
-  );
+  const [selectedSchedule, setSelectedSchedule] = useState<Schedule | null>(null);
   const [loadingSchedules, setLoadingSchedules] = useState(true);
   const [contactName, setContactName] = useState("");
   const [contactEmail, setContactEmail] = useState("");
   const [contactPhone, setContactPhone] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [showLoginModal, setShowLoginModal] = useState(false);
 
   // Fetch tour schedules
   useEffect(() => {
@@ -229,8 +302,7 @@ function BookingSheet({ tour, onClose }: { tour: Tour; onClose?: () => void }) {
           })
           .sort(
             (a: Schedule, b: Schedule) =>
-              new Date(a.available_date).getTime() -
-              new Date(b.available_date).getTime(),
+              new Date(a.available_date).getTime() - new Date(b.available_date).getTime(),
           );
         setSchedules(validSchedules);
       } catch (err) {
@@ -245,16 +317,14 @@ function BookingSheet({ tour, onClose }: { tour: Tour; onClose?: () => void }) {
 
   // Prefill contact info from logged-in user
   useEffect(() => {
-    const token =
-      localStorage.getItem("jwt_token") || localStorage.getItem("token");
+    const token = localStorage.getItem("jwt_token") || localStorage.getItem("token");
     if (!token) return;
     api
       .get("/auth/profile", { headers: { Authorization: `Bearer ${token}` } })
       .then((res) => {
         const d = res.data || {};
         const p = d.profile || {};
-        if (!contactName)
-          setContactName(d.full_name || p.full_name || d.username || "");
+        if (!contactName) setContactName(d.full_name || p.full_name || d.username || "");
         if (!contactEmail) setContactEmail(d.email || p.email || "");
         if (!contactPhone) setContactPhone(p.phone || p.tel || "");
       })
@@ -263,15 +333,12 @@ function BookingSheet({ tour, onClose }: { tour: Tour; onClose?: () => void }) {
 
   const childPrice = Math.floor(tour.price * 0.6);
   const pax = adults + children;
-  
-  const total = (tour.price * adults) + (childPrice * children);
-
+  const total = tour.price * adults + childPrice * children;
   const availableSeats = selectedSchedule?.available_seats ?? 0;
   const remainingCapacity = availableSeats - pax;
   const visibleSchedules = schedules.filter(
     (s) => (s.available_seats ?? 0) > 0 && s.is_available !== false,
   );
-
   const remaining = remainingCapacity;
 
   const Counter = ({
@@ -312,363 +379,318 @@ function BookingSheet({ tour, onClose }: { tour: Tour; onClose?: () => void }) {
     </div>
   );
 
-  return (
-    <div className="bg-white h-full overflow-y-auto">
-      {/* Header */}
-      <div className="bg-gradient-to-r from-[#FF8400] to-[#FF6B00] px-5 py-4 flex items-center justify-between">
-        <div>
-          <p className="text-white/80 text-xs font-medium uppercase tracking-wider">
-            ราคาเริ่มต้น
-          </p>
-          <p className="text-white text-2xl font-black">
-            ฿{tour.price.toLocaleString()}
-            <span className="text-sm font-normal ml-1">/ คน</span>
-          </p>
-        </div>
-        {onClose && (
-          <button
-            onClick={onClose}
-            className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center text-white hover:bg-white/30 transition-colors"
-          >
-            <XIcon />
-          </button>
-        )}
-      </div>
+  const handleBook = async () => {
+    // ── Validation (custom toast instead of alert) ──
+    if (!selectedSchedule) {
+      showToast("กรุณาเลือกวันที่เดินทาง", "warning");
+      return;
+    }
+    if (!pax || pax < 1) {
+      showToast("กรุณาเลือกจำนวนผู้เดินทาง", "warning");
+      return;
+    }
+    const seats = selectedSchedule.available_seats ?? 0;
+    if (pax > seats) {
+      showToast(`ที่นั่งไม่พอ! เหลือเพียง ${seats} ที่`, "error");
+      return;
+    }
+    if (!contactName || !contactEmail || !contactPhone) {
+      showToast("กรุณากรอกข้อมูลติดต่อให้ครบ", "warning");
+      return;
+    }
 
-      <div className="p-5 space-y-4">
-        {/* Schedule Selection */}
-        <div>
-          <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider block mb-2">
-            เลือกวันที่เดินทาง
-          </label>
-          {loadingSchedules ? (
-            <div className="text-center py-8">
-              <div className="w-8 h-8 border-3 border-[#FF8400] border-t-transparent rounded-full animate-spin mx-auto" />
-              <p className="text-xs text-gray-500 mt-2">
-                กำลังโหลดวันที่ว่าง...
-              </p>
-            </div>
-          ) : schedules.length === 0 ? (
-            <div className="text-center py-8 bg-gray-50 rounded-lg border border-gray-200">
-              <p className="text-sm text-gray-500">
-                ไม่มีวันที่เปิดให้จองในขณะนี้
-              </p>
-              <p className="text-xs text-gray-400 mt-1">
-                กรุณาติดต่อเราเพื่อสอบถามเพิ่มเติม
-              </p>
-            </div>
-          ) : visibleSchedules.length === 0 ? (
-            <div className="text-center py-8 bg-gray-50 rounded-lg border border-gray-200">
-              <p className="text-sm text-gray-500">รอบนี้เต็มหมดแล้ว</p>
-              <p className="text-xs text-gray-400 mt-1">
-                กรุณาเลือกทัวร์หรือวันที่อื่น
-              </p>
-            </div>
-          ) : (
-            <div className="space-y-2 max-h-64 overflow-y-auto">
-              {visibleSchedules.map((schedule) => {
-                const date = new Date(schedule.available_date);
-                const isSelected = selectedSchedule?.id === schedule.id;
-                const isFull =
-                  (schedule.available_seats ?? 0) <= 0 ||
-                  !schedule.is_available;
-                const dateStr = date.toLocaleDateString("th-TH", {
-                  year: "numeric",
-                  month: "long",
-                  day: "numeric",
-                  weekday: "short",
-                });
-                const seatCount = schedule.available_seats ?? 0;
-                return (
-                  <button
-                    key={schedule.id}
-                    type="button"
-                    onClick={() => !isFull && setSelectedSchedule(schedule)}
-                    disabled={isFull}
-                    className={`w-full text-left border-2 rounded-lg p-3 transition-all ${
-                      isSelected
-                        ? "border-[#FF8400] bg-orange-50"
-                        : isFull
-                          ? "border-gray-200 bg-gray-50 opacity-60 cursor-not-allowed"
-                          : "border-gray-200 hover:border-[#FF8400] hover:bg-orange-50/30"
-                    }`}
-                  >
-                    <div className="flex justify-between items-start">
-                      <div className="flex-1">
-                        <p
-                          className={`text-sm font-semibold ${isSelected ? "text-[#FF8400]" : "text-[#2C1A0E]"}`}
-                        >
-                          {dateStr}
-                        </p>
-                        <div className="flex items-center gap-2 mt-1">
-                          {isFull ? (
-                            <span className="text-xs font-medium text-red-500 bg-red-50 px-2 py-0.5 rounded">
-                              เต็มแล้ว
-                            </span>
-                          ) : (
-                            <span className="text-xs text-gray-600">
-                              เหลือ{" "}
-                              <span className="font-semibold text-[#FF8400]">
-                                {seatCount}
-                              </span>{" "}
-                              ที่
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                      {isSelected && (
-                        <div className="w-5 h-5 bg-[#FF8400] rounded-full flex items-center justify-center">
-                          <svg
-                            className="w-3 h-3 text-white"
-                            fill="none"
-                            viewBox="0 0 24 24"
-                            stroke="currentColor"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={3}
-                              d="M5 13l4 4L19 7"
-                            />
-                          </svg>
-                        </div>
-                      )}
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
+    // ── Check login ──
+    const token =
+      localStorage.getItem("jwt_token") ||
+      localStorage.getItem("token") ||
+      localStorage.getItem("accessToken");
+
+    if (!token) {
+      setShowLoginModal(true);
+      return;
+    }
+
+    const payload = {
+      tourId: tour.id,
+      tourScheduleId: selectedSchedule.id,
+      pax,
+      numberOfTravelers: pax,
+      contactInfo: {
+        name: contactName,
+        email: contactEmail,
+        phone: contactPhone,
+      },
+      selectedOptions: {
+        adults,
+        children,
+      },
+    };
+
+    try {
+      setSubmitting(true);
+      const res = await api.post("/api/v1/bookings", payload, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const bookingId = res.data?.id || res.data?.data?.id;
+
+      if (bookingId) {
+        navigate(`/payment/${bookingId}`, { state: { amount: total } });
+      } else {
+        showToast("จองสำเร็จ แต่ไม่พบรหัสการจอง กรุณาตรวจสอบในประวัติการจอง", "info");
+      }
+    } catch (err: any) {
+      const msg = err?.response?.data?.message || "จองไม่สำเร็จ กรุณาลองใหม่อีกครั้ง";
+      showToast(Array.isArray(msg) ? msg.join(" | ") : msg, "error");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <>
+      {/* Login Required Modal */}
+      {showLoginModal && (
+        <LoginRequiredModal
+          onClose={() => setShowLoginModal(false)}
+          onLogin={() => {
+            // Save current tour URL to redirect back after login
+            localStorage.setItem("redirect_after_login", window.location.pathname);
+            navigate("/login");
+          }}
+        />
+      )}
+
+      <div className="bg-white h-full overflow-y-auto">
+        {/* Header */}
+        <div className="bg-gradient-to-r from-[#FF8400] to-[#FF6B00] px-5 py-4 flex items-center justify-between">
+          <div>
+            <p className="text-white/80 text-xs font-medium uppercase tracking-wider">
+              ราคาเริ่มต้น
+            </p>
+            <p className="text-white text-2xl font-black">
+              ฿{tour.price.toLocaleString()}
+              <span className="text-sm font-normal ml-1">/ คน</span>
+            </p>
+          </div>
+          {onClose && (
+            <button
+              onClick={onClose}
+              className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center text-white hover:bg-white/30 transition-colors"
+            >
+              <XIcon />
+            </button>
           )}
-          {selectedSchedule && (
-            <div className="mt-3 p-3 bg-green-50 border border-green-200 rounded-lg">
-              <p className="text-xs font-semibold text-green-800">
-                ✓ เลือกวันที่แล้ว
-              </p>
-              <p className="text-xs text-green-700 mt-0.5">
-                {new Date(selectedSchedule.available_date).toLocaleDateString(
-                  "th-TH",
-                  {
+        </div>
+
+        <div className="p-5 space-y-4">
+          {/* Schedule Selection */}
+          <div>
+            <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider block mb-2">
+              เลือกวันที่เดินทาง
+            </label>
+            {loadingSchedules ? (
+              <div className="text-center py-8">
+                <div className="w-8 h-8 border-3 border-[#FF8400] border-t-transparent rounded-full animate-spin mx-auto" />
+                <p className="text-xs text-gray-500 mt-2">กำลังโหลดวันที่ว่าง...</p>
+              </div>
+            ) : schedules.length === 0 ? (
+              <div className="text-center py-8 bg-gray-50 rounded-lg border border-gray-200">
+                <p className="text-sm text-gray-500">ไม่มีวันที่เปิดให้จองในขณะนี้</p>
+                <p className="text-xs text-gray-400 mt-1">กรุณาติดต่อเราเพื่อสอบถามเพิ่มเติม</p>
+              </div>
+            ) : visibleSchedules.length === 0 ? (
+              <div className="text-center py-8 bg-gray-50 rounded-lg border border-gray-200">
+                <p className="text-sm text-gray-500">รอบนี้เต็มหมดแล้ว</p>
+                <p className="text-xs text-gray-400 mt-1">กรุณาเลือกทัวร์หรือวันที่อื่น</p>
+              </div>
+            ) : (
+              <div className="space-y-2 max-h-64 overflow-y-auto">
+                {visibleSchedules.map((schedule) => {
+                  const date = new Date(schedule.available_date);
+                  const isSelected = selectedSchedule?.id === schedule.id;
+                  const isFull = (schedule.available_seats ?? 0) <= 0 || !schedule.is_available;
+                  const dateStr = date.toLocaleDateString("th-TH", {
                     year: "numeric",
                     month: "long",
                     day: "numeric",
-                  },
-                )}
-              </p>
-              <div className="flex items-center justify-between mt-2 pt-2 border-t border-green-200">
-                <span className="text-xs text-green-700">ที่นั่งว่าง:</span>
-                <span className="text-sm font-bold text-green-800">
-                  {selectedSchedule.available_seats} ที่
-                </span>
+                    weekday: "short",
+                  });
+                  const seatCount = schedule.available_seats ?? 0;
+                  return (
+                    <button
+                      key={schedule.id}
+                      type="button"
+                      onClick={() => !isFull && setSelectedSchedule(schedule)}
+                      disabled={isFull}
+                      className={`w-full text-left border-2 rounded-lg p-3 transition-all ${
+                        isSelected
+                          ? "border-[#FF8400] bg-orange-50"
+                          : isFull
+                            ? "border-gray-200 bg-gray-50 opacity-60 cursor-not-allowed"
+                            : "border-gray-200 hover:border-[#FF8400] hover:bg-orange-50/30"
+                      }`}
+                    >
+                      <div className="flex justify-between items-start">
+                        <div className="flex-1">
+                          <p className={`text-sm font-semibold ${isSelected ? "text-[#FF8400]" : "text-[#2C1A0E]"}`}>
+                            {dateStr}
+                          </p>
+                          <div className="flex items-center gap-2 mt-1">
+                            {isFull ? (
+                              <span className="text-xs font-medium text-red-500 bg-red-50 px-2 py-0.5 rounded">เต็มแล้ว</span>
+                            ) : (
+                              <span className="text-xs text-gray-600">
+                                เหลือ <span className="font-semibold text-[#FF8400]">{seatCount}</span> ที่
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                        {isSelected && (
+                          <div className="w-5 h-5 bg-[#FF8400] rounded-full flex items-center justify-center">
+                            <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                            </svg>
+                          </div>
+                        )}
+                      </div>
+                    </button>
+                  );
+                })}
               </div>
-            </div>
-          )}
-        </div>
-
-        {/* Capacity Warning */}
-        {selectedSchedule && pax > 0 && (
-          <div
-            className={`p-3 rounded-lg border ${
-              remainingCapacity < 0
-                ? "bg-red-50 border-red-200"
-                : remainingCapacity <= 3
-                  ? "bg-yellow-50 border-yellow-200"
-                  : "bg-blue-50 border-blue-200"
-            }`}
-          >
-            {remainingCapacity < 0 ? (
-              <>
-                <p className="text-xs font-semibold text-red-800">
-                  ⚠️ เกินจำนวนที่นั่งว่าง!
+            )}
+            {selectedSchedule && (
+              <div className="mt-3 p-3 bg-green-50 border border-green-200 rounded-lg">
+                <p className="text-xs font-semibold text-green-800">✓ เลือกวันที่แล้ว</p>
+                <p className="text-xs text-green-700 mt-0.5">
+                  {new Date(selectedSchedule.available_date).toLocaleDateString("th-TH", {
+                    year: "numeric",
+                    month: "long",
+                    day: "numeric",
+                  })}
                 </p>
-                <p className="text-xs text-red-700 mt-0.5">
-                  คุณเลือก {pax} คน แต่เหลือเพียง {availableSeats} ที่เท่านั้น
-                </p>
-              </>
-            ) : remainingCapacity <= 3 ? (
-              <>
-                <p className="text-xs font-semibold text-yellow-800">
-                  ⚠️ ที่นั่งใกล้เต็ม!
-                </p>
-                <p className="text-xs text-yellow-700 mt-0.5">
-                  หลังจองจะเหลือเพียง {remainingCapacity} ที่
-                </p>
-              </>
-            ) : (
-              <>
-                <p className="text-xs font-semibold text-blue-800">
-                  ✓ ที่นั่งเพียงพอ
-                </p>
-                <p className="text-xs text-blue-700 mt-0.5">
-                  หลังจองจะเหลือ {remainingCapacity} ที่
-                </p>
-              </>
+                <div className="flex items-center justify-between mt-2 pt-2 border-t border-green-200">
+                  <span className="text-xs text-green-700">ที่นั่งว่าง:</span>
+                  <span className="text-sm font-bold text-green-800">{selectedSchedule.available_seats} ที่</span>
+                </div>
+              </div>
             )}
           </div>
-        )}
 
-        {/* Counters */}
-        <div className="border-2 border-gray-100 rounded-xl px-4 divide-y divide-gray-100">
-          <Counter
-            label="ผู้ใหญ่"
-            sub={`฿${tour.price.toLocaleString()} / คน`}
-            value={adults}
-            onDec={() => setAdults((n) => Math.max(1, n - 1))}
-            onInc={() => setAdults((n) => (remaining > 0 ? n + 1 : n))}
-          />
-          <Counter
-            label="เด็ก"
-            sub={`฿${childPrice.toLocaleString()} / คน`}
-            value={children}
-            onDec={() => setChildren((n) => Math.max(0, n - 1))}
-            onInc={() => setChildren((n) => (remaining > 0 ? n + 1 : n))}
-          />
-        </div>
-
-        {/* Price Summary */}
-        <div className="bg-gradient-to-br from-amber-50 to-orange-50 rounded-xl p-4 border border-amber-100 space-y-2">
-          {adults > 0 && (
-            <div className="flex justify-between text-sm">
-              <span className="text-gray-500">ผู้ใหญ่ {adults} คน</span>
-              <span className="font-semibold">
-                ฿{(tour.price * adults).toLocaleString()}
-              </span>
-            </div>
-          )}
-          {children > 0 && (
-            <div className="flex justify-between text-sm">
-              <span className="text-gray-500">เด็ก {children} คน</span>
-              <span className="font-semibold">
-                ฿{(childPrice * children).toLocaleString()}
-              </span>
-            </div>
-          )}
-
-          <div className="flex justify-between text-[11px] text-gray-500">
-            <span>ผู้เดินทางรวม</span>
-            <span>
-              {pax} คน
-              {selectedSchedule && (
-                <span
-                  className={
-                    remainingCapacity < 0 ? "text-red-500 font-semibold" : ""
-                  }
-                >
-                  {" "}
-                  (จาก {availableSeats} ที่)
-                </span>
+          {/* Capacity Warning */}
+          {selectedSchedule && pax > 0 && (
+            <div
+              className={`p-3 rounded-lg border ${
+                remainingCapacity < 0
+                  ? "bg-red-50 border-red-200"
+                  : remainingCapacity <= 3
+                    ? "bg-yellow-50 border-yellow-200"
+                    : "bg-blue-50 border-blue-200"
+              }`}
+            >
+              {remainingCapacity < 0 ? (
+                <>
+                  <p className="text-xs font-semibold text-red-800">⚠️ เกินจำนวนที่นั่งว่าง!</p>
+                  <p className="text-xs text-red-700 mt-0.5">
+                    คุณเลือก {pax} คน แต่เหลือเพียง {availableSeats} ที่เท่านั้น
+                  </p>
+                </>
+              ) : remainingCapacity <= 3 ? (
+                <>
+                  <p className="text-xs font-semibold text-yellow-800">⚠️ ที่นั่งใกล้เต็ม!</p>
+                  <p className="text-xs text-yellow-700 mt-0.5">หลังจองจะเหลือเพียง {remainingCapacity} ที่</p>
+                </>
+              ) : (
+                <>
+                  <p className="text-xs font-semibold text-blue-800">✓ ที่นั่งเพียงพอ</p>
+                  <p className="text-xs text-blue-700 mt-0.5">หลังจองจะเหลือ {remainingCapacity} ที่</p>
+                </>
               )}
-            </span>
+            </div>
+          )}
+
+          {/* Counters */}
+          <div className="border-2 border-gray-100 rounded-xl px-4 divide-y divide-gray-100">
+            <Counter
+              label="ผู้ใหญ่"
+              sub={`฿${tour.price.toLocaleString()} / คน`}
+              value={adults}
+              onDec={() => setAdults((n) => Math.max(1, n - 1))}
+              onInc={() => setAdults((n) => (remaining > 0 ? n + 1 : n))}
+            />
+            <Counter
+              label="เด็ก"
+              sub={`฿${childPrice.toLocaleString()} / คน`}
+              value={children}
+              onDec={() => setChildren((n) => Math.max(0, n - 1))}
+              onInc={() => setChildren((n) => (remaining > 0 ? n + 1 : n))}
+            />
           </div>
-          <div className="border-t border-amber-200 pt-2 flex justify-between items-center font-black text-[#2C1A0E]">
-            <span>รวมทั้งหมด</span>
-            <div className="text-right">
-              <span className="text-[#FF8400] text-lg">
-                ฿{total.toLocaleString()}
+
+          {/* Price Summary */}
+          <div className="bg-gradient-to-br from-amber-50 to-orange-50 rounded-xl p-4 border border-amber-100 space-y-2">
+            {adults > 0 && (
+              <div className="flex justify-between text-sm">
+                <span className="text-gray-500">ผู้ใหญ่ {adults} คน</span>
+                <span className="font-semibold">฿{(tour.price * adults).toLocaleString()}</span>
+              </div>
+            )}
+            {children > 0 && (
+              <div className="flex justify-between text-sm">
+                <span className="text-gray-500">เด็ก {children} คน</span>
+                <span className="font-semibold">฿{(childPrice * children).toLocaleString()}</span>
+              </div>
+            )}
+            <div className="flex justify-between text-[11px] text-gray-500">
+              <span>ผู้เดินทางรวม</span>
+              <span>
+                {pax} คน
+                {selectedSchedule && (
+                  <span className={remainingCapacity < 0 ? "text-red-500 font-semibold" : ""}>
+                    {" "}(จาก {availableSeats} ที่)
+                  </span>
+                )}
               </span>
             </div>
+            <div className="border-t border-amber-200 pt-2 flex justify-between items-center font-black text-[#2C1A0E]">
+              <span>รวมทั้งหมด</span>
+              <span className="text-[#FF8400] text-lg">฿{total.toLocaleString()}</span>
+            </div>
           </div>
+
+          {/* Contact */}
+          <div className="space-y-2.5">
+            <label className="text-xs font-bold text-gray-400 uppercase tracking-wider block">
+              ข้อมูลติดต่อ
+            </label>
+            {[
+              { type: "text", placeholder: "ชื่อ-นามสกุล", value: contactName, onChange: setContactName },
+              { type: "email", placeholder: "อีเมล", value: contactEmail, onChange: setContactEmail },
+              { type: "tel", placeholder: "เบอร์โทรศัพท์", value: contactPhone, onChange: setContactPhone },
+            ].map((f, i) => (
+              <input
+                key={i}
+                type={f.type}
+                placeholder={f.placeholder}
+                value={f.value}
+                onChange={(e) => f.onChange(e.target.value)}
+                className="w-full border-2 border-gray-100 rounded-xl px-4 py-3 text-sm text-gray-700 focus:outline-none focus:border-[#FF8400] bg-gray-50 transition-colors placeholder:text-gray-300"
+              />
+            ))}
+          </div>
+
+          {/* Book Button */}
+          <button
+            onClick={handleBook}
+            disabled={submitting}
+            className="w-full bg-gradient-to-r from-[#FF8400] to-[#FF6B00] text-white font-black py-4 rounded-xl transition-all text-base shadow-lg shadow-orange-200 disabled:opacity-60 disabled:cursor-not-allowed active:scale-[0.98] hover:shadow-xl hover:shadow-orange-200"
+          >
+            {submitting ? "กำลังจอง..." : "จองทัวร์เลย →"}
+          </button>
+
+          <p className="text-center text-xs text-gray-400 pb-2">มีคำถาม? ติดต่อเราได้เลย ☎️</p>
         </div>
-
-        {/* Contact */}
-        <div className="space-y-2.5">
-          <label className="text-xs font-bold text-gray-400 uppercase tracking-wider block">
-            ข้อมูลติดต่อ
-          </label>
-          {[
-            {
-              type: "text",
-              placeholder: "ชื่อ-นามสกุล",
-              value: contactName,
-              onChange: setContactName,
-            },
-            {
-              type: "email",
-              placeholder: "อีเมล",
-              value: contactEmail,
-              onChange: setContactEmail,
-            },
-            {
-              type: "tel",
-              placeholder: "เบอร์โทรศัพท์",
-              value: contactPhone,
-              onChange: setContactPhone,
-            },
-          ].map((f, i) => (
-            <input
-              key={i}
-              type={f.type}
-              placeholder={f.placeholder}
-              value={f.value}
-              onChange={(e) => f.onChange(e.target.value)}
-              className="w-full border-2 border-gray-100 rounded-xl px-4 py-3 text-sm text-gray-700 focus:outline-none focus:border-[#FF8400] bg-gray-50 transition-colors placeholder:text-gray-300"
-            />
-          ))}
-        </div>
-
-        {/* Book Button */}
-        <button
-          onClick={async () => {
-            if (!selectedSchedule) return alert("กรุณาเลือกวันที่เดินทาง");
-            if (!pax || pax < 1) return alert("กรุณาเลือกจำนวนผู้เดินทาง");
-            const seats = selectedSchedule.available_seats ?? 0;
-            if (pax > seats)
-              return alert(`ที่นั่งไม่พอ! เหลือเพียง ${seats} ที่`);
-            if (!contactName || !contactEmail || !contactPhone)
-              return alert("กรุณากรอกข้อมูลติดต่อให้ครบ");
-            const token =
-              localStorage.getItem("jwt_token") ||
-              localStorage.getItem("token") ||
-              localStorage.getItem("accessToken");
-            if (!token) return alert("กรุณาเข้าสู่ระบบก่อนจองทัวร์");
-            
-            const payload = {
-              tourId: tour.id,
-              tourScheduleId: selectedSchedule.id,
-              pax: pax, 
-              numberOfTravelers: pax, 
-              contactInfo: {
-                name: contactName,
-                email: contactEmail,
-                phone: contactPhone,
-              },
-              selectedOptions: {
-                adults: adults,
-                children: children,
-              }
-            };
-            
-            try {
-              setSubmitting(true);
-              const res = await api.post("/api/v1/bookings", payload, {
-                headers: { Authorization: `Bearer ${token}` },
-              });
-              
-              const bookingId = res.data?.id || res.data?.data?.id;
-
-              if (bookingId) {
-                navigate(`/payment/${bookingId}`, { state: { amount: total } });
-              } else {
-                alert("จองสำเร็จ แต่ระบบไม่พบรหัสการจอง กรุณาตรวจสอบในประวัติการจองของคุณ");
-              }
-              
-            } catch (err: any) {
-              const msg = err?.response?.data?.message || "จองไม่สำเร็จ";
-              alert(Array.isArray(msg) ? msg.join("\n") : msg);
-            } finally {
-              setSubmitting(false);
-            }
-          }}
-          disabled={submitting || !selectedSchedule}
-          className="w-full bg-gradient-to-r from-[#FF8400] to-[#FF6B00] text-white font-black py-4 rounded-xl transition-all text-base shadow-lg shadow-orange-200 disabled:opacity-60 disabled:cursor-not-allowed active:scale-[0.98] hover:shadow-xl hover:shadow-orange-200"
-        >
-          {submitting ? "กำลังจอง..." : "จองทัวร์เลย →"}
-        </button>
-
-        <p className="text-center text-xs text-gray-400 pb-2">
-          มีคำถาม? ติดต่อเราได้เลย ☎️
-        </p>
       </div>
-    </div>
+    </>
   );
 }
 
@@ -680,6 +702,7 @@ export default function TourDetailPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
   const [sheetOpen, setSheetOpen] = useState(false);
+  const { toast, showToast, closeToast } = useToast();
 
   const preparation = tour ? parsePreparation(tour.preparation) : [];
   const highlights = tour ? parseTextList(tour.highlights) : [];
@@ -717,14 +740,12 @@ export default function TourDetailPage() {
         .hero-gradient {
           background: linear-gradient(to top, rgba(30,10,0,0.85) 0%, rgba(30,10,0,0.3) 50%, transparent 100%);
         }
-        .sheet-overlay {
-          animation: fadeIn 0.25s ease;
-        }
-        .sheet-panel {
-          animation: slideUp 0.35s cubic-bezier(0.32, 0.72, 0, 1);
-        }
+        .sheet-overlay { animation: fadeIn 0.25s ease; }
+        .sheet-panel { animation: slideUp 0.35s cubic-bezier(0.32, 0.72, 0, 1); }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
         @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+        @keyframes toastIn { from { opacity: 0; transform: translate(-50%, -16px); } to { opacity: 1; transform: translate(-50%, 0); } }
+        @keyframes popIn { from { opacity: 0; transform: scale(0.85); } to { opacity: 1; transform: scale(1); } }
         .section-card {
           background: white;
           border-radius: 20px;
@@ -732,6 +753,9 @@ export default function TourDetailPage() {
           box-shadow: 0 1px 8px rgba(44,26,14,0.06);
         }
       `}</style>
+
+      {/* Global Toast */}
+      {toast && <Toast message={toast.message} type={toast.type} onClose={closeToast} />}
 
       <div className="tour-detail min-h-screen bg-[#F5F0EB]">
         <Navbar activePage="tours" />
@@ -747,17 +771,13 @@ export default function TourDetailPage() {
           <div className="min-h-[60vh] flex items-center justify-center">
             <div className="text-center space-y-3">
               <p className="text-5xl">😕</p>
-              <p className="text-lg font-bold text-gray-700">
-                ไม่พบข้อมูลทัวร์นี้
-              </p>
-              <Link to="/" className="text-sm text-[#FF8400] hover:underline">
-                ← กลับหน้าหลัก
-              </Link>
+              <p className="text-lg font-bold text-gray-700">ไม่พบข้อมูลทัวร์นี้</p>
+              <Link to="/" className="text-sm text-[#FF8400] hover:underline">← กลับหน้าหลัก</Link>
             </div>
           </div>
         ) : (
           <>
-            {/* ── Hero Image (full-bleed, title overlay) ── */}
+            {/* ── Hero Image ── */}
             <div className="relative w-full h-[55vw] min-h-[240px] max-h-[480px] overflow-hidden">
               <img
                 src={getImageUrl(tour.image_cover)}
@@ -766,29 +786,15 @@ export default function TourDetailPage() {
               />
               <div className="hero-gradient absolute inset-0" />
 
-              {/* Back button */}
               <Link
                 to="/tours"
                 className="absolute top-4 left-4 w-9 h-9 rounded-full bg-black/30 backdrop-blur-sm flex items-center justify-center text-white hover:bg-black/50 transition-colors"
               >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="18"
-                  height="18"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                  strokeWidth="2.5"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M15 19l-7-7 7-7"
-                  />
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
                 </svg>
               </Link>
 
-              {/* Title overlaid on image */}
               <div className="absolute bottom-0 left-0 right-0 px-4 pb-5">
                 <span className="inline-block text-xs bg-[#FF8400] text-white px-3 py-1 rounded-full font-bold uppercase tracking-wide mb-2">
                   {tour.category}
@@ -800,19 +806,9 @@ export default function TourDetailPage() {
                   {[
                     { Icon: MapPinIcon, text: tour.province },
                     { Icon: ClockIcon, text: tour.duration },
-                    ...(tour.max_group_size
-                      ? [
-                          {
-                            Icon: UsersIcon,
-                            text: `สูงสุด ${tour.max_group_size} คน`,
-                          },
-                        ]
-                      : []),
+                    ...(tour.max_group_size ? [{ Icon: UsersIcon, text: `สูงสุด ${tour.max_group_size} คน` }] : []),
                   ].map(({ Icon, text }, i) => (
-                    <span
-                      key={i}
-                      className="flex items-center gap-1 text-white/90 text-xs font-medium bg-black/25 backdrop-blur-sm px-2.5 py-1 rounded-full"
-                    >
+                    <span key={i} className="flex items-center gap-1 text-white/90 text-xs font-medium bg-black/25 backdrop-blur-sm px-2.5 py-1 rounded-full">
                       <Icon /> {text}
                     </span>
                   ))}
@@ -823,9 +819,8 @@ export default function TourDetailPage() {
             {/* ── Content + Sidebar ── */}
             <div className="max-w-7xl mx-auto px-4 py-5 pb-28 md:pb-8">
               <div className="grid lg:grid-cols-3 gap-6">
-                {/* ── Left: Content ── */}
+                {/* Left: Content */}
                 <div className="lg:col-span-2 space-y-4">
-                  {/* Highlights */}
                   {highlights.length > 0 && (
                     <div className="section-card bg-gradient-to-br from-white to-orange-50/40 border border-orange-100">
                       <h2 className="text-base font-black text-[#2C1A0E] mb-3 flex items-center gap-2">
@@ -834,10 +829,7 @@ export default function TourDetailPage() {
                       </h2>
                       <ul className="grid sm:grid-cols-2 gap-2.5">
                         {highlights.map((item, i) => (
-                          <li
-                            key={i}
-                            className="text-sm text-gray-700 bg-white border border-orange-100 rounded-lg px-3 py-2"
-                          >
+                          <li key={i} className="text-sm text-gray-700 bg-white border border-orange-100 rounded-lg px-3 py-2">
                             ✨ {item}
                           </li>
                         ))}
@@ -845,20 +837,16 @@ export default function TourDetailPage() {
                     </div>
                   )}
 
-                  {/* Description */}
                   {tour.description && (
                     <div className="section-card">
                       <h2 className="text-base font-black text-[#2C1A0E] mb-3 flex items-center gap-2">
                         <span className="w-1 h-5 bg-[#FF8400] rounded-full inline-block" />
                         รายละเอียดทัวร์
                       </h2>
-                      <p className="text-sm text-gray-600 leading-7 whitespace-pre-line">
-                        {tour.description}
-                      </p>
+                      <p className="text-sm text-gray-600 leading-7 whitespace-pre-line">{tour.description}</p>
                     </div>
                   )}
 
-                  {/* Itinerary */}
                   {itinerary.length > 0 && (
                     <div className="section-card">
                       <h2 className="text-base font-black text-[#2C1A0E] mb-4 flex items-center gap-2">
@@ -867,24 +855,16 @@ export default function TourDetailPage() {
                       </h2>
                       <div className="relative pl-8 space-y-3 before:absolute before:left-[7px] before:top-2 before:bottom-2 before:w-[2px] before:rounded-full before:bg-[#FF8400]/20">
                         {itinerary.map((item, i) => (
-                          <div
-                            key={i}
-                            className="relative rounded-xl border border-orange-100 bg-gradient-to-br from-orange-50/40 to-white p-3.5"
-                          >
+                          <div key={i} className="relative rounded-xl border border-orange-100 bg-gradient-to-br from-orange-50/40 to-white p-3.5">
                             <span className="absolute -left-8 top-4 h-4 w-4 rounded-full bg-[#FF8400] border-2 border-white shadow-[0_0_0_3px_rgba(255,132,0,0.25)]" />
-                            <p className="text-[11px] font-extrabold text-[#FF8400] uppercase tracking-wide mb-1">
-                              {item.time}
-                            </p>
-                            <p className="text-sm text-gray-700 leading-relaxed">
-                              {item.detail}
-                            </p>
+                            <p className="text-[11px] font-extrabold text-[#FF8400] uppercase tracking-wide mb-1">{item.time}</p>
+                            <p className="text-sm text-gray-700 leading-relaxed">{item.detail}</p>
                           </div>
                         ))}
                       </div>
                     </div>
                   )}
 
-                  {/* Preparation */}
                   {preparation.length > 0 && (
                     <div className="section-card bg-gradient-to-br from-amber-50 to-orange-50 border border-amber-100">
                       <h2 className="text-base font-black text-[#2C1A0E] mb-3 flex items-center gap-2">
@@ -893,10 +873,7 @@ export default function TourDetailPage() {
                       </h2>
                       <ul className="grid sm:grid-cols-2 gap-2.5">
                         {preparation.map((item, i) => (
-                          <li
-                            key={i}
-                            className="flex items-start gap-2.5 text-sm text-gray-600"
-                          >
+                          <li key={i} className="flex items-start gap-2.5 text-sm text-gray-600">
                             <span className="w-5 h-5 rounded-full bg-[#FF8400]/15 text-[#FF8400] flex items-center justify-center text-xs font-bold shrink-0 mt-0.5">
                               {i + 1}
                             </span>
@@ -917,20 +894,14 @@ export default function TourDetailPage() {
                           </h2>
                           <ul className="space-y-2">
                             {includedItems.map((item, i) => (
-                              <li
-                                key={i}
-                                className="text-sm text-gray-700 flex items-start gap-2"
-                              >
-                                <span className="text-green-600 font-bold">
-                                  ✓
-                                </span>
+                              <li key={i} className="text-sm text-gray-700 flex items-start gap-2">
+                                <span className="text-green-600 font-bold">✓</span>
                                 <span>{item}</span>
                               </li>
                             ))}
                           </ul>
                         </div>
                       )}
-
                       {excludedItems.length > 0 && (
                         <div className="section-card border border-red-100 bg-red-50/30">
                           <h2 className="text-base font-black text-[#2C1A0E] mb-3 flex items-center gap-2">
@@ -939,13 +910,8 @@ export default function TourDetailPage() {
                           </h2>
                           <ul className="space-y-2">
                             {excludedItems.map((item, i) => (
-                              <li
-                                key={i}
-                                className="text-sm text-gray-700 flex items-start gap-2"
-                              >
-                                <span className="text-red-500 font-bold">
-                                  ✕
-                                </span>
+                              <li key={i} className="text-sm text-gray-700 flex items-start gap-2">
+                                <span className="text-red-500 font-bold">✕</span>
                                 <span>{item}</span>
                               </li>
                             ))}
@@ -963,18 +929,12 @@ export default function TourDetailPage() {
                       </h2>
                       <ul className="space-y-2">
                         {conditionItems.map((item, i) => (
-                          <li
-                            key={i}
-                            className="text-sm text-gray-600 leading-relaxed"
-                          >
-                            • {item}
-                          </li>
+                          <li key={i} className="text-sm text-gray-600 leading-relaxed">• {item}</li>
                         ))}
                       </ul>
                     </div>
                   )}
 
-                  {/* Gallery รูปภาพเพิ่มเติม */}
                   {tour.images && tour.images.length > 0 && (
                     <div className="section-card mt-4 border border-gray-100">
                       <h2 className="text-base font-black text-[#2C1A0E] mb-3 flex items-center gap-2">
@@ -984,34 +944,31 @@ export default function TourDetailPage() {
                       <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                         {tour.images.map((img, i) => (
                           <div key={i} className="aspect-square rounded-xl overflow-hidden bg-gray-100">
-                            <img src={getImageUrl(img)} alt={`รูปเพิ่มเติม ${i+1}`} className="w-full h-full object-cover hover:scale-110 transition-transform duration-300" />
+                            <img src={getImageUrl(img)} alt={`รูปเพิ่มเติม ${i + 1}`} className="w-full h-full object-cover hover:scale-110 transition-transform duration-300" />
                           </div>
                         ))}
                       </div>
                     </div>
                   )}
-
                 </div>
 
-                {/* ── Right: Booking (Desktop only) ── */}
+                {/* Right: Booking (Desktop only) */}
                 <div className="hidden lg:block lg:col-span-1">
                   <div className="sticky top-20 rounded-2xl overflow-hidden shadow-xl border border-gray-100">
-                    <BookingSheet tour={tour} />
+                    <BookingSheet tour={tour} showToast={showToast} />
                   </div>
                 </div>
               </div>
             </div>
 
-            {/* ── Mobile: Sticky Bottom CTA ── */}
+            {/* Mobile: Sticky Bottom CTA */}
             <div className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-gray-100 px-4 py-3 shadow-2xl shadow-black/10">
               <div className="flex items-center justify-between gap-3">
                 <div>
                   <p className="text-xs text-gray-400">ราคาเริ่มต้น</p>
                   <p className="text-xl font-black text-[#FF8400]">
                     ฿{tour.price.toLocaleString()}
-                    <span className="text-xs font-normal text-gray-400 ml-1">
-                      / คน
-                    </span>
+                    <span className="text-xs font-normal text-gray-400 ml-1">/ คน</span>
                   </p>
                 </div>
                 <button
@@ -1023,17 +980,14 @@ export default function TourDetailPage() {
               </div>
             </div>
 
-            {/* ── Mobile: Bottom Sheet ── */}
+            {/* Mobile: Bottom Sheet */}
             {sheetOpen && (
               <div className="lg:hidden fixed inset-0 z-50 flex flex-col justify-end">
-                {/* Backdrop */}
                 <div
                   className="sheet-overlay absolute inset-0 bg-black/50 backdrop-blur-sm"
                   onClick={() => setSheetOpen(false)}
                 />
-                {/* Panel */}
                 <div className="sheet-panel relative bg-white rounded-t-3xl max-h-[90vh] overflow-hidden flex flex-col">
-                  {/* Handle */}
                   <div className="flex justify-center pt-3 pb-1 shrink-0">
                     <div className="w-10 h-1 bg-gray-200 rounded-full" />
                   </div>
@@ -1041,6 +995,7 @@ export default function TourDetailPage() {
                     <BookingSheet
                       tour={tour}
                       onClose={() => setSheetOpen(false)}
+                      showToast={showToast}
                     />
                   </div>
                 </div>

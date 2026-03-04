@@ -1,3 +1,4 @@
+//auth.controller.ts
 import { Controller, Post, Body, ValidationPipe, HttpCode, HttpStatus, Get, UseGuards, Req, Res } from '@nestjs/common';
 import { AuthCredentialsDto } from './dto/auth-credentials.dto';
 import { AuthService } from './auth.service';
@@ -9,7 +10,7 @@ export class AuthController {
   @Get('/google')
   @UseGuards(AuthGuard('google'))
   async googleAuth(@Req() req) {
-    // ปล่อยว่างไว้ได้เลย NestJS จะพาไปหน้า Google อัตโนมัติ
+  // ปล่อยว่างไว้ได้เลย NestJS จะพาไปหน้า Google อัตโนมัติ
   }
   @Get('/google/callback')
   @UseGuards(AuthGuard('google'))

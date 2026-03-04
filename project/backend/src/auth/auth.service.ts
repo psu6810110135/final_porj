@@ -18,6 +18,7 @@ export class AuthService {
     }
 
     const { email, firstName, lastName } = req.user;
+
     let user = await this.usersService.findOne(email);
 
     if (!user) {
@@ -29,6 +30,8 @@ export class AuthService {
         username: email,
         email: email,
         password: hashedPassword,
+        first_name: firstName,           // ✅ ใส่ครบ
+        last_name: lastName,             // ✅ ใส่ครบ
         full_name: `${firstName} ${lastName}`,
       });
     }
@@ -38,8 +41,8 @@ export class AuthService {
     return { accessToken };
   }
 
-  // ── signUp: รับ fields ครบจาก frontend ──
   async signUp(authCredentialsDto: AuthCredentialsDto): Promise<void> {
+    // ✅ รับครบทุก field ที่ frontend ส่งมา
     const { username, password, email, full_name, profile } = authCredentialsDto;
 
     const salt = await bcrypt.genSalt();
@@ -52,7 +55,7 @@ export class AuthService {
         ...(email     && { email }),
         ...(full_name && { full_name }),
       },
-      profile,
+      profile,  // ✅ ส่ง profile { firstName, lastName, phoneNumber } ต่อให้ usersService
     );
   }
 
@@ -62,7 +65,11 @@ export class AuthService {
     const user = await this.usersService.findOne(username);
 
     if (user && (await bcrypt.compare(password, user.password))) {
-      const payload = { username, role: user.role, sub: user.id };
+      const payload = {
+        username,
+        role: user.role,   // ✅ ใส่ role ใน payload
+        sub: user.id,
+      };
       const accessToken = await this.jwtService.sign(payload);
       return { accessToken };
     } else {

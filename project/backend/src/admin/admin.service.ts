@@ -1,7 +1,11 @@
-import { Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { Booking } from '../bookings/entities/booking.entity';
+import { Booking, BookingStatus } from '../bookings/entities/booking.entity';
 import { Payment } from '../payments/entities/payment.entity';
 import { Tour } from '../tours/entities/tour.entity';
 
@@ -58,9 +62,30 @@ export class AdminService {
   async deleteBooking(id: string) {
     const booking = await this.bookingRepo.findOne({ where: { id } });
     if (!booking) {
-      throw new Error('Booking not found');
+      throw new NotFoundException('Booking not found');
     }
     await this.bookingRepo.remove(booking);
     return { success: true, message: 'ลบการจองเรียบร้อยแล้ว' };
+  }
+
+  async updateBookingStatus(id: string, status: BookingStatus) {
+    const booking = await this.bookingRepo.findOne({ where: { id } });
+    if (!booking) {
+      throw new NotFoundException('Booking not found');
+    }
+
+    const allowedStatuses = Object.values(BookingStatus);
+    if (!allowedStatuses.includes(status)) {
+      throw new BadRequestException('Invalid booking status');
+    }
+
+    booking.status = status;
+    const updated = await this.bookingRepo.save(booking);
+
+    return {
+      success: true,
+      message: 'อัปเดตสถานะการจองเรียบร้อยแล้ว',
+      data: updated,
+    };
   }
 }

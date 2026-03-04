@@ -54,6 +54,15 @@ export class User {
   @Column({ default: true })
   is_active!: boolean;
 
+  @Column({ nullable: true })
+  resetPasswordOtp!: string; // ไว้เก็บเลข 6 หลัก
+
+  @Column({ type: 'timestamp', nullable: true })
+  resetPasswordOtpExpires!: Date; // ไว้เก็บเวลาหมดอายุของ OTP
+
+  @Column({ nullable: true })
+  resetPasswordToken!: string; // Token ลับที่ได้หลังยืนยัน OTP ผ่าน (เอาไว้อนุญาตให้เปลี่ยนรหัสได้)
+
   @CreateDateColumn()
   created_at!: Date;
 

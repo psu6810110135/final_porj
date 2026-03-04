@@ -1,4 +1,6 @@
 // src/auth/auth.service.ts
+import * as nodemailer from 'nodemailer';
+import * as crypto from 'crypto';
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { UsersService } from '../users/users.service';
 import { JwtService } from '@nestjs/jwt';
@@ -75,5 +77,80 @@ export class AuthService {
     } else {
       throw new UnauthorizedException('Please check your login credentials');
     }
+  }
+  private transporter = nodemailer.createTransport({
+    service: 'gmail',
+    auth: {
+      user: process.env.EMAIL_USER,
+      pass: process.env.EMAIL_PASS,
+    },
+  });
+
+  // 1. ฟังก์ชันส่ง OTP ไปที่อีเมล
+  async forgotPassword(email: string) {
+    const user = await this.usersService.findOne(email);
+    if (!user) {
+      throw new Error('ไม่พบอีเมลนี้ในระบบ'); // React จะจับ 404 ให้
+    }
+
+    // สร้าง OTP 6 หลัก และตั้งเวลาหมดอายุ 10 นาที
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const expires = new Date();
+    expires.setMinutes(expires.getMinutes() + 10);
+
+    await this.usersService.updateResetData(user.id, {
+      resetPasswordOtp: otp,
+      resetPasswordOtpExpires: expires,
+      resetPasswordToken: null,
+    });
+
+    await this.transporter.sendMail({
+      from: `"GoTrip Support" <${process.env.EMAIL_USER}>`,
+      to: email,
+      subject: 'รหัส OTP สำหรับตั้งรหัสผ่านใหม่ 🔐',
+      html: `<h2>รหัส OTP ของคุณคือ: <b>${otp}</b></h2><p>รหัสนี้จะหมดอายุในอีก 10 นาทีครับ</p>`,
+    });
+
+    return { message: 'ส่ง OTP สำเร็จ' };
+  }
+
+  // 2. ฟังก์ชันตรวจสอบรหัส OTP
+  async verifyOtp(email: string, otp: string) {
+    const user = await this.usersService.findOne(email);
+    if (!user) throw new Error('ไม่พบผู้ใช้งาน');
+
+    if (user.resetPasswordOtp !== otp) {
+      throw new Error('รหัส OTP ไม่ถูกต้อง');
+    }
+
+    if (user.resetPasswordOtpExpires < new Date()) {
+      throw new Error('รหัส OTP หมดอายุแล้ว');
+    }
+
+    // ถ้า OTP ถูกต้อง สร้าง Token ลับส่งกลับไปให้หน้าบ้าน
+    const resetToken = crypto.randomBytes(32).toString('hex');
+
+    await this.usersService.updateResetData(user.id, {
+      resetPasswordOtp: null, // ล้าง OTP ทิ้ง
+      resetPasswordOtpExpires: null,
+      resetPasswordToken: resetToken, // เซฟ Token แทน
+    });
+
+    return { resetToken };
+  }
+
+  // 3. ฟังก์ชันบันทึกรหัสผ่านใหม่
+  async resetPasswordWithToken(email: string, resetToken: string, newPassword: string) {
+    const user = await this.usersService.findOne(email);
+    if (!user || user.resetPasswordToken !== resetToken) {
+      throw new Error('Token ไม่ถูกต้องหรือหมดอายุ');
+    }
+
+    const salt = await bcrypt.genSalt();
+    const hashedPassword = await bcrypt.hash(newPassword, salt);
+
+    await this.usersService.updatePasswordAndClearToken(user.id, hashedPassword);
+
+    return { message: 'เปลี่ยนรหัสผ่านสำเร็จ' };
   }
 }

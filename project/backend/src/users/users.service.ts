@@ -3,6 +3,7 @@ import {
   ConflictException,
   InternalServerErrorException,
   NotFoundException,
+
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { DataSource, Repository } from 'typeorm';
@@ -51,7 +52,18 @@ export class UsersService {
       throw new InternalServerErrorException('Error during user creation');
     }
   }
+  // อัปเดตข้อมูล OTP และ Token
+  async updateResetData(id: string | number, data: any) {
+    await this.usersRepository.update(id, data);
+  }
 
+  // เซฟรหัสผ่านใหม่และล้าง Token ทิ้ง
+  async updatePasswordAndClearToken(id: string | number, newHashedPassword: string) {
+    await this.usersRepository.update(id, { 
+      password: newHashedPassword,
+      resetPasswordToken: '' // ล้างค่าทิ้งเพื่อความปลอดภัย
+    });
+  }
   // ── สร้าง user พร้อม profile fields ในคราวเดียว ──
   async createUserWithProfile(
     userData: Partial<User>,

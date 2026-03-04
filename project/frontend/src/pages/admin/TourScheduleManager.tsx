@@ -39,7 +39,7 @@ interface Schedule {
   booked_seats?: number;
 }
 
-const API_BASE = "http://localhost:3000/api/v1";
+const API_BASE = "http://localhost:3000/api";
 const ITEMS_PER_PAGE = 10;
 
 const toDateInputValue = (date: Date) => {

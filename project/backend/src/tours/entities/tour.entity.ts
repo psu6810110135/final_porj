@@ -24,6 +24,14 @@ export enum TourRegion {
   NORTHEAST = 'Northeast',
 }
 
+export enum TourDuration {
+  ONE_DAY = '1 day',
+  ONE_DAY_ONE_NIGHT = '1 day 1 night',
+  TWO_DAYS_ONE_NIGHT = '2 days 1 night',
+  TWO_DAYS_TWO_NIGHTS = '2 days 2 nights',
+  THREE_DAYS_TWO_NIGHTS = '3 days 2 nights',
+}
+
 @Entity('tours')
 export class Tour {
   @PrimaryGeneratedColumn('uuid')
@@ -51,11 +59,15 @@ export class Tour {
   })
   region: TourRegion;
 
-  @Column({ length: 50 })
-  duration: string;
+  @Column({
+    type: 'enum',
+    enum: TourDuration,
+    default: TourDuration.ONE_DAY,
+  })
+  duration: TourDuration;
 
   @Column({ type: 'int', default: 15 })
-  max_group_size: number; // ✨ เพิ่ม: จำนวนคนสูงสุด
+  max_group_size: number;
 
   @Column('decimal', { precision: 2, scale: 1, default: 0 })
   rating: number;
@@ -73,13 +85,13 @@ export class Tour {
   highlights: string[];
 
   @Column('text', { array: true, default: [] })
-  preparation: string[]; // ✨ เพิ่ม: การเตรียมตัว (Array ของข้อความ)
+  preparation: string[];
 
   @Column('text', { nullable: true })
-  itinerary: string; // ของเดิม (เก็บเป็นข้อความยาว)
+  itinerary: string;
 
   @Column({ type: 'jsonb', nullable: true })
-  itinerary_data: { time: string; detail: string }[]; // ✨ เพิ่ม: แผนการเดินทางแบบโครงสร้าง JSON
+  itinerary_data: { day?: number; time: string; detail: string }[];
 
   @Column('text', { nullable: true })
   included: string;

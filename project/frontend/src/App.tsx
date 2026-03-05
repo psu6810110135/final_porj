@@ -8,6 +8,7 @@ import PaymentPage from "./pages/PaymentPage";
 import BookingHistoryPage from "./pages/BookingHistoryPage";
 import ProfilePage from "./pages/ProfilePage";
 import ContactPage from "./pages/ContactPage";
+import AboutUsPage from "./pages/AboutUsPage";
 
 // --- ระบบ Auth ---
 import LoginPage from "./pages/loginpage";
@@ -39,6 +40,7 @@ export default function App() {
         <Route path="/booking-history" element={<BookingHistoryPage />} />
         <Route path="/profile" element={<ProfilePage />} />
         <Route path="/contact" element={<ContactPage />} />
+        <Route path="/about" element={<AboutUsPage />} />
         
         {/* --- 🛡️ โซนป้องกันแอดมิน --- */}
         <Route element={<AdminGuard />}>

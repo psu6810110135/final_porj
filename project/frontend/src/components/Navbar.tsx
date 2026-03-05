@@ -1,5 +1,5 @@
 import { Link, useNavigate } from "react-router-dom";
-import logoImage from "../assets/logo.png";
+import logoIconImage from "../assets/logo_without_text-removebg-preview.png";
 import { useState, useEffect, useRef } from "react";
 
 // ─── Icons ───────────────────────────────────────────────────────────────────
@@ -40,27 +40,6 @@ const CompassIcon = ({ className = "" }: { className?: string }) => (
     <path stroke="none" d="M0 0h24v24H0z" fill="none" />
     <circle cx="12" cy="12" r="9" />
     <polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76" />
-  </svg>
-);
-
-const ShoppingCartIcon = ({ className = "" }: { className?: string }) => (
-  <svg
-    xmlns="http://www.w3.org/2000/svg"
-    width="22"
-    height="22"
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-    className={className}
-  >
-    <path stroke="none" d="M0 0h24v24H0z" fill="none" />
-    <path d="M6 19m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0" />
-    <path d="M17 19m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0" />
-    <path d="M17 17h-11v-14h-2" />
-    <path d="M6 5l14 1l-1 7h-13" />
   </svg>
 );
 
@@ -281,17 +260,19 @@ export default function Navbar({ activePage = "home" }: NavbarProps) {
   // Desktop link style
   const linkClass = (page: string) =>
     activePage === page
-      ? "font-bold text-lg md:text-xl text-[#FF8400]"
-      : "font-extralight text-base md:text-lg text-[#4F200D] hover:text-[#FF8400] transition-colors";
+      ? "font-bold text-[#FF8400]"
+      : "font-medium text-[#4F200D] hover:text-[#FF8400] transition-colors";
 
   // Mobile top icon button style
   const mobileIconBtn = (active = false) =>
-    `flex flex-col items-center justify-center gap-0.5 px-2 py-1 rounded-xl transition-all duration-200 ${
+    `flex flex-col items-center justify-center gap-1 px-1.5 sm:px-2.5 py-1 rounded-xl transition-all duration-200 ${
       active ? "text-[#FF8400]" : "text-[#6B4226] hover:text-[#FF8400]"
     }`;
 
   const iconBtnBase =
-    "w-10 h-10 md:w-12 md:h-12 rounded-full flex items-center justify-center p-0 transition-all duration-200 border border-[#F0E8E0]";
+    "w-11 h-11 sm:w-12 sm:h-12 md:w-[52px] md:h-[52px] lg:w-[58px] lg:h-[58px] rounded-full flex items-center justify-center p-0 transition-all duration-200 border border-[#F0E8E0]";
+
+  const userAvatarBtnClass = `${iconBtnBase} relative overflow-hidden bg-[#FFF3E0] border-[#FF8400]/30 hover:bg-[#FFE7CC]`;
 
   return (
     <>
@@ -303,7 +284,9 @@ export default function Navbar({ activePage = "home" }: NavbarProps) {
         }
         /* Push page content below fixed navbar */
         body { padding-top: 64px; }
-        @media (min-width: 768px) { body { padding-top: 96px; } }
+        @media (min-width: 640px) { body { padding-top: 72px; } }
+        @media (min-width: 768px) { body { padding-top: 80px; } }
+        @media (min-width: 1024px) { body { padding-top: 96px; } }
         .dropdown-enter {
           animation: dropDown 0.2s ease forwards;
         }
@@ -316,10 +299,15 @@ export default function Navbar({ activePage = "home" }: NavbarProps) {
           to   { opacity: 1; transform: translateY(0); }
         }
         .mobile-nav-label {
-          font-size: 10px;
+          font-size: 9px;
           font-weight: 600;
           line-height: 1;
           font-family: 'Prompt', sans-serif;
+        }
+        @media (min-width: 640px) {
+          .mobile-nav-label {
+            font-size: 10px;
+          }
         }
       `}</style>
 
@@ -328,19 +316,22 @@ export default function Navbar({ activePage = "home" }: NavbarProps) {
           visible ? "translate-y-0" : "-translate-y-full"
         } ${atTop ? "" : "nav-shadow"}`}
       >
-        <div className="max-w-[1920px] mx-auto px-4 md:px-8">
-          <div className="flex items-center h-16 md:h-24">
+        <div className="max-w-[1920px] mx-auto px-3 sm:px-4 md:px-4 lg:px-8">
+          <div className="flex items-center h-16 sm:h-[72px] md:h-20 lg:h-24">
             {/* ── Logo (left) ── */}
             <div className="flex-1 flex items-center">
-              <Link to="/" className="flex items-center gap-2">
-                <div className="relative h-10 md:h-16">
+              <Link to="/" className="flex items-center gap-2 sm:gap-3">
+                <div className="relative h-10 sm:h-11 md:h-12 lg:h-14">
                   <img
-                    src={logoImage}
-                    alt="Thai Tours Logo"
+                    src={logoIconImage}
+                    alt="Thai Tours Icon"
                     className="h-full w-auto object-contain"
                   />
                 </div>
-                <span className="text-base md:text-xl font-bold text-[#4F200D] hidden sm:block tracking-wide">
+                <span className="hidden sm:block lg:hidden text-sm md:text-base font-bold text-[#4F200D] tracking-wide whitespace-nowrap">
+                  Thai Tours
+                </span>
+                <span className="hidden lg:block text-base xl:text-xl font-bold text-[#4F200D] tracking-wide whitespace-nowrap">
                   Thai Tours Service
                 </span>
               </Link>
@@ -349,7 +340,7 @@ export default function Navbar({ activePage = "home" }: NavbarProps) {
             {/* ── Center: Desktop nav / Mobile All 4 icons ── */}
             <div className="flex-none flex items-center justify-center">
               {/* Desktop: icons + text */}
-              <div className="hidden md:flex items-center gap-4 lg:gap-8">
+              <div className="hidden md:flex items-center gap-2.5 lg:gap-7">
                 {[
                   { to: "/", label: "หน้าหลัก", key: "home", Icon: HomeIcon },
                   {
@@ -376,43 +367,45 @@ export default function Navbar({ activePage = "home" }: NavbarProps) {
                     to={item.to}
                     className={`flex items-center gap-1.5 ${linkClass(item.key)}`}
                   >
-                    <item.Icon className="w-4 h-4 flex-shrink-0" />
-                    {item.label}
+                    <item.Icon className="w-[18px] h-[18px] lg:w-5 lg:h-5 flex-shrink-0" />
+                    <span className="hidden lg:inline text-base xl:text-lg">
+                      {item.label}
+                    </span>
                   </Link>
                 ))}
               </div>
               {/* Mobile: All 4 nav icons centered */}
-              <div className="flex md:hidden items-center gap-1">
+              <div className="flex md:hidden items-center gap-0.5 sm:gap-1">
                 <Link to="/" className={mobileIconBtn(activePage === "home")}>
-                  <HomeIcon className="w-5 h-5" />
+                  <HomeIcon className="w-4 h-4 sm:w-5 sm:h-5" />
                   <span className="mobile-nav-label">หน้าหลัก</span>
                 </Link>
                 <Link
                   to="/tours"
                   className={mobileIconBtn(activePage === "tours")}
                 >
-                  <CompassIcon className="w-5 h-5" />
+                  <CompassIcon className="w-4 h-4 sm:w-5 sm:h-5" />
                   <span className="mobile-nav-label">ทัวร์</span>
                 </Link>
                 <Link
                   to="/about"
                   className={mobileIconBtn(activePage === "about")}
                 >
-                  <InfoIcon className="w-5 h-5" />
+                  <InfoIcon className="w-4 h-4 sm:w-5 sm:h-5" />
                   <span className="mobile-nav-label">เกี่ยวกับ</span>
                 </Link>
                 <Link
                   to="/contact"
                   className={mobileIconBtn(activePage === "contact")}
                 >
-                  <PhoneIcon className="w-5 h-5" />
+                  <PhoneIcon className="w-4 h-4 sm:w-5 sm:h-5" />
                   <span className="mobile-nav-label">ติดต่อ</span>
                 </Link>
               </div>
             </div>
 
-            {/* ── Right: Cart + Hamburger (mobile) / Cart + Auth (desktop) ── */}
-            <div className="flex-1 flex items-center justify-end gap-1 md:gap-2">
+            {/* ── Right: Hamburger (mobile) / Auth (desktop) ── */}
+            <div className="flex-1 flex items-center justify-end gap-1.5 sm:gap-2 md:gap-2 lg:gap-3">
               {/* Desktop only: Admin */}
               {isAdmin && (
                 <Link to="/admin" className="hidden md:flex">
@@ -420,24 +413,23 @@ export default function Navbar({ activePage = "home" }: NavbarProps) {
                     className={`${iconBtnBase} bg-[#FF8400]/8 border-[#FF8400]/25 hover:bg-[#FF8400]/20`}
                     title="Admin Dashboard"
                   >
-                    <DashboardIcon className="w-5 h-5 text-[#FF8400]" />
+                    <DashboardIcon className="w-5 h-5 lg:w-6 lg:h-6 text-[#FF8400]" />
                   </button>
                 </Link>
               )}
-              {/* Cart */}
-              <button className={`${iconBtnBase} bg-white hover:bg-amber-50`}>
-                <ShoppingCartIcon className="w-4 h-4 md:w-5 md:h-5 text-[#4F200D]" />
-              </button>
               {/* Desktop only: User Dropdown */}
               {isLoggedIn ? (
                 <div className="hidden md:block relative" ref={userDropdownRef}>
                   <button
                     onClick={() => setShowUserDropdown(!showUserDropdown)}
-                    className={`${iconBtnBase} bg-white hover:bg-amber-50 flex items-center gap-1 px-3`}
+                    className={userAvatarBtnClass}
+                    aria-expanded={showUserDropdown}
+                    aria-haspopup="menu"
+                    aria-label="เปิดเมนูผู้ใช้"
                   >
-                    <UserIcon className="w-4 h-4 md:w-5 md:h-5 text-[#4F200D]" />
+                    <UserIcon className="relative z-10 w-7 h-7 md:w-8 md:h-8 text-[#4F200D]" />
                     <ChevronDownIcon
-                      className={`w-3 h-3 text-[#4F200D] transition-transform duration-200 ${showUserDropdown ? "rotate-180" : ""}`}
+                      className={`absolute z-20 right-1.5 bottom-1.5 w-3 h-3 p-[1px] rounded-full bg-white/95 text-[#4F200D] transition-transform duration-200 ${showUserDropdown ? "rotate-180" : ""}`}
                     />
                   </button>
 
@@ -448,7 +440,7 @@ export default function Navbar({ activePage = "home" }: NavbarProps) {
                         onClick={() => setShowUserDropdown(false)}
                         className="flex items-center gap-3 px-4 py-3 text-[#4F200D] hover:bg-[#FFF3E0] hover:text-[#FF8400] transition-colors"
                       >
-                        <UserIcon className="w-4 h-4" />
+                        <UserIcon className="w-5 h-5" />
                         <span className="font-medium text-sm">โปรไฟล์</span>
                       </Link>
                       <Link
@@ -456,7 +448,7 @@ export default function Navbar({ activePage = "home" }: NavbarProps) {
                         onClick={() => setShowUserDropdown(false)}
                         className="flex items-center gap-3 px-4 py-3 text-[#4F200D] hover:bg-[#FFF3E0] hover:text-[#FF8400] transition-colors"
                       >
-                        <CalendarIcon className="w-4 h-4" />
+                        <CalendarIcon className="w-5 h-5" />
                         <span className="font-medium text-sm">
                           ประวัติการจอง
                         </span>
@@ -466,7 +458,7 @@ export default function Navbar({ activePage = "home" }: NavbarProps) {
                         onClick={handleLogout}
                         className="flex items-center gap-3 px-4 py-3 text-red-500 hover:bg-red-50 transition-colors w-full text-left"
                       >
-                        <LogoutIcon className="w-4 h-4" />
+                        <LogoutIcon className="w-5 h-5" />
                         <span className="font-medium text-sm">ออกจากระบบ</span>
                       </button>
                     </div>
@@ -475,9 +467,10 @@ export default function Navbar({ activePage = "home" }: NavbarProps) {
               ) : (
                 <Link to="/login" className="hidden md:flex">
                   <button
-                    className={`${iconBtnBase} bg-white hover:bg-amber-50`}
+                    className={userAvatarBtnClass}
+                    aria-label="เข้าสู่ระบบ"
                   >
-                    <UserIcon className="w-4 h-4 md:w-5 md:h-5 text-[#4F200D]" />
+                    <UserIcon className="w-7 h-7 md:w-8 md:h-8 text-[#4F200D]" />
                   </button>
                 </Link>
               )}
@@ -489,7 +482,7 @@ export default function Navbar({ activePage = "home" }: NavbarProps) {
               >
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
-                  className="w-5 h-5 text-[#4F200D]"
+                  className="w-5 h-5 sm:w-6 sm:h-6 text-[#4F200D]"
                   fill="none"
                   viewBox="0 0 24 24"
                   stroke="currentColor"
@@ -525,7 +518,7 @@ export default function Navbar({ activePage = "home" }: NavbarProps) {
                   onClick={() => setMenuOpen(false)}
                   className="flex items-center gap-3 px-4 py-3 rounded-xl text-[#FF8400] hover:bg-[#FF8400]/10 transition-colors"
                 >
-                  <DashboardIcon className="w-5 h-5 flex-shrink-0" />
+                  <DashboardIcon className="w-6 h-6 flex-shrink-0" />
                   <span className="font-medium text-sm">Admin Dashboard</span>
                 </Link>
               )}
@@ -538,7 +531,7 @@ export default function Navbar({ activePage = "home" }: NavbarProps) {
                     onClick={() => setMenuOpen(false)}
                     className="flex items-center gap-3 px-4 py-3 rounded-xl text-[#4F200D] hover:bg-[#FFF3E0] hover:text-[#FF8400] transition-colors"
                   >
-                    <UserIcon className="w-5 h-5 flex-shrink-0" />
+                    <UserIcon className="w-6 h-6 flex-shrink-0" />
                     <span className="font-medium text-sm">โปรไฟล์</span>
                   </Link>
                   <Link
@@ -546,7 +539,7 @@ export default function Navbar({ activePage = "home" }: NavbarProps) {
                     onClick={() => setMenuOpen(false)}
                     className="flex items-center gap-3 px-4 py-3 rounded-xl text-[#4F200D] hover:bg-[#FFF3E0] hover:text-[#FF8400] transition-colors"
                   >
-                    <CalendarIcon className="w-5 h-5 flex-shrink-0" />
+                    <CalendarIcon className="w-6 h-6 flex-shrink-0" />
                     <span className="font-medium text-sm">ประวัติการจอง</span>
                   </Link>
                   <div className="border-t border-[#F0E8E0] my-1" />
@@ -554,7 +547,7 @@ export default function Navbar({ activePage = "home" }: NavbarProps) {
                     onClick={handleLogout}
                     className="flex items-center gap-3 px-4 py-3 rounded-xl text-red-500 hover:bg-red-50 transition-colors w-full text-left"
                   >
-                    <LogoutIcon className="w-5 h-5 flex-shrink-0" />
+                    <LogoutIcon className="w-6 h-6 flex-shrink-0" />
                     <span className="font-medium text-sm">ออกจากระบบ</span>
                   </button>
                 </>
@@ -564,7 +557,7 @@ export default function Navbar({ activePage = "home" }: NavbarProps) {
                   onClick={() => setMenuOpen(false)}
                   className="flex items-center gap-3 px-4 py-3 rounded-xl text-[#4F200D] hover:bg-[#FFF3E0] hover:text-[#FF8400] transition-colors"
                 >
-                  <UserIcon className="w-5 h-5 flex-shrink-0" />
+                  <UserIcon className="w-6 h-6 flex-shrink-0" />
                   <span className="font-medium text-sm">เข้าสู่ระบบ</span>
                 </Link>
               )}

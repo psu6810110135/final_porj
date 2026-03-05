@@ -64,6 +64,9 @@ export class Booking {
   })
   status!: BookingStatus;
 
+  @Column({ name: 'payment_slip_url', nullable: true })
+  paymentSlipUrl: string;
+  
   @Column({ type: 'timestamp', name: 'payment_deadline', nullable: true })
   paymentDeadline?: Date;
 

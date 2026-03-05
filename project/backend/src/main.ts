@@ -14,6 +14,9 @@ async function bootstrap() {
   // ✨ Cast app to NestExpressApplication so it can use static assets
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
   
+  // 🌟 เพิ่มบรรทัดนี้กลับมา! (หน้าบ้านจะได้หาเส้นทาง /api/tours เจอ)
+  app.setGlobalPrefix('api');
+  
   const configService = app.get(ConfigService);
   const usersService = app.get(UsersService);
 

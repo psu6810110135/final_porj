@@ -235,6 +235,27 @@ export class BookingsService {
     });
   }
 
+  // เพิ่มฟังก์ชันนี้ลงไปในคลาส BookingsService
+  async uploadPaymentSlip(id: string, filename: string, userId: string) {
+    const booking = await this.findOneById(id, userId);
+
+    if (booking.status !== BookingStatus.PENDING_PAY) {
+      throw new BadRequestException('บิลนี้ไม่สามารถอัปโหลดสลิปได้แล้ว');
+    }
+
+    // เซฟพาร์ทของรูปและเปลี่ยนสถานะเป็นรอตรวจสอบ
+    booking.paymentSlipUrl = `/uploads/slips/${filename}`;
+    booking.status = BookingStatus.PENDING_VERIFY; 
+    
+    await this.bookingsRepository.save(booking);
+
+    return {
+      message: 'อัปโหลดสลิปสำเร็จ รอแอดมินตรวจสอบ',
+      status: booking.status,
+      paymentSlipUrl: booking.paymentSlipUrl,
+    };
+  }
+
   findAll() {
     return this.bookingsRepository.find({
       order: { createdAt: 'DESC' },

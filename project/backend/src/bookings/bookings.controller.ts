@@ -9,12 +9,18 @@ import {
   Request,
   ParseUUIDPipe,
   BadRequestException,
+  UseInterceptors,
+  UploadedFile,
+  Req,
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { BookingsService } from './bookings.service';
 import { CalculateBookingDto } from './dto/calculate-booking.dto';
 import { CreateBookingDto } from './dto/create-booking.dto';
 import { CancelBookingDto } from './dto/cancel-booking.dto';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { diskStorage } from 'multer';
+import { extname } from 'path';
 
 @Controller('api/v1/bookings')
 export class BookingsController {
@@ -78,5 +84,31 @@ export class BookingsController {
       throw new BadRequestException('User not authenticated');
     }
     return this.bookingsService.cancelBooking(id, cancelBookingDto, userId);
+  }
+
+  @Post(':id/upload-slip')
+  @UseInterceptors(
+    FileInterceptor('file', {
+      storage: diskStorage({
+        destination: './uploads/slips', // โฟลเดอร์ที่จะเก็บรูป
+        filename: (req, file, cb) => {
+          // ตั้งชื่อไฟล์ใหม่ไม่ให้ซ้ำกัน (กันรูปทับกัน)
+          const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
+          cb(null, `slip-${uniqueSuffix}${extname(file.originalname)}`);
+        },
+      }),
+      limits: { fileSize: 5 * 1024 * 1024 }, // จำกัดขนาดไฟล์ไม่เกิน 5MB
+    }),
+  )
+  async uploadSlip(
+    @Param('id') id: string,
+    @UploadedFile() file: Express.Multer.File,
+    @Req() req: any,
+  ) {
+    if (!file) {
+      throw new BadRequestException('กรุณาอัปโหลดไฟล์รูปภาพ');
+    }
+    const userId = req.user.id;
+    return this.bookingsService.uploadPaymentSlip(id, file.filename, userId);
   }
 }

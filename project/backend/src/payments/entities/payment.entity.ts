@@ -21,8 +21,8 @@ export class Payment {
   @CreateDateColumn()
   uploadedAt: Date;
 
-  // Relations
-  @OneToOne(() => Booking)
+  // Relations - Updated to be Bidirectional
+  @OneToOne(() => Booking, (booking) => booking.payment)
   @JoinColumn()
   booking: Booking;
 }

@@ -11,10 +11,15 @@ import {
   IsDateString,
   IsInt,
 } from 'class-validator';
-import { Type, Transform } from 'class-transformer'; // ✨ Added Transform
-import { TourRegion, TourCategory } from '../entities/tour.entity';
+import { Type, Transform } from 'class-transformer';
+import { TourRegion, TourCategory, TourDuration } from '../entities/tour.entity';
 
 class ItineraryItemDto {
+  @IsNumber()
+  @IsOptional()
+  @Type(() => Number)
+  day?: number;
+
   @IsString()
   @IsNotEmpty()
   time!: string;
@@ -56,9 +61,9 @@ export class CreateTourDto {
   @IsNotEmpty()
   region!: TourRegion;
 
-  @IsString()
+  @IsEnum(TourDuration)
   @IsNotEmpty()
-  duration!: string;
+  duration!: TourDuration;
 
   @IsEnum(TourCategory)
   @IsNotEmpty()
@@ -97,7 +102,6 @@ export class CreateTourDto {
   @IsOptional()
   images?: string[];
 
-  // ✨ Transform single strings into arrays if necessary
   @IsArray()
   @IsString({ each: true })
   @IsOptional()
@@ -120,7 +124,6 @@ export class CreateTourDto {
   @IsOptional()
   itinerary?: string;
 
-  // ✨ Parse JSON string from FormData back into an Array of Objects
   @IsArray()
   @ValidateNested({ each: true })
   @Type(() => ItineraryItemDto)
@@ -145,7 +148,6 @@ export class CreateTourDto {
   @IsOptional()
   conditions?: string;
 
-  // ✨ Convert FormData string "true"/"false" to actual boolean
   @IsBoolean()
   @IsOptional()
   @Transform(({ value }) => value === 'true' || value === true)

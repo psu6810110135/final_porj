@@ -1,6 +1,6 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
-import { DollarSign, Users, Calendar, AlertCircle, TrendingUp, Loader2, MessageSquare } from 'lucide-react';
+import { DollarSign, Users, Calendar, AlertCircle, TrendingUp, Loader2, MessageSquare, ChevronDown } from 'lucide-react';
 import axios from 'axios';
 
 const getAuthHeader = (): Record<string, string> => {
@@ -84,6 +84,80 @@ const buildRevenueChartData = (bookings: any[], filter: RevenueFilter): { label:
     .map((bucket) => ({ label: bucket.label, revenue: bucket.revenue }));
 };
 
+/* ─── Custom Select Component (Theme Oriented & Round) ─── */
+interface Option {
+  value: string;
+  label: string;
+}
+
+const CustomSelect = ({
+  value,
+  onChange,
+  options,
+  className,
+  containerClassName,
+}: {
+  value: string;
+  onChange: (val: string) => void;
+  options: Option[];
+  className?: string;
+  containerClassName?: string;
+}) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (ref.current && !ref.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const selectedOption = options.find((o) => o.value === value) || options[0];
+
+  return (
+    <div className={containerClassName ?? "relative w-full sm:w-auto"} ref={ref}>
+      <div
+        className={`flex items-center justify-between ${className}`}
+        onClick={() => setIsOpen(!isOpen)}
+      >
+        <span className="truncate">{selectedOption?.label}</span>
+        <ChevronDown
+          className={`w-4 h-4 ml-2 transition-transform duration-200 text-[#4F200D]/50 shrink-0 ${
+            isOpen ? "rotate-180" : ""
+          }`}
+        />
+      </div>
+
+      {isOpen && (
+        <div className="absolute z-[80] w-full min-w-[140px] bg-white border-2 border-[#F6F1E9] rounded-3xl shadow-xl overflow-hidden animate-in fade-in zoom-in-95 duration-200 top-full mt-2 right-0">
+          <div className="overflow-y-auto custom-scrollbar py-2 max-h-[240px]">
+            {options.map((opt) => (
+              <div
+                key={opt.value}
+                className={`px-4 py-3 text-sm font-bold cursor-pointer transition-colors ${
+                  value === opt.value
+                    ? "bg-[#FFD93D]/30 text-[#FF8400]"
+                    : "text-[#4F200D] hover:bg-[#F6F1E9]"
+                }`}
+                onClick={() => {
+                  onChange(opt.value);
+                  setIsOpen(false);
+                }}
+              >
+                {opt.label}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
 export default function AdminDashboard() {
   const [loading, setLoading] = useState(true);
   const [recentActivities, setRecentActivities] = useState<any[]>([]);
@@ -146,7 +220,7 @@ export default function AdminDashboard() {
         setStats({
           totalRevenue: calculatedRevenue > 0 ? calculatedRevenue : (statsRes.data.data?.totalRevenue || 0),
           todayBookings: statsRes.data.data?.todayBookings || bookings.filter((b:any) => new Date(b.createdAt).toDateString() === new Date().toDateString()).length,
-          pendingPayments: statsRes.data.data?.pendingPayments || bookings.filter((b:any) => b.status === 'รอชำระเงิน' || b.status === 'pending').length,
+          pendingPayments: bookings.filter((b:any) => b.status === 'pending_verify').length,
           activeTours: statsRes.data.data?.activeTours || 24
         });
 
@@ -206,7 +280,6 @@ export default function AdminDashboard() {
           </CardContent>
         </Card>
 
-        {/* กราดการ์ดอื่น ๆ (การจองวันนี้, รอตรวจสอบ, ทัวร์ที่เปิดใช้งาน) คงเดิม... */}
         <Card className="border-0 shadow-sm rounded-3xl bg-white overflow-hidden hover:shadow-lg transition-all duration-300">
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
@@ -251,27 +324,28 @@ export default function AdminDashboard() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 pt-4">
-        {/* กราฟเส้นแบบ Custom (SVG) */}
         <div className="lg:col-span-2 bg-white rounded-3xl shadow-sm border-0 p-8 flex flex-col min-h-[360px]">
-          <div className="flex justify-between items-center mb-8">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
             <h3 className="text-xl font-bold text-[#4F200D]">วิเคราะห์รายได้</h3>
-            <select
+            
+            {/* 🔴 Updated Custom Theme Oriented Select */}
+            <CustomSelect
+              className="text-sm border-0 bg-[#F6F1E9]/50 px-5 py-2.5 rounded-full focus:ring-2 focus:ring-[#FFD93D] text-[#4F200D] font-bold cursor-pointer outline-none transition-all shadow-sm w-[160px]"
               value={revenueFilter}
-              onChange={(e) => setRevenueFilter(e.target.value as RevenueFilter)}
-              className="h-10 rounded-xl border border-[#F6F1E9] bg-white px-3 text-sm font-bold text-[#4F200D] outline-none focus:border-[#FF8400]"
-            >
-              <option value="date">รายวัน</option>
-              <option value="week">รายสัปดาห์</option>
-              <option value="month">รายเดือน</option>
-              <option value="year">รายปี</option>
-            </select>
+              onChange={(val) => setRevenueFilter(val as RevenueFilter)}
+              options={[
+                { value: "date", label: "รายวัน" },
+                { value: "week", label: "รายสัปดาห์" },
+                { value: "month", label: "รายเดือน" },
+                { value: "year", label: "รายปี" },
+              ]}
+            />
           </div>
           
           <div className="flex-1 w-full mt-auto relative pt-10">
             {chartData.length > 0 ? (
               <div className="w-full h-full flex flex-col justify-end relative">
                 
-                {/* SVG Area - Line Chart */}
                 <svg viewBox="0 0 1000 300" className="w-full h-48 sm:h-64 overflow-visible" preserveAspectRatio="none">
                   <defs>
                     <linearGradient id="lineGradient" x1="0" y1="0" x2="0" y2="1">
@@ -280,18 +354,15 @@ export default function AdminDashboard() {
                     </linearGradient>
                   </defs>
                   
-                  {/* กริดพื้นหลัง */}
                   <line x1="0" y1="75" x2="1000" y2="75" stroke="#F6F1E9" strokeWidth="2" strokeDasharray="5,5" />
                   <line x1="0" y1="150" x2="1000" y2="150" stroke="#F6F1E9" strokeWidth="2" strokeDasharray="5,5" />
                   <line x1="0" y1="225" x2="1000" y2="225" stroke="#F6F1E9" strokeWidth="2" strokeDasharray="5,5" />
                   
-                  {/* พื้นที่สีใต้กราฟ (Area) */}
                   <path 
                     d={`M 0,300 L ${chartData.map((d, i) => `${(i / Math.max(chartData.length - 1, 1)) * 1000},${300 - (d.revenue / maxRevenue) * 300}`).join(' L ')} L 1000,300 Z`}
                     fill="url(#lineGradient)"
                   />
                   
-                  {/* เส้นกราฟหลัก (Line) */}
                   <polyline 
                     points={chartData.map((d, i) => `${(i / Math.max(chartData.length - 1, 1)) * 1000},${300 - (d.revenue / maxRevenue) * 300}`).join(' ')}
                     fill="none"
@@ -301,7 +372,6 @@ export default function AdminDashboard() {
                     strokeLinejoin="round"
                   />
                   
-                  {/* จุดบนกราฟ (Dots) */}
                   {chartData.map((d, i) => (
                     <circle 
                       key={i}
@@ -315,7 +385,6 @@ export default function AdminDashboard() {
                   ))}
                 </svg>
 
-                {/* Tooltips Overlay HTML (ใช้งานง่าย และ Responsive กว่า) */}
                 <div className="absolute inset-0 w-full h-48 sm:h-64 pointer-events-none">
                   {chartData.map((d, i) => {
                     const leftPercent = (i / Math.max(chartData.length - 1, 1)) * 100;
@@ -335,7 +404,6 @@ export default function AdminDashboard() {
                   })}
                 </div>
 
-                {/* ป้ายกำกับแกน X */}
                 <div className="flex justify-between w-full mt-4">
                   {chartData.map((d, i) => (
                      <span key={`label-${i}`} className="text-xs sm:text-sm font-bold text-[#4F200D]/60 w-10 text-center -ml-5">{d.label}</span>

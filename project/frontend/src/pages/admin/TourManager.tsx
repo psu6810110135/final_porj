@@ -51,6 +51,14 @@ export const tourRegions = [
   { value: "Northeast", label: "ภาคตะวันออกเฉียงเหนือ" },
 ];
 
+export const tourDurations = [
+  { value: "1 day", label: "1 วัน" },
+  { value: "1 day 1 night", label: "1 วัน 1 คืน" },
+  { value: "2 days 1 night", label: "2 วัน 1 คืน" },
+  { value: "2 days 2 nights", label: "2 วัน 2 คืน" },
+  { value: "3 days 2 nights", label: "3 วัน 2 คืน" },
+];
+
 export interface Tour {
   id: string;
   title: string;
@@ -84,7 +92,7 @@ const initialFormState = {
   child_price: "",
   province: "",
   region: "Central",
-  duration: "",
+  duration: "1 day",
   category: "Nature",
   description: "",
   is_active: true,
@@ -95,7 +103,7 @@ const initialFormState = {
   highlights_str: "",
   preparation_str: "",
   itinerary: "",
-  itinerary_data: [{ time: "", detail: "" }],
+  itinerary_data: [{ day: 1, time: "", detail: "" }],
   included: "",
   excluded: "",
   conditions: "",
@@ -193,16 +201,38 @@ const TourManager = () => {
   const [additionalFiles, setAdditionalFiles] = useState<File[]>([]);
   const [existingImages, setExistingImages] = useState<string[]>([]);
 
-  // 🛡️ ใช้ useRef อ้างอิง Input โดยตรง หมดปัญหา "กดปุ่มไม่ติด"
+  // ระบบแท็บแผนการเดินทาง
+  const [activeDayTab, setActiveDayTab] = useState(1);
+
+  // 🛡️ ใช้ useRef อ้างอิง Input โดยตรง
   const coverInputRef = useRef<HTMLInputElement>(null);
   const additionalImagesRef = useRef<HTMLInputElement>(null);
 
+  const getDaysFromDuration = (duration: string) => {
+    switch (duration) {
+      case '1 day': return 1;
+      case '1 day 1 night': return 2;
+      case '2 days 1 night': return 2;
+      case '2 days 2 nights': return 3;
+      case '3 days 2 nights': return 3;
+      default: return 1;
+    }
+  };
+
   const getSafeItinerary = () => {
     if (Array.isArray(formData.itinerary_data)) {
-      return formData.itinerary_data.length > 0 ? formData.itinerary_data : [{ time: "", detail: "" }];
+      return formData.itinerary_data.length > 0 ? formData.itinerary_data : [{ day: 1, time: "", detail: "" }];
     }
-    return [{ time: "", detail: "" }];
+    return [{ day: 1, time: "", detail: "" }];
   };
+
+  // เช็คและอัพเดทจำนวนวันสูงสุดอัตโนมัติเมื่อเลือก duration
+  const maxDays = getDaysFromDuration(formData.duration);
+  useEffect(() => {
+    if (activeDayTab > maxDays) {
+      setActiveDayTab(maxDays);
+    }
+  }, [maxDays, activeDayTab]);
 
   const fetchTours = async () => {
     setLoading(true);
@@ -229,14 +259,16 @@ const TourManager = () => {
     setCoverPreview("");
     setAdditionalFiles([]);
     setExistingImages([]);
+    setActiveDayTab(1);
     setIsModalOpen(true);
   };
 
   const handleEdit = (tour: Tour) => {
     setEditingId(tour.id);
     setErrors({});
+    setActiveDayTab(1);
 
-    // 🛡️ ฟังก์ชันสุดแกร่ง: แปลงข้อมูล Array ทนทาน 100% แม้ฐานข้อมูลจะเพี้ยนมา
+    // แปลงข้อมูล Array
     const safeParseArray = (data: any): any[] => {
       if (!data) return [];
       if (Array.isArray(data)) return data;
@@ -245,7 +277,6 @@ const TourManager = () => {
           const parsed = JSON.parse(data); 
           return Array.isArray(parsed) ? parsed : [parsed]; 
         } catch { 
-          // กรณี TypeORM พ่น String Postgres แบบ: "{img1.jpg, img2.jpg}"
           if (data.startsWith('{') && data.endsWith('}')) {
              return data.slice(1, -1).split(',').map(s => s.trim().replace(/^"|"$/g, '')).filter(Boolean);
           }
@@ -257,14 +288,14 @@ const TourManager = () => {
 
     let parsedItinerary = safeParseArray(tour.itinerary_data);
     parsedItinerary = parsedItinerary.map((item: any) => {
-        if (typeof item === 'string') return { time: "", detail: item };
+        if (typeof item === 'string') return { day: 1, time: "", detail: item };
         if (typeof item === 'object' && item !== null) {
-            return { time: item.time || "", detail: item.detail || "" };
+            return { day: item.day || 1, time: item.time || "", detail: item.detail || "" };
         }
-        return { time: "", detail: "" };
+        return { day: 1, time: "", detail: "" };
     });
 
-    const finalItinerary = parsedItinerary.length > 0 ? parsedItinerary : [{ time: "", detail: "" }];
+    const finalItinerary = parsedItinerary.length > 0 ? parsedItinerary : [{ day: 1, time: "", detail: "" }];
 
     setFormData({
       title: tour.title || "",
@@ -272,7 +303,7 @@ const TourManager = () => {
       child_price: tour.child_price?.toString() || "",
       province: tour.province || "",
       region: tour.region || "Central",
-      duration: tour.duration || "",
+      duration: tour.duration || "1 day",
       category: tour.category || "Nature",
       description: tour.description || "",
       is_active: tour.is_active ?? true,
@@ -305,7 +336,6 @@ const TourManager = () => {
     const newErrors: Record<string, boolean> = {};
     if (!formData.title.trim()) newErrors.title = true;
     if (!formData.price || Number(formData.price) <= 0) newErrors.price = true;
-    if (!formData.duration.trim()) newErrors.duration = true;
     if (!formData.province.trim()) newErrors.province = true;
     if (!formData.description.trim()) newErrors.description = true; 
 
@@ -407,7 +437,7 @@ const TourManager = () => {
     const updated = getSafeItinerary().map((item: any, i: number) => i === index ? { ...item, [field]: value } : item);
     setFormData({ ...formData, itinerary_data: updated });
   };
-  const addItineraryRow = () => setFormData({ ...formData, itinerary_data: [...getSafeItinerary(), { time: "", detail: "" }] });
+  const addItineraryRow = () => setFormData({ ...formData, itinerary_data: [...getSafeItinerary(), { day: activeDayTab, time: "", detail: "" }] });
   const removeItineraryRow = (index: number) => setFormData({ ...formData, itinerary_data: getSafeItinerary().filter((_: any, i: number) => i !== index) });
 
   const getInputClass = (fieldName: string, baseClass: string) => {
@@ -419,8 +449,6 @@ const TourManager = () => {
     if (errors[fieldName]) return `${baseClass} ring-2 ring-red-500 bg-red-50 border-red-500 text-red-900 placeholder:text-red-300 transition-all outline-none`;
     return `${baseClass} bg-[#F6F1E9]/50 border-0 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#FFD93D]`;
   };
-
-  const uniqueDurations = Array.from(new Set(tours.map((t) => t.duration))).filter(Boolean);
 
   const processedTours = tours.filter((tour) => {
     const matchesSearch = tour.title.toLowerCase().includes(searchQuery.toLowerCase());
@@ -481,7 +509,7 @@ const TourManager = () => {
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3 w-full lg:w-auto">
             <CustomSelect className={selectTriggerClass} value={regionFilter} onChange={setRegionFilter} options={[{ value: "all", label: "ทุกภูมิภาค" }, ...tourRegions]} />
             <CustomSelect className={selectTriggerClass} value={categoryFilter} onChange={setCategoryFilter} options={[{ value: "all", label: "ทุกหมวดหมู่" }, ...tourCategories]} />
-            <CustomSelect className={selectTriggerClass} value={durationFilter} onChange={setDurationFilter} options={[{ value: "all", label: "ทุกระยะเวลา" }, ...uniqueDurations.map((d) => ({ value: d, label: d }))]} />
+            <CustomSelect className={selectTriggerClass} value={durationFilter} onChange={setDurationFilter} options={[{ value: "all", label: "ทุกระยะเวลา" }, ...tourDurations]} />
             <CustomSelect className={selectTriggerClass} value={statusFilter} onChange={setStatusFilter} options={[{ value: "all", label: "สถานะทั้งหมด" }, { value: "active", label: "เปิดใช้งาน" }, { value: "inactive", label: "ปิดใช้งาน" }]} />
           </div>
         </div>
@@ -510,6 +538,7 @@ const TourManager = () => {
                 paginatedTours.map((tour) => {
                   const displayRegion = tourRegions.find(r => r.value === tour.region)?.label || tour.region;
                   const displayCategory = tourCategories.find(c => c.value === tour.category)?.label || tour.category;
+                  const displayDuration = tourDurations.find(d => d.value === tour.duration)?.label || tour.duration;
                   
                   return (
                     <tr key={tour.id} className="hover:bg-[#FFD93D]/5 transition-colors group">
@@ -526,7 +555,7 @@ const TourManager = () => {
                       </td>
                       <td className="px-6 py-5 font-black text-[#4F200D]">฿{Number(tour.price).toLocaleString()}</td>
                       <td className="px-6 py-5 font-bold text-[#4F200D]/70">{displayRegion}</td>
-                      <td className="px-6 py-5 font-bold text-[#4F200D]/70">{tour.duration}</td>
+                      <td className="px-6 py-5 font-bold text-[#4F200D]/70">{displayDuration}</td>
                       <td className="px-6 py-5 font-bold text-[#4F200D]/70 capitalize">{displayCategory}</td>
                       <td className="px-6 py-5">
                         <div className="flex flex-col gap-1 items-start">
@@ -600,7 +629,12 @@ const TourManager = () => {
                 </div>
                 <div className="space-y-2">
                   <label className="text-xs sm:text-sm font-black text-[#4F200D] uppercase tracking-wider">ระยะเวลา *</label>
-                  <Input value={formData.duration} onChange={(e) => { setFormData({ ...formData, duration: e.target.value }); if (errors.duration) setErrors({...errors, duration: false}); }} placeholder="เช่น 1 วัน" className={getInputClass("duration", "rounded-xl font-bold text-[#4F200D]")} />
+                  <CustomSelect 
+                    className={selectTriggerClass} 
+                    value={formData.duration} 
+                    onChange={(val) => setFormData({ ...formData, duration: val })} 
+                    options={tourDurations} 
+                  />
                 </div>
               </div>
 
@@ -630,10 +664,7 @@ const TourManager = () => {
                 </div>
               </div>
 
-              {/* 📸 ส่วนอัปโหลดรูปภาพที่ถูกแก้ไขให้สมบูรณ์แล้ว */}
               <div className="p-4 sm:p-5 bg-[#F6F1E9]/30 rounded-2xl border-2 border-[#F6F1E9] space-y-5">
-                
-                {/* 1. รูปหน้าปก */}
                 <div className="space-y-2 overflow-hidden">
                   <label className="text-xs sm:text-sm font-black text-[#4F200D] uppercase tracking-wider flex items-center gap-2">
                     <ImageIcon className="w-4 h-4 text-[#FF8400]" /> รูปภาพหน้าปก
@@ -671,13 +702,10 @@ const TourManager = () => {
 
                 <div className="h-px bg-[#F6F1E9] w-full" />
 
-                {/* 2. รูปภาพเพิ่มเติม */}
                 <div className="space-y-2 overflow-hidden">
                   <label className="text-xs sm:text-sm font-black text-[#4F200D] uppercase tracking-wider flex items-center gap-2">
                     <ImageIcon className="w-4 h-4 text-[#FF8400]" /> รูปภาพเพิ่มเติม (อัปโหลดหลายไฟล์ได้)
                   </label>
-                  
-                  {/* 🛡️ Input ซ่อนที่ทำงานด้วย useRef แบบชัวร์ๆ */}
                   <input 
                     ref={additionalImagesRef}
                     type="file" multiple accept="image/*"
@@ -686,8 +714,6 @@ const TourManager = () => {
                       if (e.target.files && e.target.files.length > 0) {
                         const newFiles = Array.from(e.target.files);
                         setAdditionalFiles(prev => [...prev, ...newFiles]);
-                        
-                        // เคลียร์ค่าปลอดภัย ป้องกันการเลือกรูปเดิมซ้ำแล้วไม่ติด
                         setTimeout(() => {
                           if (additionalImagesRef.current) {
                             additionalImagesRef.current.value = '';
@@ -744,21 +770,44 @@ const TourManager = () => {
                 <textarea className="w-full p-4 border-0 bg-[#F6F1E9]/50 rounded-2xl text-[#4F200D] font-bold text-xs sm:text-sm min-h-[80px] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#FFD93D] resize-none" value={formData.itinerary} onChange={(e) => setFormData({ ...formData, itinerary: e.target.value })} />
               </div>
 
+              {/* ระบบ Tab สำหรับแผนการเดินทาง */}
               <div className="space-y-3 bg-[#F6F1E9]/30 p-4 sm:p-5 rounded-2xl border-2 border-[#F6F1E9]">
                 <div className="flex justify-between items-center mb-2">
                   <label className="text-xs sm:text-sm font-black text-[#4F200D] uppercase tracking-wider">แผนการเดินทาง (กำหนดเวลา)</label>
                   <button type="button" onClick={addItineraryRow} className="text-[10px] sm:text-xs text-[#FF8400] hover:text-white font-bold bg-[#FFD93D]/30 hover:bg-[#FF8400] px-2 sm:px-3 py-1.5 rounded-lg transition-colors">+ เพิ่มขั้นตอน</button>
                 </div>
-                {/* 🛡️ ใช้ฟังก์ชัน getSafeItinerary() ตรงนี้ เพื่อการันตีว่าค่าจะเป็น Array แน่นอน ไม่เกิดบัค `.map is not a function` */}
-                {getSafeItinerary().map((item: any, index: number) => (
-                  <div key={index} className="flex flex-col sm:flex-row gap-2 sm:gap-3 items-start sm:items-center">
-                    <Input className="w-full sm:w-28 bg-white border-0 rounded-xl focus:ring-2 focus:ring-[#FFD93D] font-bold text-[#4F200D]" placeholder="08:30" value={item.time || ""} onChange={(e) => updateItinerary(index, "time", e.target.value)} />
-                    <div className="flex w-full gap-2 items-center">
-                      <Input className="flex-1 bg-white border-0 rounded-xl focus:ring-2 focus:ring-[#FFD93D] font-bold text-[#4F200D]" placeholder="รายละเอียดกิจกรรม..." value={item.detail || ""} onChange={(e) => updateItinerary(index, "detail", e.target.value)} />
-                      <button type="button" onClick={() => removeItineraryRow(index)} disabled={getSafeItinerary().length === 1} className="p-2 hover:bg-red-100 rounded-xl transition-colors disabled:opacity-30 text-red-500 shrink-0"><X className="w-5 h-5" /></button>
-                    </div>
+
+                {maxDays > 1 && (
+                  <div className="flex gap-2 mb-4 overflow-x-auto custom-scrollbar pb-2">
+                    {Array.from({ length: maxDays }).map((_, i) => (
+                      <button
+                        key={i}
+                        type="button"
+                        onClick={() => setActiveDayTab(i + 1)}
+                        className={`px-4 py-2 rounded-xl font-bold text-xs sm:text-sm whitespace-nowrap transition-colors ${activeDayTab === i + 1 ? 'bg-[#FF8400] text-white shadow-sm' : 'bg-[#F6F1E9] text-[#4F200D]/50 hover:bg-[#FFD93D]/50'}`}
+                      >
+                        วันที่ {i + 1}
+                      </button>
+                    ))}
                   </div>
-                ))}
+                )}
+
+                {getSafeItinerary().map((item: any, index: number) => {
+                  if ((item.day || 1) !== activeDayTab) return null;
+                  return (
+                    <div key={index} className="flex flex-col sm:flex-row gap-2 sm:gap-3 items-start sm:items-center animate-in fade-in duration-300">
+                      <Input className="w-full sm:w-28 bg-white border-0 rounded-xl focus:ring-2 focus:ring-[#FFD93D] font-bold text-[#4F200D]" placeholder="08:30" value={item.time || ""} onChange={(e) => updateItinerary(index, "time", e.target.value)} />
+                      <div className="flex w-full gap-2 items-center">
+                        <Input className="flex-1 bg-white border-0 rounded-xl focus:ring-2 focus:ring-[#FFD93D] font-bold text-[#4F200D]" placeholder="รายละเอียดกิจกรรม..." value={item.detail || ""} onChange={(e) => updateItinerary(index, "detail", e.target.value)} />
+                        <button type="button" onClick={() => removeItineraryRow(index)} className="p-2 hover:bg-red-100 rounded-xl transition-colors text-red-500 shrink-0"><X className="w-5 h-5" /></button>
+                      </div>
+                    </div>
+                  );
+                })}
+
+                {getSafeItinerary().filter((item: any) => (item.day || 1) === activeDayTab).length === 0 && (
+                  <div className="text-center py-4 text-[#4F200D]/40 font-bold text-sm">ไม่มีข้อมูลสำหรับวันที่ {activeDayTab}</div>
+                )}
               </div>
 
               <div className="space-y-2">

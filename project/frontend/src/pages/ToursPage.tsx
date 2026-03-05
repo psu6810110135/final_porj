@@ -29,7 +29,7 @@ export default function ToursPage() {
   const searchFilter = searchParams.get("search") || "";
   const [searchInput, setSearchInput] = useState(searchFilter);
 
-  const apiBase = "http://localhost:3000/api/v1";
+  const apiBase = "http://localhost:3000/api";
 
   const regionFilter = searchParams.get("region") || "";
   const categoryFilter = searchParams.get("category") || "";

@@ -1,3 +1,6 @@
+// src/auth/auth.service.ts
+import * as nodemailer from 'nodemailer';
+import * as crypto from 'crypto';
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { UsersService } from '../users/users.service';
 import { JwtService } from '@nestjs/jwt';
@@ -10,6 +13,7 @@ export class AuthService {
     private usersService: UsersService,
     private jwtService: JwtService,
   ) {}
+
   async googleLogin(req: any): Promise<{ accessToken: string }> {
     if (!req.user) {
       throw new UnauthorizedException('ไม่พบข้อมูลจาก Google');
@@ -17,67 +21,136 @@ export class AuthService {
 
     const { email, firstName, lastName } = req.user;
 
-    // 1. ลองหา User ในระบบ (เพื่อความชัวร์ไม่ซ้ำ เราจะใช้อีเมลเป็น username ไปเลย)
     let user = await this.usersService.findOne(email);
 
     if (!user) {
-      // 2. ถ้าไม่เคยมีไอดี -> สมัครสมาชิกให้ใหม่ทันที!
-      // สุ่มรหัสผ่านให้ไปก่อน เพราะเขา Login ผ่าน Google
       const randomPassword = Math.random().toString(36).slice(-10);
       const salt = await bcrypt.genSalt();
       const hashedPassword = await bcrypt.hash(randomPassword, salt);
 
       user = await this.usersService.createUser({
-        username: email, // 👈 ใช้อีเมลเป็น Username
+        username: email,
         email: email,
         password: hashedPassword,
-        first_name: firstName,
-        last_name: lastName,
-        full_name: `${firstName} ${lastName}`, // เอาชื่อ-นามสกุลมาต่อกัน
+        first_name: firstName,           // ✅ ใส่ครบ
+        last_name: lastName,             // ✅ ใส่ครบ
+        full_name: `${firstName} ${lastName}`,
       });
     }
 
-    // 3. สร้าง Token ส่งกลับไปให้หน้าบ้าน (เหมือนตอน Login ปกติเป๊ะ)
     const payload = { username: user.username, role: user.role, sub: user.id };
     const accessToken = await this.jwtService.sign(payload);
-
     return { accessToken };
   }
-  // สมัครสมาชิก (เหมือนเดิม)
+
   async signUp(authCredentialsDto: AuthCredentialsDto): Promise<void> {
-    const { username, password } = authCredentialsDto;
+    // ✅ รับครบทุก field ที่ frontend ส่งมา
+    const { username, password, email, full_name, profile } = authCredentialsDto;
 
     const salt = await bcrypt.genSalt();
     const hashedPassword = await bcrypt.hash(password, salt);
 
-    await this.usersService.createUser({
-      username,
-      password: hashedPassword,
-    });
+    await this.usersService.createUserWithProfile(
+      {
+        username,
+        password: hashedPassword,
+        ...(email     && { email }),
+        ...(full_name && { full_name }),
+      },
+      profile,  // ✅ ส่ง profile { firstName, lastName, phoneNumber } ต่อให้ usersService
+    );
   }
 
-  // เข้าสู่ระบบ (จุดที่ต้องแก้!)
-  async signIn(
-    authCredentialsDto: AuthCredentialsDto,
-  ): Promise<{ accessToken: string }> {
+  async signIn(authCredentialsDto: AuthCredentialsDto): Promise<{ accessToken: string }> {
     const { username, password } = authCredentialsDto;
 
-    // 1. หา User จาก Database
     const user = await this.usersService.findOne(username);
 
-    // 2. เช็ครหัสผ่าน
     if (user && (await bcrypt.compare(password, user.password))) {
-      // 👇👇 จุดสำคัญ: ยัด Role ลงไปใน Payload ตรงนี้ครับ 👇👇
       const payload = {
         username,
-        role: user.role, // <--- เพิ่มบรรทัดนี้! หน้าบ้านจะได้รู้ว่าเป็น Admin
-        sub: user.id, // (แถม) ปกติควรใส่ ID ด้วย
+        role: user.role,   // ✅ ใส่ role ใน payload
+        sub: user.id,
       };
-
       const accessToken = await this.jwtService.sign(payload);
       return { accessToken };
     } else {
       throw new UnauthorizedException('Please check your login credentials');
     }
+  }
+  private transporter = nodemailer.createTransport({
+    service: 'gmail',
+    auth: {
+      user: process.env.EMAIL_USER,
+      pass: process.env.EMAIL_PASS,
+    },
+  });
+
+  // 1. ฟังก์ชันส่ง OTP ไปที่อีเมล
+  async forgotPassword(email: string) {
+    const user = await this.usersService.findOne(email);
+    if (!user) {
+      throw new Error('ไม่พบอีเมลนี้ในระบบ'); // React จะจับ 404 ให้
+    }
+
+    // สร้าง OTP 6 หลัก และตั้งเวลาหมดอายุ 10 นาที
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const expires = new Date();
+    expires.setMinutes(expires.getMinutes() + 10);
+
+    await this.usersService.updateResetData(user.id, {
+      resetPasswordOtp: otp,
+      resetPasswordOtpExpires: expires,
+      resetPasswordToken: null,
+    });
+
+    await this.transporter.sendMail({
+      from: `"GoTrip Support" <${process.env.EMAIL_USER}>`,
+      to: email,
+      subject: 'รหัส OTP สำหรับตั้งรหัสผ่านใหม่ 🔐',
+      html: `<h2>รหัส OTP ของคุณคือ: <b>${otp}</b></h2><p>รหัสนี้จะหมดอายุในอีก 10 นาทีครับ</p>`,
+    });
+
+    return { message: 'ส่ง OTP สำเร็จ' };
+  }
+
+  // 2. ฟังก์ชันตรวจสอบรหัส OTP
+  async verifyOtp(email: string, otp: string) {
+    const user = await this.usersService.findOne(email);
+    if (!user) throw new Error('ไม่พบผู้ใช้งาน');
+
+    if (user.resetPasswordOtp !== otp) {
+      throw new Error('รหัส OTP ไม่ถูกต้อง');
+    }
+
+    if (user.resetPasswordOtpExpires < new Date()) {
+      throw new Error('รหัส OTP หมดอายุแล้ว');
+    }
+
+    // ถ้า OTP ถูกต้อง สร้าง Token ลับส่งกลับไปให้หน้าบ้าน
+    const resetToken = crypto.randomBytes(32).toString('hex');
+
+    await this.usersService.updateResetData(user.id, {
+      resetPasswordOtp: null, // ล้าง OTP ทิ้ง
+      resetPasswordOtpExpires: null,
+      resetPasswordToken: resetToken, // เซฟ Token แทน
+    });
+
+    return { resetToken };
+  }
+
+  // 3. ฟังก์ชันบันทึกรหัสผ่านใหม่
+  async resetPasswordWithToken(email: string, resetToken: string, newPassword: string) {
+    const user = await this.usersService.findOne(email);
+    if (!user || user.resetPasswordToken !== resetToken) {
+      throw new Error('Token ไม่ถูกต้องหรือหมดอายุ');
+    }
+
+    const salt = await bcrypt.genSalt();
+    const hashedPassword = await bcrypt.hash(newPassword, salt);
+
+    await this.usersService.updatePasswordAndClearToken(user.id, hashedPassword);
+
+    return { message: 'เปลี่ยนรหัสผ่านสำเร็จ' };
   }
 }

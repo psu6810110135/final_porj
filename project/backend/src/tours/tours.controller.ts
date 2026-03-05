@@ -66,7 +66,8 @@ const parseFormData = (dto: any) => {
   return dto;
 };
 
-@Controller('api/v1/tours')
+// 👇 เปลี่ยนจาก 'api/tours' เป็น 'api/tours'
+@Controller('api/tours')
 export class ToursController {
   constructor(private readonly toursService: ToursService) {}
 

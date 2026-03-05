@@ -253,7 +253,7 @@ function TourList() {
 Make sure backend is running:
 ```bash
 # Check backend status
-curl http://localhost:3000/api/v1/tours
+curl http://localhost:3000/api/tours
 
 # Or start backend
 docker-compose up backend

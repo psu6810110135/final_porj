@@ -1,4 +1,5 @@
-import { Controller, Post, Body, ValidationPipe, HttpCode, HttpStatus, Get, UseGuards, Req, Res } from '@nestjs/common';
+//auth.controller.ts
+import { Controller, Post, Body, ValidationPipe,BadRequestException, HttpCode, HttpStatus, Get, UseGuards, Req, Res } from '@nestjs/common';
 import { AuthCredentialsDto } from './dto/auth-credentials.dto';
 import { AuthService } from './auth.service';
 import { AuthGuard } from '@nestjs/passport';
@@ -9,7 +10,7 @@ export class AuthController {
   @Get('/google')
   @UseGuards(AuthGuard('google'))
   async googleAuth(@Req() req) {
-    // ปล่อยว่างไว้ได้เลย NestJS จะพาไปหน้า Google อัตโนมัติ
+  // ปล่อยว่างไว้ได้เลย NestJS จะพาไปหน้า Google อัตโนมัติ
   }
   @Get('/google/callback')
   @UseGuards(AuthGuard('google'))
@@ -37,5 +38,31 @@ export class AuthController {
   @UseGuards(AuthGuard())
   getProfile(@Req() req) {
     return req.user;
+  }
+  @Post('forgot-password')
+  async forgotPassword(@Body() body: { email: string }) {
+    try {
+      return await this.authService.forgotPassword(body.email);
+    } catch (error) {
+      throw new BadRequestException(error.message);
+    }
+  }
+
+  @Post('verify-otp')
+  async verifyOtp(@Body() body: { email: string; otp: string }) {
+    try {
+      return await this.authService.verifyOtp(body.email, body.otp);
+    } catch (error) {
+      throw new BadRequestException(error.message);
+    }
+  }
+
+  @Post('reset-password')
+  async resetPasswordWithToken(@Body() body: { email: string; resetToken: string; newPassword: string }) {
+    try {
+      return await this.authService.resetPasswordWithToken(body.email, body.resetToken, body.newPassword);
+    } catch (error) {
+      throw new BadRequestException(error.message);
+    }
   }
 }

@@ -231,6 +231,9 @@ export default function BookingHistory() {
   const [error, setError] = useState<string | null>(null);
 
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
+  
+  // --- New state for image pop-up ---
+  const [viewSlipUrl, setViewSlipUrl] = useState<string | null>(null);
 
   const [bookingToDelete, setBookingToDelete] = useState<Booking | null>(null);
   const [deleting, setDeleting] = useState(false);
@@ -534,7 +537,7 @@ export default function BookingHistory() {
   );
 
   return (
-    <div className="w-full space-y-6 animate-in fade-in duration-500">
+    <div className="w-full space-y-6 animate-in fade-in duration-500 relative">
       {/* Header Area */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4 sm:mb-8">
         <div>
@@ -774,16 +777,15 @@ export default function BookingHistory() {
                         </td>
                         <td className="px-4 py-3 sm:px-5 sm:py-4 text-center whitespace-nowrap">
                           {fullSlipUrl ? (
-                            <a
-                              href={fullSlipUrl}
-                              target="_blank"
-                              rel="noopener noreferrer"
+                            <button
+                              type="button"
+                              onClick={() => setViewSlipUrl(fullSlipUrl)}
                               className="inline-flex items-center gap-1.5 px-3 py-1.5 text-[10px] sm:text-xs font-bold text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-full transition-colors"
                               title="ดูสลิป"
                             >
                               <Eye className="w-3.5 h-3.5" />
                               ดูสลิป
-                            </a>
+                            </button>
                           ) : (
                             <span className="text-[#4F200D]/30 text-xs font-semibold">-</span>
                           )}
@@ -976,6 +978,7 @@ export default function BookingHistory() {
           onClose={() => setSelectedBooking(null)}
           getStatusBadge={getStatusBadge}
           getTourDates={getTourDates}
+          onViewSlip={setViewSlipUrl}
         />
       )}
 
@@ -1058,6 +1061,36 @@ export default function BookingHistory() {
           </div>
         </div>
       )}
+
+      {/* ===== POPUP รูปภาพสลิปแบบเต็มจอ ===== */}
+      {viewSlipUrl && (
+        <div 
+          className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-8 bg-black/85 backdrop-blur-sm animate-in fade-in duration-200"
+          onClick={() => setViewSlipUrl(null)}
+        >
+          <div 
+            className="relative max-w-4xl w-full flex flex-col items-center justify-center animate-in zoom-in-95 duration-200" 
+            onClick={e => e.stopPropagation()}
+          >
+            <Button
+              variant="ghost"
+              size="icon"
+              className="absolute -top-12 right-0 sm:-right-12 text-white/70 hover:text-white hover:bg-white/20 rounded-full h-10 w-10 transition-colors"
+              onClick={() => setViewSlipUrl(null)}
+            >
+              <X className="w-6 h-6" />
+            </Button>
+            <img 
+              src={viewSlipUrl} 
+              alt="Payment Slip Full Size" 
+              className="max-h-[85vh] w-auto object-contain rounded-xl shadow-2xl"
+              onError={(e) => {
+                (e.target as HTMLImageElement).src = "https://placehold.co/400x600?text=Slip+Not+Found";
+              }}
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -1067,6 +1100,7 @@ function BookingDetailModal({
   onClose,
   getStatusBadge,
   getTourDates,
+  onViewSlip, // New Prop
 }: any) {
   const dates = getTourDates(b);
   const statusLabel = (s: string) =>
@@ -1292,16 +1326,19 @@ function BookingDetailModal({
                 <p className="text-[10px] sm:text-xs font-black text-blue-600/70 uppercase tracking-wider flex items-center gap-2">
                   <ImageIcon size={14} /> หลักฐานการชำระเงิน (สลิปโอนเงิน)
                 </p>
-                <a
-                  href={fullSlipUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-[10px] sm:text-xs bg-white border border-blue-200 text-blue-600 px-3 py-1.5 rounded-lg hover:bg-blue-100 font-bold transition-colors"
+                <button
+                  type="button"
+                  onClick={() => onViewSlip(fullSlipUrl)}
+                  className="text-[10px] sm:text-xs bg-white border border-blue-200 text-blue-600 px-3 py-1.5 rounded-lg hover:bg-blue-100 font-bold transition-colors shadow-sm"
                 >
                   เปิดภาพเต็ม
-                </a>
+                </button>
               </div>
-              <div className="flex justify-center bg-white p-2 rounded-xl shadow-sm border border-blue-100/50">
+              <div 
+                className="flex justify-center bg-white p-2 rounded-xl shadow-sm border border-blue-100/50 cursor-pointer hover:shadow-md transition-shadow"
+                onClick={() => onViewSlip(fullSlipUrl)}
+                title="คลิกเพื่อขยายภาพ"
+              >
                 <img
                   src={fullSlipUrl}
                   alt="Payment Slip"

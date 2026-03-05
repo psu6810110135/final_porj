@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { DollarSign, Users, Calendar, AlertCircle, TrendingUp, Loader2, MessageSquare, ChevronDown } from 'lucide-react';
 import axios from 'axios';
@@ -82,6 +82,80 @@ const buildRevenueChartData = (bookings: any[], filter: RevenueFilter): { label:
   return Array.from(buckets.values())
     .sort((a, b) => a.sortKey - b.sortKey)
     .map((bucket) => ({ label: bucket.label, revenue: bucket.revenue }));
+};
+
+/* ─── Custom Select Component (Theme Oriented & Round) ─── */
+interface Option {
+  value: string;
+  label: string;
+}
+
+const CustomSelect = ({
+  value,
+  onChange,
+  options,
+  className,
+  containerClassName,
+}: {
+  value: string;
+  onChange: (val: string) => void;
+  options: Option[];
+  className?: string;
+  containerClassName?: string;
+}) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (ref.current && !ref.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const selectedOption = options.find((o) => o.value === value) || options[0];
+
+  return (
+    <div className={containerClassName ?? "relative w-full sm:w-auto"} ref={ref}>
+      <div
+        className={`flex items-center justify-between ${className}`}
+        onClick={() => setIsOpen(!isOpen)}
+      >
+        <span className="truncate">{selectedOption?.label}</span>
+        <ChevronDown
+          className={`w-4 h-4 ml-2 transition-transform duration-200 text-[#4F200D]/50 shrink-0 ${
+            isOpen ? "rotate-180" : ""
+          }`}
+        />
+      </div>
+
+      {isOpen && (
+        <div className="absolute z-[80] w-full min-w-[140px] bg-white border-2 border-[#F6F1E9] rounded-3xl shadow-xl overflow-hidden animate-in fade-in zoom-in-95 duration-200 top-full mt-2 right-0">
+          <div className="overflow-y-auto custom-scrollbar py-2 max-h-[240px]">
+            {options.map((opt) => (
+              <div
+                key={opt.value}
+                className={`px-4 py-3 text-sm font-bold cursor-pointer transition-colors ${
+                  value === opt.value
+                    ? "bg-[#FFD93D]/30 text-[#FF8400]"
+                    : "text-[#4F200D] hover:bg-[#F6F1E9]"
+                }`}
+                onClick={() => {
+                  onChange(opt.value);
+                  setIsOpen(false);
+                }}
+              >
+                {opt.label}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
 };
 
 export default function AdminDashboard() {
@@ -251,22 +325,21 @@ export default function AdminDashboard() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 pt-4">
         <div className="lg:col-span-2 bg-white rounded-3xl shadow-sm border-0 p-8 flex flex-col min-h-[360px]">
-          <div className="flex justify-between items-center mb-8">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
             <h3 className="text-xl font-bold text-[#4F200D]">วิเคราะห์รายได้</h3>
-            {/* 🔴 Custom Rounded-Full Select Wrapper */}
-            <div className="relative inline-block">
-              <select
-                value={revenueFilter}
-                onChange={(e) => setRevenueFilter(e.target.value as RevenueFilter)}
-                className="appearance-none h-11 min-w-[140px] rounded-full border-2 border-[#F6F1E9] bg-white pl-5 pr-10 text-sm font-bold text-[#4F200D] outline-none focus:border-[#FF8400] focus:ring-4 focus:ring-[#FF8400]/10 cursor-pointer shadow-sm hover:shadow transition-all"
-              >
-                <option value="date">รายวัน</option>
-                <option value="week">รายสัปดาห์</option>
-                <option value="month">รายเดือน</option>
-                <option value="year">รายปี</option>
-              </select>
-              <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[#4F200D]/50 pointer-events-none" />
-            </div>
+            
+            {/* 🔴 Updated Custom Theme Oriented Select */}
+            <CustomSelect
+              className="text-sm border-0 bg-[#F6F1E9]/50 px-5 py-2.5 rounded-full focus:ring-2 focus:ring-[#FFD93D] text-[#4F200D] font-bold cursor-pointer outline-none transition-all shadow-sm w-[160px]"
+              value={revenueFilter}
+              onChange={(val) => setRevenueFilter(val as RevenueFilter)}
+              options={[
+                { value: "date", label: "รายวัน" },
+                { value: "week", label: "รายสัปดาห์" },
+                { value: "month", label: "รายเดือน" },
+                { value: "year", label: "รายปี" },
+              ]}
+            />
           </div>
           
           <div className="flex-1 w-full mt-auto relative pt-10">

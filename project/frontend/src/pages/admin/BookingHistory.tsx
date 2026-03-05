@@ -32,6 +32,7 @@ import {
   ChevronDown,
   Pencil,
   Check,
+  Image as ImageIcon,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -76,6 +77,12 @@ interface Booking {
   selectedOptions: Record<string, unknown> | null;
   createdAt: string;
   updatedAt: string;
+  // Fields for uploaded receipt
+  paymentSlipUrl?: string; // from Booking entity
+  payment?: {
+    slip_url?: string;     // from Payment entity
+    slipUrl?: string;      // mapped from service
+  };
 }
 
 type SortField = "createdAt" | "totalPrice" | "startDate";
@@ -187,7 +194,7 @@ const CustomSelect = ({
 
       {isOpen && (
         <div
-          className={`absolute z-[80] w-full min-w-[140px] bg-white border-2 border-[#F6F1E9] rounded-2xl shadow-xl overflow-hidden animate-in fade-in zoom-in-95 duration-200 ${
+          className={`absolute z-[80] w-full min-w-[140px] bg-white border-2 border-[#F6F1E9] rounded-3xl shadow-xl overflow-hidden animate-in fade-in zoom-in-95 duration-200 ${
             resolvedPlacement === "top" ? "bottom-full mb-2" : "top-full mt-2"
           }`}
         >
@@ -283,37 +290,37 @@ export default function BookingHistory() {
     switch (status) {
       case "confirmed":
         return (
-          <Badge className="bg-emerald-100 text-emerald-700 border-0 px-3 py-1 font-bold shadow-none text-xs">
+          <Badge className="bg-emerald-100 text-emerald-700 border-0 px-3 py-1 font-bold shadow-none text-xs rounded-full">
             ยืนยันแล้ว
           </Badge>
         );
       case "pending_verify":
         return (
-          <Badge className="bg-[#FFD93D]/40 text-[#FF8400] border-0 px-3 py-1 font-bold shadow-none text-xs">
+          <Badge className="bg-[#FFD93D]/40 text-[#FF8400] border-0 px-3 py-1 font-bold shadow-none text-xs rounded-full">
             รอตรวจสอบ
           </Badge>
         );
       case "pending_pay":
         return (
-          <Badge className="bg-blue-100 text-blue-600 border-0 px-3 py-1 font-bold shadow-none text-xs">
+          <Badge className="bg-blue-100 text-blue-600 border-0 px-3 py-1 font-bold shadow-none text-xs rounded-full">
             รอชำระเงิน
           </Badge>
         );
       case "cancelled":
         return (
-          <Badge className="bg-red-100 text-red-600 border-0 px-3 py-1 font-bold shadow-none text-xs">
+          <Badge className="bg-red-100 text-red-600 border-0 px-3 py-1 font-bold shadow-none text-xs rounded-full">
             ยกเลิกแล้ว
           </Badge>
         );
       case "expired":
         return (
-          <Badge className="bg-gray-200 text-gray-500 border-0 px-3 py-1 font-bold shadow-none text-xs">
+          <Badge className="bg-gray-200 text-gray-500 border-0 px-3 py-1 font-bold shadow-none text-xs rounded-full">
             หมดอายุ
           </Badge>
         );
       default:
         return (
-          <Badge className="bg-gray-100 text-gray-600 border-0 px-3 py-1 font-bold shadow-none text-xs">
+          <Badge className="bg-gray-100 text-gray-600 border-0 px-3 py-1 font-bold shadow-none text-xs rounded-full">
             {status}
           </Badge>
         );
@@ -559,7 +566,7 @@ export default function BookingHistory() {
             />
           </div>
           <CustomSelect
-            className="text-sm border-0 bg-[#F6F1E9]/50 px-4 py-3 sm:px-6 sm:py-3.5 rounded-2xl focus:ring-2 focus:ring-[#FFD93D] text-[#4F200D] font-bold cursor-pointer outline-none transition-all w-full sm:w-auto min-w-[160px]"
+            className="text-sm border-0 bg-[#F6F1E9]/50 px-4 py-3 sm:px-6 sm:py-3.5 rounded-full focus:ring-2 focus:ring-[#FFD93D] text-[#4F200D] font-bold cursor-pointer outline-none transition-all w-full sm:w-auto min-w-[160px]"
             value={statusFilter}
             onChange={(val) => setStatusFilter(String(val))}
             options={[
@@ -669,6 +676,9 @@ export default function BookingHistory() {
                     </div>
                   </th>
                   <SortableHeader field="totalPrice">ยอดรวม</SortableHeader>
+                  <th className="px-4 py-4 sm:px-5 sm:py-5 font-black text-[#4F200D] uppercase tracking-wider text-[10px] sm:text-xs text-center whitespace-nowrap">
+                    สลิป
+                  </th>
                   <th className="px-4 py-4 sm:px-5 sm:py-5 font-black text-[#4F200D] uppercase tracking-wider text-[10px] sm:text-xs whitespace-nowrap">
                     สถานะ
                   </th>
@@ -682,7 +692,7 @@ export default function BookingHistory() {
                 {paginatedBookings.length === 0 ? (
                   <tr>
                     <td
-                      colSpan={9}
+                      colSpan={10}
                       className="px-6 py-16 text-center text-[#4F200D]/40 font-bold text-sm"
                     >
                       ไม่พบข้อมูลการจองที่ตรงกับเงื่อนไข
@@ -695,6 +705,11 @@ export default function BookingHistory() {
                     const isStatusChanged = draftStatus !== b.status;
                     const isUpdatingThisRow = updatingStatusId === b.id;
                     const isEditingThisRow = editingStatusId === b.id;
+                    
+                    // Logic for fetching slip URL securely
+                    const slipPath = b.paymentSlipUrl || b.payment?.slipUrl || b.payment?.slip_url;
+                    const fullSlipUrl = slipPath ? (slipPath.startsWith('http') ? slipPath : `http://localhost:3000/${slipPath}`.replace(/([^:]\/)\/+/g, "$1")) : null;
+
                     return (
                       <tr
                         key={b.id}
@@ -757,13 +772,29 @@ export default function BookingHistory() {
                             ฿{Number(b.totalPrice).toLocaleString()}
                           </span>
                         </td>
+                        <td className="px-4 py-3 sm:px-5 sm:py-4 text-center whitespace-nowrap">
+                          {fullSlipUrl ? (
+                            <a
+                              href={fullSlipUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-[10px] sm:text-xs font-bold text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-full transition-colors"
+                              title="ดูสลิป"
+                            >
+                              <Eye className="w-3.5 h-3.5" />
+                              ดูสลิป
+                            </a>
+                          ) : (
+                            <span className="text-[#4F200D]/30 text-xs font-semibold">-</span>
+                          )}
+                        </td>
                         <td className="px-4 py-3 sm:px-5 sm:py-4 whitespace-nowrap">
                           <div className="min-w-[180px]">
                             {getStatusBadge(b.status)}
                             {!isEditingThisRow ? (
                               <Button
                                 variant="ghost"
-                                className="mt-2 h-7 px-2.5 rounded-lg text-[11px] font-bold text-[#4F200D]/55 hover:text-[#FF8400] hover:bg-[#FF8400]/10"
+                                className="mt-2 h-7 px-2.5 rounded-full text-[11px] font-bold text-[#4F200D]/55 hover:text-[#FF8400] hover:bg-[#FF8400]/10"
                                 onClick={() => beginStatusEdit(b)}
                               >
                                 <Pencil className="w-3 h-3 mr-1" />
@@ -772,8 +803,8 @@ export default function BookingHistory() {
                             ) : (
                               <div className="mt-2 flex items-center gap-1.5">
                                 <CustomSelect
-                                  containerClassName="relative w-[128px]"
-                                  className="text-xs border border-[#F6F1E9] bg-[#F6F1E9]/50 px-2.5 py-1.5 rounded-lg text-[#4F200D] font-bold cursor-pointer outline-none transition-all"
+                                  containerClassName="relative w-[130px]"
+                                  className="text-xs border-0 bg-[#F6F1E9]/60 hover:bg-[#F6F1E9] px-3 py-2 rounded-full text-[#4F200D] font-bold cursor-pointer outline-none transition-all shadow-sm focus:ring-2 focus:ring-[#FFD93D]"
                                   menuPlacement="auto"
                                   value={draftStatus}
                                   onChange={(val) =>
@@ -786,7 +817,7 @@ export default function BookingHistory() {
                                 />
 
                                 <Button
-                                  className="h-7 w-7 p-0 rounded-lg bg-[#FF8400] hover:bg-[#FF8400]/90 text-white"
+                                  className="h-8 w-8 p-0 rounded-full bg-[#FF8400] hover:bg-[#FF8400]/90 text-white shadow-sm"
                                   disabled={
                                     !isStatusChanged || isUpdatingThisRow
                                   }
@@ -794,20 +825,20 @@ export default function BookingHistory() {
                                   title="บันทึกสถานะ"
                                 >
                                   {isUpdatingThisRow ? (
-                                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                    <Loader2 className="w-4 h-4 animate-spin" />
                                   ) : (
-                                    <Check className="w-3.5 h-3.5" />
+                                    <Check className="w-4 h-4" />
                                   )}
                                 </Button>
 
                                 <Button
                                   variant="ghost"
-                                  className="h-7 w-7 p-0 rounded-lg text-[#4F200D]/45 hover:text-red-500 hover:bg-red-50"
+                                  className="h-8 w-8 p-0 rounded-full text-[#4F200D]/45 hover:text-red-500 hover:bg-red-50"
                                   onClick={() => cancelStatusEdit(b.id)}
                                   disabled={isUpdatingThisRow}
                                   title="ยกเลิก"
                                 >
-                                  <X className="w-3.5 h-3.5" />
+                                  <X className="w-4 h-4" />
                                 </Button>
                               </div>
                             )}
@@ -855,7 +886,7 @@ export default function BookingHistory() {
                 <div className="flex items-center gap-2">
                   <span className="font-semibold text-[#4F200D]/60">แสดง</span>
                   <CustomSelect
-                    className="border-0 bg-[#F6F1E9]/50 px-2 py-1 sm:px-3 sm:py-1.5 rounded-xl text-[#4F200D] font-bold cursor-pointer outline-none focus:ring-2 focus:ring-[#FFD93D] text-xs sm:text-sm min-w-[60px]"
+                    className="border-0 bg-[#F6F1E9]/50 px-2 py-1 sm:px-3 sm:py-1.5 rounded-full text-[#4F200D] font-bold cursor-pointer outline-none focus:ring-2 focus:ring-[#FFD93D] text-xs sm:text-sm min-w-[60px]"
                     value={itemsPerPage}
                     onChange={(val) => setItemsPerPage(Number(val))}
                     options={ITEMS_PER_PAGE_OPTIONS.map((n) => ({
@@ -1067,6 +1098,10 @@ function BookingDetailModal({
   const isDeadlinePassed =
     b.paymentDeadline && new Date(b.paymentDeadline) < new Date();
 
+  // Logic to fetch receipt picture URL securely for the modal
+  const slipPath = b.paymentSlipUrl || b.payment?.slipUrl || b.payment?.slip_url;
+  const fullSlipUrl = slipPath ? (slipPath.startsWith('http') ? slipPath : `http://localhost:3000/${slipPath}`.replace(/([^:]\/)\/+/g, "$1")) : null;
+
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4"
@@ -1249,6 +1284,37 @@ function BookingDetailModal({
               </div>
             </div>
           </div>
+
+          {/* ======================= รูปภาพสลิปที่แนบมาแสดงที่นี่ ======================= */}
+          {fullSlipUrl && (
+            <div className="p-3 sm:p-4 bg-blue-50 border border-blue-100 rounded-xl sm:rounded-2xl space-y-3">
+              <div className="flex justify-between items-center">
+                <p className="text-[10px] sm:text-xs font-black text-blue-600/70 uppercase tracking-wider flex items-center gap-2">
+                  <ImageIcon size={14} /> หลักฐานการชำระเงิน (สลิปโอนเงิน)
+                </p>
+                <a
+                  href={fullSlipUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-[10px] sm:text-xs bg-white border border-blue-200 text-blue-600 px-3 py-1.5 rounded-lg hover:bg-blue-100 font-bold transition-colors"
+                >
+                  เปิดภาพเต็ม
+                </a>
+              </div>
+              <div className="flex justify-center bg-white p-2 rounded-xl shadow-sm border border-blue-100/50">
+                <img
+                  src={fullSlipUrl}
+                  alt="Payment Slip"
+                  className="max-h-[350px] w-auto object-contain rounded-lg"
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).src = "https://placehold.co/400x600?text=Slip+Not+Found";
+                  }}
+                />
+              </div>
+            </div>
+          )}
+          {/* ========================================================================= */}
+
           {b.paymentDeadline && (
             <div
               className={`p-3 sm:p-4 rounded-xl sm:rounded-2xl flex items-center gap-3 ${isDeadlinePassed ? "bg-red-50 border border-red-200" : "bg-amber-50 border border-amber-200"}`}

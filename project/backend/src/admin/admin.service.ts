@@ -52,10 +52,25 @@ export class AdminService {
   }
 
   async getAllBookings() {
-    // Fetch all bookings with relations to show names
-    return this.bookingRepo.find({
-      relations: ['user', 'tour'],
+    // Fetch all bookings with relations to show names AND the payment slip
+    const bookings = await this.bookingRepo.find({
+      relations: ['user', 'tour', 'payment'], // Added 'payment'
       order: { createdAt: 'DESC' }, // Newest first
+    });
+
+    // We map slip_url to slipUrl so the frontend component catches it automatically 
+    // without needing to rewrite any React code.
+    return bookings.map((booking) => {
+      if (booking.payment) {
+        return {
+          ...booking,
+          payment: {
+            ...booking.payment,
+            slipUrl: booking.payment.slip_url, 
+          },
+        };
+      }
+      return booking;
     });
   }
 

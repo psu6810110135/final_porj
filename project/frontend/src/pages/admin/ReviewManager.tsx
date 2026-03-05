@@ -549,7 +549,7 @@ export default function ReviewManager() {
             />
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 w-full xl:w-auto xl:min-w-[530px]">
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3 w-full xl:w-auto xl:min-w-[530px]">
             <CustomSelect
               className={selectTriggerClass}
               value={recommendedFilter}
@@ -576,20 +576,20 @@ export default function ReviewManager() {
           <Button
             variant="ghost"
             onClick={clearFilters}
-            className="xl:ml-auto h-12 px-5 text-[#4F200D]/70 hover:text-[#FF8400] hover:bg-[#FFD93D]/20 font-bold rounded-xl"
+            className="w-full md:w-auto xl:ml-auto h-12 px-5 text-[#4F200D]/70 hover:text-[#FF8400] hover:bg-[#FFD93D]/20 font-bold rounded-xl"
           >
             ล้างตัวกรอง
           </Button>
         </div>
       </div>
 
-      <div className="xl:hidden grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="xl:hidden grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-5">
         {loading ? (
-          <div className="md:col-span-2 bg-white rounded-3xl p-10 text-center">
+          <div className="lg:col-span-2 bg-white rounded-3xl p-10 text-center">
             <Loader2 className="w-6 h-6 animate-spin mx-auto text-[#FF8400]" />
           </div>
         ) : reviews.length === 0 ? (
-          <div className="md:col-span-2 bg-white rounded-3xl p-10 text-center text-[#4F200D]/50 font-bold">
+          <div className="lg:col-span-2 bg-white rounded-3xl p-10 text-center text-[#4F200D]/50 font-bold">
             ไม่พบรีวิวตามเงื่อนไขที่เลือก
           </div>
         ) : (
@@ -635,17 +635,17 @@ export default function ReviewManager() {
                   review.bookingId.slice(0, 8)}
               </div>
 
-              <div className="flex items-center gap-2 pt-2">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-2">
                 <Button
                   variant="ghost"
-                  className="flex-1 rounded-xl text-[#4F200D]/70 hover:text-[#FF8400] hover:bg-[#FFD93D]/20"
+                  className="w-full justify-center rounded-xl text-[#4F200D]/70 hover:text-[#FF8400] hover:bg-[#FFD93D]/20 text-sm"
                   onClick={() => setSelectedReview(review)}
                 >
-                  <Eye className="w-4 h-4 mr-2" /> ดูรายละเอียด
+                  <Eye className="w-4 h-4 mr-2" /> รายละเอียด
                 </Button>
                 <Button
                   variant="ghost"
-                  className="flex-1 rounded-xl text-[#4F200D]/70 hover:text-[#FF8400] hover:bg-[#FFD93D]/20"
+                  className="w-full justify-center rounded-xl text-[#4F200D]/70 hover:text-[#FF8400] hover:bg-[#FFD93D]/20 text-sm"
                   onClick={() => openEditModal(review)}
                 >
                   <Pencil className="w-4 h-4 mr-2" /> แก้ไข

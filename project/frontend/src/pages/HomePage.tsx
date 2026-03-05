@@ -22,6 +22,13 @@ interface TourCardData {
   category?: string;
 }
 
+interface TestimonialData {
+  id: string;
+  name: string;
+  content: string;
+  rating: number;
+}
+
 // ═══════════════════════════════════════════════════════════════════════════════
 // ─── Scroll-reveal hook ───────────────────────────────────────────────────────
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -325,6 +332,31 @@ export default function HomePage() {
   ];
 
   const [topTours, setTopTours] = useState<TourCardData[]>(defaultDestinations);
+  const defaultTestimonials: TestimonialData[] = [
+    {
+      id: "fallback-1",
+      name: "นเรศ วงวิไล",
+      content:
+        "ประสบการณ์เที่ยวที่ดีที่สุด! ไกด์น่ารักมาก วิวสวยหลักล้าน ทุกอย่างจัดการได้เป๊ะมาก",
+      rating: 5,
+    },
+    {
+      id: "fallback-2",
+      name: "ยศธร รัตนาประสิทธิ์",
+      content:
+        "จองง่ายมาก แอปช่วยวางแผนทริปได้แบบไม่ต้องกังวลเลย แนะนำแพ็กเกจเขาสกมาก ๆ",
+      rating: 5,
+    },
+    {
+      id: "fallback-3",
+      name: "จันทรวิมล พงษ์ธนาพัฒน์",
+      content:
+        "แนะนำเลยสำหรับครอบครัว เด็ก ๆ ชอบกิจกรรมที่ภูเก็ตมาก ปีหน้ามาจองซ้ำแน่นอน!",
+      rating: 5,
+    },
+  ];
+  const [testimonials, setTestimonials] =
+    useState<TestimonialData[]>(defaultTestimonials);
 
   // ── Hero text animation ──
   const [heroReady, setHeroReady] = useState(false);
@@ -415,6 +447,48 @@ export default function HomePage() {
       });
   }, []);
 
+  // ── Fetch recommended reviews for testimonial section ──
+  useEffect(() => {
+    fetch(`http://localhost:3000/api/v1/reviews/recommended?limit=6`)
+      .then((res) => {
+        if (!res.ok) {
+          throw new Error("Failed to load recommended reviews");
+        }
+        return res.json();
+      })
+      .then((data: any[]) => {
+        if (!Array.isArray(data) || data.length === 0) {
+          setTestimonials(defaultTestimonials);
+          return;
+        }
+
+        const mapped = data
+          .map((review) => {
+            const reviewUser = review?.user || {};
+            const fullName =
+              reviewUser.full_name ||
+              [reviewUser.first_name, reviewUser.last_name]
+                .filter(Boolean)
+                .join(" ")
+                .trim();
+
+            return {
+              id: String(review?.id ?? Math.random()),
+              name: fullName || reviewUser.username || "นักเดินทาง",
+              content: String(review?.comment ?? "").trim(),
+              rating: Number(review?.rating ?? 5),
+            } as TestimonialData;
+          })
+          .filter((item) => item.content.length > 0)
+          .slice(0, 6);
+
+        setTestimonials(mapped.length > 0 ? mapped : defaultTestimonials);
+      })
+      .catch(() => {
+        setTestimonials(defaultTestimonials);
+      });
+  }, []);
+
   // ── Close dropdown on outside click ──
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -455,27 +529,6 @@ export default function HomePage() {
       title: "ดูแลตลอด 24 ชม.",
       desc: "ติดต่อได้ทุกเมื่อ",
       icon: HeadphonesIcon,
-    },
-  ];
-
-  const testimonials = [
-    {
-      id: 1,
-      name: "นเรศ วงวิไล",
-      content:
-        "ประสบการณ์เที่ยวที่ดีที่สุด! ไกด์น่ารักมาก วิวสวยหลักล้าน ทุกอย่างจัดการได้เป๊ะมาก",
-    },
-    {
-      id: 2,
-      name: "ยศธร รัตนาประสิทธิ์",
-      content:
-        "จองง่ายมาก แอปช่วยวางแผนทริปได้แบบไม่ต้องกังวลเลย แนะนำแพ็กเกจเขาสกมาก ๆ",
-    },
-    {
-      id: 3,
-      name: "จันทรวิมล พงษ์ธนาพัฒน์",
-      content:
-        "แนะนำเลยสำหรับครอบครัว เด็ก ๆ ชอบกิจกรรมที่ภูเก็ตมาก ปีหน้ามาจองซ้ำแน่นอน!",
     },
   ];
 
@@ -954,7 +1007,17 @@ export default function HomePage() {
                       </p>
                       <div className="flex gap-0.5 mt-0.5">
                         {[...Array(5)].map((_, i) => (
-                          <StarIcon key={i} size={14} />
+                          <StarIcon
+                            key={i}
+                            size={14}
+                            filled={
+                              i <
+                              Math.max(
+                                1,
+                                Math.min(5, Math.round(testimonial.rating)),
+                              )
+                            }
+                          />
                         ))}
                       </div>
                     </div>

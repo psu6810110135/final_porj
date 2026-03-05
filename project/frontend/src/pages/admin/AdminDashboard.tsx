@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
-import { DollarSign, Users, Calendar, AlertCircle, TrendingUp, MoreHorizontal, Loader2, MessageSquare } from 'lucide-react';
+import { DollarSign, Users, Calendar, AlertCircle, TrendingUp, Loader2, MessageSquare } from 'lucide-react';
 import axios from 'axios';
 
 const getAuthHeader = (): Record<string, string> => {
@@ -8,10 +8,88 @@ const getAuthHeader = (): Record<string, string> => {
   return token ? { Authorization: `Bearer ${token}` } : {};
 };
 
+const CONFIRMED_STATUSES = new Set(['confirmed', 'paid', 'ยืนยันแล้ว']);
+const MONTH_NAMES = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
+
+type RevenueFilter = 'date' | 'week' | 'month' | 'year';
+
+const getBookingDate = (booking: any): Date => new Date(booking.created_at || booking.createdAt);
+
+const getBookingPrice = (booking: any): number => Number(booking.totalPrice ?? booking.total_price ?? 0) || 0;
+
+const isConfirmedBooking = (booking: any): boolean => CONFIRMED_STATUSES.has(String(booking.status || '').toLowerCase());
+
+const getIsoWeekData = (date: Date): { year: number; week: number } => {
+  const utcDate = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+  const day = utcDate.getUTCDay() || 7;
+  utcDate.setUTCDate(utcDate.getUTCDate() + 4 - day);
+  const yearStart = new Date(Date.UTC(utcDate.getUTCFullYear(), 0, 1));
+  const week = Math.ceil((((utcDate.getTime() - yearStart.getTime()) / 86400000) + 1) / 7);
+  return { year: utcDate.getUTCFullYear(), week };
+};
+
+const buildRevenueChartData = (bookings: any[], filter: RevenueFilter): { label: string; revenue: number }[] => {
+  const buckets = new Map<string, { label: string; sortKey: number; revenue: number }>();
+
+  bookings.forEach((booking) => {
+    if (!isConfirmedBooking(booking)) {
+      return;
+    }
+
+    const price = getBookingPrice(booking);
+    const date = getBookingDate(booking);
+    if (Number.isNaN(date.getTime())) {
+      return;
+    }
+
+    let bucketKey = '';
+    let label = '';
+    let sortKey = 0;
+
+    if (filter === 'date') {
+      const year = date.getFullYear();
+      const month = date.getMonth();
+      const day = date.getDate();
+      bucketKey = `${year}-${month + 1}-${day}`;
+      label = date.toLocaleDateString('th-TH', { day: '2-digit', month: 'short' });
+      sortKey = new Date(year, month, day).getTime();
+    } else if (filter === 'week') {
+      const { year, week } = getIsoWeekData(date);
+      bucketKey = `${year}-W${week}`;
+      label = `W${week} ${year}`;
+      sortKey = year * 100 + week;
+    } else if (filter === 'month') {
+      const year = date.getFullYear();
+      const month = date.getMonth();
+      bucketKey = `${year}-${month}`;
+      label = `${MONTH_NAMES[month]} ${year}`;
+      sortKey = year * 100 + month;
+    } else {
+      const year = date.getFullYear();
+      bucketKey = `${year}`;
+      label = `${year}`;
+      sortKey = year;
+    }
+
+    const current = buckets.get(bucketKey);
+    if (current) {
+      current.revenue += price;
+    } else {
+      buckets.set(bucketKey, { label, sortKey, revenue: price });
+    }
+  });
+
+  return Array.from(buckets.values())
+    .sort((a, b) => a.sortKey - b.sortKey)
+    .map((bucket) => ({ label: bucket.label, revenue: bucket.revenue }));
+};
+
 export default function AdminDashboard() {
   const [loading, setLoading] = useState(true);
   const [recentActivities, setRecentActivities] = useState<any[]>([]);
-  const [chartData, setChartData] = useState<{ month: string; revenue: number }[]>([]);
+  const [allBookings, setAllBookings] = useState<any[]>([]);
+  const [revenueFilter, setRevenueFilter] = useState<RevenueFilter>('month');
+  const [chartData, setChartData] = useState<{ label: string; revenue: number }[]>([]);
   const [stats, setStats] = useState({
     totalRevenue: 0,
     todayBookings: 0,
@@ -30,36 +108,14 @@ export default function AdminDashboard() {
 
         const bookings = Array.isArray(bookingsRes.data) ? bookingsRes.data : bookingsRes.data.data || [];
         const tickets = Array.isArray(ticketsRes.data) ? ticketsRes.data : ticketsRes.data.data || [];
+        setAllBookings(bookings);
 
-        let calculatedRevenue = 0;
-        const revenueByMonth: Record<string, number> = {};
-        const monthNames = ["ม.ค.", "ก.พ.", "มี.ค.", "เม.ย.", "พ.ค.", "มิ.ย.", "ก.ค.", "ส.ค.", "ก.ย.", "ต.ค.", "พ.ย.", "ธ.ค."];
-
-        bookings.forEach((b: any) => {
-          if (b.status === 'ยืนยันแล้ว' || b.status === 'confirmed' || b.status === 'paid') {
-            const price = Number(b.total_price) || 0;
-            calculatedRevenue += price;
-
-            const date = new Date(b.created_at || b.createdAt);
-            const monthLabel = monthNames[date.getMonth()];
-            revenueByMonth[monthLabel] = (revenueByMonth[monthLabel] || 0) + price;
+        const calculatedRevenue = bookings.reduce((sum: number, booking: any) => {
+          if (!isConfirmedBooking(booking)) {
+            return sum;
           }
-        });
-
-        const formattedChartData = Object.keys(revenueByMonth).map(month => ({
-          month,
-          revenue: revenueByMonth[month]
-        }));
-        
-        // ถ้าไม่มีข้อมูล ให้แสดงข้อมูลตัวอย่างเพื่อให้เห็นกราฟ (สามารถลบออกได้หากใช้จริง)
-        if (formattedChartData.length === 0) {
-           setChartData([
-             { month: 'ม.ค.', revenue: 15000 }, { month: 'ก.พ.', revenue: 32000 },
-             { month: 'มี.ค.', revenue: 24000 }, { month: 'เม.ย.', revenue: 45000 }
-           ]);
-        } else {
-           setChartData(formattedChartData);
-        }
+          return sum + getBookingPrice(booking);
+        }, 0);
 
         const mappedBookings = bookings.map((b: any) => ({
           type: 'booking',
@@ -102,7 +158,16 @@ export default function AdminDashboard() {
     };
 
     fetchData();
+    const intervalId = setInterval(fetchData, 15000);
+
+    return () => {
+      clearInterval(intervalId);
+    };
   }, []);
+
+  useEffect(() => {
+    setChartData(buildRevenueChartData(allBookings, revenueFilter));
+  }, [allBookings, revenueFilter]);
 
   if (loading) {
     return (
@@ -190,7 +255,16 @@ export default function AdminDashboard() {
         <div className="lg:col-span-2 bg-white rounded-3xl shadow-sm border-0 p-8 flex flex-col min-h-[360px]">
           <div className="flex justify-between items-center mb-8">
             <h3 className="text-xl font-bold text-[#4F200D]">วิเคราะห์รายได้</h3>
-            <button className="text-[#4F200D]/40 hover:text-[#FF8400] transition-colors"><MoreHorizontal size={24} /></button>
+            <select
+              value={revenueFilter}
+              onChange={(e) => setRevenueFilter(e.target.value as RevenueFilter)}
+              className="h-10 rounded-xl border border-[#F6F1E9] bg-white px-3 text-sm font-bold text-[#4F200D] outline-none focus:border-[#FF8400]"
+            >
+              <option value="date">รายวัน</option>
+              <option value="week">รายสัปดาห์</option>
+              <option value="month">รายเดือน</option>
+              <option value="year">รายปี</option>
+            </select>
           </div>
           
           <div className="flex-1 w-full mt-auto relative pt-10">
@@ -264,7 +338,7 @@ export default function AdminDashboard() {
                 {/* ป้ายกำกับแกน X */}
                 <div className="flex justify-between w-full mt-4">
                   {chartData.map((d, i) => (
-                     <span key={`label-${i}`} className="text-xs sm:text-sm font-bold text-[#4F200D]/60 w-10 text-center -ml-5">{d.month}</span>
+                     <span key={`label-${i}`} className="text-xs sm:text-sm font-bold text-[#4F200D]/60 w-10 text-center -ml-5">{d.label}</span>
                   ))}
                 </div>
 

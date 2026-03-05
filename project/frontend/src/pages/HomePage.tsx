@@ -1,7 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
 import { useNavigate } from "react-router-dom";
 
 import Navbar from "@/components/Navbar";
@@ -20,6 +19,13 @@ interface TourCardData {
   price?: number | string;
   province?: string;
   category?: string;
+}
+
+interface TestimonialData {
+  id: string;
+  name: string;
+  content: string;
+  rating: number;
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -45,6 +51,64 @@ function useRevealOnScroll(threshold = 0.15) {
     return () => obs.disconnect();
   }, [threshold]);
   return { ref, visible };
+}
+
+function useInfiniteHorizontalLoop(itemCount: number) {
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el || itemCount <= 1) return;
+
+    let isAdjusting = false;
+
+    const placeAtMiddle = () => {
+      const segmentWidth = el.scrollWidth / 3;
+      if (segmentWidth > 0) {
+        const offsetInsideSegment = el.scrollLeft % segmentWidth;
+        el.scrollLeft = segmentWidth + Math.max(0, offsetInsideSegment);
+      }
+    };
+
+    const onScroll = () => {
+      if (isAdjusting) return;
+
+      const segmentWidth = el.scrollWidth / 3;
+      if (!segmentWidth) return;
+
+      let nextScrollLeft = el.scrollLeft;
+
+      if (nextScrollLeft < segmentWidth) {
+        nextScrollLeft += segmentWidth;
+      } else if (nextScrollLeft >= segmentWidth * 2) {
+        nextScrollLeft -= segmentWidth;
+      }
+
+      if (nextScrollLeft !== el.scrollLeft) {
+        isAdjusting = true;
+        const originalBehavior = el.style.scrollBehavior;
+        el.style.scrollBehavior = "auto";
+        el.scrollLeft = nextScrollLeft;
+        el.style.scrollBehavior = originalBehavior;
+        window.requestAnimationFrame(() => {
+          isAdjusting = false;
+        });
+      }
+    };
+
+    const animationId = window.requestAnimationFrame(placeAtMiddle);
+
+    el.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("resize", placeAtMiddle);
+
+    return () => {
+      window.cancelAnimationFrame(animationId);
+      el.removeEventListener("scroll", onScroll);
+      window.removeEventListener("resize", placeAtMiddle);
+    };
+  }, [itemCount]);
+
+  return ref;
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -279,7 +343,6 @@ function RichDropdown({
 // ═══════════════════════════════════════════════════════════════════════════════
 
 export default function HomePage() {
-  const [email, setEmail] = useState("");
   const navigate = useNavigate();
 
   // Filter states
@@ -325,6 +388,8 @@ export default function HomePage() {
   ];
 
   const [topTours, setTopTours] = useState<TourCardData[]>(defaultDestinations);
+  const [testimonials, setTestimonials] = useState<TestimonialData[]>([]);
+  const [testimonialsLoading, setTestimonialsLoading] = useState(true);
 
   // ── Hero text animation ──
   const [heroReady, setHeroReady] = useState(false);
@@ -339,6 +404,16 @@ export default function HomePage() {
   const destReveal = useRevealOnScroll(0.1);
   const testimonialReveal = useRevealOnScroll(0.1);
   const newsletterReveal = useRevealOnScroll(0.1);
+
+  const toursCarouselRef = useInfiniteHorizontalLoop(topTours.length);
+  const reviewsCarouselRef = useInfiniteHorizontalLoop(testimonials.length);
+
+  const loopedTopTours =
+    topTours.length > 1 ? [...topTours, ...topTours, ...topTours] : topTours;
+  const loopedTestimonials =
+    testimonials.length > 1
+      ? [...testimonials, ...testimonials, ...testimonials]
+      : testimonials;
 
   // ── Fetch filter options ──
   useEffect(() => {
@@ -365,7 +440,7 @@ export default function HomePage() {
       .then((data: any[]) => {
         if (Array.isArray(data) && data.length > 0) {
           setTopTours(
-            data.slice(0, 6).map((tour) => ({
+            data.map((tour) => ({
               id: tour.id ?? tour.title,
               title: tour.title ?? "",
               description: tour.description ?? tour.province,
@@ -415,6 +490,50 @@ export default function HomePage() {
       });
   }, []);
 
+  // ── Fetch recommended reviews for testimonial section ──
+  useEffect(() => {
+    setTestimonialsLoading(true);
+
+    fetch(`http://localhost:3000/api/v1/reviews/recommended?limit=30`)
+      .then((res) => {
+        if (!res.ok) {
+          throw new Error("Failed to load recommended reviews");
+        }
+        return res.json();
+      })
+      .then((data: any[]) => {
+        if (!Array.isArray(data) || data.length === 0) return;
+
+        const mapped = data
+          .filter((review) => review?.is_recommended === true)
+          .map((review) => {
+            const reviewUser = review?.user || {};
+            const fullName =
+              reviewUser.full_name ||
+              [reviewUser.first_name, reviewUser.last_name]
+                .filter(Boolean)
+                .join(" ")
+                .trim();
+
+            return {
+              id: String(review?.id ?? Math.random()),
+              name: fullName || reviewUser.username || "นักเดินทาง",
+              content: String(review?.comment ?? "").trim(),
+              rating: Number(review?.rating ?? 5),
+            } as TestimonialData;
+          })
+          .filter((item) => item.content.length > 0);
+
+        setTestimonials(mapped);
+      })
+      .catch(() => {
+        setTestimonials([]);
+      })
+      .finally(() => {
+        setTestimonialsLoading(false);
+      });
+  }, []);
+
   // ── Close dropdown on outside click ──
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -440,6 +559,32 @@ export default function HomePage() {
     navigate(`/tours?${params.toString()}`);
   };
 
+  const scrollCarouselByCard = useCallback(
+    (container: HTMLDivElement | null, direction: number) => {
+      if (!container) return;
+
+      const firstCard = container.querySelector<HTMLElement>(
+        "[data-carousel-card]",
+      );
+      const style = window.getComputedStyle(container);
+      const gapToken =
+        style.columnGap !== "normal"
+          ? style.columnGap
+          : style.gap !== "normal"
+            ? style.gap
+            : "20";
+      const parsedGap = Number.parseFloat(gapToken);
+      const gap = Number.isFinite(parsedGap) ? parsedGap : 20;
+      const cardWidth = firstCard?.offsetWidth ?? container.clientWidth * 0.85;
+
+      container.scrollBy({
+        left: (cardWidth + gap) * direction,
+        behavior: "smooth",
+      });
+    },
+    [],
+  );
+
   // ── Data ──
   const features = [
     {
@@ -455,27 +600,6 @@ export default function HomePage() {
       title: "ดูแลตลอด 24 ชม.",
       desc: "ติดต่อได้ทุกเมื่อ",
       icon: HeadphonesIcon,
-    },
-  ];
-
-  const testimonials = [
-    {
-      id: 1,
-      name: "นเรศ วงวิไล",
-      content:
-        "ประสบการณ์เที่ยวที่ดีที่สุด! ไกด์น่ารักมาก วิวสวยหลักล้าน ทุกอย่างจัดการได้เป๊ะมาก",
-    },
-    {
-      id: 2,
-      name: "ยศธร รัตนาประสิทธิ์",
-      content:
-        "จองง่ายมาก แอปช่วยวางแผนทริปได้แบบไม่ต้องกังวลเลย แนะนำแพ็กเกจเขาสกมาก ๆ",
-    },
-    {
-      id: 3,
-      name: "จันทรวิมล พงษ์ธนาพัฒน์",
-      content:
-        "แนะนำเลยสำหรับครอบครัว เด็ก ๆ ชอบกิจกรรมที่ภูเก็ตมาก ปีหน้ามาจองซ้ำแน่นอน!",
     },
   ];
 
@@ -829,78 +953,138 @@ export default function HomePage() {
               คัดสรรแลนด์มาร์กสุดฮิต ถ่ายรูปสวย ทันกระแสก่อนใคร
             </p>
           </div>
-          <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-5 md:gap-6">
-            {topTours.map((tour, idx) => (
-              <Card
-                key={tour.id}
-                className={`overflow-hidden border-0 shadow-xl rounded-2xl md:rounded-3xl bg-[#FFFDFA] group cursor-pointer hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 flex flex-col h-full`}
-                style={{ transitionDelay: `${idx * 100}ms` }}
-                onClick={() => navigate(`/tours/${tour.id}`)}
-              >
-                <div className="relative h-44 md:h-56 lg:h-72 overflow-hidden">
-                  <img
-                    src={
-                      tour.image_cover ??
-                      "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=800&q=80"
-                    }
-                    alt={tour.title}
-                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-                    onError={(e) => {
-                      e.currentTarget.src =
-                        "https://images.unsplash.com/photo-1552465011-b4e21bf6e79a?w=600&q=80";
-                    }}
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
-                  <div className="absolute top-3 right-3 bg-white/90 backdrop-blur-sm px-3 py-1 rounded-full text-xs font-bold text-[#FF8400] shadow-sm">
-                    {tour.category || "แนะนำ"}
-                  </div>
-                  {tour.province && (
-                    <div className="absolute bottom-3 left-3 flex items-center gap-1 bg-black/30 backdrop-blur-sm text-white text-xs font-medium px-2.5 py-1 rounded-full">
-                      <MapIcon className="w-3 h-3" />
-                      {tour.province}
+          <div className="relative">
+            <div className="flex items-center justify-between gap-3 mb-4">
+              <p className="text-xs md:text-sm text-[#4F200D]/60 font-medium">
+                เลื่อนซ้าย-ขวาเพื่อดูทัวร์แนะนำเพิ่มเติม
+              </p>
+              <div className="hidden sm:flex items-center gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() =>
+                    scrollCarouselByCard(toursCarouselRef.current, -1)
+                  }
+                  className="h-9 w-9 rounded-full border-[#D7C7B7] bg-white p-0 text-[#4F200D] hover:border-[#FF8400] hover:text-[#FF8400]"
+                  aria-label="เลื่อนไปทางซ้าย"
+                >
+                  <svg
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <polyline points="15 18 9 12 15 6" />
+                  </svg>
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() =>
+                    scrollCarouselByCard(toursCarouselRef.current, 1)
+                  }
+                  className="h-9 w-9 rounded-full border-[#D7C7B7] bg-white p-0 text-[#4F200D] hover:border-[#FF8400] hover:text-[#FF8400]"
+                  aria-label="เลื่อนไปทางขวา"
+                >
+                  <svg
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <polyline points="9 18 15 12 9 6" />
+                  </svg>
+                </Button>
+              </div>
+            </div>
+
+            <div
+              ref={toursCarouselRef}
+              className="flex gap-5 md:gap-6 overflow-x-auto overscroll-x-contain scroll-smooth pb-2 px-1 md:px-2 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
+            >
+              {loopedTopTours.map((tour, idx) => (
+                <Card
+                  key={`${tour.id}-${idx}`}
+                  data-carousel-card
+                  className="min-w-[86%] sm:min-w-[72%] md:min-w-[48%] lg:min-w-[40%] xl:min-w-[31%] overflow-hidden border-0 shadow-xl rounded-2xl md:rounded-3xl bg-[#FFFDFA] group cursor-pointer hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 flex flex-col h-full"
+                  style={{
+                    transitionDelay: `${(idx % Math.max(topTours.length, 1)) * 80}ms`,
+                  }}
+                  onClick={() => navigate(`/tours/${tour.id}`)}
+                >
+                  <div className="relative h-44 md:h-56 lg:h-72 overflow-hidden">
+                    <img
+                      src={
+                        tour.image_cover ??
+                        "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=800&q=80"
+                      }
+                      alt={tour.title}
+                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                      onError={(e) => {
+                        e.currentTarget.src =
+                          "https://images.unsplash.com/photo-1552465011-b4e21bf6e79a?w=600&q=80";
+                      }}
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
+                    <div className="absolute top-3 right-3 bg-white/90 backdrop-blur-sm px-3 py-1 rounded-full text-xs font-bold text-[#FF8400] shadow-sm">
+                      {tour.category || "แนะนำ"}
                     </div>
-                  )}
-                </div>
-                <CardContent className="p-4 md:p-5 flex flex-col flex-1">
-                  <div className="border-b border-[#E3DCD4] pb-3 mb-3">
-                    <h3 className="text-lg md:text-xl xl:text-2xl font-bold text-[#4F200D] mb-1 line-clamp-1">
-                      {tour.title}
-                    </h3>
-                    <p className="text-xs md:text-sm text-[#4F200D]/60 font-light line-clamp-2 h-[2.5rem] md:h-[2.75rem]">
-                      {tour.description || "เส้นทางยอดนิยม"}
-                    </p>
+                    {tour.province && (
+                      <div className="absolute bottom-3 left-3 flex items-center gap-1 bg-black/30 backdrop-blur-sm text-white text-xs font-medium px-2.5 py-1 rounded-full">
+                        <MapIcon className="w-3 h-3" />
+                        {tour.province}
+                      </div>
+                    )}
                   </div>
-                  <div className="flex items-center justify-between mt-auto">
-                    <div>
-                      <p className="text-[11px] md:text-xs text-[#4F200D]/50 font-medium">
-                        {tour.duration || "กำลังจัดตาราง"}
+                  <CardContent className="p-4 md:p-5 flex flex-col flex-1">
+                    <div className="border-b border-[#E3DCD4] pb-3 mb-3">
+                      <h3 className="text-lg md:text-xl xl:text-2xl font-bold text-[#4F200D] mb-1 line-clamp-1">
+                        {tour.title}
+                      </h3>
+                      <p className="text-xs md:text-sm text-[#4F200D]/60 font-light line-clamp-2 h-[2.5rem] md:h-[2.75rem]">
+                        {tour.description || "เส้นทางยอดนิยม"}
                       </p>
-                      <p className="text-lg md:text-xl font-extrabold text-[#FF8400]">
-                        {tour.price
-                          ? `฿${Number(tour.price).toLocaleString()}`
-                          : "สอบถามราคา"}
-                      </p>
                     </div>
-                    <div className="w-10 h-10 rounded-full bg-[#FF8400]/10 flex items-center justify-center group-hover:bg-[#FF8400] transition-colors duration-300">
-                      <svg
-                        width="18"
-                        height="18"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2.5"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        className="text-[#FF8400] group-hover:text-white transition-colors -rotate-45"
-                      >
-                        <line x1="5" y1="12" x2="19" y2="12" />
-                        <polyline points="12 5 19 12 12 19" />
-                      </svg>
+                    <div className="flex items-center justify-between mt-auto">
+                      <div>
+                        <p className="text-[11px] md:text-xs text-[#4F200D]/50 font-medium">
+                          {tour.duration || "กำลังจัดตาราง"}
+                        </p>
+                        <p className="text-lg md:text-xl font-extrabold text-[#FF8400]">
+                          {tour.price
+                            ? `฿${Number(tour.price).toLocaleString()}`
+                            : "สอบถามราคา"}
+                        </p>
+                      </div>
+                      <div className="w-10 h-10 rounded-full bg-[#FF8400]/10 flex items-center justify-center group-hover:bg-[#FF8400] transition-colors duration-300">
+                        <svg
+                          width="18"
+                          height="18"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2.5"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          className="text-[#FF8400] group-hover:text-white transition-colors -rotate-45"
+                        >
+                          <line x1="5" y1="12" x2="19" y2="12" />
+                          <polyline points="12 5 19 12 12 19" />
+                        </svg>
+                      </div>
                     </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
           </div>
           <div className="text-center mt-8 md:mt-10">
             <Button
@@ -934,38 +1118,135 @@ export default function HomePage() {
               จากนักเดินทาง
             </p>
           </div>
-          <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-5 md:gap-6">
-            {testimonials.map((testimonial, idx) => (
-              <Card
-                key={testimonial.id}
-                className={`border-0 shadow-lg rounded-xl md:rounded-2xl bg-[#FFFDFA] hover:shadow-xl transition-all duration-300`}
-                style={{ transitionDelay: `${idx * 100}ms` }}
+          {testimonialsLoading ? (
+            <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-5 md:gap-6">
+              {Array.from({ length: 3 }, (_, idx) => (
+                <Card
+                  key={`review-skeleton-${idx}`}
+                  className="border-0 shadow-lg rounded-xl md:rounded-2xl bg-[#FFFDFA]"
+                >
+                  <CardContent className="p-4 md:p-6 animate-pulse">
+                    <div className="h-5 w-1/2 bg-[#E8DFD5] rounded mb-3" />
+                    <div className="h-4 w-1/3 bg-[#EFE7DE] rounded mb-4" />
+                    <div className="space-y-2">
+                      <div className="h-3 bg-[#EFE7DE] rounded" />
+                      <div className="h-3 bg-[#EFE7DE] rounded" />
+                      <div className="h-3 w-4/5 bg-[#EFE7DE] rounded" />
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          ) : testimonials.length === 0 ? (
+            <div className="max-w-2xl mx-auto bg-[#FFFDFA] rounded-2xl border border-[#E8DFD5] px-6 py-8 text-center shadow-sm">
+              <p className="text-sm md:text-base font-semibold text-[#4F200D]/70">
+                ยังไม่มีรีวิวที่พร้อมแสดงผลในขณะนี้
+              </p>
+            </div>
+          ) : (
+            <div className="relative">
+              <div className="flex items-center justify-between gap-3 mb-4">
+                <p className="text-xs md:text-sm text-[#4F200D]/60 font-medium">
+                  ปัดซ้าย-ขวาเพื่อดูรีวิวแนะนำแบบต่อเนื่อง
+                </p>
+                <div className="hidden sm:flex items-center gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() =>
+                      scrollCarouselByCard(reviewsCarouselRef.current, -1)
+                    }
+                    className="h-9 w-9 rounded-full border-[#D7C7B7] bg-white p-0 text-[#4F200D] hover:border-[#FF8400] hover:text-[#FF8400]"
+                    aria-label="เลื่อนรีวิวไปทางซ้าย"
+                  >
+                    <svg
+                      width="16"
+                      height="16"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2.5"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <polyline points="15 18 9 12 15 6" />
+                    </svg>
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() =>
+                      scrollCarouselByCard(reviewsCarouselRef.current, 1)
+                    }
+                    className="h-9 w-9 rounded-full border-[#D7C7B7] bg-white p-0 text-[#4F200D] hover:border-[#FF8400] hover:text-[#FF8400]"
+                    aria-label="เลื่อนรีวิวไปทางขวา"
+                  >
+                    <svg
+                      width="16"
+                      height="16"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2.5"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <polyline points="9 18 15 12 9 6" />
+                    </svg>
+                  </Button>
+                </div>
+              </div>
+
+              <div
+                ref={reviewsCarouselRef}
+                className="flex gap-5 md:gap-6 overflow-x-auto overscroll-x-contain scroll-smooth pb-2 px-1 md:px-2 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
               >
-                <CardContent className="p-4 md:p-6">
-                  <div className="flex items-center gap-3 mb-3 md:mb-4">
-                    <div className="w-12 h-12 md:w-14 md:h-14 rounded-full bg-gradient-to-br from-[#FF8400] to-[#FFD93D] flex items-center justify-center flex-shrink-0 shadow-sm">
-                      <span className="text-lg md:text-xl font-bold text-white">
-                        {testimonial.name.charAt(0)}
-                      </span>
-                    </div>
-                    <div>
-                      <p className="font-semibold text-sm md:text-base text-[#4F200D]">
-                        {testimonial.name}
-                      </p>
-                      <div className="flex gap-0.5 mt-0.5">
-                        {[...Array(5)].map((_, i) => (
-                          <StarIcon key={i} size={14} />
-                        ))}
+                {loopedTestimonials.map((testimonial, idx) => (
+                  <Card
+                    key={`${testimonial.id}-${idx}`}
+                    data-carousel-card
+                    className="min-w-[86%] sm:min-w-[72%] md:min-w-[48%] xl:min-w-[31%] border-0 shadow-lg rounded-xl md:rounded-2xl bg-[#FFFDFA] hover:shadow-xl transition-all duration-300"
+                    style={{
+                      transitionDelay: `${(idx % Math.max(testimonials.length, 1)) * 80}ms`,
+                    }}
+                  >
+                    <CardContent className="p-4 md:p-6">
+                      <div className="flex items-center gap-3 mb-3 md:mb-4">
+                        <div className="w-12 h-12 md:w-14 md:h-14 rounded-full bg-gradient-to-br from-[#FF8400] to-[#FFD93D] flex items-center justify-center flex-shrink-0 shadow-sm">
+                          <span className="text-lg md:text-xl font-bold text-white">
+                            {testimonial.name.charAt(0)}
+                          </span>
+                        </div>
+                        <div>
+                          <p className="font-semibold text-sm md:text-base text-[#4F200D]">
+                            {testimonial.name}
+                          </p>
+                          <div className="flex gap-0.5 mt-0.5">
+                            {[...Array(5)].map((_, i) => (
+                              <StarIcon
+                                key={i}
+                                size={14}
+                                filled={
+                                  i <
+                                  Math.max(
+                                    1,
+                                    Math.min(5, Math.round(testimonial.rating)),
+                                  )
+                                }
+                              />
+                            ))}
+                          </div>
+                        </div>
                       </div>
-                    </div>
-                  </div>
-                  <p className="text-xs md:text-sm xl:text-base text-[#4F200D]/80 font-light leading-relaxed italic">
-                    "{testimonial.content}"
-                  </p>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
+                      <p className="text-xs md:text-sm xl:text-base text-[#4F200D]/80 font-light leading-relaxed italic">
+                        "{testimonial.content}"
+                      </p>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       </section>
 
@@ -991,20 +1272,14 @@ export default function HomePage() {
                 พร้อมเริ่มต้นการเดินทางหรือยัง?
               </h2>
               <p className="text-sm md:text-lg text-white/60 font-light mb-6 md:mb-8 max-w-lg mx-auto">
-                สมัครรับข่าวสารเพื่อไม่พลาดข้อมูลอัปเดตและข้อเสนอสุดพิเศษ
+                สำรวจทัวร์ยอดนิยมของเรา และค้นหาประสบการณ์ใหม่ ๆ
               </p>
-              <div className="flex flex-col sm:flex-row gap-3 max-w-md md:max-w-lg mx-auto">
-                <Input
-                  type="email"
-                  placeholder="กรอกอีเมลของคุณ"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="flex-1 h-11 md:h-13 rounded-full bg-white/10 border-2 border-white/20 text-white placeholder:text-white/40 text-sm md:text-base px-4 focus:border-[#FF8400] focus:bg-white/15"
-                />
-                <Button className="h-11 md:h-13 rounded-full bg-[#FF8400] text-white hover:bg-[#e67600] px-6 md:px-8 text-sm md:text-base font-bold whitespace-nowrap shadow-lg hover:shadow-xl transition-all active:scale-95">
-                  สมัครเลย
-                </Button>
-              </div>
+              <Button
+                onClick={() => navigate("/tours")}
+                className="h-11 md:h-13 rounded-full bg-[#FF8400] text-white hover:bg-[#e67600] px-8 md:px-10 text-sm md:text-base font-bold whitespace-nowrap shadow-lg hover:shadow-xl transition-all active:scale-95"
+              >
+                สำรวจทัวร์ยอดนิยม
+              </Button>
             </div>
           </div>
         </div>

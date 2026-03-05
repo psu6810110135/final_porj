@@ -5,14 +5,7 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Cron } from '@nestjs/schedule';
-import {
-  DataSource,
-  EntityManager,
-  In,
-  LessThan,
-  Not,
-  Repository,
-} from 'typeorm';
+import { DataSource, In, LessThan, Not, Repository } from 'typeorm';
 import { Booking, BookingStatus } from './entities/booking.entity';
 import { CalculateBookingDto } from './dto/calculate-booking.dto';
 import { CreateBookingDto } from './dto/create-booking.dto';
@@ -20,7 +13,6 @@ import { UpdateBookingDto } from './dto/update-booking.dto';
 import { CancelBookingDto } from './dto/cancel-booking.dto';
 import { Tour } from '../tours/entities/tour.entity';
 import { TourSchedule } from '../tours/entities/tour-schedule.entity';
-import { BOOKING_CONFIG } from '../config/booking.config';
 
 @Injectable()
 export class BookingsService {
@@ -64,8 +56,12 @@ export class BookingsService {
     }
 
     // --- ส่วนที่ใช้คำนวณราคา (แก้ปัญหา TypeScript แล้ว) ---
-    const adultPrice = Number.isFinite(Number(tour.price)) ? Number(tour.price) : 5000;
-    const childPrice = tour.child_price ? Number(tour.child_price) : Math.floor(adultPrice * 0.6); 
+    const adultPrice = Number.isFinite(Number(tour.price))
+      ? Number(tour.price)
+      : 5000;
+    const childPrice = tour.child_price
+      ? Number(tour.child_price)
+      : Math.floor(adultPrice * 0.6);
 
     let basePrice = 0;
     let adultsCount = paxValue;
@@ -77,12 +73,14 @@ export class BookingsService {
     if (options && options.adults !== undefined) {
       adultsCount = Number(options.adults);
       childrenCount = Number(options.children || 0);
-      
+
       if (adultsCount + childrenCount !== paxValue) {
-        throw new BadRequestException('จำนวนผู้ใหญ่และเด็กไม่ตรงกับจำนวนผู้เดินทางรวม');
+        throw new BadRequestException(
+          'จำนวนผู้ใหญ่และเด็กไม่ตรงกับจำนวนผู้เดินทางรวม',
+        );
       }
-      
-      basePrice = (adultsCount * adultPrice) + (childrenCount * childPrice);
+
+      basePrice = adultsCount * adultPrice + childrenCount * childPrice;
     } else {
       basePrice = adultPrice * paxValue;
     }
@@ -98,8 +96,8 @@ export class BookingsService {
       breakdown: {
         pricePerPerson: adultPrice, // ✅ เปลี่ยนมาใช้ adultPrice แล้ว
         pax: paxValue,
-        adults: adultsCount,        // ✅ แนบจำนวนผู้ใหญ่กลับไปในบิลด้วย
-        children: childrenCount,    // ✅ แนบจำนวนเด็กกลับไปในบิลด้วย
+        adults: adultsCount, // ✅ แนบจำนวนผู้ใหญ่กลับไปในบิลด้วย
+        children: childrenCount, // ✅ แนบจำนวนเด็กกลับไปในบิลด้วย
         subtotal: basePrice,
         discountPercentage: discount > 0 ? 5 : 0,
         discountAmount: discount,
@@ -117,10 +115,7 @@ export class BookingsService {
         throw new BadRequestException('pax must be at least 1');
       }
 
-      // 1) Validate max bookings per user
-      await this.validateMaxBookingsPerUser(manager, userId);
-
-      // 2) Lock tour row to prevent concurrent overbooking
+      // 1) Lock tour row to prevent concurrent overbooking
       const tour = await manager
         .getRepository(Tour)
         .createQueryBuilder('tour')
@@ -138,7 +133,7 @@ export class BookingsService {
         throw new BadRequestException('ทัวร์นี้ไม่เปิดให้จอง');
       }
 
-      // 3) Lock & validate schedule
+      // 2) Lock & validate schedule
       const schedule = await manager.getRepository(TourSchedule).findOne({
         where: { id: createBookingDto.tourScheduleId },
         lock: { mode: 'pessimistic_write' },
@@ -245,8 +240,8 @@ export class BookingsService {
 
     // เซฟพาร์ทของรูปและเปลี่ยนสถานะเป็นรอตรวจสอบ
     booking.paymentSlipUrl = `/uploads/slips/${filename}`;
-    booking.status = BookingStatus.PENDING_VERIFY; 
-    
+    booking.status = BookingStatus.PENDING_VERIFY;
+
     await this.bookingsRepository.save(booking);
 
     return {
@@ -347,26 +342,6 @@ export class BookingsService {
     return result.affected ?? 0;
   }
 
-  private async validateMaxBookingsPerUser(
-    manager: EntityManager,
-    userId: string,
-  ): Promise<void> {
-    const count = await manager
-      .getRepository(Booking)
-      .createQueryBuilder('b')
-      .where('b.userId = :userId', { userId })
-      .andWhere('b.status IN (:...statuses)', {
-        statuses: BOOKING_CONFIG.ACTIVE_BOOKING_STATUSES,
-      })
-      .getCount();
-
-    if (count >= BOOKING_CONFIG.MAX_ACTIVE_BOOKINGS_PER_USER) {
-      throw new BadRequestException(
-        `You have reached the maximum limit of ${BOOKING_CONFIG.MAX_ACTIVE_BOOKINGS_PER_USER} active bookings`,
-      );
-    }
-  }
-
   private generateBookingReference(): string {
     const timestamp = Date.now().toString(36).toUpperCase();
     const random = Math.random().toString(36).substring(2, 6).toUpperCase();
@@ -376,7 +351,7 @@ export class BookingsService {
   private calculateDiscount(startDate: Date, basePrice: number): number {
     return 0;
   }
-  
+
   private getDaysUntilStart(startDate: Date): number {
     const now = new Date();
     const start = new Date(startDate);

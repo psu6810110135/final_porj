@@ -16,6 +16,7 @@ interface Booking {
   id: string;
   bookingReference?: string;
   tourId?: string;
+  paymentSlipUrl?: string;
   status:
     | "pending_pay"
     | "pending_verify"
@@ -100,6 +101,13 @@ const formatDate = (dateStr?: string | null) => {
 const formatPrice = (price: number) =>
   new Intl.NumberFormat("th-TH").format(price);
 
+const getAssetUrl = (path?: string) => {
+  if (!path) return "";
+  if (/^https?:\/\//i.test(path)) return path;
+  const normalized = path.startsWith("/") ? path : `/${path}`;
+  return `http://localhost:3000${normalized}`;
+};
+
 const getTravelDate = (b: Booking) => b.travelDate ?? b.startDate;
 
 const getTourCompletedDate = (b: Booking) =>
@@ -122,7 +130,7 @@ const getTourTitle = (b: Booking) =>
 
 const getBookingReference = (b: Booking) => b.bookingReference ?? b.id;
 
-const ITEMS_PER_PAGE = 6;
+const PAGE_SIZE_OPTIONS = [6, 10, 14, 20];
 
 const CANCEL_REASON_OPTIONS = [
   "เปลี่ยนแผนการเดินทาง",
@@ -235,6 +243,7 @@ export default function BookingHistoryPage() {
 
   // ── Pagination state ──
   const [currentPage, setCurrentPage] = useState(1);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
 
   const fetchBookings = async () => {
     const token = localStorage.getItem("jwt_token");
@@ -264,6 +273,11 @@ export default function BookingHistoryPage() {
         id: item.id,
         bookingReference: item.bookingReference,
         tourId: item.tourId ?? item.tour?.id,
+        paymentSlipUrl:
+          item.paymentSlipUrl ??
+          item.payment_slip_url ??
+          item.payment?.slipUrl ??
+          item.payment?.slip_url,
         status: item.status,
         totalPrice: Number(item.totalPrice ?? 0),
         pax: Number(item.pax ?? item.numberOfTravelers ?? 1),
@@ -449,17 +463,17 @@ export default function BookingHistoryPage() {
 
   // ── Pagination computed ──
   const totalItems = filteredBookings.length;
-  const totalPages = Math.max(1, Math.ceil(totalItems / ITEMS_PER_PAGE));
+  const totalPages = Math.max(1, Math.ceil(totalItems / rowsPerPage));
   const safePage = Math.min(currentPage, totalPages);
   const paginatedBookings = filteredBookings.slice(
-    (safePage - 1) * ITEMS_PER_PAGE,
-    safePage * ITEMS_PER_PAGE,
+    (safePage - 1) * rowsPerPage,
+    safePage * rowsPerPage,
   );
 
   // Reset page on filter change
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchQuery, statusFilter]);
+  }, [searchQuery, statusFilter, rowsPerPage]);
 
   const hasFewBookings = !loading && !error && bookings.length <= 2;
 
@@ -602,8 +616,8 @@ export default function BookingHistoryPage() {
                 </div>
               ) : (
                 <>
-                  {/* Mobile: Card list */}
-                  <div className="md:hidden flex flex-col gap-3">
+                  {/* Mobile + Tablet: Card list */}
+                  <div className="lg:hidden flex flex-col gap-3">
                     {paginatedBookings.map((booking) => (
                       <MobileCard
                         key={booking.id}
@@ -620,7 +634,7 @@ export default function BookingHistoryPage() {
                   </div>
 
                   {/* Desktop: Table */}
-                  <div className="hidden md:block bg-white rounded-2xl shadow-sm border border-[#F0E8E0] overflow-hidden">
+                  <div className="hidden lg:block bg-white rounded-2xl shadow-sm border border-[#F0E8E0] overflow-hidden">
                     <table className="w-full">
                       <thead>
                         <tr className="bg-[#FFF3E0] border-b border-[#F0E8E0]">
@@ -667,8 +681,11 @@ export default function BookingHistoryPage() {
                       currentPage={safePage}
                       totalPages={totalPages}
                       totalItems={totalItems}
-                      itemsPerPage={ITEMS_PER_PAGE}
+                      itemsPerPage={rowsPerPage}
+                      rowsPerPage={rowsPerPage}
+                      pageSizeOptions={PAGE_SIZE_OPTIONS}
                       onPageChange={setCurrentPage}
+                      onRowsPerPageChange={setRowsPerPage}
                     />
                   )}
                 </>
@@ -778,13 +795,19 @@ function Pagination({
   totalPages,
   totalItems,
   itemsPerPage,
+  rowsPerPage,
+  pageSizeOptions,
   onPageChange,
+  onRowsPerPageChange,
 }: {
   currentPage: number;
   totalPages: number;
   totalItems: number;
   itemsPerPage: number;
+  rowsPerPage: number;
+  pageSizeOptions: number[];
   onPageChange: (page: number) => void;
+  onRowsPerPageChange: (size: number) => void;
 }) {
   const startItem = (currentPage - 1) * itemsPerPage + 1;
   const endItem = Math.min(currentPage * itemsPerPage, totalItems);
@@ -808,9 +831,29 @@ function Pagination({
 
   return (
     <div className="flex flex-col sm:flex-row items-center justify-between gap-3 mt-4 px-1">
-      <p className="text-xs font-semibold text-[#4F200D]/40 order-2 sm:order-1">
-        แสดง {startItem}-{endItem} จาก {totalItems} รายการ
-      </p>
+      <div className="order-2 sm:order-1 flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
+        <p className="text-xs font-semibold text-[#4F200D]/40 text-center sm:text-left">
+          แสดง {startItem}-{endItem} จาก {totalItems} รายการ
+        </p>
+
+        <div className="flex items-center justify-center sm:justify-start gap-2">
+          <span className="text-[11px] font-semibold text-[#4F200D]/45 whitespace-nowrap">
+            แถวต่อหน้า
+          </span>
+          <select
+            value={rowsPerPage}
+            onChange={(e) => onRowsPerPageChange(Number(e.target.value))}
+            className="h-7 rounded-lg border border-[#EADFD3] bg-white px-2 text-xs font-bold text-[#4F200D] focus:outline-none focus:ring-2 focus:ring-[#FF8400]/30"
+            aria-label="เลือกจำนวนแถวต่อหน้า"
+          >
+            {pageSizeOptions.map((size) => (
+              <option key={size} value={size}>
+                {size}
+              </option>
+            ))}
+          </select>
+        </div>
+      </div>
 
       <div className="flex items-center gap-1 order-1 sm:order-2">
         {/* Prev */}
@@ -1179,10 +1222,12 @@ function BookingDetailModal({
   const canViewTicket = booking.status === "confirmed";
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4">
-      <div className="w-full max-w-lg bg-white rounded-2xl shadow-xl border border-[#F0E8E0] overflow-hidden">
-        <div className="px-5 py-4 border-b border-[#F0E8E0] flex items-center justify-between">
-          <h3 className="text-[#4F200D] font-bold text-lg">รายละเอียดการจอง</h3>
+    <div className="fixed inset-0 z-50 bg-black/40 flex items-end sm:items-center justify-center p-0 sm:p-4">
+      <div className="w-full sm:max-w-lg bg-white rounded-t-2xl sm:rounded-2xl shadow-xl border border-[#F0E8E0] overflow-hidden max-h-[92vh] flex flex-col">
+        <div className="px-4 sm:px-5 py-3 sm:py-4 border-b border-[#F0E8E0] flex items-center justify-between">
+          <h3 className="text-[#4F200D] font-bold text-base sm:text-lg">
+            รายละเอียดการจอง
+          </h3>
           <button
             onClick={onClose}
             className="w-8 h-8 rounded-full bg-[#F6F1E9] text-[#4F200D] hover:bg-[#ede5dc]"
@@ -1192,7 +1237,7 @@ function BookingDetailModal({
           </button>
         </div>
 
-        <div className="px-5 py-4 space-y-3 text-sm">
+        <div className="px-4 sm:px-5 py-3 sm:py-4 space-y-2.5 text-sm overflow-y-auto">
           <DetailRow label="เลขอ้างอิง" value={getBookingReference(booking)} />
           <DetailRow label="ทัวร์" value={getTourTitle(booking)} />
           <DetailRow
@@ -1240,9 +1285,35 @@ function BookingDetailModal({
               value={`฿${formatPrice(booking.refundAmount)}`}
             />
           )}
+
+          {booking.paymentSlipUrl && (
+            <div className="pt-2">
+              <p className="text-[#4F200D]/55 mb-2">สลิปที่อัปโหลด</p>
+              <a
+                href={getAssetUrl(booking.paymentSlipUrl)}
+                target="_blank"
+                rel="noreferrer"
+                className="block rounded-xl overflow-hidden border border-[#F0E8E0] hover:border-[#FF8400]/40 transition-colors"
+              >
+                <img
+                  src={getAssetUrl(booking.paymentSlipUrl)}
+                  alt="สลิปการชำระเงิน"
+                  className="w-full h-36 sm:h-44 object-contain bg-[#F6F1E9]"
+                />
+              </a>
+              <a
+                href={getAssetUrl(booking.paymentSlipUrl)}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-block mt-2 text-xs font-bold text-[#FF8400] hover:text-[#e67600]"
+              >
+                ดูภาพสลิปขนาดเต็ม
+              </a>
+            </div>
+          )}
         </div>
 
-        <div className="px-5 pb-5 pt-2 flex flex-wrap gap-2 justify-end">
+        <div className="px-4 sm:px-5 pb-4 sm:pb-5 pt-2 flex flex-wrap gap-2 justify-end">
           {booking.status === "pending_pay" && (
             <Link
               to={`/payment/${booking.id}`}
@@ -1317,10 +1388,12 @@ function WriteReviewModal({
   const tourLink = booking.tourId ? `/tours/${booking.tourId}` : "/tours";
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4">
-      <div className="w-full max-w-lg bg-white rounded-2xl shadow-xl border border-[#F0E8E0] overflow-hidden">
-        <div className="px-5 py-4 border-b border-[#F0E8E0] flex items-center justify-between">
-          <h3 className="text-[#4F200D] font-bold text-lg">เขียนรีวิวทัวร์</h3>
+    <div className="fixed inset-0 z-50 bg-black/40 flex items-end sm:items-center justify-center p-0 sm:p-4">
+      <div className="w-full sm:max-w-lg bg-white rounded-t-2xl sm:rounded-2xl shadow-xl border border-[#F0E8E0] overflow-hidden max-h-[92vh] flex flex-col">
+        <div className="px-4 sm:px-5 py-3 sm:py-4 border-b border-[#F0E8E0] flex items-center justify-between">
+          <h3 className="text-[#4F200D] font-bold text-base sm:text-lg">
+            เขียนรีวิวทัวร์
+          </h3>
           <button
             onClick={onClose}
             className="w-8 h-8 rounded-full bg-[#F6F1E9] text-[#4F200D] hover:bg-[#ede5dc]"
@@ -1330,7 +1403,7 @@ function WriteReviewModal({
           </button>
         </div>
 
-        <div className="px-5 py-4 space-y-4">
+        <div className="px-4 sm:px-5 py-3 sm:py-4 space-y-4 overflow-y-auto">
           <div>
             <p className="text-sm font-semibold text-[#4F200D]">
               {getTourTitle(booking)}
@@ -1381,7 +1454,7 @@ function WriteReviewModal({
             </div>
           )}
 
-          <div className="flex items-center justify-between gap-2">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
             <Link
               to={tourLink}
               className="text-sm font-semibold text-[#4F200D]/70 hover:text-[#FF8400]"
@@ -1389,7 +1462,7 @@ function WriteReviewModal({
               ไปหน้ารายละเอียดทัวร์
             </Link>
 
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 justify-end">
               <button
                 type="button"
                 onClick={onClose}
@@ -1461,10 +1534,12 @@ function ETicketModal({
         }
       `}</style>
 
-      <div className="ticket-print-root fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4">
-        <div className="ticket-print-card w-full max-w-2xl bg-white rounded-2xl shadow-xl border border-[#F0E8E0] overflow-hidden">
-          <div className="ticket-print-header px-5 py-4 border-b border-[#F0E8E0] flex items-center justify-between">
-            <h3 className="text-[#4F200D] font-bold text-lg">E-ticket</h3>
+      <div className="ticket-print-root fixed inset-0 z-50 bg-black/40 flex items-end sm:items-center justify-center p-0 sm:p-4">
+        <div className="ticket-print-card w-full sm:max-w-2xl bg-white rounded-t-2xl sm:rounded-2xl shadow-xl border border-[#F0E8E0] overflow-hidden max-h-[92vh] flex flex-col">
+          <div className="ticket-print-header px-4 sm:px-5 py-3 sm:py-4 border-b border-[#F0E8E0] flex items-center justify-between">
+            <h3 className="text-[#4F200D] font-bold text-base sm:text-lg">
+              E-ticket
+            </h3>
             <button
               onClick={onClose}
               className="w-8 h-8 rounded-full bg-[#F6F1E9] text-[#4F200D] hover:bg-[#ede5dc]"
@@ -1474,7 +1549,7 @@ function ETicketModal({
             </button>
           </div>
 
-          <div className="ticket-print-body px-5 py-5">
+          <div className="ticket-print-body px-4 sm:px-5 py-4 sm:py-5 overflow-y-auto">
             <div className="ticket-print-only ticket-print-ticket rounded-2xl overflow-hidden border border-[#FFD8B0] bg-[#FFF9F2] shadow-sm">
               <div className="bg-[#FF8400] px-4 py-3 flex items-center justify-between">
                 <p className="text-white text-xs font-extrabold tracking-wider uppercase">
@@ -1540,7 +1615,7 @@ function ETicketModal({
               </div>
             </div>
 
-            <div className="ticket-print-actions mt-4 flex justify-end gap-2">
+            <div className="ticket-print-actions mt-4 flex flex-wrap justify-end gap-2">
               <button
                 onClick={() => window.print()}
                 className="text-xs font-bold px-4 py-2 rounded-full bg-[#4F200D]/10 text-[#4F200D] hover:bg-[#4F200D]/15"
@@ -1594,10 +1669,10 @@ function CancelBookingModal({
   const requireDetail = reasonPreset === "อื่นๆ";
 
   return (
-    <div className="fixed inset-0 z-[60] bg-black/40 flex items-center justify-center p-4">
-      <div className="w-full max-w-md bg-white rounded-2xl shadow-xl border border-[#F0E8E0] overflow-hidden">
-        <div className="px-5 py-4 border-b border-[#F0E8E0] flex items-center justify-between">
-          <h3 className="text-[#4F200D] font-bold text-lg">
+    <div className="fixed inset-0 z-[60] bg-black/40 flex items-end sm:items-center justify-center p-0 sm:p-4">
+      <div className="w-full sm:max-w-md bg-white rounded-t-2xl sm:rounded-2xl shadow-xl border border-[#F0E8E0] overflow-hidden max-h-[92vh] flex flex-col">
+        <div className="px-4 sm:px-5 py-3 sm:py-4 border-b border-[#F0E8E0] flex items-center justify-between">
+          <h3 className="text-[#4F200D] font-bold text-base sm:text-lg">
             ยืนยันการยกเลิกการจอง
           </h3>
           <button
@@ -1610,7 +1685,7 @@ function CancelBookingModal({
           </button>
         </div>
 
-        <div className="px-5 py-4 space-y-3">
+        <div className="px-4 sm:px-5 py-3 sm:py-4 space-y-3 overflow-y-auto">
           <p className="text-sm text-[#4F200D]/70">
             การจอง{" "}
             <span className="font-semibold">
@@ -1658,7 +1733,7 @@ function CancelBookingModal({
           )}
         </div>
 
-        <div className="px-5 pb-5 pt-1 flex items-center justify-end gap-2">
+        <div className="px-4 sm:px-5 pb-4 sm:pb-5 pt-1 flex flex-wrap items-center justify-end gap-2">
           <button
             onClick={onClose}
             disabled={loading}
@@ -1691,13 +1766,15 @@ function InfoModal({
   onClose: () => void;
 }) {
   return (
-    <div className="fixed inset-0 z-[70] bg-black/40 flex items-center justify-center p-4">
-      <div className="w-full max-w-sm bg-white rounded-2xl shadow-xl border border-[#F0E8E0] overflow-hidden">
-        <div className="px-5 py-4 border-b border-[#F0E8E0]">
-          <h3 className="text-[#4F200D] font-bold text-lg">{title}</h3>
+    <div className="fixed inset-0 z-[70] bg-black/40 flex items-end sm:items-center justify-center p-0 sm:p-4">
+      <div className="w-full sm:max-w-sm bg-white rounded-t-2xl sm:rounded-2xl shadow-xl border border-[#F0E8E0] overflow-hidden max-h-[92vh] flex flex-col">
+        <div className="px-4 sm:px-5 py-3 sm:py-4 border-b border-[#F0E8E0]">
+          <h3 className="text-[#4F200D] font-bold text-base sm:text-lg">
+            {title}
+          </h3>
         </div>
 
-        <div className="px-5 py-5">
+        <div className="px-4 sm:px-5 py-4 sm:py-5 overflow-y-auto">
           <p className="text-sm text-[#4F200D]/75">{message}</p>
           <div className="mt-5 flex justify-end">
             <button

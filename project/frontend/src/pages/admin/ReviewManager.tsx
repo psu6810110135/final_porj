@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   AlertCircle,
-  CalendarDays,
   ChevronDown,
   ChevronLeft,
   ChevronRight,
@@ -473,6 +472,25 @@ export default function ReviewManager() {
   const startItem = totalItems === 0 ? 0 : (currentPage - 1) * itemsPerPage + 1;
   const endItem = Math.min(currentPage * itemsPerPage, totalItems);
 
+  const pageNumbers = useMemo(() => {
+    const pages: (number | "...")[] = [];
+    if (totalPages <= 5) {
+      for (let i = 1; i <= totalPages; i += 1) pages.push(i);
+      return pages;
+    }
+
+    pages.push(1);
+    if (currentPage > 3) pages.push("...");
+
+    const start = Math.max(2, currentPage - 1);
+    const end = Math.min(totalPages - 1, currentPage + 1);
+    for (let i = start; i <= end; i += 1) pages.push(i);
+
+    if (currentPage < totalPages - 2) pages.push("...");
+    pages.push(totalPages);
+    return pages;
+  }, [currentPage, totalPages]);
+
   return (
     <div className="w-full space-y-6 animate-in fade-in duration-500">
       <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
@@ -486,7 +504,7 @@ export default function ReviewManager() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
         <div className="bg-white p-5 sm:p-6 rounded-3xl border-0 shadow-sm flex items-center justify-between hover:shadow-md transition-shadow">
           <div>
             <p className="text-xs sm:text-sm font-bold text-[#4F200D]/50 uppercase tracking-wider">
@@ -507,7 +525,7 @@ export default function ReviewManager() {
         <div className="bg-white p-5 sm:p-6 rounded-3xl border-0 shadow-sm flex items-center justify-between hover:shadow-md transition-shadow">
           <div>
             <p className="text-xs sm:text-sm font-bold text-[#4F200D]/50 uppercase tracking-wider">
-              รีวิวแนะนำ (หน้านี้)
+              รีวิวแนะนำ
             </p>
             <p className="text-2xl sm:text-3xl font-black text-[#4F200D] mt-1">
               {recommendedCountOnPage}
@@ -517,35 +535,21 @@ export default function ReviewManager() {
             <Sparkles className="w-6 h-6 sm:w-7 sm:h-7" strokeWidth={2.5} />
           </div>
         </div>
-
-        <div className="bg-white p-5 sm:p-6 rounded-3xl border-0 shadow-sm flex items-center justify-between hover:shadow-md transition-shadow sm:col-span-2 xl:col-span-1">
-          <div>
-            <p className="text-xs sm:text-sm font-bold text-[#4F200D]/50 uppercase tracking-wider">
-              แสดงผล
-            </p>
-            <p className="text-2xl sm:text-3xl font-black text-[#4F200D] mt-1">
-              {startItem}-{endItem}
-            </p>
-          </div>
-          <div className="p-3 sm:p-4 bg-[#4F200D]/5 rounded-2xl text-[#4F200D]">
-            <CalendarDays className="w-6 h-6 sm:w-7 sm:h-7" strokeWidth={2.5} />
-          </div>
-        </div>
       </div>
 
-      <div className="bg-white p-4 sm:p-5 rounded-3xl border-0 shadow-sm flex flex-col gap-4">
-        <div className="flex flex-col xl:flex-row gap-4 justify-between items-start xl:items-center w-full">
-          <div className="relative w-full xl:w-[360px] shrink-0">
+      <div className="bg-white p-4 sm:p-5 rounded-3xl border-0 shadow-sm">
+        <div className="flex flex-col xl:flex-row gap-3 xl:items-center w-full">
+          <div className="relative w-full xl:flex-1 xl:max-w-xl">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-[#4F200D]/40 w-5 h-5" />
             <Input
               placeholder="ค้นหาชื่อลูกค้า, ทัวร์, เลขอ้างอิง, ความคิดเห็น..."
-              className="pl-12 py-5 sm:py-6 bg-[#F6F1E9]/50 border-0 rounded-2xl font-bold text-[#4F200D] placeholder:font-medium focus:bg-white focus:ring-2 focus:ring-[#FFD93D] transition-all"
+              className="pl-12 h-12 bg-[#F6F1E9]/60 border-0 rounded-2xl font-semibold text-[#4F200D] placeholder:font-medium focus:bg-white focus:ring-2 focus:ring-[#FFD93D] transition-all"
               value={searchQuery}
               onChange={(event) => setSearchQuery(event.target.value)}
             />
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 w-full xl:w-auto">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 w-full xl:w-auto xl:min-w-[530px]">
             <CustomSelect
               className={selectTriggerClass}
               value={recommendedFilter}
@@ -568,13 +572,11 @@ export default function ReviewManager() {
               options={pageSizeOptions}
             />
           </div>
-        </div>
 
-        <div className="flex justify-end">
           <Button
             variant="ghost"
             onClick={clearFilters}
-            className="text-[#4F200D]/70 hover:text-[#FF8400] hover:bg-[#FFD93D]/20 font-bold rounded-xl"
+            className="xl:ml-auto h-12 px-5 text-[#4F200D]/70 hover:text-[#FF8400] hover:bg-[#FFD93D]/20 font-bold rounded-xl"
           >
             ล้างตัวกรอง
           </Button>
@@ -756,13 +758,13 @@ export default function ReviewManager() {
         </div>
       </div>
 
-      <div className="px-4 sm:px-6 py-5 flex flex-col sm:flex-row items-center justify-between sm:justify-center gap-4 bg-white border border-[#F6F1E9] rounded-3xl">
-        <p className="text-xs sm:text-sm font-semibold text-[#4F200D]/50 sm:absolute sm:left-10">
+      <div className="px-4 sm:px-6 py-4 flex flex-col sm:flex-row items-center justify-between gap-4 bg-white border border-[#F6F1E9] rounded-3xl">
+        <p className="text-xs sm:text-sm font-semibold text-[#4F200D]/50">
           แสดง <span className="text-[#FF8400]">{startItem}</span> ถึง{" "}
           <span className="text-[#FF8400]">{endItem}</span> จาก{" "}
           <span className="text-[#FF8400]">{totalItems}</span> รีวิว
         </p>
-        <div className="flex items-center gap-1 bg-[#F6F1E9]/30 p-1.5 rounded-2xl border-2 border-[#F6F1E9] z-10">
+        <div className="flex items-center gap-1 bg-[#F6F1E9]/30 p-1.5 rounded-2xl border-2 border-[#F6F1E9]">
           <Button
             variant="ghost"
             size="icon"
@@ -773,8 +775,30 @@ export default function ReviewManager() {
             <ChevronLeft className="w-4 h-4" />
           </Button>
 
-          <div className="px-3 text-sm font-black text-[#4F200D]">
-            {currentPage} / {Math.max(1, totalPages)}
+          <div className="flex items-center gap-1 mx-1">
+            {pageNumbers.map((page, idx) =>
+              page === "..." ? (
+                <span
+                  key={`ellipsis-${idx}`}
+                  className="px-1 text-[#4F200D]/35 text-sm"
+                >
+                  ...
+                </span>
+              ) : (
+                <Button
+                  key={page}
+                  variant="ghost"
+                  onClick={() => setCurrentPage(page)}
+                  className={`h-8 min-w-8 px-2 rounded-xl text-sm font-black transition-all ${
+                    currentPage === page
+                      ? "bg-[#FF8400] text-white shadow-sm"
+                      : "text-[#4F200D]/60 hover:bg-[#FFD93D]/30 hover:text-[#FF8400]"
+                  }`}
+                >
+                  {page}
+                </Button>
+              ),
+            )}
           </div>
 
           <Button

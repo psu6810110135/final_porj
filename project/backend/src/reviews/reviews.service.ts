@@ -122,7 +122,7 @@ export class ReviewsService {
     const safeLimit =
       Number.isFinite(limit) && limit > 0 ? Math.min(limit, 12) : 6;
 
-    return this.reviewRepository
+    const recommended = await this.reviewRepository
       .createQueryBuilder('review')
       .leftJoin('review.user', 'user')
       .leftJoin('review.tour', 'tour')
@@ -145,6 +145,43 @@ export class ReviewsService {
       .orderBy('review.createdAt', 'DESC')
       .take(safeLimit)
       .getMany();
+
+    if (recommended.length >= safeLimit) {
+      return recommended;
+    }
+
+    const fallback = await this.reviewRepository
+      .createQueryBuilder('review')
+      .leftJoin('review.user', 'user')
+      .leftJoin('review.tour', 'tour')
+      .select([
+        'review.id',
+        'review.rating',
+        'review.comment',
+        'review.is_recommended',
+        'review.createdAt',
+        'user.id',
+        'user.username',
+        'user.full_name',
+        'user.first_name',
+        'user.last_name',
+        'tour.id',
+        'tour.title',
+      ])
+      .where("COALESCE(TRIM(review.comment), '') <> ''")
+      .andWhere(
+        recommended.length > 0
+          ? 'review.id NOT IN (:...recommendedIds)'
+          : '1=1',
+        {
+          recommendedIds: recommended.map((item) => item.id),
+        },
+      )
+      .orderBy('review.createdAt', 'DESC')
+      .take(Math.max(0, safeLimit - recommended.length))
+      .getMany();
+
+    return [...recommended, ...fallback];
   }
 
   async findForAdmin(

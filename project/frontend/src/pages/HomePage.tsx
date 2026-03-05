@@ -332,31 +332,8 @@ export default function HomePage() {
   ];
 
   const [topTours, setTopTours] = useState<TourCardData[]>(defaultDestinations);
-  const defaultTestimonials: TestimonialData[] = [
-    {
-      id: "fallback-1",
-      name: "นเรศ วงวิไล",
-      content:
-        "ประสบการณ์เที่ยวที่ดีที่สุด! ไกด์น่ารักมาก วิวสวยหลักล้าน ทุกอย่างจัดการได้เป๊ะมาก",
-      rating: 5,
-    },
-    {
-      id: "fallback-2",
-      name: "ยศธร รัตนาประสิทธิ์",
-      content:
-        "จองง่ายมาก แอปช่วยวางแผนทริปได้แบบไม่ต้องกังวลเลย แนะนำแพ็กเกจเขาสกมาก ๆ",
-      rating: 5,
-    },
-    {
-      id: "fallback-3",
-      name: "จันทรวิมล พงษ์ธนาพัฒน์",
-      content:
-        "แนะนำเลยสำหรับครอบครัว เด็ก ๆ ชอบกิจกรรมที่ภูเก็ตมาก ปีหน้ามาจองซ้ำแน่นอน!",
-      rating: 5,
-    },
-  ];
-  const [testimonials, setTestimonials] =
-    useState<TestimonialData[]>(defaultTestimonials);
+  const [testimonials, setTestimonials] = useState<TestimonialData[]>([]);
+  const [testimonialsLoading, setTestimonialsLoading] = useState(true);
 
   // ── Hero text animation ──
   const [heroReady, setHeroReady] = useState(false);
@@ -449,6 +426,8 @@ export default function HomePage() {
 
   // ── Fetch recommended reviews for testimonial section ──
   useEffect(() => {
+    setTestimonialsLoading(true);
+
     fetch(`http://localhost:3000/api/v1/reviews/recommended?limit=6`)
       .then((res) => {
         if (!res.ok) {
@@ -457,10 +436,7 @@ export default function HomePage() {
         return res.json();
       })
       .then((data: any[]) => {
-        if (!Array.isArray(data) || data.length === 0) {
-          setTestimonials(defaultTestimonials);
-          return;
-        }
+        if (!Array.isArray(data) || data.length === 0) return;
 
         const mapped = data
           .map((review) => {
@@ -482,10 +458,13 @@ export default function HomePage() {
           .filter((item) => item.content.length > 0)
           .slice(0, 6);
 
-        setTestimonials(mapped.length > 0 ? mapped : defaultTestimonials);
+        setTestimonials(mapped);
       })
       .catch(() => {
-        setTestimonials(defaultTestimonials);
+        setTestimonials([]);
+      })
+      .finally(() => {
+        setTestimonialsLoading(false);
       });
   }, []);
 
@@ -987,48 +966,75 @@ export default function HomePage() {
               จากนักเดินทาง
             </p>
           </div>
-          <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-5 md:gap-6">
-            {testimonials.map((testimonial, idx) => (
-              <Card
-                key={testimonial.id}
-                className={`border-0 shadow-lg rounded-xl md:rounded-2xl bg-[#FFFDFA] hover:shadow-xl transition-all duration-300`}
-                style={{ transitionDelay: `${idx * 100}ms` }}
-              >
-                <CardContent className="p-4 md:p-6">
-                  <div className="flex items-center gap-3 mb-3 md:mb-4">
-                    <div className="w-12 h-12 md:w-14 md:h-14 rounded-full bg-gradient-to-br from-[#FF8400] to-[#FFD93D] flex items-center justify-center flex-shrink-0 shadow-sm">
-                      <span className="text-lg md:text-xl font-bold text-white">
-                        {testimonial.name.charAt(0)}
-                      </span>
+          {testimonialsLoading ? (
+            <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-5 md:gap-6">
+              {Array.from({ length: 3 }, (_, idx) => (
+                <Card
+                  key={`review-skeleton-${idx}`}
+                  className="border-0 shadow-lg rounded-xl md:rounded-2xl bg-[#FFFDFA]"
+                >
+                  <CardContent className="p-4 md:p-6 animate-pulse">
+                    <div className="h-5 w-1/2 bg-[#E8DFD5] rounded mb-3" />
+                    <div className="h-4 w-1/3 bg-[#EFE7DE] rounded mb-4" />
+                    <div className="space-y-2">
+                      <div className="h-3 bg-[#EFE7DE] rounded" />
+                      <div className="h-3 bg-[#EFE7DE] rounded" />
+                      <div className="h-3 w-4/5 bg-[#EFE7DE] rounded" />
                     </div>
-                    <div>
-                      <p className="font-semibold text-sm md:text-base text-[#4F200D]">
-                        {testimonial.name}
-                      </p>
-                      <div className="flex gap-0.5 mt-0.5">
-                        {[...Array(5)].map((_, i) => (
-                          <StarIcon
-                            key={i}
-                            size={14}
-                            filled={
-                              i <
-                              Math.max(
-                                1,
-                                Math.min(5, Math.round(testimonial.rating)),
-                              )
-                            }
-                          />
-                        ))}
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          ) : testimonials.length === 0 ? (
+            <div className="max-w-2xl mx-auto bg-[#FFFDFA] rounded-2xl border border-[#E8DFD5] px-6 py-8 text-center shadow-sm">
+              <p className="text-sm md:text-base font-semibold text-[#4F200D]/70">
+                ยังไม่มีรีวิวที่พร้อมแสดงผลในขณะนี้
+              </p>
+            </div>
+          ) : (
+            <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-5 md:gap-6">
+              {testimonials.map((testimonial, idx) => (
+                <Card
+                  key={testimonial.id}
+                  className={`border-0 shadow-lg rounded-xl md:rounded-2xl bg-[#FFFDFA] hover:shadow-xl transition-all duration-300`}
+                  style={{ transitionDelay: `${idx * 100}ms` }}
+                >
+                  <CardContent className="p-4 md:p-6">
+                    <div className="flex items-center gap-3 mb-3 md:mb-4">
+                      <div className="w-12 h-12 md:w-14 md:h-14 rounded-full bg-gradient-to-br from-[#FF8400] to-[#FFD93D] flex items-center justify-center flex-shrink-0 shadow-sm">
+                        <span className="text-lg md:text-xl font-bold text-white">
+                          {testimonial.name.charAt(0)}
+                        </span>
+                      </div>
+                      <div>
+                        <p className="font-semibold text-sm md:text-base text-[#4F200D]">
+                          {testimonial.name}
+                        </p>
+                        <div className="flex gap-0.5 mt-0.5">
+                          {[...Array(5)].map((_, i) => (
+                            <StarIcon
+                              key={i}
+                              size={14}
+                              filled={
+                                i <
+                                Math.max(
+                                  1,
+                                  Math.min(5, Math.round(testimonial.rating)),
+                                )
+                              }
+                            />
+                          ))}
+                        </div>
                       </div>
                     </div>
-                  </div>
-                  <p className="text-xs md:text-sm xl:text-base text-[#4F200D]/80 font-light leading-relaxed italic">
-                    "{testimonial.content}"
-                  </p>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
+                    <p className="text-xs md:text-sm xl:text-base text-[#4F200D]/80 font-light leading-relaxed italic">
+                      "{testimonial.content}"
+                    </p>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
         </div>
       </section>
 

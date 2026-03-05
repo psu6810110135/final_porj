@@ -1,7 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
 import { useNavigate } from "react-router-dom";
 
 import Navbar from "@/components/Navbar";
@@ -286,7 +285,6 @@ function RichDropdown({
 // ═══════════════════════════════════════════════════════════════════════════════
 
 export default function HomePage() {
-  const [email, setEmail] = useState("");
   const navigate = useNavigate();
 
   // Filter states
@@ -439,6 +437,7 @@ export default function HomePage() {
         if (!Array.isArray(data) || data.length === 0) return;
 
         const mapped = data
+          .filter((review) => review?.is_recommended === true)
           .map((review) => {
             const reviewUser = review?.user || {};
             const fullName =
@@ -1060,20 +1059,14 @@ export default function HomePage() {
                 พร้อมเริ่มต้นการเดินทางหรือยัง?
               </h2>
               <p className="text-sm md:text-lg text-white/60 font-light mb-6 md:mb-8 max-w-lg mx-auto">
-                สมัครรับข่าวสารเพื่อไม่พลาดข้อมูลอัปเดตและข้อเสนอสุดพิเศษ
+                สำรวจทัวร์ยอดนิยมของเรา และค้นหาประสบการณ์ใหม่ ๆ
               </p>
-              <div className="flex flex-col sm:flex-row gap-3 max-w-md md:max-w-lg mx-auto">
-                <Input
-                  type="email"
-                  placeholder="กรอกอีเมลของคุณ"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="flex-1 h-11 md:h-13 rounded-full bg-white/10 border-2 border-white/20 text-white placeholder:text-white/40 text-sm md:text-base px-4 focus:border-[#FF8400] focus:bg-white/15"
-                />
-                <Button className="h-11 md:h-13 rounded-full bg-[#FF8400] text-white hover:bg-[#e67600] px-6 md:px-8 text-sm md:text-base font-bold whitespace-nowrap shadow-lg hover:shadow-xl transition-all active:scale-95">
-                  สมัครเลย
-                </Button>
-              </div>
+              <Button
+                onClick={() => navigate("/tours")}
+                className="h-11 md:h-13 rounded-full bg-[#FF8400] text-white hover:bg-[#e67600] px-8 md:px-10 text-sm md:text-base font-bold whitespace-nowrap shadow-lg hover:shadow-xl transition-all active:scale-95"
+              >
+                สำรวจทัวร์ยอดนิยม
+              </Button>
             </div>
           </div>
         </div>

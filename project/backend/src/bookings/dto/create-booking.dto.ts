@@ -9,6 +9,7 @@ import {
   ValidateNested,
   IsUUID,
   ValidateIf,
+  Matches,
 } from 'class-validator';
 import { Type, Transform } from 'class-transformer';
 
@@ -20,6 +21,9 @@ class ContactInfoDto {
   email!: string;
 
   @IsString()
+  @Matches(/^\d{10}$/, {
+    message: 'phone must contain exactly 10 digits',
+  })
   phone!: string;
 }
 

@@ -265,14 +265,15 @@ export default function Navbar({ activePage = "home" }: NavbarProps) {
 
   // Mobile top icon button style
   const mobileIconBtn = (active = false) =>
-    `flex flex-col items-center justify-center gap-1 px-1.5 sm:px-2.5 py-1 rounded-xl transition-all duration-200 ${
+    `flex flex-col items-center justify-center gap-1 px-2 sm:px-3 py-1 rounded-xl transition-all duration-200 ${
       active ? "text-[#FF8400]" : "text-[#6B4226] hover:text-[#FF8400]"
     }`;
 
   const iconBtnBase =
-    "w-11 h-11 sm:w-12 sm:h-12 md:w-[52px] md:h-[52px] lg:w-[58px] lg:h-[58px] rounded-full flex items-center justify-center p-0 transition-all duration-200 border border-[#F0E8E0]";
+    "w-10 h-10 sm:w-11 sm:h-11 md:w-11 md:h-11 lg:w-12 lg:h-12 rounded-full flex items-center justify-center p-0 transition-all duration-200 border border-[#F0E8E0]";
 
-  const userAvatarBtnClass = `${iconBtnBase} relative overflow-hidden bg-[#FFF3E0] border-[#FF8400]/30 hover:bg-[#FFE7CC]`;
+  const userAvatarBtnClass =
+    "w-10 h-10 sm:w-11 sm:h-11 md:w-11 md:h-11 lg:w-12 lg:h-12 relative overflow-hidden rounded-full flex items-center justify-center transition-all duration-200 bg-[#FFF3E0] border border-[#FF8400]/30 hover:bg-[#FFE7CC]";
 
   return (
     <>
@@ -365,9 +366,9 @@ export default function Navbar({ activePage = "home" }: NavbarProps) {
                   <Link
                     key={item.key}
                     to={item.to}
-                    className={`flex items-center gap-1.5 ${linkClass(item.key)}`}
+                    className={`flex items-center gap-1.5 md:p-1.5 md:rounded-full lg:p-0 ${linkClass(item.key)}`}
                   >
-                    <item.Icon className="w-[18px] h-[18px] lg:w-5 lg:h-5 flex-shrink-0" />
+                    <item.Icon className="w-6 h-6 lg:w-5 lg:h-5 flex-shrink-0" />
                     <span className="hidden lg:inline text-base xl:text-lg">
                       {item.label}
                     </span>
@@ -377,28 +378,28 @@ export default function Navbar({ activePage = "home" }: NavbarProps) {
               {/* Mobile: All 4 nav icons centered */}
               <div className="flex md:hidden items-center gap-0.5 sm:gap-1">
                 <Link to="/" className={mobileIconBtn(activePage === "home")}>
-                  <HomeIcon className="w-4 h-4 sm:w-5 sm:h-5" />
+                  <HomeIcon className="w-5 h-5 sm:w-6 sm:h-6" />
                   <span className="mobile-nav-label">หน้าหลัก</span>
                 </Link>
                 <Link
                   to="/tours"
                   className={mobileIconBtn(activePage === "tours")}
                 >
-                  <CompassIcon className="w-4 h-4 sm:w-5 sm:h-5" />
+                  <CompassIcon className="w-5 h-5 sm:w-6 sm:h-6" />
                   <span className="mobile-nav-label">ทัวร์</span>
                 </Link>
                 <Link
                   to="/about"
                   className={mobileIconBtn(activePage === "about")}
                 >
-                  <InfoIcon className="w-4 h-4 sm:w-5 sm:h-5" />
+                  <InfoIcon className="w-5 h-5 sm:w-6 sm:h-6" />
                   <span className="mobile-nav-label">เกี่ยวกับ</span>
                 </Link>
                 <Link
                   to="/contact"
                   className={mobileIconBtn(activePage === "contact")}
                 >
-                  <PhoneIcon className="w-4 h-4 sm:w-5 sm:h-5" />
+                  <PhoneIcon className="w-5 h-5 sm:w-6 sm:h-6" />
                   <span className="mobile-nav-label">ติดต่อ</span>
                 </Link>
               </div>
@@ -427,9 +428,9 @@ export default function Navbar({ activePage = "home" }: NavbarProps) {
                     aria-haspopup="menu"
                     aria-label="เปิดเมนูผู้ใช้"
                   >
-                    <UserIcon className="relative z-10 w-7 h-7 md:w-8 md:h-8 text-[#4F200D]" />
+                    <UserIcon className="relative z-10 w-5 h-5 lg:w-6 lg:h-6 text-[#4F200D]" />
                     <ChevronDownIcon
-                      className={`absolute z-20 right-1.5 bottom-1.5 w-3 h-3 p-[1px] rounded-full bg-white/95 text-[#4F200D] transition-transform duration-200 ${showUserDropdown ? "rotate-180" : ""}`}
+                      className={`absolute z-20 right-1 bottom-1 w-2.5 h-2.5 p-[1px] rounded-full bg-white/95 text-[#4F200D] transition-transform duration-200 ${showUserDropdown ? "rotate-180" : ""}`}
                     />
                   </button>
 
@@ -470,7 +471,7 @@ export default function Navbar({ activePage = "home" }: NavbarProps) {
                     className={userAvatarBtnClass}
                     aria-label="เข้าสู่ระบบ"
                   >
-                    <UserIcon className="w-7 h-7 md:w-8 md:h-8 text-[#4F200D]" />
+                    <UserIcon className="w-5 h-5 lg:w-6 lg:h-6 text-[#4F200D]" />
                   </button>
                 </Link>
               )}

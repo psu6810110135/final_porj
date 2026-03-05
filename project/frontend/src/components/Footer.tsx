@@ -52,28 +52,28 @@ export default function Footer() {
   const year = new Date().getFullYear();
 
   return (
-    <footer className="bg-[#4F200D] text-white py-4 sm:py-5 md:py-6 lg:py-9 rounded-t-[20px] md:rounded-t-[24px] lg:rounded-t-[44px]">
+    <footer className="bg-[#4F200D] text-white py-3 sm:py-4 md:py-5 lg:py-9 rounded-t-[20px] md:rounded-t-[24px] lg:rounded-t-[44px]">
       <div className="max-w-[1920px] mx-auto px-4 sm:px-5 md:px-6 lg:px-8">
         {/* Compact footer for phone/tablet */}
-        <div className="lg:hidden space-y-3 sm:space-y-4">
-          <div className="flex items-center gap-2.5">
+        <div className="lg:hidden space-y-2.5 sm:space-y-3">
+          <div className="flex items-center gap-2">
             <img
               src={logoIconImage}
               alt="Thai Tours Icon"
-              className="h-8 sm:h-9 w-auto object-contain"
+              className="h-7 sm:h-8 w-auto object-contain"
             />
-            <p className="text-xs sm:text-sm font-extralight leading-snug text-white/85">
+            <p className="text-[11px] sm:text-xs font-extralight leading-snug text-white/85">
               เที่ยวมั่นใจ พร้อมบริการพรีเมียมทุกเส้นทาง
             </p>
           </div>
 
-          <div className="flex flex-wrap gap-x-3 gap-y-1.5">
+          <div className="flex flex-wrap gap-x-2.5 gap-y-1">
             {compactLinks.map(({ label, to, href }) =>
               to ? (
                 <Link
                   key={label}
                   to={to}
-                  className="text-xs sm:text-sm text-white/85 hover:text-white transition-colors"
+                  className="text-[12px] sm:text-xs text-white/85 hover:text-white transition-colors"
                 >
                   {label}
                 </Link>
@@ -81,7 +81,7 @@ export default function Footer() {
                 <a
                   key={label}
                   href={href}
-                  className="text-xs sm:text-sm text-white/85 hover:text-white transition-colors"
+                  className="text-[12px] sm:text-xs text-white/85 hover:text-white transition-colors"
                 >
                   {label}
                 </a>
@@ -89,15 +89,15 @@ export default function Footer() {
             )}
           </div>
 
-          <div className="flex items-center gap-2.5">
+          <div className="flex items-center gap-2">
             {socialLinks.map(({ name, href, Icon }) => (
               <a
                 key={name}
                 href={href}
                 aria-label={name}
-                className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-[#F6F1E9] text-[#4F200D] flex items-center justify-center hover:bg-white transition-colors"
+                className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-[#F6F1E9] text-[#4F200D] flex items-center justify-center hover:bg-white transition-colors"
               >
-                <Icon className="w-4 h-4" />
+                <Icon className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
               </a>
             ))}
           </div>
@@ -175,7 +175,7 @@ export default function Footer() {
         </div>
 
         {/* Bottom */}
-        <div className="border-t border-white/20 pt-2.5 sm:pt-3 md:pt-4 mt-4 lg:mt-0">
+        <div className="border-t border-white/20 pt-2 sm:pt-2.5 md:pt-4 mt-3 lg:mt-0">
           <p className="text-[11px] sm:text-xs text-white/80 text-center md:text-left">
             © {year} Thai Tours Service. All rights reserved.
           </p>

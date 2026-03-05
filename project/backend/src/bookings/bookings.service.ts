@@ -215,7 +215,7 @@ export class BookingsService {
         specialRequests: createBookingDto.specialRequests,
         selectedOptions: createBookingDto.selectedOptions,
         status: BookingStatus.PENDING_PAY,
-        paymentDeadline: new Date(Date.now() + 24 * 60 * 60 * 1000),
+        paymentDeadline: new Date(Date.now() + 15 * 60 * 1000),
       });
 
       const savedBooking = await manager.save(booking);

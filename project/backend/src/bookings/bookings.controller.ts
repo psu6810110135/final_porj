@@ -9,12 +9,19 @@ import {
   Request,
   ParseUUIDPipe,
   BadRequestException,
+  UseInterceptors,
+  UploadedFile,
+  Req,
+  UnauthorizedException,
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { BookingsService } from './bookings.service';
 import { CalculateBookingDto } from './dto/calculate-booking.dto';
 import { CreateBookingDto } from './dto/create-booking.dto';
 import { CancelBookingDto } from './dto/cancel-booking.dto';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { diskStorage } from 'multer';
+import { extname } from 'path';
 
 @Controller('api/v1/bookings')
 export class BookingsController {
@@ -78,5 +85,40 @@ export class BookingsController {
       throw new BadRequestException('User not authenticated');
     }
     return this.bookingsService.cancelBooking(id, cancelBookingDto, userId);
+  }
+
+  @UseGuards(AuthGuard('jwt'))
+  @Post(':id/upload-slip')
+  @UseInterceptors(
+    FileInterceptor('file', {
+      storage: diskStorage({
+        destination: './uploads/slips',
+        filename: (req, file, cb) => {
+          const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
+          cb(null, `slip-${uniqueSuffix}${extname(file.originalname)}`);
+        },
+      }),
+      limits: { fileSize: 5 * 1024 * 1024 },
+    }),
+  )
+  async uploadSlip(
+    @Param('id') id: string,
+    @UploadedFile() file: Express.Multer.File,
+    @Req() req: any, // เก็บ req ไว้เพื่อเข้าไปดูว่าข้างในมีอะไร
+  ) {
+    if (!file) {
+      throw new BadRequestException('กรุณาอัปโหลดไฟล์รูปภาพ');
+    }
+
+    // 🌟 จุดเปลี่ยนอยู่ตรงนี้ครับ: 
+    // ถ้า req.user.id เป็น undefined ให้ลองใช้ req.user.userId หรือ req.user.sub
+    // หรือลอง console.log(req.user) ใน Terminal ดูว่าในนั้นมีชื่อฟิลด์ว่าอะไร
+    const userId = req.user?.id || req.user?.userId || req.user?.sub;
+    
+    if (!userId) {
+       throw new UnauthorizedException('ไม่พบข้อมูล User ID ในระบบ');
+    }
+
+    return this.bookingsService.uploadPaymentSlip(id, file.filename, userId);
   }
 }

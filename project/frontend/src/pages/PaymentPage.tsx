@@ -10,8 +10,15 @@ export default function PaymentPage() {
   // State สำหรับเก็บข้อมูล
   const [amount, setAmount] = useState(location.state?.amount || 0);
   const [qrPayload, setQrPayload] = useState(''); // เก็บโค้ดยาวๆ สำหรับสร้าง QR
-  const [paymentStatus, setPaymentStatus] = useState<'pending' | 'approved' | 'rejected' | 'expired'>('pending');
+  
+  // ✨ แก้ไข Type ให้รองรับสถานะ 'pending_verify' ตอนส่งสลิปเสร็จ
+  const [paymentStatus, setPaymentStatus] = useState<'pending' | 'pending_verify' | 'approved' | 'rejected' | 'expired'>('pending');
   const [timeLeft, setTimeLeft] = useState(900); // 15 นาที
+
+  // ✨ State ที่เพิ่มมาใหม่สำหรับระบบอัปโหลดสลิป
+  const [file, setFile] = useState<File | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
 
   // 1. ดึงข้อมูล QR Code จาก Backend (ทำงานครั้งแรกครั้งเดียว)
   useEffect(() => {
@@ -68,22 +75,14 @@ export default function PaymentPage() {
         // เช็คว่า id มีค่าไหม ก่อนยิง API
         if (!id) return;
 
-        // ยิงเช็คสถานะการจ่ายเงิน (URL ต้องตรงกับ Backend)
-        // เนื่องจาก route เราคือ /payments/:id/status (เช็คใน Controller อีกทีว่าใช้ paymentId หรือ bookingId)
-        // ถ้า API รับ paymentId แต่เรามี bookingId อาจต้องปรับ Backend นิดหน่อย 
-        // *สมมติว่า Backend ค้นหาจาก BookingId ได้ หรือเราแก้ให้ส่ง paymentId กลับมาพร้อม QR*
-        
-        // ลองยิงไปที่ route นี้ (ถ้า Backend คุณใช้ bookingId ในการเช็ค)
         const response = await fetch(`http://localhost:3000/api/v1/bookings/${id}`); 
-        // หรือถ้าต้องเช็คที่ payment โดยตรง ต้องแน่ใจว่าได้ paymentId มาแล้ว
         
         if (response.ok) {
             const data = await response.json();
-            // ปรับเงื่อนไขตามสิ่งที่ Backend ส่งกลับมา
             if (data.status === 'confirmed' || data.status === 'paid') { 
                 setPaymentStatus('approved');
                 clearInterval(interval);
-                setTimeout(() => navigate('/'), 3000);
+                setTimeout(() => navigate('/booking-history'), 3000); // ✨ แก้กลับไปหน้าประวัติ
             }
         }
       } catch (error) {
@@ -96,6 +95,59 @@ export default function PaymentPage() {
     }
     return () => clearInterval(interval);
   }, [id, navigate, paymentStatus]);
+
+  // ✨ 5. ฟังก์ชันจัดการการอัปโหลดสลิป (เพิ่มใหม่)
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0) {
+      const selectedFile = e.target.files[0];
+      setFile(selectedFile);
+      setPreviewUrl(URL.createObjectURL(selectedFile));
+    }
+  };
+
+  const handleUploadSubmit = async () => {
+    if (!file) return;
+    setIsUploading(true);
+    
+    // 🔍 เช็คว่า Token มีอยู่จริงไหมใน LocalStorage
+    const token = localStorage.getItem('jwt_token'); 
+    console.log("Token ที่ดึงมาจาก LocalStorage:", token);
+
+    if (!token) {
+      alert("ไม่พบ Token! กรุณาล็อกอินใหม่");
+      setIsUploading(false);
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append('file', file);
+
+    try {
+      const res = await fetch(`http://localhost:3000/api/v1/bookings/${id}/upload-slip`, {
+        method: 'POST',
+        headers: {
+          // 🌟 ใส่ Bearer ตรงๆ แบบนี้เพื่อความชัวร์ (ตรวจสอบว่ามีช่องว่างหลัง Bearer)
+          'Authorization': `Bearer ${token}` 
+        },
+        body: formData,
+      });
+
+      if (res.ok) {
+        setPaymentStatus('pending_verify');
+        alert('ส่งสลิปสำเร็จ! ระบบกำลังรอการตรวจสอบจากแอดมิน');
+        setTimeout(() => navigate('/booking-history'), 2000); 
+      } else {
+        // 🌟 ดู Error ละเอียดจากหลังบ้าน
+        const err = await res.json();
+        console.error("Server Error:", err);
+        alert(`เกิดข้อผิดพลาด: ${err.message || 'ไม่สามารถอัปโหลดได้'}`);
+      }
+    } catch (error) {
+      alert('ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้');
+    } finally {
+      setIsUploading(false);
+    }
+  };
 
   // จัดรูปแบบเวลา
   const formatTime = (seconds: number) => {
@@ -142,6 +194,15 @@ export default function PaymentPage() {
               </div>
             )}
 
+            {/* ✨ Overlay: รอแอดมินตรวจสอบ (เพิ่มใหม่) */}
+            {paymentStatus === 'pending_verify' && (
+              <div className="absolute inset-0 flex flex-col items-center justify-center text-orange-500 z-10 animate-in fade-in zoom-in bg-white/80">
+                 <div className="text-6xl mb-2">📄</div>
+                 <p className="font-bold bg-white px-4 py-1 rounded-full border border-orange-200 shadow-sm">ส่งสลิปแล้ว</p>
+                 <p className="text-sm mt-2 font-medium">รอแอดมินตรวจสอบ</p>
+              </div>
+            )}
+
             {/* Overlay: สำเร็จ */}
             {paymentStatus === 'approved' && (
               <div className="absolute inset-0 flex flex-col items-center justify-center text-green-500 z-10 animate-in fade-in zoom-in">
@@ -171,7 +232,6 @@ export default function PaymentPage() {
           {/* ปุ่มรีโหลด */}
           {paymentStatus === 'expired' && (
             <button 
-              // ⚠️ เปลี่ยน path '/my-bookings' ให้ตรงกับ URL หน้าประวัติการจองของคุณนะครับ
               onClick={() => navigate('/booking-history')} 
               className="w-full bg-orange-500 hover:bg-orange-600 text-white font-bold py-3 rounded-lg mt-4"
             >
@@ -189,6 +249,42 @@ export default function PaymentPage() {
             </div>
           )}
         </div>
+
+        {/* ✨ ส่วนฟอร์มอัปโหลดสลิปที่เพิ่มมาใหม่ (แสดงตอนที่ยังไม่หมดเวลา) */}
+        {paymentStatus === 'pending' && (
+          <div className="mt-6 border-t border-gray-200 pt-6 text-left">
+            <p className="text-sm font-bold text-gray-700 mb-3">แนบสลิปการโอนเงิน</p>
+            <input 
+              type="file" 
+              accept="image/*" 
+              onChange={handleFileChange}
+              className="block w-full text-sm text-gray-500
+                file:mr-4 file:py-2 file:px-4
+                file:rounded-full file:border-0
+                file:text-sm file:font-semibold
+                file:bg-orange-50 file:text-orange-600
+                hover:file:bg-orange-100 cursor-pointer mb-3"
+            />
+
+            {previewUrl && (
+              <div className="mb-4 text-center">
+                <img src={previewUrl} alt="Slip Preview" className="mx-auto h-32 object-contain rounded-md shadow-sm border border-gray-200" />
+              </div>
+            )}
+
+            <button 
+              onClick={handleUploadSubmit}
+              disabled={isUploading || !file}
+              className={`w-full py-3 rounded-xl font-bold text-white transition-all 
+                ${(!file || isUploading) 
+                  ? 'bg-gray-300 cursor-not-allowed' 
+                  : 'bg-orange-500 hover:bg-orange-600 shadow-md'}`}
+            >
+              {isUploading ? 'กำลังส่งข้อมูล...' : 'ยืนยันการโอนเงินด้วยสลิป'}
+            </button>
+          </div>
+        )}
+
       </div>
     </div>
   );

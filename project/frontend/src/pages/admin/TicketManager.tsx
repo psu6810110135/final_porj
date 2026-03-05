@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import axios from "axios";
-import { Search, Mail, Phone, Calendar, Loader2, Hash } from "lucide-react";
+import { Search, Mail, Phone, Calendar, Loader2, Hash, Pencil, X, Check } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 
@@ -25,6 +25,10 @@ export default function TicketManager() {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
 
+  // State สำหรับ Mini Pop-up เปลี่ยนสถานะ
+  const [editingTicket, setEditingTicket] = useState<TicketData | null>(null);
+  const [draftStatus, setDraftStatus] = useState<string>("");
+
   const fetchTickets = async () => {
     setLoading(true);
     try {
@@ -47,13 +51,28 @@ export default function TicketManager() {
     fetchTickets();
   }, []);
 
-  const handleStatusChange = async (id: string, newStatus: string) => {
+  const openStatusModal = (ticket: TicketData) => {
+    setEditingTicket(ticket);
+    setDraftStatus(ticket.status);
+  };
+
+  const handleSaveStatus = async () => {
+    if (!editingTicket) return;
+    const id = editingTicket.id;
+    const newStatus = draftStatus;
+    
+    setEditingTicket(null); // ปิด Pop-up ทันที (Optimistic)
+    
+    if (newStatus === editingTicket.status) return; // ไม่มีการเปลี่ยนแปลง
+
+    const originalTickets = [...tickets];
+    setTickets(tickets.map(t => t.id === id ? { ...t, status: newStatus as any } : t));
+    
     try {
       await axios.patch(`http://localhost:3000/api/v1/tickets/${id}`, { status: newStatus }, { headers: getAuthHeader() });
-      setTickets(tickets.map(t => t.id === id ? { ...t, status: newStatus as any } : t));
     } catch (error) {
       alert("อัปเดตสถานะล้มเหลว");
-      setTickets(tickets.map(t => t.id === id ? { ...t, status: newStatus as any } : t));
+      setTickets(originalTickets); // ย้อนกลับถ้า API error
     }
   };
 
@@ -66,7 +85,6 @@ export default function TicketManager() {
       `[พิมพ์ข้อความตอบกลับของคุณที่นี่...]\n\n` +
       `ขอแสดงความนับถือ,\nทีมงาน ThaiTour`
     );
-    // URL สำหรับเปิดหน้าเขียนจดหมายของ Gmail อัตโนมัติ (view=cm)
     const gmailUrl = `https://mail.google.com/mail/?view=cm&fs=1&to=${ticket.email}&su=${subject}&body=${body}`;
     window.open(gmailUrl, '_blank');
   };
@@ -80,8 +98,27 @@ export default function TicketManager() {
     );
   });
 
+  const getStatusColorClass = (status: string) => {
+    switch(status) {
+      case 'resolved':
+        return 'bg-green-100 text-green-700 hover:bg-green-200';
+      case 'cancelled':
+        return 'bg-red-100 text-red-700 hover:bg-red-200';
+      default:
+        return 'bg-[#FFD93D]/30 text-[#4F200D] hover:bg-[#FFD93D]/50';
+    }
+  };
+
+  const getStatusLabel = (status: string) => {
+    switch(status) {
+      case 'resolved': return 'แก้ไขแล้ว';
+      case 'cancelled': return 'ยกเลิก';
+      default: return 'รอดำเนินการ';
+    }
+  };
+
   return (
-    <div className="w-full space-y-6 animate-in fade-in duration-500">
+    <div className="w-full space-y-6 animate-in fade-in duration-500 relative">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 sm:mb-8">
         <div>
           <h1 className="text-2xl sm:text-3xl font-extrabold text-[#4F200D] tracking-tight">ข้อความติดต่อ (Tickets)</h1>
@@ -106,7 +143,7 @@ export default function TicketManager() {
         </div>
       </div>
 
-      <div className="bg-white rounded-3xl border-0 shadow-sm overflow-hidden w-full">
+      <div className="bg-white rounded-3xl border-0 shadow-sm overflow-hidden w-full relative z-10">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm whitespace-nowrap min-w-[800px]">
             <thead className="bg-[#F6F1E9]/80 border-b-2 border-[#F6F1E9]">
@@ -162,23 +199,18 @@ export default function TicketManager() {
                     </td>
                     <td className="px-6 py-5 align-top text-right">
                       <div className="flex flex-col gap-2 items-end w-full max-w-[140px] ml-auto">
-                        <select
-                          className={`w-full px-3 py-2 rounded-xl border-0 font-bold text-xs cursor-pointer outline-none transition-colors
-                            ${ticket.status === 'resolved' ? 'bg-green-100 text-green-700 focus:ring-2 focus:ring-green-400' : 
-                              ticket.status === 'cancelled' ? 'bg-red-100 text-red-700 focus:ring-2 focus:ring-red-400' : 
-                              'bg-[#FFD93D]/30 text-[#4F200D] focus:ring-2 focus:ring-[#FF8400]'}`}
-                          value={ticket.status}
-                          onChange={(e) => handleStatusChange(ticket.id, e.target.value)}
+                        
+                        <button
+                          onClick={() => openStatusModal(ticket)}
+                          className={`w-full flex items-center justify-between px-4 py-2 rounded-full border-0 font-bold text-[11px] sm:text-xs cursor-pointer transition-colors shadow-sm ${getStatusColorClass(ticket.status)}`}
                         >
-                          <option value="pending">รอดำเนินการ</option>
-                          <option value="resolved">แก้ไขแล้ว</option>
-                          <option value="cancelled">ยกเลิก</option>
-                        </select>
+                          <span>{getStatusLabel(ticket.status)}</span>
+                          <Pencil className="w-3 h-3 opacity-60 shrink-0" />
+                        </button>
 
-                        {/* ปุ่มเปิดส่งอีเมลผ่าน Gmail */}
                         <Button 
                           onClick={() => handleReplyGmail(ticket)} 
-                          className="w-full flex items-center justify-center gap-1.5 bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 text-xs h-8 px-2 rounded-xl font-bold transition-all shadow-sm"
+                          className="w-full flex items-center justify-center gap-1.5 bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 text-[11px] sm:text-xs h-8 px-2 rounded-full font-bold transition-all shadow-sm"
                         >
                           <Mail size={14} /> ตอบด้วย Gmail
                         </Button>
@@ -191,6 +223,57 @@ export default function TicketManager() {
           </table>
         </div>
       </div>
+
+      {/* ===== Mini Pop-up เปลี่ยนสถานะ ===== */}
+      {editingTicket && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in duration-200" onClick={() => setEditingTicket(null)}>
+          <div className="bg-white rounded-3xl p-6 w-full max-w-xs shadow-2xl animate-in zoom-in-95 duration-200" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-5">
+              <div>
+                <h3 className="text-lg font-extrabold text-[#4F200D]">เปลี่ยนสถานะ</h3>
+                <p className="text-xs font-semibold text-[#4F200D]/50 mt-1">Ticket #{editingTicket.id.substring(0,8)}</p>
+              </div>
+              <Button variant="ghost" size="icon" className="h-8 w-8 text-[#4F200D]/40 hover:text-red-500 hover:bg-red-50 rounded-xl" onClick={() => setEditingTicket(null)}>
+                <X className="w-5 h-5" />
+              </Button>
+            </div>
+            
+            <div className="space-y-2.5">
+              {[
+                { value: "pending", label: "รอดำเนินการ" },
+                { value: "resolved", label: "แก้ไขแล้ว" },
+                { value: "cancelled", label: "ยกเลิก" },
+              ].map((opt) => (
+                <button
+                  key={opt.value}
+                  onClick={() => setDraftStatus(opt.value)}
+                  className={`w-full flex items-center justify-between p-3.5 rounded-2xl border-2 transition-all font-bold text-sm ${
+                    draftStatus === opt.value
+                      ? "border-[#FF8400] bg-[#FF8400]/10 text-[#FF8400]"
+                      : "border-[#F6F1E9] bg-white text-[#4F200D]/60 hover:border-[#FFD93D] hover:bg-[#FFD93D]/10 hover:text-[#4F200D]"
+                  }`}
+                >
+                  {opt.label}
+                  {draftStatus === opt.value && <Check className="w-5 h-5 text-[#FF8400]" />}
+                </button>
+              ))}
+            </div>
+
+            <div className="mt-6 flex gap-3">
+              <Button className="flex-1 bg-[#F6F1E9] hover:bg-[#EFE6DA] text-[#4F200D] font-bold rounded-xl py-5 shadow-none text-sm transition-colors" onClick={() => setEditingTicket(null)}>
+                ยกเลิก
+              </Button>
+              <Button 
+                className="flex-1 bg-[#FF8400] hover:bg-[#e67600] text-white font-bold rounded-xl py-5 shadow-lg shadow-[#FF8400]/20 text-sm transition-all" 
+                onClick={handleSaveStatus}
+                disabled={draftStatus === editingTicket.status}
+              >
+                บันทึก
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

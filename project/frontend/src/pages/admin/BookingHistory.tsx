@@ -77,11 +77,10 @@ interface Booking {
   selectedOptions: Record<string, unknown> | null;
   createdAt: string;
   updatedAt: string;
-  // Fields for uploaded receipt
-  paymentSlipUrl?: string; // from Booking entity
+  paymentSlipUrl?: string; 
   payment?: {
-    slip_url?: string;     // from Payment entity
-    slipUrl?: string;      // mapped from service
+    slip_url?: string;     
+    slipUrl?: string;      
   };
 }
 
@@ -231,15 +230,14 @@ export default function BookingHistory() {
   const [error, setError] = useState<string | null>(null);
 
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
-  
-  // --- New state for image pop-up ---
   const [viewSlipUrl, setViewSlipUrl] = useState<string | null>(null);
-
   const [bookingToDelete, setBookingToDelete] = useState<Booking | null>(null);
   const [deleting, setDeleting] = useState(false);
-  const [statusDrafts, setStatusDrafts] = useState<Record<string, string>>({});
-  const [updatingStatusId, setUpdatingStatusId] = useState<string | null>(null);
-  const [editingStatusId, setEditingStatusId] = useState<string | null>(null);
+
+  // States สำหรับ Mini Pop-up เปลี่ยนสถานะ
+  const [editingStatusBooking, setEditingStatusBooking] = useState<Booking | null>(null);
+  const [draftStatus, setDraftStatus] = useState<string>("");
+  const [updatingStatus, setUpdatingStatus] = useState(false);
 
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
@@ -369,14 +367,22 @@ export default function BookingHistory() {
     }
   };
 
-  const handleUpdateStatus = async (bookingId: string) => {
-    const booking = bookings.find((b) => b.id === bookingId);
-    if (!booking) return;
+  const beginStatusEdit = (booking: Booking) => {
+    setEditingStatusBooking(booking);
+    setDraftStatus(booking.status);
+  };
 
-    const nextStatus = statusDrafts[bookingId] ?? booking.status;
-    if (nextStatus === booking.status) return;
+  const handleSaveStatus = async () => {
+    if (!editingStatusBooking) return;
+    const bookingId = editingStatusBooking.id;
+    const nextStatus = draftStatus;
+    
+    if (nextStatus === editingStatusBooking.status) {
+      setEditingStatusBooking(null);
+      return;
+    }
 
-    setUpdatingStatusId(bookingId);
+    setUpdatingStatus(true);
     try {
       const token = localStorage.getItem("jwt_token");
       await axios.patch(
@@ -410,26 +416,9 @@ export default function BookingHistory() {
       console.error("Failed to update booking status:", err);
       alert("อัปเดตสถานะไม่สำเร็จ กรุณาลองใหม่อีกครั้ง");
     } finally {
-      setUpdatingStatusId(null);
-      setEditingStatusId(null);
+      setUpdatingStatus(false);
+      setEditingStatusBooking(null);
     }
-  };
-
-  const beginStatusEdit = (booking: Booking) => {
-    setEditingStatusId(booking.id);
-    setStatusDrafts((prev) => ({
-      ...prev,
-      [booking.id]: prev[booking.id] ?? booking.status,
-    }));
-  };
-
-  const cancelStatusEdit = (bookingId: string) => {
-    setEditingStatusId((prev) => (prev === bookingId ? null : prev));
-    setStatusDrafts((prev) => {
-      const next = { ...prev };
-      delete next[bookingId];
-      return next;
-    });
   };
 
   const filteredBookings = useMemo(() => {
@@ -704,12 +693,7 @@ export default function BookingHistory() {
                 ) : (
                   paginatedBookings.map((b) => {
                     const dates = getTourDates(b);
-                    const draftStatus = statusDrafts[b.id] ?? b.status;
-                    const isStatusChanged = draftStatus !== b.status;
-                    const isUpdatingThisRow = updatingStatusId === b.id;
-                    const isEditingThisRow = editingStatusId === b.id;
                     
-                    // Logic for fetching slip URL securely
                     const slipPath = b.paymentSlipUrl || b.payment?.slipUrl || b.payment?.slip_url;
                     const fullSlipUrl = slipPath ? (slipPath.startsWith('http') ? slipPath : `http://localhost:3000/${slipPath}`.replace(/([^:]\/)\/+/g, "$1")) : null;
 
@@ -791,59 +775,16 @@ export default function BookingHistory() {
                           )}
                         </td>
                         <td className="px-4 py-3 sm:px-5 sm:py-4 whitespace-nowrap">
-                          <div className="min-w-[180px]">
+                          <div className="min-w-[140px] flex flex-col items-start gap-2">
                             {getStatusBadge(b.status)}
-                            {!isEditingThisRow ? (
-                              <Button
-                                variant="ghost"
-                                className="mt-2 h-7 px-2.5 rounded-full text-[11px] font-bold text-[#4F200D]/55 hover:text-[#FF8400] hover:bg-[#FF8400]/10"
-                                onClick={() => beginStatusEdit(b)}
-                              >
-                                <Pencil className="w-3 h-3 mr-1" />
-                                เปลี่ยนสถานะ
-                              </Button>
-                            ) : (
-                              <div className="mt-2 flex items-center gap-1.5">
-                                <CustomSelect
-                                  containerClassName="relative w-[130px]"
-                                  className="text-xs border-0 bg-[#F6F1E9]/60 hover:bg-[#F6F1E9] px-3 py-2 rounded-full text-[#4F200D] font-bold cursor-pointer outline-none transition-all shadow-sm focus:ring-2 focus:ring-[#FFD93D]"
-                                  menuPlacement="auto"
-                                  value={draftStatus}
-                                  onChange={(val) =>
-                                    setStatusDrafts((prev) => ({
-                                      ...prev,
-                                      [b.id]: String(val),
-                                    }))
-                                  }
-                                  options={[...STATUS_OPTIONS]}
-                                />
-
-                                <Button
-                                  className="h-8 w-8 p-0 rounded-full bg-[#FF8400] hover:bg-[#FF8400]/90 text-white shadow-sm"
-                                  disabled={
-                                    !isStatusChanged || isUpdatingThisRow
-                                  }
-                                  onClick={() => handleUpdateStatus(b.id)}
-                                  title="บันทึกสถานะ"
-                                >
-                                  {isUpdatingThisRow ? (
-                                    <Loader2 className="w-4 h-4 animate-spin" />
-                                  ) : (
-                                    <Check className="w-4 h-4" />
-                                  )}
-                                </Button>
-
-                                <Button
-                                  variant="ghost"
-                                  className="h-8 w-8 p-0 rounded-full text-[#4F200D]/45 hover:text-red-500 hover:bg-red-50"
-                                  onClick={() => cancelStatusEdit(b.id)}
-                                  disabled={isUpdatingThisRow}
-                                  title="ยกเลิก"
-                                >
-                                  <X className="w-4 h-4" />
-                                </Button>
-                              </div>
-                            )}
+                            <Button
+                              variant="ghost"
+                              className="h-7 px-3 rounded-full text-[11px] font-bold text-[#4F200D]/55 hover:text-[#FF8400] hover:bg-[#FF8400]/10 border border-[#F6F1E9] transition-colors"
+                              onClick={() => beginStatusEdit(b)}
+                            >
+                              <Pencil className="w-3 h-3 mr-1.5" />
+                              เปลี่ยนสถานะ
+                            </Button>
                           </div>
                         </td>
                         <td className="px-4 py-3 sm:px-5 sm:py-4 whitespace-nowrap">
@@ -881,7 +822,7 @@ export default function BookingHistory() {
             </table>
           </div>
 
-          {/* Pagination bar - Responsive */}
+          {/* Pagination bar */}
           {totalItems > 0 && (
             <div className="flex flex-col md:flex-row items-center justify-between md:justify-center gap-4 px-4 py-4 sm:px-6 sm:py-5 border-t-2 border-[#F6F1E9] bg-white relative">
               <div className="flex items-center gap-2 text-xs sm:text-sm md:absolute md:left-6 w-full md:w-auto justify-between md:justify-start">
@@ -982,13 +923,62 @@ export default function BookingHistory() {
         />
       )}
 
+      {/* ===== Mini Pop-up เปลี่ยนสถานะ Booking ===== */}
+      {editingStatusBooking && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in duration-200" onClick={() => !updatingStatus && setEditingStatusBooking(null)}>
+          <div className="bg-white rounded-3xl p-6 w-full max-w-sm shadow-2xl animate-in zoom-in-95 duration-200" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-5">
+              <div>
+                <h3 className="text-xl font-extrabold text-[#4F200D]">เปลี่ยนสถานะการจอง</h3>
+                <p className="text-xs font-semibold text-[#4F200D]/50 mt-1">
+                  รหัส: {editingStatusBooking.bookingReference || editingStatusBooking.id.slice(0, 8)}
+                </p>
+              </div>
+              <Button variant="ghost" size="icon" className="h-8 w-8 text-[#4F200D]/40 hover:text-red-500 hover:bg-red-50 rounded-xl" onClick={() => setEditingStatusBooking(null)} disabled={updatingStatus}>
+                <X className="w-5 h-5" />
+              </Button>
+            </div>
+            
+            <div className="space-y-2.5">
+              {STATUS_OPTIONS.map((opt) => (
+                <button
+                  key={opt.value}
+                  onClick={() => setDraftStatus(opt.value)}
+                  disabled={updatingStatus}
+                  className={`w-full flex items-center justify-between p-3.5 rounded-2xl border-2 transition-all font-bold text-sm ${
+                    draftStatus === opt.value
+                      ? "border-[#FF8400] bg-[#FF8400]/10 text-[#FF8400]"
+                      : "border-[#F6F1E9] bg-white text-[#4F200D]/60 hover:border-[#FFD93D] hover:bg-[#FFD93D]/10 hover:text-[#4F200D]"
+                  }`}
+                >
+                  {opt.label}
+                  {draftStatus === opt.value && <Check className="w-5 h-5 text-[#FF8400]" />}
+                </button>
+              ))}
+            </div>
+
+            <div className="mt-6 flex gap-3">
+              <Button className="flex-1 bg-[#F6F1E9] hover:bg-[#EFE6DA] text-[#4F200D] font-bold rounded-xl py-5 shadow-none text-sm transition-colors" onClick={() => setEditingStatusBooking(null)} disabled={updatingStatus}>
+                ยกเลิก
+              </Button>
+              <Button 
+                className="flex-1 bg-[#FF8400] hover:bg-[#e67600] text-white font-bold rounded-xl py-5 shadow-lg shadow-[#FF8400]/20 text-sm transition-all" 
+                onClick={handleSaveStatus} 
+                disabled={updatingStatus || draftStatus === editingStatusBooking.status}
+              >
+                {updatingStatus ? <Loader2 className="w-5 h-5 animate-spin mx-auto" /> : "บันทึกสถานะ"}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* ===== Delete Confirm Modal ===== */}
       {bookingToDelete && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm"
           onClick={() => !deleting && setBookingToDelete(null)}
         >
-          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
           <div
             className="relative bg-white rounded-3xl shadow-2xl w-full max-w-sm sm:max-w-md animate-in fade-in zoom-in-95 duration-200"
             onClick={(e) => e.stopPropagation()}
@@ -1100,7 +1090,7 @@ function BookingDetailModal({
   onClose,
   getStatusBadge,
   getTourDates,
-  onViewSlip, // New Prop
+  onViewSlip, 
 }: any) {
   const dates = getTourDates(b);
   const statusLabel = (s: string) =>
@@ -1132,16 +1122,14 @@ function BookingDetailModal({
   const isDeadlinePassed =
     b.paymentDeadline && new Date(b.paymentDeadline) < new Date();
 
-  // Logic to fetch receipt picture URL securely for the modal
   const slipPath = b.paymentSlipUrl || b.payment?.slipUrl || b.payment?.slip_url;
   const fullSlipUrl = slipPath ? (slipPath.startsWith('http') ? slipPath : `http://localhost:3000/${slipPath}`.replace(/([^:]\/)\/+/g, "$1")) : null;
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4"
+      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/40 backdrop-blur-sm"
       onClick={onClose}
     >
-      <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
       <div
         className="relative bg-white rounded-2xl sm:rounded-3xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto animate-in fade-in zoom-in-95 duration-200 custom-scrollbar"
         onClick={(e) => e.stopPropagation()}
@@ -1173,63 +1161,42 @@ function BookingDetailModal({
           </div>
         </div>
         <div className="p-4 sm:p-6 space-y-4 sm:space-y-5">
+          {/* ข้อมูลทัวร์ */}
           <div className="flex items-start gap-3 p-3 sm:p-4 bg-[#F6F1E9]/60 rounded-xl sm:rounded-2xl">
             <div className="p-2 sm:p-2.5 bg-[#FF8400]/10 rounded-xl text-[#FF8400] shrink-0">
               <Map size={18} className="sm:w-5 sm:h-5" strokeWidth={2.5} />
             </div>
             <div>
-              <p className="text-[10px] sm:text-xs font-bold text-[#4F200D]/50 uppercase tracking-wider">
-                ทัวร์
-              </p>
-              <p className="font-extrabold text-[#4F200D] text-sm sm:text-lg mt-0.5">
-                {b.tour?.title || "ทัวร์ถูกลบ"}
-              </p>
+              <p className="text-[10px] sm:text-xs font-bold text-[#4F200D]/50 uppercase tracking-wider">ทัวร์</p>
+              <p className="font-extrabold text-[#4F200D] text-sm sm:text-lg mt-0.5">{b.tour?.title || "ทัวร์ถูกลบ"}</p>
             </div>
           </div>
+          
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-3">
             <div className="p-3 sm:p-4 bg-emerald-50 rounded-xl sm:rounded-2xl text-center flex flex-row sm:flex-col items-center sm:items-stretch justify-between sm:justify-start">
               <div className="flex items-center gap-2 sm:block">
-                <CalendarDays
-                  size={16}
-                  className="text-emerald-600 sm:mx-auto sm:mb-1.5"
-                />
-                <p className="text-[10px] sm:text-xs font-bold text-emerald-600/70 text-left sm:text-center">
-                  เริ่มทัวร์
-                </p>
+                <CalendarDays size={16} className="text-emerald-600 sm:mx-auto sm:mb-1.5" />
+                <p className="text-[10px] sm:text-xs font-bold text-emerald-600/70 text-left sm:text-center">เริ่มทัวร์</p>
               </div>
-              <p className="font-extrabold text-emerald-700 text-xs sm:text-sm mt-0 sm:mt-0.5">
-                {dates.start}
-              </p>
+              <p className="font-extrabold text-emerald-700 text-xs sm:text-sm mt-0 sm:mt-0.5">{dates.start}</p>
             </div>
             <div className="p-3 sm:p-4 bg-red-50 rounded-xl sm:rounded-2xl text-center flex flex-row sm:flex-col items-center sm:items-stretch justify-between sm:justify-start">
               <div className="flex items-center gap-2 sm:block">
-                <CalendarDays
-                  size={16}
-                  className="text-red-500 sm:mx-auto sm:mb-1.5"
-                />
-                <p className="text-[10px] sm:text-xs font-bold text-red-500/70 text-left sm:text-center">
-                  สิ้นสุดทัวร์
-                </p>
+                <CalendarDays size={16} className="text-red-500 sm:mx-auto sm:mb-1.5" />
+                <p className="text-[10px] sm:text-xs font-bold text-red-500/70 text-left sm:text-center">สิ้นสุดทัวร์</p>
               </div>
-              <p className="font-extrabold text-red-600 text-xs sm:text-sm mt-0 sm:mt-0.5">
-                {dates.end}
-              </p>
+              <p className="font-extrabold text-red-600 text-xs sm:text-sm mt-0 sm:mt-0.5">{dates.end}</p>
             </div>
             <div className="p-3 sm:p-4 bg-blue-50 rounded-xl sm:rounded-2xl text-center flex flex-row sm:flex-col items-center sm:items-stretch justify-between sm:justify-start">
               <div className="flex items-center gap-2 sm:block">
-                <Users
-                  size={16}
-                  className="text-blue-600 sm:mx-auto sm:mb-1.5"
-                />
-                <p className="text-[10px] sm:text-xs font-bold text-blue-600/70 text-left sm:text-center">
-                  ผู้เดินทาง
-                </p>
+                <Users size={16} className="text-blue-600 sm:mx-auto sm:mb-1.5" />
+                <p className="text-[10px] sm:text-xs font-bold text-blue-600/70 text-left sm:text-center">ผู้เดินทาง</p>
               </div>
-              <p className="font-extrabold text-blue-700 text-xs sm:text-sm mt-0 sm:mt-0.5">
-                {b.pax} คน
-              </p>
+              <p className="font-extrabold text-blue-700 text-xs sm:text-sm mt-0 sm:mt-0.5">{b.pax} คน</p>
             </div>
           </div>
+
+          {/* ข้อมูลติดต่อ */}
           <div className="p-3 sm:p-4 bg-[#F6F1E9]/40 rounded-xl sm:rounded-2xl space-y-3">
             <p className="text-[10px] sm:text-xs font-black text-[#4F200D]/50 uppercase tracking-wider flex items-center gap-2">
               <User size={14} /> ข้อมูลผู้ติดต่อ
@@ -1240,12 +1207,8 @@ function BookingDetailModal({
                   <User size={14} className="text-[#FF8400]" />
                 </div>
                 <div>
-                  <p className="text-[10px] sm:text-xs text-[#4F200D]/40 font-semibold">
-                    ชื่อ
-                  </p>
-                  <p className="font-bold text-[#4F200D] text-xs sm:text-sm">
-                    {b.contactInfo?.name || "-"}
-                  </p>
+                  <p className="text-[10px] sm:text-xs text-[#4F200D]/40 font-semibold">ชื่อ</p>
+                  <p className="font-bold text-[#4F200D] text-xs sm:text-sm">{b.contactInfo?.name || "-"}</p>
                 </div>
               </div>
               <div className="flex items-center gap-2.5">
@@ -1253,12 +1216,8 @@ function BookingDetailModal({
                   <Mail size={14} className="text-[#FF8400]" />
                 </div>
                 <div className="min-w-0">
-                  <p className="text-[10px] sm:text-xs text-[#4F200D]/40 font-semibold">
-                    อีเมล
-                  </p>
-                  <p className="font-bold text-[#4F200D] text-xs sm:text-sm truncate">
-                    {b.contactInfo?.email || "-"}
-                  </p>
+                  <p className="text-[10px] sm:text-xs text-[#4F200D]/40 font-semibold">อีเมล</p>
+                  <p className="font-bold text-[#4F200D] text-xs sm:text-sm truncate">{b.contactInfo?.email || "-"}</p>
                 </div>
               </div>
               <div className="flex items-center gap-2.5">
@@ -1266,22 +1225,14 @@ function BookingDetailModal({
                   <Phone size={14} className="text-[#FF8400]" />
                 </div>
                 <div>
-                  <p className="text-[10px] sm:text-xs text-[#4F200D]/40 font-semibold">
-                    เบอร์โทร
-                  </p>
-                  <p className="font-bold text-[#4F200D] text-xs sm:text-sm">
-                    {b.contactInfo?.phone || "-"}
-                  </p>
+                  <p className="text-[10px] sm:text-xs text-[#4F200D]/40 font-semibold">เบอร์โทร</p>
+                  <p className="font-bold text-[#4F200D] text-xs sm:text-sm">{b.contactInfo?.phone || "-"}</p>
                 </div>
               </div>
             </div>
-            {b.user && (
-              <p className="text-[10px] sm:text-xs text-[#4F200D]/40 font-semibold mt-1">
-                บัญชีผู้ใช้:{" "}
-                <span className="text-[#4F200D]/60">{b.user.username}</span>
-              </p>
-            )}
           </div>
+
+          {/* รายละเอียดราคา */}
           <div className="p-3 sm:p-4 bg-[#F6F1E9]/40 rounded-xl sm:rounded-2xl space-y-3">
             <p className="text-[10px] sm:text-xs font-black text-[#4F200D]/50 uppercase tracking-wider flex items-center gap-2">
               <Receipt size={14} /> รายละเอียดราคา
@@ -1289,42 +1240,33 @@ function BookingDetailModal({
             <div className="space-y-2">
               <div className="flex justify-between items-center">
                 <span className="text-xs sm:text-sm text-[#4F200D]/60 font-semibold flex items-center gap-2">
-                  <CircleDollarSign size={14} className="text-[#4F200D]/40" />
-                  ราคาฐาน
+                  <CircleDollarSign size={14} className="text-[#4F200D]/40" /> ราคาฐาน
                 </span>
-                <span className="font-bold text-[#4F200D] text-xs sm:text-sm">
-                  ฿{Number(b.basePrice || 0).toLocaleString()}
-                </span>
+                <span className="font-bold text-[#4F200D] text-xs sm:text-sm">฿{Number(b.basePrice || 0).toLocaleString()}</span>
               </div>
               {Number(b.discount) > 0 && (
                 <div className="flex justify-between items-center">
                   <span className="text-xs sm:text-sm text-emerald-600 font-semibold flex items-center gap-2">
-                    <Percent size={14} className="text-emerald-500" />
-                    ส่วนลด
+                    <Percent size={14} className="text-emerald-500" /> ส่วนลด
                   </span>
-                  <span className="font-bold text-emerald-600 text-xs sm:text-sm">
-                    -฿{Number(b.discount).toLocaleString()}
-                  </span>
+                  <span className="font-bold text-emerald-600 text-xs sm:text-sm">-฿{Number(b.discount).toLocaleString()}</span>
                 </div>
               )}
               <div className="border-t border-[#4F200D]/10 pt-2 flex justify-between items-center">
                 <span className="text-sm sm:text-base text-[#4F200D] font-extrabold flex items-center gap-2">
-                  <Banknote size={14} className="text-[#FF8400]" />
-                  ยอดรวมทั้งหมด
+                  <Banknote size={14} className="text-[#FF8400]" /> ยอดรวมทั้งหมด
                 </span>
-                <span className="font-black text-[#FF8400] text-base sm:text-lg">
-                  ฿{Number(b.totalPrice).toLocaleString()}
-                </span>
+                <span className="font-black text-[#FF8400] text-base sm:text-lg">฿{Number(b.totalPrice).toLocaleString()}</span>
               </div>
             </div>
           </div>
 
-          {/* ======================= รูปภาพสลิปที่แนบมาแสดงที่นี่ ======================= */}
+          {/* รูปภาพสลิป */}
           {fullSlipUrl && (
             <div className="p-3 sm:p-4 bg-blue-50 border border-blue-100 rounded-xl sm:rounded-2xl space-y-3">
               <div className="flex justify-between items-center">
                 <p className="text-[10px] sm:text-xs font-black text-blue-600/70 uppercase tracking-wider flex items-center gap-2">
-                  <ImageIcon size={14} /> หลักฐานการชำระเงิน (สลิปโอนเงิน)
+                  <ImageIcon size={14} /> หลักฐานการชำระเงิน
                 </p>
                 <button
                   type="button"
@@ -1337,7 +1279,6 @@ function BookingDetailModal({
               <div 
                 className="flex justify-center bg-white p-2 rounded-xl shadow-sm border border-blue-100/50 cursor-pointer hover:shadow-md transition-shadow"
                 onClick={() => onViewSlip(fullSlipUrl)}
-                title="คลิกเพื่อขยายภาพ"
               >
                 <img
                   src={fullSlipUrl}
@@ -1350,29 +1291,21 @@ function BookingDetailModal({
               </div>
             </div>
           )}
-          {/* ========================================================================= */}
 
           {b.paymentDeadline && (
             <div
               className={`p-3 sm:p-4 rounded-xl sm:rounded-2xl flex items-center gap-3 ${isDeadlinePassed ? "bg-red-50 border border-red-200" : "bg-amber-50 border border-amber-200"}`}
             >
-              <Clock
-                size={18}
-                className={isDeadlinePassed ? "text-red-500" : "text-amber-600"}
-              />
+              <Clock size={18} className={isDeadlinePassed ? "text-red-500" : "text-amber-600"} />
               <div>
-                <p className="text-[10px] sm:text-xs font-bold text-[#4F200D]/50">
-                  กำหนดชำระเงิน
-                </p>
-                <p
-                  className={`font-extrabold text-xs sm:text-sm ${isDeadlinePassed ? "text-red-600" : "text-amber-700"}`}
-                >
-                  {formatDateTime(b.paymentDeadline)}{" "}
-                  {isDeadlinePassed && " (เลยกำหนดแล้ว)"}
+                <p className="text-[10px] sm:text-xs font-bold text-[#4F200D]/50">กำหนดชำระเงิน</p>
+                <p className={`font-extrabold text-xs sm:text-sm ${isDeadlinePassed ? "text-red-600" : "text-amber-700"}`}>
+                  {formatDateTime(b.paymentDeadline)} {isDeadlinePassed && " (เลยกำหนดแล้ว)"}
                 </p>
               </div>
             </div>
           )}
+
           {b.specialRequests && (
             <div className="p-3 sm:p-4 bg-purple-50 rounded-xl sm:rounded-2xl">
               <p className="text-[10px] sm:text-xs font-black text-purple-600/60 uppercase tracking-wider flex items-center gap-2 mb-1.5 sm:mb-2">
@@ -1383,34 +1316,12 @@ function BookingDetailModal({
               </p>
             </div>
           )}
-          {b.status === "cancelled" && (
-            <div className="p-3 sm:p-4 bg-red-50 rounded-xl sm:rounded-2xl border border-red-200 space-y-1.5 sm:space-y-2">
-              <p className="text-[10px] sm:text-xs font-black text-red-500/70 uppercase tracking-wider flex items-center gap-2">
-                <Ban size={14} /> ข้อมูลการยกเลิก
-              </p>
-              {b.cancellationReason && (
-                <div>
-                  <p className="text-[10px] sm:text-xs font-bold text-red-400">
-                    เหตุผลที่ยกเลิก:
-                  </p>
-                  <p className="text-xs sm:text-sm text-red-700 font-semibold mt-0.5">
-                    {b.cancellationReason}
-                  </p>
-                </div>
-              )}
-            </div>
-          )}
+
           <div className="flex flex-col sm:flex-row flex-wrap gap-x-6 gap-y-1.5 sm:gap-y-1 pt-2 sm:pt-3 border-t border-[#F6F1E9]">
             <p className="text-[10px] sm:text-xs text-[#4F200D]/40 font-semibold flex items-center gap-1.5">
               <Calendar size={12} className="shrink-0" />
               สร้างเมื่อ: {formatDateTime(b.createdAt)}
             </p>
-            {b.updatedAt && b.updatedAt !== b.createdAt && (
-              <p className="text-[10px] sm:text-xs text-[#4F200D]/40 font-semibold flex items-center gap-1.5">
-                <Clock size={12} className="shrink-0" />
-                อัปเดตล่าสุด: {formatDateTime(b.updatedAt)}
-              </p>
-            )}
             <p className="text-[10px] sm:text-xs text-[#4F200D]/30 font-mono flex items-center gap-1.5 mt-1 sm:mt-0">
               <Hash size={12} className="shrink-0" />
               {b.id}

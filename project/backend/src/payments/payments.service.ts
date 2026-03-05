@@ -25,7 +25,7 @@ export class PaymentsService {
     const mobileNumber = '0622125261'; 
     
     // ดึงราคาทัวร์จาก Database มาใช้เป็นยอดโอน
-    const amount = Number(booking.tour.price);
+    const amount = Number(booking.totalPrice);
     
     // สร้าง Payload ตามมาตรฐาน EMVCo (ใช้ as any เพื่อเลี่ยง error type ในบาง setup)
     const payload = (generatePayload as any)(mobileNumber, { amount });

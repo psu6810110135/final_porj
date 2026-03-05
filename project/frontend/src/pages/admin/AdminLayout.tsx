@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, Map, CreditCard, FileText, Users, LogOut, Home, Calendar, Menu, X } from 'lucide-react';
+import { LayoutDashboard, Map, MessageSquare, FileText, Users, LogOut, Home, Calendar, Menu, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 export default function AdminLayout() {
@@ -13,7 +13,7 @@ export default function AdminLayout() {
     { icon: Map, label: 'จัดการทัวร์', path: '/admin/tours' },
     { icon: Calendar, label: 'ตารางทัวร์', path: '/admin/schedules' },
     { icon: Users, label: 'จัดการผู้ใช้งาน', path: '/admin/users' },
-    { icon: CreditCard, label: 'ตรวจสอบการชำระเงิน', path: '/admin/payments' },
+    { icon: MessageSquare, label: 'ข้อความติดต่อ', path: '/admin/tickets' }, // 👈 เปลี่ยนจาก ตรวจสอบการชำระเงิน เป็น ข้อความติดต่อ
     { icon: FileText, label: 'ประวัติการจอง', path: '/admin/bookings' },
   ];
 

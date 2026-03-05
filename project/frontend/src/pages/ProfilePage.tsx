@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ChangeEvent } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
@@ -13,6 +13,7 @@ interface UserProfile {
   role?: string;
   createdAt?: string;
   phone?: string;
+  avatarUrl?: string;
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -43,6 +44,25 @@ export default function ProfilePage() {
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const [saveSuccess, setSaveSuccess] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+  const [uploadSuccess, setUploadSuccess] = useState<string | null>(null);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [phone, setPhone] = useState("");
+
+  const normalizedPhone = phone.trim();
+  const isPhoneValid =
+    normalizedPhone === "" || /^[0-9+\-\s]{8,15}$/.test(normalizedPhone);
+  const hasProfileChanges =
+    !!profile &&
+    (firstName !== (profile.firstName ?? "") ||
+      lastName !== (profile.lastName ?? "") ||
+      phone !== (profile.phone ?? ""));
 
   useEffect(() => {
     const token = localStorage.getItem("jwt_token");
@@ -56,23 +76,18 @@ export default function ProfilePage() {
         const res = await fetch("http://localhost:3000/api/v1/users/me", {
           headers: { Authorization: `Bearer ${token}` },
         });
-        if (!res.ok) throw new Error("Failed to fetch profile");
+        if (!res.ok) throw new Error("ไม่สามารถดึงข้อมูลผู้ใช้จากฐานข้อมูลได้");
         const data = await res.json();
         setProfile(data);
+        setFirstName(data.firstName ?? "");
+        setLastName(data.lastName ?? "");
+        setPhone(data.phone ?? "");
+        setSaveError(null);
+        setSaveSuccess(null);
+        setUploadError(null);
+        setUploadSuccess(null);
       } catch {
-        // Fallback: decode from token
-        try {
-          const payload = JSON.parse(atob(token.split(".")[1]));
-          setProfile({
-            id: payload.sub ?? payload.id ?? "",
-            email: payload.email ?? "",
-            firstName: payload.firstName,
-            lastName: payload.lastName,
-            role: payload.role,
-          });
-        } catch {
-          setError("ไม่สามารถโหลดข้อมูลโปรไฟล์ได้");
-        }
+        setError("ไม่สามารถโหลดข้อมูลโปรไฟล์จากฐานข้อมูลได้");
       } finally {
         setLoading(false);
       }
@@ -80,6 +95,156 @@ export default function ProfilePage() {
 
     fetchProfile();
   }, [navigate]);
+
+  const handleUploadAvatar = async (event: ChangeEvent<HTMLInputElement>) => {
+    const token = localStorage.getItem("jwt_token");
+    const file = event.target.files?.[0];
+
+    if (!token || !file) return;
+
+    const allowedTypes = [
+      "image/png",
+      "image/jpeg",
+      "image/jpg",
+      "image/pjpeg",
+    ];
+    if (!allowedTypes.includes(file.type)) {
+      setUploadError("รองรับเฉพาะไฟล์ PNG หรือ JPG เท่านั้น");
+      return;
+    }
+
+    if (file.size > 2 * 1024 * 1024) {
+      setUploadError("ขนาดรูปต้องไม่เกิน 2MB");
+      return;
+    }
+
+    setUploadError(null);
+    setUploadSuccess(null);
+    setUploading(true);
+
+    try {
+      const formData = new FormData();
+      formData.append("avatar", file);
+
+      const res = await fetch("http://localhost:3000/api/v1/users/me/avatar", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        body: formData,
+      });
+
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => null);
+        const message = Array.isArray(errorData?.message)
+          ? errorData.message.join(", ")
+          : errorData?.message || "อัปโหลดรูปไม่สำเร็จ";
+        throw new Error(message);
+      }
+
+      const updatedProfile = await res.json();
+      setProfile(updatedProfile);
+      setFirstName(updatedProfile.firstName ?? "");
+      setLastName(updatedProfile.lastName ?? "");
+      setPhone(updatedProfile.phone ?? "");
+      setUploadSuccess("อัปโหลดรูปโปรไฟล์สำเร็จ");
+    } catch (err) {
+      setUploadError(
+        err instanceof Error
+          ? err.message
+          : "อัปโหลดรูปโปรไฟล์ไม่สำเร็จ กรุณาลองใหม่",
+      );
+    } finally {
+      setUploading(false);
+      event.target.value = "";
+    }
+  };
+
+  const handleSaveProfile = async () => {
+    const token = localStorage.getItem("jwt_token");
+    if (!token || !profile) return;
+
+    if (!hasProfileChanges) {
+      setSaveSuccess("ไม่มีข้อมูลที่เปลี่ยนแปลง");
+      return;
+    }
+
+    if (!isPhoneValid) {
+      setSaveError(
+        "เบอร์โทรไม่ถูกต้อง (ใช้ตัวเลข 8-15 หลัก และสามารถมี + - ช่องว่างได้)",
+      );
+      return;
+    }
+
+    setSaveError(null);
+    setSaveSuccess(null);
+    setSaving(true);
+
+    try {
+      const res = await fetch("http://localhost:3000/api/v1/users/me", {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          first_name: firstName,
+          last_name: lastName,
+          phone,
+        }),
+      });
+
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => null);
+        const message = Array.isArray(errorData?.message)
+          ? errorData.message.join(", ")
+          : errorData?.message || "บันทึกข้อมูลไม่สำเร็จ";
+        throw new Error(message);
+      }
+
+      const updatedProfile = await res.json();
+      setProfile(updatedProfile);
+      setFirstName(updatedProfile.firstName ?? "");
+      setLastName(updatedProfile.lastName ?? "");
+      setPhone(updatedProfile.phone ?? "");
+      setSaveSuccess("บันทึกข้อมูลสำเร็จ");
+      setIsEditModalOpen(false);
+    } catch (err) {
+      setSaveError(
+        err instanceof Error ? err.message : "บันทึกข้อมูลไม่สำเร็จ",
+      );
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleResetForm = () => {
+    if (!profile) return;
+    setFirstName(profile.firstName ?? "");
+    setLastName(profile.lastName ?? "");
+    setPhone(profile.phone ?? "");
+    setSaveError(null);
+    setSaveSuccess(null);
+  };
+
+  const openEditModal = () => {
+    if (!profile) return;
+    setFirstName(profile.firstName ?? "");
+    setLastName(profile.lastName ?? "");
+    setPhone(profile.phone ?? "");
+    setSaveError(null);
+    setSaveSuccess(null);
+    setIsEditModalOpen(true);
+  };
+
+  const closeEditModal = () => {
+    setIsEditModalOpen(false);
+    handleResetForm();
+  };
+
+  const avatarSrc = profile?.avatarUrl
+    ? `http://localhost:3000${profile.avatarUrl}`
+    : null;
 
   return (
     <div className="min-h-screen bg-[#F6F1E9]">
@@ -100,38 +265,84 @@ export default function ProfilePage() {
         ) : profile ? (
           <div className="flex flex-col gap-4">
             {/* Avatar & Name Card */}
-            <div className="bg-white rounded-2xl border border-[#F0E8E0] p-6 shadow-sm flex flex-col sm:flex-row items-center sm:items-start gap-5">
-              {/* Avatar */}
-              <div className="w-20 h-20 rounded-full bg-gradient-to-br from-[#FF8400] to-[#FF6B00] flex items-center justify-center shadow-lg flex-shrink-0">
-                <span className="text-white text-3xl font-bold">
-                  {getInitials(profile)}
-                </span>
+            <div className="bg-white rounded-2xl border border-[#F0E8E0] p-6 shadow-sm flex flex-col sm:flex-row sm:items-start sm:justify-between gap-5">
+              <div className="flex flex-col sm:flex-row items-center sm:items-start gap-5">
+                <div className="w-20 h-20 rounded-full bg-gradient-to-br from-[#FF8400] to-[#FF6B00] flex items-center justify-center shadow-lg flex-shrink-0">
+                  {avatarSrc ? (
+                    <img
+                      src={avatarSrc}
+                      alt="Profile"
+                      className="w-20 h-20 rounded-full object-cover"
+                    />
+                  ) : (
+                    <span className="text-white text-3xl font-bold">
+                      {getInitials(profile)}
+                    </span>
+                  )}
+                </div>
+
+                <div className="text-center sm:text-left">
+                  <h2 className="text-xl font-bold text-[#4F200D]">
+                    {profile.firstName && profile.lastName
+                      ? `${profile.firstName} ${profile.lastName}`
+                      : (profile.firstName ?? profile.email)}
+                  </h2>
+                  <p className="text-gray-400 text-sm mt-0.5">
+                    {profile.email}
+                  </p>
+                  {profile.role && (
+                    <span
+                      className={`inline-block mt-2 text-xs font-semibold px-3 py-1 rounded-full ${
+                        profile.role === "admin"
+                          ? "bg-[#FF8400]/10 text-[#FF8400]"
+                          : "bg-green-50 text-green-600"
+                      }`}
+                    >
+                      {profile.role === "admin" ? "ผู้ดูแลระบบ" : "สมาชิก"}
+                    </span>
+                  )}
+                </div>
               </div>
-              {/* Name & Role */}
-              <div className="text-center sm:text-left">
-                <h2 className="text-xl font-bold text-[#4F200D]">
-                  {profile.firstName && profile.lastName
-                    ? `${profile.firstName} ${profile.lastName}`
-                    : (profile.firstName ?? profile.email)}
-                </h2>
-                <p className="text-gray-400 text-sm mt-0.5">{profile.email}</p>
-                {profile.role && (
-                  <span
-                    className={`inline-block mt-2 text-xs font-semibold px-3 py-1 rounded-full ${
-                      profile.role === "admin"
-                        ? "bg-[#FF8400]/10 text-[#FF8400]"
-                        : "bg-green-50 text-green-600"
-                    }`}
-                  >
-                    {profile.role === "admin" ? "ผู้ดูแลระบบ" : "สมาชิก"}
-                  </span>
+
+              <div className="w-full sm:w-auto sm:min-w-[220px] text-center sm:text-right">
+                <label className="inline-flex items-center gap-2 text-xs font-medium text-[#4F200D] cursor-pointer bg-[#FFF3E0] hover:bg-[#FFE8CC] px-3 py-1.5 rounded-full transition-colors">
+                  <input
+                    type="file"
+                    accept=".png,.jpg,.jpeg,image/png,image/jpeg"
+                    className="hidden"
+                    onChange={handleUploadAvatar}
+                    disabled={uploading}
+                  />
+                  {uploading ? "กำลังอัปโหลด..." : "อัปโหลดรูปโปรไฟล์"}
+                </label>
+                <p className="text-[11px] text-gray-400 mt-1">
+                  รองรับ PNG/JPG และขนาดไม่เกิน 2MB
+                </p>
+                {uploadError && (
+                  <p className="text-[11px] text-red-500 mt-1">{uploadError}</p>
+                )}
+                {uploadSuccess && (
+                  <p className="text-[11px] text-green-600 mt-1">
+                    {uploadSuccess}
+                  </p>
                 )}
               </div>
             </div>
 
             {/* Info Card */}
             <div className="bg-white rounded-2xl border border-[#F0E8E0] p-6 shadow-sm">
-              <h3 className="font-bold text-[#4F200D] mb-4">ข้อมูลส่วนตัว</h3>
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="font-bold text-[#4F200D]">ข้อมูลส่วนตัว</h3>
+                <button
+                  onClick={openEditModal}
+                  className="inline-flex items-center justify-center px-4 py-2 rounded-xl text-sm font-semibold text-white bg-[#FF8400] hover:bg-[#E67600] transition-colors"
+                >
+                  แก้ไขข้อมูล
+                </button>
+              </div>
+              {saveSuccess && (
+                <p className="text-[11px] text-green-600 mb-3">{saveSuccess}</p>
+              )}
               <div className="divide-y divide-[#F0E8E0]">
                 <InfoRow label="ชื่อ" value={profile.firstName ?? "-"} />
                 <InfoRow label="นามสกุล" value={profile.lastName ?? "-"} />
@@ -227,6 +438,79 @@ export default function ProfilePage() {
                 </svg>
               </Link>
             </div>
+
+            {isEditModalOpen && (
+              <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4">
+                <div className="w-full max-w-lg bg-white rounded-2xl border border-[#F0E8E0] shadow-lg p-6">
+                  <h4 className="font-bold text-[#4F200D] text-lg mb-4">
+                    แก้ไขข้อมูลส่วนตัว
+                  </h4>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
+                    <div>
+                      <label className="text-xs text-gray-500">ชื่อ</label>
+                      <input
+                        value={firstName}
+                        onChange={(e) => setFirstName(e.target.value)}
+                        className="mt-1 w-full rounded-xl border border-[#F0E8E0] px-3 py-2 text-sm text-[#4F200D] focus:outline-none focus:ring-2 focus:ring-[#FF8400]/30"
+                        placeholder="ชื่อ"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs text-gray-500">นามสกุล</label>
+                      <input
+                        value={lastName}
+                        onChange={(e) => setLastName(e.target.value)}
+                        className="mt-1 w-full rounded-xl border border-[#F0E8E0] px-3 py-2 text-sm text-[#4F200D] focus:outline-none focus:ring-2 focus:ring-[#FF8400]/30"
+                        placeholder="นามสกุล"
+                      />
+                    </div>
+                    <div className="sm:col-span-2">
+                      <label className="text-xs text-gray-500">เบอร์โทร</label>
+                      <input
+                        value={phone}
+                        onChange={(e) => setPhone(e.target.value)}
+                        className="mt-1 w-full rounded-xl border border-[#F0E8E0] px-3 py-2 text-sm text-[#4F200D] focus:outline-none focus:ring-2 focus:ring-[#FF8400]/30"
+                        placeholder="เบอร์โทร"
+                      />
+                      {!isPhoneValid && (
+                        <p className="text-[11px] text-red-500 mt-1">
+                          กรุณากรอกเบอร์โทรให้ถูกต้อง
+                        </p>
+                      )}
+                    </div>
+                  </div>
+
+                  {saveError && (
+                    <p className="text-[11px] text-red-500 mb-3">{saveError}</p>
+                  )}
+
+                  <div className="flex items-center justify-end gap-2">
+                    <button
+                      onClick={closeEditModal}
+                      disabled={saving}
+                      className="inline-flex items-center justify-center px-4 py-2 rounded-xl text-sm font-semibold text-[#4F200D] bg-[#F6F1E9] border border-[#E8DED3] hover:bg-[#EFE6DA] transition-colors disabled:opacity-60"
+                    >
+                      ยกเลิก
+                    </button>
+                    <button
+                      onClick={handleResetForm}
+                      disabled={saving || !hasProfileChanges}
+                      className="inline-flex items-center justify-center px-4 py-2 rounded-xl text-sm font-semibold text-[#4F200D] bg-[#FFF3E0] border border-[#FFE0B2] hover:bg-[#FFE8CC] transition-colors disabled:opacity-60"
+                    >
+                      รีเซ็ต
+                    </button>
+                    <button
+                      onClick={handleSaveProfile}
+                      disabled={saving || !hasProfileChanges || !isPhoneValid}
+                      className="inline-flex items-center justify-center px-4 py-2 rounded-xl text-sm font-semibold text-white bg-[#FF8400] hover:bg-[#E67600] transition-colors disabled:opacity-70"
+                    >
+                      {saving ? "กำลังบันทึก..." : "บันทึกข้อมูล"}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         ) : null}
       </div>

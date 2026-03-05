@@ -8,7 +8,7 @@ Full-stack tour booking system: **NestJS backend** (`project/backend/`) + **Reac
 
 Modules: `auth`, `tours`, `bookings`, `payments`, `users`, `admin`. Each module follows the NestJS pattern: `*.module.ts`, `*.controller.ts`, `*.service.ts`, plus `entities/` and `dto/` subdirectories.
 
-- **API prefix**: Data routes use `api/v1/` (e.g. `@Controller('api/v1/tours')`). Auth routes use bare `@Controller('auth')` — no version prefix.
+- **API prefix**: Data routes use `api/v1/` (e.g. `@Controller('api/tours')`). Auth routes use bare `@Controller('auth')` — no version prefix.
 - **Entities** use `@PrimaryGeneratedColumn('uuid')`, `snake_case` DB columns, TypeORM decorators. Enums are co-located in entity files.
 - **DTOs** use `class-validator` + `class-transformer`. Required fields use `!` (non-null assertion), optional use `?` + `@IsOptional()`. Nested DTOs are defined inline in the same file.
 - **Services** inject repositories via `@InjectRepository()`. Complex writes use `this.dataSource.transaction()` with pessimistic locking. Error handling uses NestJS built-ins (`NotFoundException`, `BadRequestException`).

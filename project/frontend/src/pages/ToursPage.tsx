@@ -29,11 +29,18 @@ export default function ToursPage() {
   const searchFilter = searchParams.get("search") || "";
   const [searchInput, setSearchInput] = useState(searchFilter);
 
-  const apiBase = "http://localhost:3000/api/v1";
+  const apiBase = "http://localhost:3000/api";
 
   const regionFilter = searchParams.get("region") || "";
   const categoryFilter = searchParams.get("category") || "";
   const durationFilter = searchParams.get("duration") || "";
+
+  // Helper สำหรับแปลง URL รูปภาพ
+  const getImageUrl = (path?: string) => {
+    if (!path) return "https://via.placeholder.com/400x300?text=No+Img";
+    if (path.startsWith("http")) return path;
+    return `http://localhost:3000/${path.replace(/^\//, '')}`;
+  };
 
   useEffect(() => {
     setSearchInput(searchFilter);
@@ -180,7 +187,7 @@ export default function ToursPage() {
               </div>
             )}
 
-            {/* Tours Grid - ปรับเป็น 2 คอลัมน์ในมือถือ */}
+            {/* Tours Grid */}
             <div className="flex-1">
               {loading && (
                 <div className="flex items-center justify-center h-64">
@@ -206,26 +213,25 @@ export default function ToursPage() {
               )}
 
               {!loading && !error && tours.length > 0 && (
-                /* จุดที่แก้: grid-cols-2 คือแสดง 2 คอลัมน์ตั้งแต่หน้าจอเล็กสุด */
                 <div className="grid grid-cols-2 md:grid-cols-2 xl:grid-cols-3 gap-3 md:gap-6">
                   {tours.map((tour) => (
                     <Link to={`/tours/${tour.id}`} key={tour.id} className="block h-full group">
                       <Card className="rounded-[1.2rem] md:rounded-[2rem] overflow-hidden border border-gray-100 shadow-sm hover:shadow-xl transition-all duration-300 bg-white h-full flex flex-col">
                         
-                        {/* Image Section - ปรับความสูงลงเล็กน้อยสำหรับ 2 คอลัมน์ */}
+                        {/* Image Section */}
                         <div className="relative h-32 sm:h-48 md:h-56 shrink-0 overflow-hidden bg-gray-100 p-1.5 md:p-2">
                           <img
-                            src={tour.image_cover && tour.image_cover.startsWith("http") ? tour.image_cover : "https://via.placeholder.com/400x300"}
+                            src={getImageUrl(tour.image_cover)}
                             className="w-full h-full object-cover rounded-[1rem] md:rounded-[1.5rem] group-hover:scale-105 transition-transform duration-500"
                             alt={tour.title}
                           />
                           
-                          {/* Rating - ปรับขนาดเล็กลงในมือถือ */}
+                          {/* Rating */}
                           <div className="absolute top-2 right-2 md:top-4 md:right-4 bg-white/90 px-1.5 py-0.5 md:px-3 md:py-1.5 rounded-full text-[10px] md:text-xs font-black text-[#FF8400] shadow-sm flex items-center gap-0.5">
                             <Star size={10} fill="#FF8400" stroke="#FF8400" className="md:w-[12px]" /> {tour.rating || "New"}
                           </div>
 
-                          {/* Duration - ปรับตำแหน่งและขนาด */}
+                          {/* Duration */}
                           {tour.duration && (
                             <div className="absolute top-2 left-2 md:top-4 md:left-4 bg-white/90 px-1.5 py-0.5 md:px-3 md:py-1.5 rounded-full text-[9px] md:text-[10px] font-bold text-[#4F200D] shadow-sm flex items-center gap-0.5">
                               <Clock size={10} className="md:w-[12px]" /> {tour.duration}
@@ -233,7 +239,7 @@ export default function ToursPage() {
                           )}
                         </div>
 
-                        {/* Card Content - ปรับขนาดตัวอักษรให้พอดีกับ 2 คอลัมน์ */}
+                        {/* Card Content */}
                         <CardContent className="p-3 md:p-6 flex flex-col flex-grow">
                           <h3 className="text-sm md:text-xl font-black mb-1 leading-tight text-[#2D3748] group-hover:text-[#FF8400] transition-colors line-clamp-2">
                             {tour.title}
@@ -252,7 +258,6 @@ export default function ToursPage() {
                               </div>
                             </div>
                             
-                            {/* ปุ่ม + ปรับขนาดให้เล็กลงในมือถือ */}
                             <div className="w-6 h-6 md:w-10 md:h-10 flex items-center justify-center rounded-full bg-[#FF8400] text-white shadow-md">
                               <Plus size={14} strokeWidth={3} className="md:w-[20px]" />
                             </div>

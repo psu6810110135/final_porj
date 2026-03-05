@@ -40,7 +40,7 @@ enum TourCategory {
 
 ## 🚀 API Endpoints
 
-### 1. GET `/api/v1/tours`
+### 1. GET `/api/tours`
 ดึงข้อมูลทัวร์ทั้งหมด พร้อมฟีเจอร์กรอง
 
 **Query Parameters:**
@@ -56,24 +56,24 @@ enum TourCategory {
 **ตัวอย่าง:**
 ```bash
 # ค้นหาทัวร์ทะเลในภาคใต้
-GET /api/v1/tours?category=Sea&region=South
+GET /api/tours?category=Sea&region=South
 
 # ค้นหาทัวร์ราคา 1000-2000 บาท
-GET /api/v1/tours?minPrice=1000&maxPrice=2000
+GET /api/tours?minPrice=1000&maxPrice=2000
 
 # ค้นหาคำว่า "เกาะ"
-GET /api/v1/tours?search=เกาะ
+GET /api/tours?search=เกาะ
 ```
 
-### 2. GET `/api/v1/tours/:id`
+### 2. GET `/api/tours/:id`
 ดึงข้อมูลทัวร์รายตัว
 
 **ตัวอย่าง:**
 ```bash
-GET /api/v1/tours/550e8400-e29b-41d4-a716-446655440000
+GET /api/tours/550e8400-e29b-41d4-a716-446655440000
 ```
 
-### 3. POST `/api/v1/tours`
+### 3. POST `/api/tours`
 สร้างทัวร์ใหม่ (Admin only)
 
 **Request Body:**
@@ -100,13 +100,13 @@ GET /api/v1/tours/550e8400-e29b-41d4-a716-446655440000
 }
 ```
 
-### 4. PATCH `/api/v1/tours/:id`
+### 4. PATCH `/api/tours/:id`
 อัปเดตข้อมูลทัวร์ (Admin only)
 
-### 5. DELETE `/api/v1/tours/:id`
+### 5. DELETE `/api/tours/:id`
 ลบทัวร์ (Admin only)
 
-### 6. POST `/api/v1/tours/seed`
+### 6. POST `/api/tours/seed`
 เพิ่มข้อมูลทัวร์ตัวอย่าง (Development only)
 
 ## 🧪 การทดสอบ (Testing)
@@ -115,22 +115,22 @@ GET /api/v1/tours/550e8400-e29b-41d4-a716-446655440000
 
 #### ดึงข้อมูลทัวร์ทั้งหมด
 ```bash
-curl http://localhost:3000/api/v1/tours
+curl http://localhost:3000/api/tours
 ```
 
 #### ค้นหาทัวร์ทะเล
 ```bash
-curl "http://localhost:3000/api/v1/tours?category=Sea"
+curl "http://localhost:3000/api/tours?category=Sea"
 ```
 
 #### ค้นหาทัวร์ในภาคเหนือ
 ```bash
-curl "http://localhost:3000/api/v1/tours?region=North"
+curl "http://localhost:3000/api/tours?region=North"
 ```
 
 #### ค้นหาทัวร์ราคา 1000-2000 บาท
 ```bash
-curl "http://localhost:3000/api/v1/tours?minPrice=1000&maxPrice=2000"
+curl "http://localhost:3000/api/tours?minPrice=1000&maxPrice=2000"
 ```
 
 ### 2. ทดสอบด้วย Postman/Thunder Client
@@ -138,29 +138,29 @@ curl "http://localhost:3000/api/v1/tours?minPrice=1000&maxPrice=2000"
 **Collection สำหรับทดสอบ:**
 
 1. **GET All Tours**
-   - URL: `http://localhost:3000/api/v1/tours`
+   - URL: `http://localhost:3000/api/tours`
    - Method: GET
 
 2. **GET Tours with Filters**
-   - URL: `http://localhost:3000/api/v1/tours?category=Sea&region=South`
+   - URL: `http://localhost:3000/api/tours?category=Sea&region=South`
    - Method: GET
 
 3. **GET Tour by ID**
-   - URL: `http://localhost:3000/api/v1/tours/{tourId}`
+   - URL: `http://localhost:3000/api/tours/{tourId}`
    - Method: GET
 
 4. **POST Create Tour**
-   - URL: `http://localhost:3000/api/v1/tours`
+   - URL: `http://localhost:3000/api/tours`
    - Method: POST
    - Body: JSON (ดูตัวอย่างด้านบน)
 
 5. **PATCH Update Tour**
-   - URL: `http://localhost:3000/api/v1/tours/{tourId}`
+   - URL: `http://localhost:3000/api/tours/{tourId}`
    - Method: PATCH
    - Body: JSON (บางฟิลด์ที่ต้องการอัปเดต)
 
 6. **DELETE Tour**
-   - URL: `http://localhost:3000/api/v1/tours/{tourId}`
+   - URL: `http://localhost:3000/api/tours/{tourId}`
    - Method: DELETE
 
 ### 3. ทดสอบด้วย Frontend
@@ -179,12 +179,12 @@ http://localhost:5173/tours
 npm run start:dev
 
 # เรียก Seed Endpoint
-curl -X POST http://localhost:3000/api/v1/tours/seed
+curl -X POST http://localhost:3000/api/tours/seed
 ```
 
 หรือใช้ Postman/Thunder Client:
 - Method: POST
-- URL: `http://localhost:3000/api/v1/tours/seed`
+- URL: `http://localhost:3000/api/tours/seed`
 
 **ข้อมูลที่จะถูกเพิ่ม:**
 1. เกาะสมุย - ทะเล, ภาคใต้, 1,200 บาท
@@ -197,7 +197,7 @@ curl -X POST http://localhost:3000/api/v1/tours/seed
 ### วิธีที่ 2: สร้างข้อมูลผ่าน API
 
 ```bash
-curl -X POST http://localhost:3000/api/v1/tours \
+curl -X POST http://localhost:3000/api/tours \
   -H "Content-Type: application/json" \
   -d '{
     "title": "ทัวร์ใหม่",
@@ -273,7 +273,7 @@ psql -U postgres -d dbname -c "\dt"
 
 # ลบข้อมูลเก่าและ seed ใหม่
 psql -U postgres -d dbname -c "TRUNCATE tours CASCADE;"
-curl -X POST http://localhost:3000/api/v1/tours/seed
+curl -X POST http://localhost:3000/api/tours/seed
 ```
 
 ### ปัญหา: TypeScript Errors
@@ -293,7 +293,7 @@ npm run build
 // services/tourService.ts
 import axios from 'axios';
 
-const API_URL = 'http://localhost:3000/api/v1/tours';
+const API_URL = 'http://localhost:3000/api/tours';
 
 export const getTours = async (filters?: {
   search?: string;

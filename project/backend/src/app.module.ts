@@ -21,6 +21,7 @@ import { Booking } from './bookings/entities/booking.entity';
 import { Payment } from './payments/entities/payment.entity';
 import { Tour } from './tours/entities/tour.entity';
 import { ReviewsModule } from './reviews/reviews.module';
+import { TicketsModule } from './tickets/tickets.module';
 
 @Module({
   imports: [
@@ -44,7 +45,7 @@ import { ReviewsModule } from './reviews/reviews.module';
         entities: [User, Booking, Payment, Tour],
         autoLoadEntities: true,
         synchronize: true, // เปิดไว้สำหรับ dev
-        ssl: false, // 👈 ปิด SSL ตามที่เราแก้กันไปคราวที่แล้ว
+        ssl: false,
         extra: {
           ssl: false,
         },
@@ -53,13 +54,14 @@ import { ReviewsModule } from './reviews/reviews.module';
 
     // 3. รวม Modules ทั้งหมดของระบบ
     UsersModule,
-    AuthModule, // 👈 ประกอบร่าง AuthModule เข้ามาแล้ว!
+    AuthModule,
     ToursModule,
     AdminModule,
     BookingsModule,
     PaymentsModule,
     TypeOrmModule.forFeature([Booking, Payment, Tour]),
     ReviewsModule,
+    TicketsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

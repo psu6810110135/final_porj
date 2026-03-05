@@ -1,6 +1,6 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import axios from "axios";
-import { Search, Mail, Phone, Calendar, Loader2, Hash, Pencil, X, Check } from "lucide-react";
+import { Search, Mail, Phone, Calendar, Loader2, Hash, Pencil, X, Check, ChevronDown } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 
@@ -20,12 +20,118 @@ const getAuthHeader = (): Record<string, string> => {
   return token ? { Authorization: `Bearer ${token}` } : {};
 };
 
+/* ─── Custom Select Component (Theme Oriented & Round) ─── */
+interface Option {
+  value: string | number;
+  label: string;
+}
+
+const CustomSelect = ({
+  value,
+  onChange,
+  options,
+  className,
+  containerClassName,
+  menuPlacement = "bottom",
+}: {
+  value: string | number;
+  onChange: (val: any) => void;
+  options: Option[];
+  className?: string;
+  containerClassName?: string;
+  menuPlacement?: "top" | "bottom" | "auto";
+}) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const [resolvedPlacement, setResolvedPlacement] = useState<"top" | "bottom">("bottom");
+  const [menuMaxHeight, setMenuMaxHeight] = useState(240);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (ref.current && !ref.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const updateMenuLayout = () => {
+      if (!ref.current) return;
+      const rect = ref.current.getBoundingClientRect();
+      const spaceAbove = rect.top - 12;
+      const spaceBelow = window.innerHeight - rect.bottom - 12;
+      const nextPlacement =
+        menuPlacement === "auto"
+          ? spaceBelow < 220 && spaceAbove > spaceBelow
+            ? "top"
+            : "bottom"
+          : menuPlacement;
+      setResolvedPlacement(nextPlacement === "top" ? "top" : "bottom");
+      const availableSpace = nextPlacement === "top" ? spaceAbove : spaceBelow;
+      setMenuMaxHeight(Math.max(120, Math.min(240, Math.floor(availableSpace))));
+    };
+    updateMenuLayout();
+    window.addEventListener("resize", updateMenuLayout);
+    window.addEventListener("scroll", updateMenuLayout, true);
+    return () => {
+      window.removeEventListener("resize", updateMenuLayout);
+      window.removeEventListener("scroll", updateMenuLayout, true);
+    };
+  }, [isOpen, menuPlacement]);
+
+  const selectedOption = options.find((o) => String(o.value) === String(value)) || options[0];
+
+  return (
+    <div className={containerClassName ?? "relative flex-1 w-full"} ref={ref}>
+      <div
+        className={`flex items-center justify-between ${className}`}
+        onClick={() => setIsOpen(!isOpen)}
+      >
+        <span className="truncate">{selectedOption?.label}</span>
+        <ChevronDown
+          className={`w-3.5 h-3.5 ml-1.5 transition-transform duration-200 shrink-0 opacity-70 ${
+            isOpen ? "rotate-180" : ""
+          }`}
+        />
+      </div>
+      {isOpen && (
+        <div
+          className={`absolute z-[80] w-full min-w-[130px] bg-white border-2 border-[#F6F1E9] rounded-3xl shadow-xl overflow-hidden animate-in fade-in zoom-in-95 duration-200 right-0 ${
+            resolvedPlacement === "top" ? "bottom-full mb-2" : "top-full mt-2"
+          }`}
+        >
+          <div className="overflow-y-auto custom-scrollbar py-2" style={{ maxHeight: `${menuMaxHeight}px` }}>
+            {options.map((opt) => (
+              <div
+                key={String(opt.value)}
+                className={`px-4 py-2.5 text-xs font-bold cursor-pointer transition-colors ${
+                  String(value) === String(opt.value)
+                    ? "bg-[#FFD93D]/30 text-[#FF8400]"
+                    : "text-[#4F200D] hover:bg-[#F6F1E9]"
+                }`}
+                onClick={() => {
+                  onChange(opt.value);
+                  setIsOpen(false);
+                }}
+              >
+                {opt.label}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
 export default function TicketManager() {
   const [tickets, setTickets] = useState<TicketData[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
 
-  // State สำหรับ Mini Pop-up เปลี่ยนสถานะ
   const [editingTicket, setEditingTicket] = useState<TicketData | null>(null);
   const [draftStatus, setDraftStatus] = useState<string>("");
 
@@ -37,7 +143,6 @@ export default function TicketManager() {
       setTickets(data);
     } catch (error) {
       console.error("Failed to fetch tickets:", error);
-      // Fallback dummy data if API endpoint is not ready yet
       setTickets([
         { id: "tk1", first_name: "สมชาย", last_name: "ใจดี", email: "somchai@mail.com", phone: "0812345678", message: "อยากสอบถามเรื่องทัวร์เกาะพีพีค่ะ ว่าสามารถพาเด็กอายุ 5 ขวบไปได้ไหม?", status: "pending", created_at: new Date().toISOString() },
         { id: "tk2", first_name: "มานี", last_name: "รักดี", email: "manee@mail.com", phone: "0898765432", message: "ขอเลื่อนวันเดินทางได้ไหมคะ พอดีติดธุระด่วน", status: "resolved", created_at: new Date().toISOString() }
@@ -61,9 +166,9 @@ export default function TicketManager() {
     const id = editingTicket.id;
     const newStatus = draftStatus;
     
-    setEditingTicket(null); // ปิด Pop-up ทันที (Optimistic)
+    setEditingTicket(null); 
     
-    if (newStatus === editingTicket.status) return; // ไม่มีการเปลี่ยนแปลง
+    if (newStatus === editingTicket.status) return; 
 
     const originalTickets = [...tickets];
     setTickets(tickets.map(t => t.id === id ? { ...t, status: newStatus as any } : t));
@@ -72,11 +177,10 @@ export default function TicketManager() {
       await axios.patch(`http://localhost:3000/api/v1/tickets/${id}`, { status: newStatus }, { headers: getAuthHeader() });
     } catch (error) {
       alert("อัปเดตสถานะล้มเหลว");
-      setTickets(originalTickets); // ย้อนกลับถ้า API error
+      setTickets(originalTickets); 
     }
   };
 
-  // ฟังก์ชันสำหรับการเปิดตอบกลับทาง Gmail
   const handleReplyGmail = (ticket: TicketData) => {
     const subject = encodeURIComponent(`ตอบกลับข้อความติดต่อ: ThaiTour`);
     const body = encodeURIComponent(
@@ -100,12 +204,9 @@ export default function TicketManager() {
 
   const getStatusColorClass = (status: string) => {
     switch(status) {
-      case 'resolved':
-        return 'bg-green-100 text-green-700 hover:bg-green-200';
-      case 'cancelled':
-        return 'bg-red-100 text-red-700 hover:bg-red-200';
-      default:
-        return 'bg-[#FFD93D]/30 text-[#4F200D] hover:bg-[#FFD93D]/50';
+      case 'resolved': return 'bg-green-100 text-green-700 hover:bg-green-200';
+      case 'cancelled': return 'bg-red-100 text-red-700 hover:bg-red-200';
+      default: return 'bg-[#FFD93D]/30 text-[#FF8400] hover:bg-[#FFD93D]/50';
     }
   };
 
@@ -114,6 +215,26 @@ export default function TicketManager() {
       case 'resolved': return 'แก้ไขแล้ว';
       case 'cancelled': return 'ยกเลิก';
       default: return 'รอดำเนินการ';
+    }
+  };
+
+  // สีสำหรับ Pop-up
+  const getPopupOptionStyle = (val: string, isSelected: boolean) => {
+    if (!isSelected) return "border-[#F6F1E9] bg-white text-[#4F200D]/60 hover:border-gray-200 hover:bg-gray-50";
+    switch(val) {
+      case 'resolved': return "border-green-400 bg-green-50 text-green-700";
+      case 'cancelled': return "border-red-400 bg-red-50 text-red-700";
+      case 'pending': return "border-amber-400 bg-amber-50 text-amber-700";
+      default: return "border-[#FF8400] bg-[#FF8400]/10 text-[#FF8400]";
+    }
+  };
+
+  const getDotColor = (val: string) => {
+    switch(val) {
+      case 'resolved': return "bg-green-500";
+      case 'cancelled': return "bg-red-500";
+      case 'pending': return "bg-amber-500";
+      default: return "bg-gray-400";
     }
   };
 
@@ -204,7 +325,10 @@ export default function TicketManager() {
                           onClick={() => openStatusModal(ticket)}
                           className={`w-full flex items-center justify-between px-4 py-2 rounded-full border-0 font-bold text-[11px] sm:text-xs cursor-pointer transition-colors shadow-sm ${getStatusColorClass(ticket.status)}`}
                         >
-                          <span>{getStatusLabel(ticket.status)}</span>
+                          <div className="flex items-center gap-1.5">
+                            <span className={`w-2 h-2 rounded-full ${getDotColor(ticket.status)}`}></span>
+                            <span>{getStatusLabel(ticket.status)}</span>
+                          </div>
                           <Pencil className="w-3 h-3 opacity-60 shrink-0" />
                         </button>
 
@@ -247,14 +371,13 @@ export default function TicketManager() {
                 <button
                   key={opt.value}
                   onClick={() => setDraftStatus(opt.value)}
-                  className={`w-full flex items-center justify-between p-3.5 rounded-2xl border-2 transition-all font-bold text-sm ${
-                    draftStatus === opt.value
-                      ? "border-[#FF8400] bg-[#FF8400]/10 text-[#FF8400]"
-                      : "border-[#F6F1E9] bg-white text-[#4F200D]/60 hover:border-[#FFD93D] hover:bg-[#FFD93D]/10 hover:text-[#4F200D]"
-                  }`}
+                  className={`w-full flex items-center justify-between p-3.5 rounded-2xl border-2 transition-all font-bold text-sm ${getPopupOptionStyle(opt.value, draftStatus === opt.value)}`}
                 >
-                  {opt.label}
-                  {draftStatus === opt.value && <Check className="w-5 h-5 text-[#FF8400]" />}
+                  <div className="flex items-center gap-2.5">
+                    <span className={`w-3 h-3 rounded-full shadow-sm ${getDotColor(opt.value)}`}></span>
+                    {opt.label}
+                  </div>
+                  {draftStatus === opt.value && <Check className="w-5 h-5" />}
                 </button>
               ))}
             </div>

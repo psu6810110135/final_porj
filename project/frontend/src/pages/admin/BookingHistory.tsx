@@ -39,7 +39,6 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import axios from "axios";
 
-// --- Types ---
 interface BookingTour {
   id: string;
   title: string;
@@ -118,9 +117,7 @@ const CustomSelect = ({
   menuPlacement?: "top" | "bottom" | "auto";
 }) => {
   const [isOpen, setIsOpen] = useState(false);
-  const [resolvedPlacement, setResolvedPlacement] = useState<"top" | "bottom">(
-    "bottom",
-  );
+  const [resolvedPlacement, setResolvedPlacement] = useState<"top" | "bottom">("bottom");
   const [menuMaxHeight, setMenuMaxHeight] = useState(240);
   const ref = useRef<HTMLDivElement>(null);
 
@@ -136,71 +133,48 @@ const CustomSelect = ({
 
   useEffect(() => {
     if (!isOpen) return;
-
     const updateMenuLayout = () => {
       if (!ref.current) return;
-
       const rect = ref.current.getBoundingClientRect();
       const spaceAbove = rect.top - 12;
       const spaceBelow = window.innerHeight - rect.bottom - 12;
-
       const nextPlacement =
         menuPlacement === "auto"
           ? spaceBelow < 220 && spaceAbove > spaceBelow
             ? "top"
             : "bottom"
           : menuPlacement;
-
       setResolvedPlacement(nextPlacement === "top" ? "top" : "bottom");
-
       const availableSpace = nextPlacement === "top" ? spaceAbove : spaceBelow;
-      setMenuMaxHeight(
-        Math.max(120, Math.min(240, Math.floor(availableSpace))),
-      );
+      setMenuMaxHeight(Math.max(120, Math.min(240, Math.floor(availableSpace))));
     };
-
     updateMenuLayout();
     window.addEventListener("resize", updateMenuLayout);
     window.addEventListener("scroll", updateMenuLayout, true);
-
     return () => {
       window.removeEventListener("resize", updateMenuLayout);
       window.removeEventListener("scroll", updateMenuLayout, true);
     };
   }, [isOpen, menuPlacement]);
 
-  const selectedOption =
-    options.find((o) => String(o.value) === String(value)) || options[0];
+  const selectedOption = options.find((o) => String(o.value) === String(value)) || options[0];
 
   return (
-    <div
-      className={
-        containerClassName ?? "relative flex-1 sm:flex-none w-full sm:w-auto"
-      }
-      ref={ref}
-    >
+    <div className={containerClassName ?? "relative flex-1 sm:flex-none w-full sm:w-auto"} ref={ref}>
       <div
         className={`flex items-center justify-between ${className}`}
         onClick={() => setIsOpen(!isOpen)}
       >
         <span className="truncate">{selectedOption?.label}</span>
-        <ChevronDown
-          className={`w-4 h-4 ml-2 transition-transform duration-200 text-[#4F200D]/50 shrink-0 ${
-            isOpen ? "rotate-180" : ""
-          }`}
-        />
+        <ChevronDown className={`w-4 h-4 ml-2 transition-transform duration-200 text-[#4F200D]/50 shrink-0 ${isOpen ? "rotate-180" : ""}`} />
       </div>
-
       {isOpen && (
         <div
           className={`absolute z-[80] w-full min-w-[140px] bg-white border-2 border-[#F6F1E9] rounded-3xl shadow-xl overflow-hidden animate-in fade-in zoom-in-95 duration-200 ${
             resolvedPlacement === "top" ? "bottom-full mb-2" : "top-full mt-2"
           }`}
         >
-          <div
-            className="overflow-y-auto custom-scrollbar py-2"
-            style={{ maxHeight: `${menuMaxHeight}px` }}
-          >
+          <div className="overflow-y-auto custom-scrollbar py-2" style={{ maxHeight: `${menuMaxHeight}px` }}>
             {options.map((opt) => (
               <div
                 key={String(opt.value)}
@@ -287,42 +261,66 @@ export default function BookingHistory() {
     return { start: "-", end: "-" };
   };
 
+  // สีสำหรับ Pop-up
+  const getPopupOptionStyle = (val: string, isSelected: boolean) => {
+    if (!isSelected) return "border-[#F6F1E9] bg-white text-[#4F200D]/60 hover:border-gray-200 hover:bg-gray-50";
+    switch(val) {
+      case 'confirmed': return "border-emerald-400 bg-emerald-50 text-emerald-700";
+      case 'pending_verify': return "border-amber-400 bg-amber-50 text-amber-700";
+      case 'pending_pay': return "border-blue-400 bg-blue-50 text-blue-700";
+      case 'cancelled': return "border-red-400 bg-red-50 text-red-700";
+      case 'expired': return "border-gray-400 bg-gray-100 text-gray-700";
+      default: return "border-[#FF8400] bg-[#FF8400]/10 text-[#FF8400]";
+    }
+  };
+
+  const getDotColor = (val: string) => {
+    switch(val) {
+      case 'confirmed': return "bg-emerald-500";
+      case 'pending_verify': return "bg-amber-500";
+      case 'pending_pay': return "bg-blue-500";
+      case 'cancelled': return "bg-red-500";
+      case 'expired': return "bg-gray-500";
+      default: return "bg-gray-400";
+    }
+  };
+
   const getStatusBadge = (status: string) => {
     switch (status) {
       case "confirmed":
         return (
-          <Badge className="bg-emerald-100 text-emerald-700 border-0 px-3 py-1 font-bold shadow-none text-xs rounded-full">
-            ยืนยันแล้ว
+          <Badge className="bg-emerald-100 text-emerald-700 border-0 px-3 py-1 font-bold shadow-none text-xs rounded-full flex items-center gap-1.5">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> ยืนยันแล้ว
           </Badge>
         );
       case "pending_verify":
         return (
-          <Badge className="bg-[#FFD93D]/40 text-[#FF8400] border-0 px-3 py-1 font-bold shadow-none text-xs rounded-full">
-            รอตรวจสอบ
+          <Badge className="bg-amber-100 text-amber-700 border-0 px-3 py-1 font-bold shadow-none text-xs rounded-full flex items-center gap-1.5">
+            <span className="w-1.5 h-1.5 rounded-full bg-amber-500"></span> รอตรวจสอบ
           </Badge>
         );
       case "pending_pay":
         return (
-          <Badge className="bg-blue-100 text-blue-600 border-0 px-3 py-1 font-bold shadow-none text-xs rounded-full">
-            รอชำระเงิน
+          <Badge className="bg-blue-100 text-blue-700 border-0 px-3 py-1 font-bold shadow-none text-xs rounded-full flex items-center gap-1.5">
+            <span className="w-1.5 h-1.5 rounded-full bg-blue-500"></span> รอชำระเงิน
           </Badge>
         );
       case "cancelled":
         return (
-          <Badge className="bg-red-100 text-red-600 border-0 px-3 py-1 font-bold shadow-none text-xs rounded-full">
-            ยกเลิกแล้ว
+          <Badge className="bg-red-100 text-red-700 border-0 px-3 py-1 font-bold shadow-none text-xs rounded-full flex items-center gap-1.5">
+            <span className="w-1.5 h-1.5 rounded-full bg-red-500"></span> ยกเลิกแล้ว
           </Badge>
         );
       case "expired":
         return (
-          <Badge className="bg-gray-200 text-gray-500 border-0 px-3 py-1 font-bold shadow-none text-xs rounded-full">
-            หมดอายุ
+          <Badge className="bg-gray-200 text-gray-600 border-0 px-3 py-1 font-bold shadow-none text-xs rounded-full flex items-center gap-1.5">
+            <span className="w-1.5 h-1.5 rounded-full bg-gray-500"></span> หมดอายุ
           </Badge>
         );
       default:
         return (
-          <Badge className="bg-gray-100 text-gray-600 border-0 px-3 py-1 font-bold shadow-none text-xs rounded-full">
-            {status}
+          <Badge className="bg-gray-100 text-gray-600 border-0 px-3 py-1 font-bold shadow-none text-xs rounded-full flex items-center gap-1.5">
+            <span className="w-1.5 h-1.5 rounded-full bg-gray-400"></span> {status}
           </Badge>
         );
     }
@@ -527,7 +525,6 @@ export default function BookingHistory() {
 
   return (
     <div className="w-full space-y-6 animate-in fade-in duration-500 relative">
-      {/* Header Area */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4 sm:mb-8">
         <div>
           <h1 className="text-2xl sm:text-3xl font-extrabold text-[#4F200D]">
@@ -544,9 +541,7 @@ export default function BookingHistory() {
         </div>
       </div>
 
-      {/* Filter & Search Bar */}
       <div className="bg-white p-4 sm:p-5 rounded-3xl border-0 shadow-sm space-y-4">
-        {/* Row 1: Search + Status */}
         <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 items-center">
           <div className="relative w-full sm:flex-1">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-[#4F200D]/40 w-5 h-5" />
@@ -572,7 +567,6 @@ export default function BookingHistory() {
           />
         </div>
 
-        {/* Row 2: Date range filter + Clear */}
         <div className="flex flex-col md:flex-row gap-4 items-start md:items-center justify-between w-full">
           <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 w-full md:w-auto bg-[#F6F1E9]/30 p-2 sm:p-1.5 sm:pl-3 rounded-2xl border border-[#F6F1E9]">
             <div className="flex items-center gap-2 mb-2 sm:mb-0">
@@ -588,9 +582,7 @@ export default function BookingHistory() {
                 value={dateFrom}
                 onChange={(e) => setDateFrom(e.target.value)}
               />
-              <span className="text-[#4F200D]/40 font-bold text-xs sm:text-sm">
-                ถึง
-              </span>
+              <span className="text-[#4F200D]/40 font-bold text-xs sm:text-sm">ถึง</span>
               <input
                 type="date"
                 className="text-sm w-full sm:w-auto border-0 bg-white px-3 py-2 rounded-xl focus:ring-2 focus:ring-[#FFD93D] text-[#4F200D] font-bold cursor-pointer outline-none transition-all"
@@ -612,8 +604,7 @@ export default function BookingHistory() {
                 className="text-xs sm:text-sm font-bold text-red-500 hover:text-red-600 hover:bg-red-50 rounded-xl px-3 sm:px-4 py-2 h-auto"
                 onClick={clearFilters}
               >
-                <X size={14} className="mr-1" />
-                ล้างตัวกรอง
+                <X size={14} className="mr-1" />ล้างตัวกรอง
               </Button>
             )}
           </div>
@@ -623,9 +614,7 @@ export default function BookingHistory() {
       {loading && (
         <div className="bg-white rounded-3xl border-0 shadow-sm p-16 flex flex-col items-center gap-4">
           <Loader2 className="w-8 h-8 text-[#FF8400] animate-spin" />
-          <p className="text-[#4F200D]/60 font-bold text-sm">
-            กำลังโหลดข้อมูลการจอง...
-          </p>
+          <p className="text-[#4F200D]/60 font-bold text-sm">กำลังโหลดข้อมูลการจอง...</p>
         </div>
       )}
 
@@ -636,72 +625,45 @@ export default function BookingHistory() {
           <Button
             className="bg-[#FF8400] hover:bg-[#FF8400]/90 text-white font-bold rounded-2xl px-6"
             onClick={() => window.location.reload()}
-          >
-            ลองใหม่อีกครั้ง
-          </Button>
+          >ลองใหม่อีกครั้ง</Button>
         </div>
       )}
 
-      {/* Bookings Table */}
       {!loading && !error && (
         <div className="bg-white rounded-3xl border-0 shadow-sm overflow-visible w-full">
           <div className="overflow-x-auto overflow-y-visible w-full">
             <table className="w-full text-left text-sm min-w-[900px]">
               <thead className="bg-[#F6F1E9]/80 border-b-2 border-[#F6F1E9]">
                 <tr>
+                  <th className="px-4 py-4 sm:px-5 sm:py-5 font-black text-[#4F200D] uppercase tracking-wider text-[10px] sm:text-xs whitespace-nowrap">รหัสการจอง</th>
+                  <th className="px-4 py-4 sm:px-5 sm:py-5 font-black text-[#4F200D] uppercase tracking-wider text-[10px] sm:text-xs">ข้อมูลทัวร์</th>
+                  <th className="px-4 py-4 sm:px-5 sm:py-5 font-black text-[#4F200D] uppercase tracking-wider text-[10px] sm:text-xs">ข้อมูลลูกค้า</th>
+                  <SortableHeader field="startDate">วันเริ่มทัวร์</SortableHeader>
                   <th className="px-4 py-4 sm:px-5 sm:py-5 font-black text-[#4F200D] uppercase tracking-wider text-[10px] sm:text-xs whitespace-nowrap">
-                    รหัสการจอง
-                  </th>
-                  <th className="px-4 py-4 sm:px-5 sm:py-5 font-black text-[#4F200D] uppercase tracking-wider text-[10px] sm:text-xs">
-                    ข้อมูลทัวร์
-                  </th>
-                  <th className="px-4 py-4 sm:px-5 sm:py-5 font-black text-[#4F200D] uppercase tracking-wider text-[10px] sm:text-xs">
-                    ข้อมูลลูกค้า
-                  </th>
-                  <SortableHeader field="startDate">
-                    วันเริ่มทัวร์
-                  </SortableHeader>
-                  <th className="px-4 py-4 sm:px-5 sm:py-5 font-black text-[#4F200D] uppercase tracking-wider text-[10px] sm:text-xs whitespace-nowrap">
-                    <div className="flex items-center gap-1.5">
-                      <Users size={13} />
-                      จำนวน
-                    </div>
+                    <div className="flex items-center gap-1.5"><Users size={13} />จำนวน</div>
                   </th>
                   <SortableHeader field="totalPrice">ยอดรวม</SortableHeader>
-                  <th className="px-4 py-4 sm:px-5 sm:py-5 font-black text-[#4F200D] uppercase tracking-wider text-[10px] sm:text-xs text-center whitespace-nowrap">
-                    สลิป
-                  </th>
-                  <th className="px-4 py-4 sm:px-5 sm:py-5 font-black text-[#4F200D] uppercase tracking-wider text-[10px] sm:text-xs whitespace-nowrap">
-                    สถานะ
-                  </th>
+                  <th className="px-4 py-4 sm:px-5 sm:py-5 font-black text-[#4F200D] uppercase tracking-wider text-[10px] sm:text-xs text-center whitespace-nowrap">สลิป</th>
+                  <th className="px-4 py-4 sm:px-5 sm:py-5 font-black text-[#4F200D] uppercase tracking-wider text-[10px] sm:text-xs whitespace-nowrap">สถานะ</th>
                   <SortableHeader field="createdAt">วันที่จอง</SortableHeader>
-                  <th className="px-4 py-4 sm:px-5 sm:py-5 font-black text-[#4F200D] uppercase tracking-wider text-[10px] sm:text-xs text-right whitespace-nowrap">
-                    จัดการ
-                  </th>
+                  <th className="px-4 py-4 sm:px-5 sm:py-5 font-black text-[#4F200D] uppercase tracking-wider text-[10px] sm:text-xs text-right whitespace-nowrap">จัดการ</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-[#F6F1E9]">
                 {paginatedBookings.length === 0 ? (
                   <tr>
-                    <td
-                      colSpan={10}
-                      className="px-6 py-16 text-center text-[#4F200D]/40 font-bold text-sm"
-                    >
+                    <td colSpan={10} className="px-6 py-16 text-center text-[#4F200D]/40 font-bold text-sm">
                       ไม่พบข้อมูลการจองที่ตรงกับเงื่อนไข
                     </td>
                   </tr>
                 ) : (
                   paginatedBookings.map((b) => {
                     const dates = getTourDates(b);
-                    
                     const slipPath = b.paymentSlipUrl || b.payment?.slipUrl || b.payment?.slip_url;
                     const fullSlipUrl = slipPath ? (slipPath.startsWith('http') ? slipPath : `http://localhost:3000/${slipPath}`.replace(/([^:]\/)\/+/g, "$1")) : null;
 
                     return (
-                      <tr
-                        key={b.id}
-                        className="hover:bg-[#FFD93D]/5 transition-colors group"
-                      >
+                      <tr key={b.id} className="hover:bg-[#FFD93D]/5 transition-colors group">
                         <td className="px-4 py-3 sm:px-5 sm:py-4">
                           <span className="font-black text-[#FF8400] bg-[#FF8400]/10 px-2 py-1 sm:px-3 sm:py-1.5 rounded-lg whitespace-nowrap text-[10px] sm:text-xs">
                             {b.bookingReference || b.id.slice(0, 8)}
@@ -720,11 +682,7 @@ export default function BookingHistory() {
                         <td className="px-4 py-3 sm:px-5 sm:py-4">
                           <div className="flex flex-col gap-0.5">
                             <div className="flex items-center gap-1.5 sm:gap-2">
-                              <User
-                                size={12}
-                                className="text-[#4F200D]/40 shrink-0"
-                                strokeWidth={3}
-                              />
+                              <User size={12} className="text-[#4F200D]/40 shrink-0" strokeWidth={3} />
                               <span className="font-bold text-[#4F200D] truncate text-xs sm:text-sm">
                                 {b.contactInfo?.name || b.user?.username || "-"}
                               </span>
@@ -739,8 +697,7 @@ export default function BookingHistory() {
                         <td className="px-4 py-3 sm:px-5 sm:py-4 whitespace-nowrap">
                           <div className="flex flex-col">
                             <div className="flex items-center gap-1.5 text-emerald-600 font-semibold text-[10px] sm:text-sm">
-                              <Calendar size={12} strokeWidth={2.5} />{" "}
-                              {dates.start}
+                              <Calendar size={12} strokeWidth={2.5} /> {dates.start}
                             </div>
                             {dates.end !== dates.start && (
                               <div className="flex items-center gap-1.5 text-red-500 font-semibold text-[10px] sm:text-xs mt-0.5 ml-0.5">
@@ -767,8 +724,7 @@ export default function BookingHistory() {
                               className="inline-flex items-center gap-1.5 px-3 py-1.5 text-[10px] sm:text-xs font-bold text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-full transition-colors"
                               title="ดูสลิป"
                             >
-                              <Eye className="w-3.5 h-3.5" />
-                              ดูสลิป
+                              <Eye className="w-3.5 h-3.5" /> ดูสลิป
                             </button>
                           ) : (
                             <span className="text-[#4F200D]/30 text-xs font-semibold">-</span>
@@ -782,8 +738,7 @@ export default function BookingHistory() {
                               className="h-7 px-3 rounded-full text-[11px] font-bold text-[#4F200D]/55 hover:text-[#FF8400] hover:bg-[#FF8400]/10 border border-[#F6F1E9] transition-colors"
                               onClick={() => beginStatusEdit(b)}
                             >
-                              <Pencil className="w-3 h-3 mr-1.5" />
-                              เปลี่ยนสถานะ
+                              <Pencil className="w-3 h-3 mr-1.5" /> เปลี่ยนสถานะ
                             </Button>
                           </div>
                         </td>
@@ -862,16 +817,10 @@ export default function BookingHistory() {
                 >
                   <ChevronLeft size={16} />
                 </Button>
-
                 <div className="flex items-center gap-0.5 sm:gap-1 px-1">
                   {getPageNumbers().map((page, i) =>
                     page === "..." ? (
-                      <span
-                        key={`dots-${i}`}
-                        className="px-1 text-[#4F200D]/30 font-bold text-xs sm:text-sm"
-                      >
-                        ...
-                      </span>
+                      <span key={`dots-${i}`} className="px-1 text-[#4F200D]/30 font-bold text-xs sm:text-sm">...</span>
                     ) : (
                       <Button
                         key={page}
@@ -885,15 +834,12 @@ export default function BookingHistory() {
                     ),
                   )}
                 </div>
-
                 <Button
                   variant="ghost"
                   size="icon"
                   className="h-7 w-7 sm:h-8 sm:w-8 rounded-xl text-[#4F200D]/40 hover:text-[#FF8400] hover:bg-[#FF8400]/10 disabled:opacity-30"
                   disabled={safeCurrentPage >= totalPages}
-                  onClick={() =>
-                    setCurrentPage((p) => Math.min(totalPages, p + 1))
-                  }
+                  onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
                 >
                   <ChevronRight size={16} />
                 </Button>
@@ -945,14 +891,13 @@ export default function BookingHistory() {
                   key={opt.value}
                   onClick={() => setDraftStatus(opt.value)}
                   disabled={updatingStatus}
-                  className={`w-full flex items-center justify-between p-3.5 rounded-2xl border-2 transition-all font-bold text-sm ${
-                    draftStatus === opt.value
-                      ? "border-[#FF8400] bg-[#FF8400]/10 text-[#FF8400]"
-                      : "border-[#F6F1E9] bg-white text-[#4F200D]/60 hover:border-[#FFD93D] hover:bg-[#FFD93D]/10 hover:text-[#4F200D]"
-                  }`}
+                  className={`w-full flex items-center justify-between p-3.5 rounded-2xl border-2 transition-all font-bold text-sm ${getPopupOptionStyle(opt.value, draftStatus === opt.value)}`}
                 >
-                  {opt.label}
-                  {draftStatus === opt.value && <Check className="w-5 h-5 text-[#FF8400]" />}
+                  <div className="flex items-center gap-2.5">
+                    <span className={`w-3 h-3 rounded-full shadow-sm ${getDotColor(opt.value)}`}></span>
+                    {opt.label}
+                  </div>
+                  {draftStatus === opt.value && <Check className="w-5 h-5" />}
                 </button>
               ))}
             </div>

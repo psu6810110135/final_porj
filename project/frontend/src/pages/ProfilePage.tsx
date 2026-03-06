@@ -2,6 +2,7 @@ import { useEffect, useState, type ChangeEvent } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
+import { API_BASE_URL } from "@/config/api";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -73,7 +74,7 @@ export default function ProfilePage() {
 
     const fetchProfile = async () => {
       try {
-        const res = await fetch("http://localhost:3000/api/v1/users/me", {
+        const res = await fetch(`${API_BASE_URL}/api/users/me`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         if (!res.ok) throw new Error("ไม่สามารถดึงข้อมูลผู้ใช้จากฐานข้อมูลได้");
@@ -126,7 +127,7 @@ export default function ProfilePage() {
       const formData = new FormData();
       formData.append("avatar", file);
 
-      const res = await fetch("http://localhost:3000/api/v1/users/me/avatar", {
+      const res = await fetch(`${API_BASE_URL}/api/users/me/avatar`, {
         method: "POST",
         headers: {
           Authorization: `Bearer ${token}`,
@@ -181,7 +182,7 @@ export default function ProfilePage() {
     setSaving(true);
 
     try {
-      const res = await fetch("http://localhost:3000/api/v1/users/me", {
+      const res = await fetch(`${API_BASE_URL}/api/users/me`, {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
@@ -243,7 +244,7 @@ export default function ProfilePage() {
   };
 
   const avatarSrc = profile?.avatarUrl
-    ? `http://localhost:3000${profile.avatarUrl}`
+    ? `${API_BASE_URL}${profile.avatarUrl}`
     : null;
 
   return (

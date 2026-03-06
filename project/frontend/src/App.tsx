@@ -23,6 +23,7 @@ import TourScheduleManager from "./pages/admin/TourScheduleManager";
 import UserManager from "./pages/admin/UserManager";
 import BookingHistory from "./pages/admin/BookingHistory";
 import TicketManager from "./pages/admin/TicketManager"; // 👈 นำเข้า TicketManager
+import ReviewManager from "./pages/admin/ReviewManager";
 import AdminGuard from "./pages/AdminGuard";
 import GuestGuard from "./pages/GuestGuard";
 
@@ -54,8 +55,10 @@ export default function App() {
             <Route path="tours" element={<TourManager />} />
             <Route path="schedules" element={<TourScheduleManager />} />
             <Route path="users" element={<UserManager />} />
-            <Route path="tickets" element={<TicketManager />} /> {/* 👈 เพิ่ม Route Tickets */}
+            <Route path="tickets" element={<TicketManager />} />{" "}
+            {/* 👈 เพิ่ม Route Tickets */}
             <Route path="bookings" element={<BookingHistory />} />
+            <Route path="reviews" element={<ReviewManager />} />
           </Route>
         </Route>
       </Routes>

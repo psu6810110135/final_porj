@@ -4,7 +4,7 @@ import { AuthCredentialsDto } from './dto/auth-credentials.dto';
 import { AuthService } from './auth.service';
 import { AuthGuard } from '@nestjs/passport';
 
-@Controller('auth')
+@Controller('api/auth')
 export class AuthController {
   constructor(private authService: AuthService) { }
   @Get('/google')
@@ -25,13 +25,17 @@ export class AuthController {
     res.redirect(`http://localhost:5173/login/success?token=${result.accessToken}`);
   }
   @Post('/signup')
-  signUp(@Body(ValidationPipe) authCredentialsDto: AuthCredentialsDto): Promise<void> {
+  signUp(
+    @Body(ValidationPipe) authCredentialsDto: AuthCredentialsDto,
+  ): Promise<void> {
     return this.authService.signUp(authCredentialsDto);
   }
 
   @Post('/signin')
   @HttpCode(HttpStatus.OK)
-  signIn(@Body(ValidationPipe) authCredentialsDto: AuthCredentialsDto): Promise<{ accessToken: string }> {
+  signIn(
+    @Body(ValidationPipe) authCredentialsDto: AuthCredentialsDto,
+  ): Promise<{ accessToken: string }> {
     return this.authService.signIn(authCredentialsDto);
   }
 
@@ -60,9 +64,15 @@ export class AuthController {
   }
 
   @Post('reset-password')
-  async resetPasswordWithToken(@Body() body: { email: string; resetToken: string; newPassword: string }) {
+  async resetPasswordWithToken(
+    @Body() body: { email: string; resetToken: string; newPassword: string },
+  ) {
     try {
-      return await this.authService.resetPasswordWithToken(body.email, body.resetToken, body.newPassword);
+      return await this.authService.resetPasswordWithToken(
+        body.email,
+        body.resetToken,
+        body.newPassword,
+      );
     } catch (error) {
       throw new BadRequestException(error.message);
     }

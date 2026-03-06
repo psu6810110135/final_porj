@@ -32,7 +32,10 @@ export class Review {
   rating!: number; // 1-5
 
   @Column({ type: 'text', nullable: true })
-  comment?: string;
+  comment?: string | null;
+
+  @Column({ default: false, name: 'is_recommended' })
+  is_recommended!: boolean;
 
   @CreateDateColumn({ name: 'created_at' })
   createdAt!: Date;

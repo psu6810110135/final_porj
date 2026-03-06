@@ -2,8 +2,7 @@ import { Controller, Get, Post, Patch, Param, Body } from '@nestjs/common';
 import { TicketsService } from './tickets.service';
 import { CreateTicketDto } from './dto/create-ticket.dto';
 
-// เปลี่ยน Path ให้ตรงกัน
-@Controller('api/v1/tickets') 
+@Controller('api/tickets')
 export class TicketsController {
   constructor(private readonly ticketsService: TicketsService) {}
 

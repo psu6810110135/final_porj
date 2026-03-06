@@ -4,6 +4,7 @@ import axios from "axios";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { getCategoryLabel, getDurationLabel } from "@/utils/tourLabels";
+import { API_BASE_URL } from "@/config/api";
 
 /* ─── Types ───────────────────────── */
 
@@ -190,7 +191,7 @@ function LoginRequiredModal({
 const getImageUrl = (path?: string) => {
   if (!path) return "https://placehold.co/80x80?text=No+Img";
   if (path.startsWith("http")) return path;
-  return `http://localhost:3000/${path.replace(/^\//, "")}`;
+  return `${API_BASE_URL}/${path.replace(/^\//, "")}`;
 };
 
 function parsePreparation(raw?: string[] | string): string[] {
@@ -344,7 +345,7 @@ function BookingSheet({
   onClose?: () => void;
   showToast: (msg: string, type: ToastType) => void;
 }) {
-  const api = axios.create({ baseURL: "http://localhost:3000" });
+  const api = axios.create({ baseURL: API_BASE_URL });
   const navigate = useNavigate();
 
   const [adults, setAdults] = useState(1);
@@ -489,7 +490,7 @@ function BookingSheet({
     try {
       setSubmitting(true);
       const res = await api.post(
-        "/api/v1/bookings",
+        "/api/bookings",
         {
           tourId: tour.id,
           tourScheduleId: selectedSchedule.id,
@@ -863,7 +864,7 @@ export default function TourDetailPage() {
   useEffect(() => {
     if (!id) return;
     axios
-      .get(`http://localhost:3000/api/tours/${id}`)
+      .get(`${API_BASE_URL}/api/tours/${id}`)
       .then((res) =>
         setTour(normalizeTourPayload(res?.data?.data ?? res?.data)),
       )
@@ -875,7 +876,7 @@ export default function TourDetailPage() {
     if (!id) return;
     setReviewsLoading(true);
     axios
-      .get(`http://localhost:3000/api/v1/reviews/tour/${id}`)
+      .get(`${API_BASE_URL}/api/reviews/tour/${id}`)
       .then((res) => {
         const p = res?.data;
         setReviews(Array.isArray(p) ? p : Array.isArray(p?.data) ? p.data : []);

@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams, useLocation } from "react-router-dom";
 import { QRCodeCanvas } from "qrcode.react"; // ✅ นำเข้าตัวสร้าง QR Code
+import { API_BASE_URL } from "@/config/api";
 
 export default function PaymentPage() {
   const navigate = useNavigate();
@@ -33,12 +34,9 @@ export default function PaymentPage() {
       try {
         const headers = getAuthHeader();
         // ยิงไปที่ API ที่เราเพิ่งเขียนใน Backend
-        const res = await fetch(
-          `http://localhost:3000/api/v1/payments/qr/${id}`,
-          {
-            headers,
-          },
-        );
+        const res = await fetch(`${API_BASE_URL}/api/payments/qr/${id}`, {
+          headers,
+        });
         if (!res.ok) throw new Error("Failed to fetch QR");
 
         const data = await res.json();
@@ -90,12 +88,9 @@ export default function PaymentPage() {
 
         const headers = getAuthHeader();
 
-        const response = await fetch(
-          `http://localhost:3000/api/v1/bookings/${id}`,
-          {
-            headers,
-          },
-        );
+        const response = await fetch(`${API_BASE_URL}/api/bookings/${id}`, {
+          headers,
+        });
 
         if (response.ok) {
           const data = await response.json();
@@ -144,7 +139,7 @@ export default function PaymentPage() {
 
     try {
       const res = await fetch(
-        `http://localhost:3000/api/v1/bookings/${id}/upload-slip`,
+        `${API_BASE_URL}/api/bookings/${id}/upload-slip`,
         {
           method: "POST",
           headers: {

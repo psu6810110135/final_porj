@@ -16,6 +16,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { API_BASE_URL } from "@/config/api";
 
 interface ReviewUser {
   id: string;
@@ -78,7 +79,7 @@ const getAuthHeader = (): Record<string, string> => {
   return token ? { Authorization: `Bearer ${token}` } : {};
 };
 
-const API_URL = "http://localhost:3000/api/v1/reviews/admin";
+const API_URL = `${API_BASE_URL}/api/reviews/admin`;
 
 const STAR_OPTIONS = ["all", "5", "4", "3", "2", "1"];
 

@@ -9,6 +9,8 @@ import {
   CATEGORY_OPTIONS,
   DURATION_OPTIONS,
   getCategoryLabel,
+  getDurationLabel,
+  getProvinceLabel,
 } from "@/utils/tourLabels";
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -1047,7 +1049,7 @@ export default function HomePage() {
                     {tour.province && (
                       <div className="absolute bottom-3 left-3 flex items-center gap-1 bg-black/30 backdrop-blur-sm text-white text-xs font-medium px-2.5 py-1 rounded-full">
                         <MapIcon className="w-3 h-3" />
-                        {tour.province}
+                        {getProvinceLabel(tour.province)}
                       </div>
                     )}
                   </div>
@@ -1063,7 +1065,9 @@ export default function HomePage() {
                     <div className="flex items-center justify-between mt-auto">
                       <div>
                         <p className="text-[11px] md:text-xs text-[#4F200D]/50 font-medium">
-                          {tour.duration || "กำลังจัดตาราง"}
+                          {tour.duration
+                            ? getDurationLabel(tour.duration)
+                            : "กำลังจัดตาราง"}
                         </p>
                         <p className="text-lg md:text-xl font-extrabold text-[#FF8400]">
                           {tour.price

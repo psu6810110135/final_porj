@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, type ReactNode } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import Navbar from "@/components/Navbar";
@@ -12,6 +12,7 @@ import {
   Star,
   Clock,
   MapPin,
+  ChevronDown,
 } from "lucide-react";
 import {
   CATEGORY_OPTIONS,
@@ -39,6 +40,7 @@ export default function ToursPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [provinceOptions, setProvinceOptions] = useState<string[]>([]);
+  const [isProvinceDropdownOpen, setIsProvinceDropdownOpen] = useState(false);
 
   // สถานะสำหรับเปิด/ปิด Filter ในมือถือ
   const [isMobileFilterOpen, setIsMobileFilterOpen] = useState(false);
@@ -147,6 +149,23 @@ export default function ToursPage() {
     setSearchParams(newParams);
   };
 
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as HTMLElement;
+      if (!target.closest(".tours-search-bar-container")) {
+        setIsProvinceDropdownOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const provinceDropdownOptions = provinceOptions.map((province) => ({
+    value: province,
+    label: getProvinceLabel(province),
+  }));
+
   return (
     <div className="min-h-screen bg-[#FDFBF7] flex flex-col">
       <Navbar activePage="tours" />
@@ -154,7 +173,7 @@ export default function ToursPage() {
       <main className="flex-grow p-4 md:p-10">
         <div className="max-w-[1400px] mx-auto">
           {/* Header Section */}
-          <div className="flex flex-col items-center mb-8 md:mb-12">
+          <div className="relative z-40 flex flex-col items-center mb-8 md:mb-12">
             <div className="w-full mb-4">
               <Link
                 to="/"
@@ -172,46 +191,49 @@ export default function ToursPage() {
             </div>
 
             {/* Search Bar - Responsive */}
-            <div className="w-full max-w-4xl flex flex-col sm:flex-row gap-3">
-              <div className="relative sm:w-56 md:w-64 shrink-0">
-                <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" />
-                <select
+            <div className="tours-search-bar-container relative z-[90] w-full max-w-5xl">
+              <div className="bg-white/95 backdrop-blur-md rounded-2xl sm:rounded-full p-2 sm:p-2.5 flex flex-col sm:flex-row gap-2 items-stretch sm:items-center shadow-2xl border border-white/30">
+                <RichDropdown
+                  label="เลือกจังหวัด"
+                  icon={<MapPin className="w-4 h-4" />}
                   value={provinceFilter}
-                  onChange={(e) => handleProvinceSelect(e.target.value)}
-                  className="w-full pl-12 pr-10 py-3 md:py-4 rounded-full border border-gray-200 bg-white text-base focus:outline-none focus:border-[#FF8400] shadow-sm transition-all appearance-none"
-                >
-                  <option value="">ทุกจังหวัด</option>
-                  {provinceOptions.map((province) => (
-                    <option key={province} value={province}>
-                      {getProvinceLabel(province)}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div className="relative flex-grow">
-                <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                <input
-                  type="text"
-                  placeholder="ค้นหาสถานที่ท่องเที่ยว..."
-                  value={searchInput}
-                  onChange={(e) => setSearchInput(e.target.value)}
-                  onKeyDown={(e) => e.key === "Enter" && handleSearchSubmit()}
-                  className="w-full pl-12 pr-4 py-3 md:py-4 rounded-full border border-gray-200 bg-white text-base focus:outline-none focus:border-[#FF8400] shadow-sm transition-all"
+                  options={provinceDropdownOptions}
+                  isOpen={isProvinceDropdownOpen}
+                  onToggle={() => setIsProvinceDropdownOpen((prev) => !prev)}
+                  onSelect={(value) => {
+                    handleProvinceSelect(value);
+                    setIsProvinceDropdownOpen(false);
+                  }}
+                  className="sm:max-w-[260px]"
                 />
-              </div>
-              <div className="flex gap-2">
+
+                <div className="hidden sm:block w-px h-8 bg-[#4F200D]/10 flex-shrink-0" />
+
+                <div className="relative flex-grow">
+                  <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                  <input
+                    type="text"
+                    placeholder="ค้นหาสถานที่ท่องเที่ยว..."
+                    value={searchInput}
+                    onChange={(e) => setSearchInput(e.target.value)}
+                    onKeyDown={(e) => e.key === "Enter" && handleSearchSubmit()}
+                    className="w-full pl-12 pr-4 py-2.5 md:py-3 rounded-xl sm:rounded-full border border-[#4F200D]/15 bg-white text-sm md:text-base focus:outline-none focus:border-[#FF8400] hover:border-[#FF8400]/50 transition-all"
+                  />
+                </div>
+
                 <button
                   onClick={handleSearchSubmit}
-                  className="flex-grow sm:flex-none px-8 py-3 md:py-4 bg-[#FF8400] hover:bg-[#e07600] text-white font-bold rounded-full transition-colors shadow-sm whitespace-nowrap"
+                  className="bg-[#FF8400] text-white hover:bg-[#e67600] rounded-xl sm:rounded-full px-5 md:px-7 py-2.5 md:py-3 text-sm md:text-base font-bold shadow-lg hover:shadow-xl transition-all whitespace-nowrap active:scale-95"
                 >
                   ค้นหา
                 </button>
+
                 {/* ปุ่ม Mobile Filter */}
                 <button
                   onClick={() => setIsMobileFilterOpen(true)}
-                  className="lg:hidden p-3 bg-white border border-gray-200 rounded-full text-[#4F200D] shadow-sm active:scale-95 transition-transform"
+                  className="lg:hidden p-2.5 md:p-3 bg-white border border-[#4F200D]/15 rounded-xl sm:rounded-full text-[#4F200D] shadow-sm active:scale-95 transition-transform"
                 >
-                  <Filter size={24} />
+                  <Filter size={22} />
                 </button>
               </div>
             </div>
@@ -380,6 +402,100 @@ export default function ToursPage() {
 }
 
 // --- Component ย่อย (Helper Components) ---
+
+function RichDropdown({
+  label,
+  icon,
+  value,
+  options,
+  isOpen,
+  onToggle,
+  onSelect,
+  className = "",
+}: {
+  label: string;
+  icon: ReactNode;
+  value: string;
+  options: { value: string; label: string }[];
+  isOpen: boolean;
+  onToggle: () => void;
+  onSelect: (value: string) => void;
+  className?: string;
+}) {
+  const displayLabel =
+    options.find((opt) => opt.value === value)?.label ?? label;
+
+  return (
+    <div className={`flex-1 relative min-w-[0] ${className}`}>
+      <button
+        onClick={onToggle}
+        className={`w-full bg-white rounded-xl sm:rounded-full px-3 md:px-4 py-2.5 md:py-3 flex items-center gap-2 transition-all duration-200 ${
+          isOpen
+            ? "ring-2 ring-[#FF8400] shadow-md bg-white"
+            : "border border-[#4F200D]/15 hover:border-[#FF8400]/50 hover:shadow-sm"
+        }`}
+      >
+        <span
+          className={`flex-shrink-0 transition-colors ${isOpen ? "text-[#FF8400]" : "text-[#4F200D]/40"}`}
+        >
+          {icon}
+        </span>
+        <span
+          className={`text-xs md:text-sm text-left flex-1 truncate font-semibold ${value ? "text-[#4F200D]" : "text-[#4F200D]/45"}`}
+        >
+          {displayLabel}
+        </span>
+        <ChevronDown
+          size={16}
+          className={`transition-transform duration-200 ${isOpen ? "rotate-180 text-[#FF8400]" : "text-[#4F200D]"}`}
+        />
+      </button>
+
+      <div
+        className={`absolute top-full left-0 right-0 mt-1.5 bg-white rounded-2xl shadow-2xl border border-[#F0E8E0] overflow-hidden z-[120] transition-all duration-200 origin-top ${
+          isOpen
+            ? "opacity-100 scale-y-100 translate-y-0"
+            : "opacity-0 scale-y-95 -translate-y-1 pointer-events-none"
+        }`}
+      >
+        <div className="absolute -top-1.5 left-1/2 -translate-x-1/2 w-3 h-3 bg-white border-l border-t border-[#F0E8E0] rotate-45" />
+
+        <div className="max-h-56 overflow-y-auto py-1 relative">
+          <button
+            onClick={() => onSelect("")}
+            className={`w-full px-4 py-2.5 text-left text-sm flex items-center gap-2 transition-colors ${
+              !value
+                ? "bg-[#FF8400]/8 text-[#FF8400] font-bold"
+                : "text-[#4F200D]/60 hover:bg-[#F6F1E9]"
+            }`}
+          >
+            {!value && (
+              <span className="w-1.5 h-1.5 rounded-full bg-[#FF8400]" />
+            )}
+            ทุกจังหวัด
+          </button>
+
+          {options.map((opt) => (
+            <button
+              key={opt.value}
+              onClick={() => onSelect(opt.value)}
+              className={`w-full px-4 py-2.5 text-left text-sm flex items-center gap-2 transition-colors ${
+                value === opt.value
+                  ? "bg-[#FF8400]/8 text-[#FF8400] font-bold"
+                  : "text-[#4F200D] hover:bg-[#F6F1E9]"
+              }`}
+            >
+              {value === opt.value && (
+                <span className="w-1.5 h-1.5 rounded-full bg-[#FF8400]" />
+              )}
+              {opt.label}
+            </button>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
 
 function FilterContent({
   durationFilter,

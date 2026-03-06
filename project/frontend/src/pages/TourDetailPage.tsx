@@ -391,18 +391,48 @@ function BookingSheet({
     const token =
       localStorage.getItem("jwt_token") || localStorage.getItem("token");
     if (!token) return;
-    api
-      .get("/auth/profile", { headers: { Authorization: `Bearer ${token}` } })
-      .then((res) => {
-        const d = res.data || {};
-        const p = d.profile || {};
-        if (!contactName)
-          setContactName(d.full_name || p.full_name || d.username || "");
-        if (!contactEmail) setContactEmail(d.email || p.email || "");
-        if (!contactPhone)
-          setContactPhone(normalizePhone(p.phone || p.tel || d.phone || ""));
-      })
-      .catch(() => {});
+
+    const headers = { Authorization: `Bearer ${token}` };
+
+    const fillContactFromPayload = (payload: any) => {
+      const d = payload || {};
+      const p = d.profile || {};
+
+      const firstName =
+        d.first_name || d.firstName || p.first_name || p.firstName || "";
+      const lastName =
+        d.last_name || d.lastName || p.last_name || p.lastName || "";
+      const fullName =
+        d.full_name ||
+        d.fullName ||
+        `${firstName} ${lastName}`.trim() ||
+        d.username ||
+        "";
+      const email = d.email || p.email || "";
+      const phone = d.phone || p.phone || p.tel || "";
+
+      if (!contactName && fullName) setContactName(fullName);
+      if (!contactEmail && email) setContactEmail(email);
+      if (!contactPhone && phone)
+        setContactPhone(normalizePhone(String(phone)));
+    };
+
+    const prefillContact = async () => {
+      try {
+        const res = await api.get("/api/users/me", { headers });
+        fillContactFromPayload(res.data);
+      } catch {
+        // Backward-compatible fallback in case /api/users/me is unavailable.
+        try {
+          const res = await api.get("/api/auth/profile", { headers });
+          fillContactFromPayload(res.data);
+        } catch {
+          // Ignore prefill failures; user can still input manually.
+        }
+      }
+    };
+
+    void prefillContact();
   }, []);
 
   const childPrice = Math.floor(tour.price * 0.6);

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   Calendar,
   Plus,
@@ -12,10 +12,12 @@ import {
   AlertCircle,
   ChevronLeft,
   ChevronRight,
+  ChevronDown,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { API_BASE_URL } from "@/config/api";
 
 const getAuthHeader = (): Record<string, string> => {
   const token = localStorage.getItem("jwt_token");
@@ -39,7 +41,7 @@ interface Schedule {
   booked_seats?: number;
 }
 
-const API_BASE = "http://localhost:3000/api";
+const API_BASE = `${API_BASE_URL}/api`;
 const ITEMS_PER_PAGE = 10;
 
 const toDateInputValue = (date: Date) => {
@@ -74,6 +76,134 @@ const getDateRange = (startDate: string, endDate: string) => {
   }
 
   return dates;
+};
+
+/* ─── Custom Select Component (Theme Oriented & Round) ─── */
+interface Option {
+  value: string | number;
+  label: string;
+}
+
+const CustomSelect = ({
+  value,
+  onChange,
+  options,
+  className,
+  containerClassName,
+  menuPlacement = "bottom",
+}: {
+  value: string | number;
+  onChange: (val: any) => void;
+  options: Option[];
+  className?: string;
+  containerClassName?: string;
+  menuPlacement?: "top" | "bottom" | "auto";
+}) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const [resolvedPlacement, setResolvedPlacement] = useState<"top" | "bottom">(
+    "bottom",
+  );
+  const [menuMaxHeight, setMenuMaxHeight] = useState(240);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (ref.current && !ref.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const updateMenuLayout = () => {
+      if (!ref.current) return;
+
+      const rect = ref.current.getBoundingClientRect();
+      const spaceAbove = rect.top - 12;
+      const spaceBelow = window.innerHeight - rect.bottom - 12;
+
+      const nextPlacement =
+        menuPlacement === "auto"
+          ? spaceBelow < 220 && spaceAbove > spaceBelow
+            ? "top"
+            : "bottom"
+          : menuPlacement;
+
+      setResolvedPlacement(nextPlacement === "top" ? "top" : "bottom");
+
+      const availableSpace = nextPlacement === "top" ? spaceAbove : spaceBelow;
+      setMenuMaxHeight(
+        Math.max(120, Math.min(240, Math.floor(availableSpace))),
+      );
+    };
+
+    updateMenuLayout();
+    window.addEventListener("resize", updateMenuLayout);
+    window.addEventListener("scroll", updateMenuLayout, true);
+
+    return () => {
+      window.removeEventListener("resize", updateMenuLayout);
+      window.removeEventListener("scroll", updateMenuLayout, true);
+    };
+  }, [isOpen, menuPlacement]);
+
+  const selectedOption =
+    options.find((o) => String(o.value) === String(value)) || options[0];
+
+  return (
+    <div
+      className={
+        containerClassName ?? "relative flex-1 sm:flex-none w-full sm:w-auto"
+      }
+      ref={ref}
+    >
+      <div
+        className={`flex items-center justify-between ${className}`}
+        onClick={() => setIsOpen(!isOpen)}
+      >
+        <span className="truncate">{selectedOption?.label}</span>
+        <ChevronDown
+          className={`w-4 h-4 ml-2 transition-transform duration-200 text-[#4F200D]/50 shrink-0 ${
+            isOpen ? "rotate-180" : ""
+          }`}
+        />
+      </div>
+
+      {isOpen && (
+        <div
+          className={`absolute z-[80] w-full min-w-[140px] bg-white border-2 border-[#F6F1E9] rounded-3xl shadow-xl overflow-hidden animate-in fade-in zoom-in-95 duration-200 ${
+            resolvedPlacement === "top" ? "bottom-full mb-2" : "top-full mt-2"
+          }`}
+        >
+          <div
+            className="overflow-y-auto custom-scrollbar py-2"
+            style={{ maxHeight: `${menuMaxHeight}px` }}
+          >
+            {options.map((opt) => (
+              <div
+                key={String(opt.value)}
+                className={`px-4 py-3 text-sm font-bold cursor-pointer transition-colors ${
+                  String(value) === String(opt.value)
+                    ? "bg-[#FFD93D]/30 text-[#FF8400]"
+                    : "text-[#4F200D] hover:bg-[#F6F1E9]"
+                }`}
+                onClick={() => {
+                  onChange(opt.value);
+                  setIsOpen(false);
+                }}
+              >
+                {opt.label}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
 };
 
 const TourScheduleManager = () => {
@@ -398,6 +528,15 @@ const TourScheduleManager = () => {
       ? Number(formData.max_capacity_override)
       : selectedTour?.max_group_size || 0;
 
+  // Options for Tour Select
+  const tourOptions = [
+    { value: "", label: "-- เลือกทัวร์ --" },
+    ...tours.map((tour) => ({
+      value: tour.id,
+      label: `${tour.title} (สูงสุด ${tour.max_group_size} คน)`,
+    })),
+  ];
+
   return (
     <div className="w-full space-y-6 animate-in fade-in duration-500">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 sm:mb-8">
@@ -438,18 +577,14 @@ const TourScheduleManager = () => {
             <Loader2 className="w-4 h-4 animate-spin" /> กำลังโหลดรายการทัวร์...
           </div>
         ) : (
-          <select
-            className="w-full sm:w-[420px] h-11 px-4 rounded-xl border-0 bg-[#F6F1E9]/50 text-sm font-bold text-[#4F200D] focus:outline-none focus:ring-2 focus:ring-[#FFD93D]"
+          <CustomSelect
+            containerClassName="w-full sm:w-[420px] relative z-20"
+            className="w-full h-11 px-5 rounded-full border-0 bg-[#F6F1E9]/50 text-sm font-bold text-[#4F200D] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#FFD93D] cursor-pointer transition-all"
             value={selectedTourId}
-            onChange={(e) => setSelectedTourId(e.target.value)}
-          >
-            <option value="">-- เลือกทัวร์ --</option>
-            {tours.map((tour) => (
-              <option key={tour.id} value={tour.id}>
-                {tour.title} (สูงสุด {tour.max_group_size} คน)
-              </option>
-            ))}
-          </select>
+            onChange={(val) => setSelectedTourId(String(val))}
+            options={tourOptions}
+            menuPlacement="bottom"
+          />
         )}
       </div>
 
@@ -494,7 +629,7 @@ const TourScheduleManager = () => {
       )}
 
       {selectedTourId && (
-        <div className="bg-white rounded-3xl border-0 shadow-sm overflow-hidden w-full">
+        <div className="bg-white rounded-3xl border-0 shadow-sm overflow-hidden w-full relative z-10">
           <div className="overflow-x-auto">
             <table className="w-full text-left text-sm whitespace-nowrap min-w-[900px]">
               <thead className="bg-[#F6F1E9]/80 border-b-2 border-[#F6F1E9]">
@@ -696,8 +831,8 @@ const TourScheduleManager = () => {
 
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#4F200D]/60 backdrop-blur-sm p-4 overflow-y-auto pt-16 md:pt-4">
-          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-lg my-auto animate-in zoom-in-95 duration-200">
-            <div className="flex justify-between items-center p-5 sm:p-6 border-b-2 border-[#F6F1E9]">
+          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-lg my-auto animate-in zoom-in-95 duration-200 flex flex-col max-h-[90vh]">
+            <div className="flex justify-between items-center p-5 sm:p-6 border-b-2 border-[#F6F1E9] shrink-0">
               <h2 className="text-xl sm:text-2xl font-black text-[#4F200D]">
                 {editingId ? "แก้ไขรอบทัวร์" : "เพิ่มรอบทัวร์"}
               </h2>
@@ -711,7 +846,7 @@ const TourScheduleManager = () => {
 
             <form
               onSubmit={handleSubmit}
-              className="p-5 sm:p-6 space-y-4 sm:space-y-5 max-h-[75vh] overflow-y-auto"
+              className="p-5 sm:p-6 space-y-4 sm:space-y-5 overflow-y-auto custom-scrollbar pb-10 flex-1"
             >
               <div className="p-3 bg-[#FFF3E0] rounded-xl border border-[#FFE0B2]">
                 <p className="text-xs font-black text-[#FF8400] uppercase tracking-wider">
@@ -835,23 +970,23 @@ const TourScheduleManager = () => {
                 />
               </div>
 
-              <div className="space-y-2">
+              <div className="space-y-2 relative pb-20">
                 <label className="text-xs sm:text-sm font-black text-[#4F200D] uppercase tracking-wider">
                   สถานะการเปิดจอง
                 </label>
-                <select
-                  className="w-full h-11 px-4 rounded-xl border-0 bg-[#F6F1E9]/50 text-[#4F200D] font-bold text-sm focus:bg-white focus:ring-2 focus:ring-[#FFD93D] outline-none transition-all"
+                <CustomSelect
+                  containerClassName="w-full relative"
+                  className="w-full h-11 px-5 rounded-full border-0 bg-[#F6F1E9]/50 text-[#4F200D] font-bold text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#FFD93D] cursor-pointer transition-all"
                   value={formData.is_available ? "open" : "closed"}
-                  onChange={(e) =>
-                    setFormData({
-                      ...formData,
-                      is_available: e.target.value === "open",
-                    })
+                  onChange={(val) =>
+                    setFormData({ ...formData, is_available: val === "open" })
                   }
-                >
-                  <option value="open">เปิดรับการจอง</option>
-                  <option value="closed">ปิดรับการจอง</option>
-                </select>
+                  options={[
+                    { value: "open", label: "เปิดรับการจอง" },
+                    { value: "closed", label: "ปิดรับการจอง" },
+                  ]}
+                  menuPlacement="auto" // รองรับการเปิดขึ้นด้านบนถ้ายาวเกินกรอบ
+                />
               </div>
 
               <div className="p-3 rounded-xl bg-[#F6F1E9]/50 border border-[#F0E8E0]">
@@ -872,34 +1007,37 @@ const TourScheduleManager = () => {
                   <p>สถานะ: {formData.is_available ? "เปิดจอง" : "ปิดจอง"}</p>
                 </div>
               </div>
-
-              <div className="pt-6 pb-2 flex items-center justify-end gap-3 border-t-2 border-[#F6F1E9] mt-6">
-                <Button
-                  type="button"
-                  variant="ghost"
-                  onClick={() => setIsModalOpen(false)}
-                  className="hover:bg-[#F6F1E9] text-[#4F200D] font-bold rounded-xl px-4 sm:px-6"
-                >
-                  ยกเลิก
-                </Button>
-                <Button
-                  type="submit"
-                  className="bg-[#FF8400] hover:bg-[#e67600] text-white font-bold shadow-lg shadow-[#FF8400]/20 rounded-xl min-w-[130px] px-4 sm:px-6"
-                  disabled={isSubmitting}
-                >
-                  {isSubmitting ? (
-                    <>
-                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />{" "}
-                      กำลังบันทึก...
-                    </>
-                  ) : editingId ? (
-                    "อัปเดตรอบทัวร์"
-                  ) : (
-                    "สร้างรอบทัวร์"
-                  )}
-                </Button>
-              </div>
             </form>
+
+            <div className="p-5 sm:p-6 flex items-center justify-end gap-3 border-t-2 border-[#F6F1E9] bg-white rounded-b-3xl shrink-0">
+              <Button
+                type="button"
+                variant="ghost"
+                onClick={() => setIsModalOpen(false)}
+                className="hover:bg-[#F6F1E9] text-[#4F200D] font-bold rounded-xl px-4 sm:px-6"
+              >
+                ยกเลิก
+              </Button>
+              <Button
+                onClick={(e) => {
+                  // Trigger form submission manually since button is outside form
+                  handleSubmit(e as unknown as React.FormEvent);
+                }}
+                className="bg-[#FF8400] hover:bg-[#e67600] text-white font-bold shadow-lg shadow-[#FF8400]/20 rounded-xl min-w-[130px] px-4 sm:px-6"
+                disabled={isSubmitting}
+              >
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />{" "}
+                    กำลังบันทึก...
+                  </>
+                ) : editingId ? (
+                  "อัปเดตรอบทัวร์"
+                ) : (
+                  "สร้างรอบทัวร์"
+                )}
+              </Button>
+            </div>
           </div>
         </div>
       )}

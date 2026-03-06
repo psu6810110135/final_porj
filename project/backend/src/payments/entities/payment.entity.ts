@@ -1,4 +1,11 @@
-import { Entity, PrimaryGeneratedColumn, Column, OneToOne, JoinColumn, CreateDateColumn } from 'typeorm';
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  OneToOne,
+  JoinColumn,
+  CreateDateColumn,
+} from 'typeorm';
 import { Booking } from '../../bookings/entities/booking.entity';
 
 @Entity('payments')
@@ -21,8 +28,8 @@ export class Payment {
   @CreateDateColumn()
   uploadedAt: Date;
 
-  // Relations
-  @OneToOne(() => Booking)
+  // Relations - Updated to be Bidirectional
+  @OneToOne(() => Booking, (booking) => booking.payment)
   @JoinColumn()
   booking: Booking;
 }

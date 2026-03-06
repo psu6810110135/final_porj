@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, type ReactNode } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 
 // Components
@@ -8,10 +8,12 @@ import { TourCard } from "@/components/tours/TourCard";
 import { FilterContent } from "@/components/tours/Filters";
 
 // Icons
-import { Search, Filter, X, ChevronLeft, Loader2 } from "lucide-react";
+import { Search, Filter, X, ChevronLeft, Loader2, MapPin, ChevronDown } from "lucide-react";
 
 // Utils
 import { translateDuration, translateLocation, getImageUrl } from "@/utils/tourUtils";
+import { getProvinceLabel } from "@/utils/tourLabels";
+import { API_BASE_URL } from "@/config/api";
 
 // --- Types ---
 export interface Tour {
@@ -34,18 +36,42 @@ export default function ToursPage() {
   const [error, setError] = useState<string | null>(null);
   const [isMobileFilterOpen, setIsMobileFilterOpen] = useState(false);
 
+  const [provinceOptions, setProvinceOptions] = useState<string[]>([]);
+  const [isProvinceDropdownOpen, setIsProvinceDropdownOpen] = useState(false);
+
   // ดึงค่าจาก URL
   const searchFilter = searchParams.get("search") || "";
   const regionFilter = searchParams.get("region") || "";
   const categoryFilter = searchParams.get("category") || "";
   const durationFilter = searchParams.get("duration") || "";
+  const provinceFilter = searchParams.get("province") || "";
 
   // สถานะสำหรับ Input (แยกจาก URL เพื่อให้พิมพ์ได้ลื่นไหล)
   const [searchInput, setSearchInput] = useState(searchFilter);
 
-  const apiBase = "http://localhost:3000/api";
+  const apiBase = `${API_BASE_URL}/api`;
 
-  // 1. Real-time Search Logic (Debounce)
+  // 1. Fetch Provinces for Dropdown
+  useEffect(() => {
+    fetch(`${apiBase}/tours`)
+      .then((res) => res.json())
+      .then((data: Tour[]) => {
+        const unique = [
+          ...new Set(data.map((t) => t.province).filter(Boolean)),
+        ];
+        setProvinceOptions(
+          (unique as string[]).sort((a, b) =>
+            getProvinceLabel(a).localeCompare(getProvinceLabel(b), "th"),
+          ),
+        );
+      })
+      .catch((err) => {
+        console.error("Error fetching provinces:", err);
+        setProvinceOptions([]);
+      });
+  }, [apiBase]);
+
+  // 2. Real-time Search Logic (Debounce)
   useEffect(() => {
     const delayDebounceFn = setTimeout(() => {
       const newParams = new URLSearchParams(searchParams);
@@ -60,11 +86,12 @@ export default function ToursPage() {
     return () => clearTimeout(delayDebounceFn);
   }, [searchInput, searchParams, setSearchParams]);
 
-  // 2. Fetch Data Logic
+  // 3. Fetch Data Logic
   useEffect(() => {
     setLoading(true);
     const params = new URLSearchParams();
 
+    if (provinceFilter) params.append("province", provinceFilter);
     if (regionFilter) params.append("region", regionFilter);
     if (categoryFilter) params.append("category", categoryFilter);
     if (durationFilter) params.append("duration", durationFilter);
@@ -84,7 +111,7 @@ export default function ToursPage() {
         setTours([]);
       })
       .finally(() => setLoading(false));
-  }, [apiBase, regionFilter, categoryFilter, durationFilter, searchFilter]);
+  }, [apiBase, provinceFilter, regionFilter, categoryFilter, durationFilter, searchFilter]);
 
   const handleFilterChange = (key: string, value: string) => {
     const newParams = new URLSearchParams(searchParams);
@@ -96,6 +123,43 @@ export default function ToursPage() {
     setSearchParams(newParams);
   };
 
+  const handleSearchSubmit = () => {
+    const newParams = new URLSearchParams(searchParams);
+    if (searchInput.trim()) {
+      newParams.set("search", searchInput.trim());
+    } else {
+      newParams.delete("search");
+    }
+    setSearchParams(newParams);
+  };
+
+  const handleProvinceSelect = (value: string) => {
+    const newParams = new URLSearchParams(searchParams);
+    if (!value) {
+      newParams.delete("province");
+    } else {
+      newParams.set("province", value);
+    }
+    setSearchParams(newParams);
+  };
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as HTMLElement;
+      if (!target.closest(".tours-search-bar-container")) {
+        setIsProvinceDropdownOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const provinceDropdownOptions = provinceOptions.map((province) => ({
+    value: province,
+    label: getProvinceLabel(province),
+  }));
+
   return (
     <div className="min-h-screen bg-[#FDFBF7] flex flex-col">
       <Navbar activePage="tours" />
@@ -103,8 +167,8 @@ export default function ToursPage() {
       <main className="flex-grow p-4 md:p-10">
         <div className="max-w-[1400px] mx-auto">
 
-          {/* Header & Search */}
-          <div className="flex flex-col items-center mb-8 md:mb-12">
+          {/* Header Section */}
+          <div className="relative z-40 flex flex-col items-center mb-8 md:mb-12">
             <div className="w-full mb-4">
               <Link to="/" className="inline-flex items-center gap-2 text-sm font-bold text-gray-500 hover:text-[#FF8400] transition-colors">
                 <ChevronLeft size={18} /> กลับหน้าหลัก
@@ -118,27 +182,52 @@ export default function ToursPage() {
               <div className="w-24 md:w-48 h-1 rounded-full bg-[#4F200D]" />
             </div>
 
-            <div className="w-full max-w-3xl flex flex-col sm:flex-row gap-3">
-              <div className="relative flex-grow">
-                {loading ? (
-                  <Loader2 className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-[#FF8400] animate-spin" />
-                ) : (
-                  <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                )}
-                <input
-                  type="text"
-                  placeholder="ค้นหาสถานที่ท่องเที่ยว"
-                  value={searchInput}
-                  onChange={(e) => setSearchInput(e.target.value)}
-                  className="w-full pl-12 pr-4 py-3 md:py-4 rounded-full border border-gray-200 bg-white text-base focus:outline-none focus:border-[#FF8400] shadow-sm transition-all"
+            {/* Search Bar - Responsive */}
+            <div className="tours-search-bar-container relative z-[90] w-full max-w-5xl">
+              <div className="bg-white/95 backdrop-blur-md rounded-2xl sm:rounded-full p-2 sm:p-2.5 flex flex-col sm:flex-row gap-2 items-stretch sm:items-center shadow-2xl border border-white/30">
+                <RichDropdown
+                  label="เลือกจังหวัด"
+                  icon={<MapPin className="w-4 h-4" />}
+                  value={provinceFilter}
+                  options={provinceDropdownOptions}
+                  isOpen={isProvinceDropdownOpen}
+                  onToggle={() => setIsProvinceDropdownOpen((prev) => !prev)}
+                  onSelect={(value) => {
+                    handleProvinceSelect(value);
+                    setIsProvinceDropdownOpen(false);
+                  }}
+                  className="sm:max-w-[260px]"
                 />
+
+                <div className="hidden sm:block w-px h-8 bg-[#4F200D]/10 flex-shrink-0" />
+
+                <div className="relative flex-grow">
+                  <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                  <input
+                    type="text"
+                    placeholder="ค้นหาสถานที่ท่องเที่ยว..."
+                    value={searchInput}
+                    onChange={(e) => setSearchInput(e.target.value)}
+                    onKeyDown={(e) => e.key === "Enter" && handleSearchSubmit()}
+                    className="w-full pl-12 pr-4 py-2.5 md:py-3 rounded-xl sm:rounded-full border border-[#4F200D]/15 bg-white text-sm md:text-base focus:outline-none focus:border-[#FF8400] hover:border-[#FF8400]/50 transition-all"
+                  />
+                </div>
+
+                <button
+                  onClick={handleSearchSubmit}
+                  className="bg-[#FF8400] text-white hover:bg-[#e67600] rounded-xl sm:rounded-full px-5 md:px-7 py-2.5 md:py-3 text-sm md:text-base font-bold shadow-lg hover:shadow-xl transition-all whitespace-nowrap active:scale-95"
+                >
+                  ค้นหา
+                </button>
+
+                {/* ปุ่ม Mobile Filter */}
+                <button
+                  onClick={() => setIsMobileFilterOpen(true)}
+                  className="lg:hidden p-2.5 md:p-3 bg-white border border-[#4F200D]/15 rounded-xl sm:rounded-full text-[#4F200D] shadow-sm active:scale-95 transition-transform"
+                >
+                  <Filter size={22} />
+                </button>
               </div>
-              <button
-                onClick={() => setIsMobileFilterOpen(true)}
-                className="lg:hidden p-3 bg-white border border-gray-200 rounded-full text-[#4F200D] shadow-sm active:scale-95 transition-transform flex justify-center items-center"
-              >
-                <Filter size={24} />
-              </button>
             </div>
           </div>
 
@@ -183,6 +272,12 @@ export default function ToursPage() {
 
             {/* Tours Grid */}
             <div className="flex-1">
+              {loading && (
+                <div className="flex items-center justify-center h-64">
+                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#FF8400]"></div>
+                </div>
+              )}
+
               {error && !loading && (
                 <div className="flex items-center justify-center h-64 text-red-500 bg-red-50 rounded-3xl">
                   {error}
@@ -216,6 +311,98 @@ export default function ToursPage() {
         </div>
       </main>
       <Footer />
+    </div>
+  );
+}
+
+// --- Component ย่อย (Helper Components) ---
+
+function RichDropdown({
+  label,
+  icon,
+  value,
+  options,
+  isOpen,
+  onToggle,
+  onSelect,
+  className = "",
+}: {
+  label: string;
+  icon: ReactNode;
+  value: string;
+  options: { value: string; label: string }[];
+  isOpen: boolean;
+  onToggle: () => void;
+  onSelect: (value: string) => void;
+  className?: string;
+}) {
+  const displayLabel =
+    options.find((opt) => opt.value === value)?.label ?? label;
+
+  return (
+    <div className={`flex-1 relative min-w-[0] ${className}`}>
+      <button
+        onClick={onToggle}
+        className={`w-full bg-white rounded-xl sm:rounded-full px-3 md:px-4 py-2.5 md:py-3 flex items-center gap-2 transition-all duration-200 ${isOpen
+            ? "ring-2 ring-[#FF8400] shadow-md bg-white"
+            : "border border-[#4F200D]/15 hover:border-[#FF8400]/50 hover:shadow-sm"
+          }`}
+      >
+        <span
+          className={`flex-shrink-0 transition-colors ${isOpen ? "text-[#FF8400]" : "text-[#4F200D]/40"}`}
+        >
+          {icon}
+        </span>
+        <span
+          className={`text-xs md:text-sm text-left flex-1 truncate font-semibold ${value ? "text-[#4F200D]" : "text-[#4F200D]/45"}`}
+        >
+          {displayLabel}
+        </span>
+        <ChevronDown
+          size={16}
+          className={`transition-transform duration-200 ${isOpen ? "rotate-180 text-[#FF8400]" : "text-[#4F200D]"}`}
+        />
+      </button>
+
+      <div
+        className={`absolute top-full left-0 right-0 mt-1.5 bg-white rounded-2xl shadow-2xl border border-[#F0E8E0] overflow-hidden z-[120] transition-all duration-200 origin-top ${isOpen
+            ? "opacity-100 scale-y-100 translate-y-0"
+            : "opacity-0 scale-y-95 -translate-y-1 pointer-events-none"
+          }`}
+      >
+        <div className="absolute -top-1.5 left-1/2 -translate-x-1/2 w-3 h-3 bg-white border-l border-t border-[#F0E8E0] rotate-45" />
+
+        <div className="max-h-56 overflow-y-auto py-1 relative">
+          <button
+            onClick={() => onSelect("")}
+            className={`w-full px-4 py-2.5 text-left text-sm flex items-center gap-2 transition-colors ${!value
+                ? "bg-[#FF8400]/8 text-[#FF8400] font-bold"
+                : "text-[#4F200D]/60 hover:bg-[#F6F1E9]"
+              }`}
+          >
+            {!value && (
+              <span className="w-1.5 h-1.5 rounded-full bg-[#FF8400]" />
+            )}
+            ทุกจังหวัด
+          </button>
+
+          {options.map((opt) => (
+            <button
+              key={opt.value}
+              onClick={() => onSelect(opt.value)}
+              className={`w-full px-4 py-2.5 text-left text-sm flex items-center gap-2 transition-colors ${value === opt.value
+                  ? "bg-[#FF8400]/8 text-[#FF8400] font-bold"
+                  : "text-[#4F200D] hover:bg-[#F6F1E9]"
+                }`}
+            >
+              {value === opt.value && (
+                <span className="w-1.5 h-1.5 rounded-full bg-[#FF8400]" />
+              )}
+              {opt.label}
+            </button>
+          ))}
+        </div>
+      </div>
     </div>
   );
 }

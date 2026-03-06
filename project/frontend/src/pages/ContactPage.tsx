@@ -10,6 +10,9 @@ import { TopicList } from "@/components/contact/TopicList";
 import { ContactForm } from "@/components/contact/ContactForm";
 import { ConfirmationModal } from "@/components/contact/ConfirmationModal";
 
+// Config
+import { API_BASE_URL } from "@/config/api";
+
 // Constants
 import { TOPICS, PHONE_CODES } from "@/utils/contactData";
 
@@ -64,7 +67,7 @@ const ContactPage = () => {
     }
   }, [submitStatus]);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
@@ -88,7 +91,7 @@ const ContactPage = () => {
         message: formData.message
       };
 
-      const response = await fetch("http://localhost:3000/api/v1/tickets", {
+      const response = await fetch(`${API_BASE_URL}/api/v1/tickets`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(formattedData),

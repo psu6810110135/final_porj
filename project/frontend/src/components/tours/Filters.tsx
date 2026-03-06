@@ -1,27 +1,4 @@
-// --- Constants ---
-export const DURATIONS = [
-    { label: "1 วัน", value: "1 Day" },
-    { label: "2 วัน", value: "2 Days" },
-    { label: "3 วัน", value: "3 Days" }
-];
-
-export const REGIONS = [
-    { label: "ภาคเหนือ", value: "North" },
-    { label: "ภาคกลาง", value: "Central" },
-    { label: "ภาคอีสาน", value: "Northeast" },
-    { label: "ภาคตะวันตก", value: "West" },
-    { label: "ภาคตะวันออก", value: "East" },
-    { label: "ภาคใต้", value: "South" },
-];
-
-export const CATEGORIES = [
-    { label: "ทะเล", value: "Sea" },
-    { label: "ภูเขา", value: "Mountain" },
-    { label: "ธรรมชาติ", value: "Nature" },
-    { label: "วัฒนธรรม", value: "Cultural" },
-    { label: "ในเมือง", value: "City" },
-    { label: "ผจญภัย", value: "Adventure" },
-];
+import { CATEGORY_OPTIONS, REGION_OPTIONS, DURATION_OPTIONS } from "@/utils/tourLabels";
 
 interface FilterItemProps {
     label: string;
@@ -58,7 +35,7 @@ export function FilterContent({ durationFilter, regionFilter, categoryFilter, ha
             <div>
                 <h3 className="font-extrabold text-lg mb-4 text-[#4F200D]">ระยะเวลา</h3>
                 <div className="space-y-3">
-                    {DURATIONS.map((item) => (
+                    {DURATION_OPTIONS.map((item) => (
                         <FilterItem
                             key={item.value}
                             label={item.label}
@@ -71,7 +48,7 @@ export function FilterContent({ durationFilter, regionFilter, categoryFilter, ha
             <div className="pt-6 border-t border-gray-100">
                 <h3 className="font-extrabold text-lg mb-4 text-[#4F200D]">ภูมิภาค</h3>
                 <div className="space-y-3">
-                    {REGIONS.map((zone) => (
+                    {REGION_OPTIONS.map((zone) => (
                         <FilterItem
                             key={zone.value}
                             label={zone.label}
@@ -84,7 +61,7 @@ export function FilterContent({ durationFilter, regionFilter, categoryFilter, ha
             <div className="pt-6 border-t border-gray-100">
                 <h3 className="font-extrabold text-lg mb-4 text-[#4F200D]">ประเภททัวร์</h3>
                 <div className="space-y-3">
-                    {CATEGORIES.map((cat) => (
+                    {CATEGORY_OPTIONS.map((cat) => (
                         <FilterItem
                             key={cat.value}
                             label={cat.label}

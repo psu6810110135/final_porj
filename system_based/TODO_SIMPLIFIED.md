@@ -4,6 +4,27 @@
 
 ---
 
+## ✅ Reality Check (อัปเดตจากโค้ดจริง 2026-03-06)
+
+### ทำแล้วในโค้ดปัจจุบัน
+
+- มี `reviews` backend module + API + aggregate rating แล้ว
+- มี `GET /api/v1/users/me` และ `PATCH /api/v1/users/me`
+- มี upload slip endpoint (`POST /api/v1/bookings/:id/upload-slip`)
+- มี flow cancel booking ฝั่ง user (`PATCH /api/v1/bookings/:id/cancel`)
+
+### ยังต้องทำเร่งด่วน
+
+- บังคับใช้ guard/role guard ใน `admin` และ `payments` routes ที่ยังเปิดอยู่
+- ทำ payment flow ให้ครบ: อัปโหลดสลิปแล้วต้อง create/update ตาราง `payments` ด้วย
+- เพิ่มการเก็บ `reject_reason` และรองรับ verify payload แบบ `{ status, rejectReason }`
+- แก้ `UsersService.create/remove` ที่ยังเป็น stub
+- ย้าย JWT secret ไป env และเลิก hardcode
+
+> หมายเหตุ: ให้ใช้ section นี้เป็น baseline ก่อนทำงานตาม phase ด้านล่าง
+
+---
+
 ## 🔄 Scope Update (ต้องทำเพิ่มให้ตรงระบบปัจจุบัน)
 
 - **Tour Schedule & Slot**: สร้าง `tour_schedules` + API GET schedules + booking ต้องหัก slot

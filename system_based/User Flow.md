@@ -1,16 +1,6 @@
-# User Flow - Simplified (Thai Tour Website)
+# User Flow — Thai Tour Website
 
-> เอกสารนี้อธิบายขั้นตอนการใช้งานระบบแบบ **Simplified** ที่เหมาะสำหรับนักศึกษาปี 1
-
----
-
-## Overview
-
-**Simplifications:**
-- ❌ Email verification → Skip in v1.0
-- ❌ Password reset → Admin reset instead
-- ❌ Email Queue → console.log()
-- ❌ Audit Logs → console.log()
+> เอกสารนี้อธิบายขั้นตอนการใช้งานระบบตามฟีเจอร์ที่มีอยู่จริงในโค้ดปัจจุบัน
 
 ---
 
@@ -22,17 +12,28 @@
 flowchart TD
     Start([Enter Website]) --> Choice{Have Account?}
 
-    Choice -- No --> Register[Register Page]
-    Register --> InputReg[Enter: Email, Password, Name]
-    InputReg --> SubmitReg[Submit]
+    Choice -- No --> Register[Register Page /register]
+    Register --> InputReg[Enter: Username, Password]
+    InputReg --> OptProfile[Optional: Email, Name, Phone]
+    OptProfile --> SubmitReg[Submit → POST /api/auth/signup]
     SubmitReg --> CreateAcc[Create Account]
-    CreateAcc --> Home[Home Page]
+    CreateAcc --> LoginPage[Go to Login]
 
-    Choice -- Yes --> Login[Login Page]
-    Login --> InputLog[Enter Email + Password]
-    InputLog --> SubmitLog[Login]
-    SubmitLog --> GenToken[Generate JWT]
-    GenToken --> Home
+    Choice -- Yes --> Login[Login Page /login]
+    Login --> Method{Login Method?}
+
+    Method -- Username/Password --> InputLog[Enter Username + Password]
+    InputLog --> SubmitLog[Submit → POST /api/auth/signin]
+    SubmitLog --> GenToken[Receive JWT Token]
+    GenToken --> SaveToken[Store in localStorage]
+    SaveToken --> Home[Home Page /]
+
+    Method -- Google --> GoogleBtn[Click Google Login]
+    GoogleBtn --> GoogleOAuth[GET /api/auth/google]
+    GoogleOAuth --> GoogleConsent[Google Consent Screen]
+    GoogleConsent --> Callback[/api/auth/google/callback]
+    Callback --> Redirect[Redirect to /login/success?token=...]
+    Redirect --> SaveToken
 
     style Start fill:#E1F5FE
     style Home fill:#C8E6C9
@@ -40,204 +41,243 @@ flowchart TD
 
 ---
 
-### 1.2 Search & Browse Tours
+### 1.2 Forgot Password (OTP Flow)
 
 ```mermaid
 flowchart TD
-    Home([Home Page]) --> Browse[Browse Tours]
+    Login([Login Page]) --> Forgot[Click Forgot Password]
+    Forgot --> InputEmail[Enter Email]
+    InputEmail --> SendOTP[POST /api/auth/forgot-password]
+    SendOTP --> CheckEmail[Check Email for OTP]
+    CheckEmail --> InputOTP[Enter 6-digit OTP]
+    InputOTP --> VerifyOTP[POST /api/auth/verify-otp]
 
-    Browse --> WantSearch{Want to Search?}
+    VerifyOTP --> Valid{OTP Valid?}
+    Valid -- No --> Error[Show Error — Retry]
+    Error --> InputOTP
 
-    WantSearch -- Yes --> Search[Search Tours]
-    Search --> Filters[Select: Region, Category, Price, Tour Type]
-    Filters --> Results[Show Results]
+    Valid -- Yes --> GetToken[Receive Reset Token]
+    GetToken --> NewPassword[Enter New Password]
+    NewPassword --> ResetPW[POST /api/auth/reset-password]
+    ResetPW --> Success[Password Reset Success]
+    Success --> Login2[Go to Login]
 
-    WantSearch -- No --> ShowAll[Show All Tours]
-    ShowAll --> TypeSelect{Select Tour Type}
-
-    TypeSelect -- One Day --> OneDay[Show One-Day Trips]
-    TypeSelect -- Multi Day --> MultiDay[Show Multi-Day Packages]
-
-    OneDay --> Results
-    MultiDay --> Results
-
-    Results --> Select[Click Tour]
-    Select --> Detail[Tour Detail Page]
-
-    Detail --> Decide{Want to Book?}
-
-    Decide -- No --> Browse
-    Decide -- Yes --> CheckType{Check Tour Type}
-
-    CheckType -- One Day --> OneDayBooking[Book One-Day Tour]
-    CheckType -- Multi Day --> MultiDayBooking[Book Multi-Day Package]
-
-    style Home fill:#E1F5FE
-    style OneDayBooking fill:#C8E6C9
-    style MultiDayBooking fill:#FFF9C4
+    style Login fill:#E1F5FE
+    style Success fill:#C8E6C9
 ```
 
 ---
 
-### 1.3 Booking Flow
+### 1.3 Search & Browse Tours
+
+```mermaid
+flowchart TD
+    Home([Home Page /]) --> Browse{Browse Method}
+
+    Browse -- Recommended --> Recommended[View Recommended Tours<br>GET /api/tours/recommended]
+    Browse -- Search --> Search[Use Filters]
+    Browse -- All Tours --> AllTours[Go to /tours]
+
+    Search --> Filters[Region, Category, Province,<br>Price Range, Duration, Sort]
+    Filters --> Results[Show Filtered Results<br>GET /api/tours?...]
+
+    Recommended --> Results
+    AllTours --> Results
+
+    Results --> Select[Click Tour Card]
+    Select --> Detail[Tour Detail Page /tours/:id<br>GET /api/tours/:id]
+
+    Detail --> ViewInfo[View: Title, Description, Price,<br>Highlights, Itinerary, Images]
+    ViewInfo --> ViewSchedules[View Available Schedules<br>GET /api/tours/:id/schedules/available]
+    ViewSchedules --> ViewReviews[View Reviews<br>GET /api/reviews/tour/:id]
+
+    ViewReviews --> Decide{Want to Book?}
+
+    Decide -- No --> Browse
+    Decide -- Yes --> BookFlow[Start Booking]
+
+    style Home fill:#E1F5FE
+    style BookFlow fill:#C8E6C9
+```
+
+---
+
+### 1.4 Booking Flow
 
 ```mermaid
 flowchart TD
     Start([Tour Detail]) --> ClickBook[Click Book Now]
 
     ClickBook --> CheckLogin{Logged In?}
-
-    CheckLogin -- No --> Login[Go to Login]
+    CheckLogin -- No --> Login[Redirect to /login]
     Login --> Back[Return to Booking]
-
     CheckLogin -- Yes --> Back
 
-    Back --> CheckType{Tour Type?}
+    Back --> BookForm[Booking Form — Sheet]
+    BookForm --> SelectDate[Select Schedule Date]
+    SelectDate --> InputPax[Enter Adults + Children Count]
+    InputPax --> InputContact[Contact Info:<br>Name, Email, Phone]
+    InputContact --> SpecialReq[Special Requests — Optional]
+    SpecialReq --> CalcPrice[Calculate Price<br>POST /api/bookings/calculate]
 
-    CheckType -- One Day --> OneDayFlow[One-Day Booking Flow]
-    CheckType -- Multi Day --> MultiDayFlow[Multi-Day Booking Flow]
+    CalcPrice --> ShowPrice[Show Price Breakdown:<br>Base × Adults + ChildPrice × Children<br>- 5% Discount if applicable]
 
-    %% One-Day Flow
-    OneDayFlow --> OneForm[Booking Form]
-    OneForm --> OneDate[Select Travel Date]
-    OneDate --> OnePax[Enter Number of People]
-    OnePax --> Calc[Calculate Price]
+    ShowPrice --> Confirm{Confirm Booking?}
+    Confirm -- No --> Start
 
-    %% Multi-Day Flow
-    MultiDayFlow --> MultiForm[Booking Form]
-    MultiForm --> MultiStart[Select Start Date]
-    MultiStart --> MultiEnd[Select End Date]
-    MultiEnd --> MultiPax[Enter Number of People]
-    MultiPax --> Calc
+    Confirm -- Yes --> CreateBooking[POST /api/bookings<br>Transaction + Lock]
+    CreateBooking --> CheckAvail{Availability OK?}
 
-    Calc --> ShowPrice[Show Total Price + Details]
+    CheckAvail -- No Stock --> Error[Show Error — Tour Full]
+    Error --> Start
 
-    ShowPrice --> ShowInfo[Show: Transportation, Itinerary]
-    ShowInfo --> ShowAccom{Multi-Day?}
-    ShowAccom -- Yes --> ShowAccomDetails[Show Accommodation Details]
-    ShowAccom -- No --> Confirm
-    ShowAccomDetails --> Confirm{Confirm?}
-
-    Confirm -- No --> Detail
-
-    Confirm -- Yes --> CheckStock{Check Availability}
-
-    CheckStock -- No Stock --> Error[Show Error]
-    Error --> Detail
-
-    CheckStock -- Available --> Create[Create Booking]
-    Create --> GenQR[Generate QR Code]
-    GenQR --> ShowQR[Show QR + 24h Deadline]
-
-    ShowQR --> Pay{Will Pay Now?}
-
-    Pay -- No --> Wait[Wait for Payment]
-    Pay -- Yes --> Upload[Upload Slip]
+    CheckAvail -- Yes --> Created[Booking Created<br>Status: pending_pay]
+    Created --> Redirect[Redirect to /payment/:id]
+    Redirect --> ShowQR[Show PromptPay QR Code<br>+ 15-minute Deadline]
 
     style Start fill:#E1F5FE
-    style OneDayFlow fill:#C8E6C9
-    style MultiDayFlow fill:#FFF9C4
     style ShowQR fill:#FFE082
-    style Upload fill:#A5D6A7
 ```
 
 ---
 
-### 1.4 Payment Flow
+### 1.5 Payment Flow
 
 ```mermaid
 flowchart TD
-    Upload([Upload Slip]) --> Validate{Validate File}
+    PayPage([Payment Page /payment/:id]) --> ShowQR[Show PromptPay QR Code]
+    ShowQR --> Countdown[15-minute Countdown Timer]
 
-    Validate -- Invalid --> ShowError[Show Error]
-    ShowError --> Upload
+    Countdown --> TimeUp{Time Up?}
+    TimeUp -- Yes --> Expired[Booking Expired — Cron job]
+    TimeUp -- No --> Upload[Upload Payment Slip]
 
-    Validate -- Valid --> Hash[Calculate SHA-256]
-    Hash --> CheckDup{Check Duplicate}
+    Upload --> SelectFile[Select File — max 5MB]
+    SelectFile --> Preview[Preview Slip Image]
+    Preview --> Submit[POST /api/bookings/:id/upload-slip]
 
-    CheckDup -- Duplicate --> DupError[Show Duplicate Error]
-    DupError --> Upload
+    Submit --> Saved[Status → pending_verify]
+    Saved --> WaitVerify[Wait for Admin Verification]
 
-    CheckDup -- New --> Save[Save Payment]
-    Save --> Log[console.log Notify Admin]
-    Log --> Wait[Wait for Verification]
+    WaitVerify --> Admin{Admin Decision}
 
-    Wait --> Admin{Admin Decision}
+    Admin -- Approve --> Confirmed[Status → confirmed]
+    Admin -- Reject --> Rejected[Status → rejected → pending_pay]
+    Rejected --> Upload
 
-    Admin -- Reject --> Reject[Payment Rejected]
-    Reject --> Reason[Show Reason]
-    Reason --> Upload
-
-    Admin -- Approve --> Success[Payment Approved]
-    Success --> Ticket[Generate E-Ticket]
-
-    style Upload fill:#E1F5FE
-    style Success fill:#C8E6C9
-    style Reject fill:#FFCDD2
+    style PayPage fill:#E1F5FE
+    style Confirmed fill:#C8E6C9
+    style Expired fill:#FFCDD2
+    style Rejected fill:#FFCDD2
 ```
 
 ---
 
-### 1.5 My Bookings
+### 1.6 Booking History & Cancel
 
 ```mermaid
 flowchart TD
-    LoggedIn([Logged In]) --> Profile[Go to Profile]
-    Profile --> MyBookings[My Bookings Page]
+    LoggedIn([Logged In]) --> MyBookings[/booking-history<br>GET /api/bookings/my-bookings]
 
-    MyBookings --> Load[Load Bookings]
-    Load --> List[Show Booking List]
-
-    List --> Select{Select Booking}
-
-    Select --> Click[Click Booking]
-    Click --> Detail[Booking Detail]
+    MyBookings --> List[Show Booking List<br>with Status Badges]
+    List --> Select[Select Booking]
+    Select --> Detail[Booking Detail]
 
     Detail --> Actions{Available Actions}
 
-    Actions -- View Ticket --> Ticket[View E-Ticket]
-    Actions -- Cancel --> Cancel[Cancel Booking]
-    Actions -- Upload --> UploadPage[Upload Slip]
-    Actions -- Back --> MyBookings
+    Actions -- pending_pay --> CanPay[Go to Payment Page]
+    Actions -- pending_pay --> CanCancel[Cancel Booking<br>PATCH /api/bookings/:id/cancel]
+    Actions -- confirmed --> ViewOnly[View Details Only]
 
-    Cancel --> CheckStatus{Check Status}
-
-    CheckStatus -- Can Cancel --> DoCancel[Cancel Booking]
-    DoCancel --> Release[Release Seats]
-    Release --> MyBookings
-
-    CheckStatus -- Cannot Cancel --> Cannot[Show Cannot Cancel]
-    Cannot --> Detail
+    CanCancel --> Released[Seats Released — Status → cancelled]
 
     style LoggedIn fill:#E1F5FE
-    style Ticket fill:#C8E6C9
+    style Released fill:#FFCDD2
+```
+
+---
+
+### 1.7 Write Review
+
+```mermaid
+flowchart TD
+    BookingHistory([Booking History]) --> SelectConfirmed[Select Confirmed Booking]
+    SelectConfirmed --> WriteReview[Write Review Form]
+    WriteReview --> InputRating[Select Rating 1-5 Stars]
+    InputRating --> InputComment[Write Comment — Optional]
+    InputComment --> Submit[POST /api/reviews]
+    Submit --> Success[Review Saved]
+    Success --> UpdateRating[Auto-refresh Tour Rating]
+
+    style BookingHistory fill:#E1F5FE
+    style Success fill:#C8E6C9
+```
+
+---
+
+### 1.8 Profile Management
+
+```mermaid
+flowchart TD
+    LoggedIn([Logged In]) --> Profile[/profile<br>GET /api/users/me]
+    Profile --> View[View Profile Info]
+    View --> Actions{Action}
+
+    Actions -- Edit --> EditForm[Edit Name, Email, Phone]
+    EditForm --> Save[PATCH /api/users/me]
+    Save --> View
+
+    Actions -- Avatar --> UploadAvatar[Upload Avatar — 2MB, PNG/JPG]
+    UploadAvatar --> SaveAvatar[POST /api/users/me/avatar]
+    SaveAvatar --> View
+
+    style LoggedIn fill:#E1F5FE
+    style View fill:#C8E6C9
+```
+
+---
+
+### 1.9 Contact / Ticket
+
+```mermaid
+flowchart TD
+    AnyPage([Any Page]) --> Contact[/contact]
+    Contact --> Form[Fill Form:<br>Name, Email, Phone, Message]
+    Form --> Submit[POST /api/tickets]
+    Submit --> Success[Ticket Created — pending]
+
+    style AnyPage fill:#E1F5FE
+    style Success fill:#C8E6C9
 ```
 
 ---
 
 ## 2. Admin User Flows
 
-### 2.1 Admin Login
+### 2.1 Admin Login & Dashboard
 
 ```mermaid
 flowchart TD
-    Start([Go to /admin]) --> Login[Admin Login Page]
-    Login --> Input[Enter Email + Password]
-    Input --> Submit[Submit]
-    Submit --> Validate{Validate}
+    Start([Go to /admin]) --> CheckAuth{Has JWT + AdminRole?}
 
-    Validate -- Invalid --> Error[Show Error]
-    Error --> Input
+    CheckAuth -- No --> Redirect[Redirect to /login]
+    Redirect --> Login[Login with Admin Credentials<br>admin / admin1234]
+    Login --> Start
 
-    Validate -- Valid --> CheckRole{Check Role}
+    CheckAuth -- Yes --> Dashboard[Admin Dashboard<br>GET /api/admin/stats]
 
-    CheckRole -- Not Admin --> Forbidden[Access Denied]
-    Forbidden --> Start
+    Dashboard --> Stats[View Stats:<br>Revenue, Bookings, Pending Payments]
 
-    CheckRole -- Admin --> Dashboard[Admin Dashboard]
+    Stats --> Navigate{Navigate To}
+    Navigate --> Tours[Tour Manager]
+    Navigate --> Schedules[Schedule Manager]
+    Navigate --> Bookings[Booking Manager]
+    Navigate --> Users[User Manager]
+    Navigate --> Reviews[Review Manager]
+    Navigate --> Tickets[Ticket Manager]
 
     style Start fill:#E1F5FE
-    style Dashboard fill:#C8E6C9
+    style Dashboard fill:#FFF9C4
 ```
 
 ---
@@ -246,27 +286,23 @@ flowchart TD
 
 ```mermaid
 flowchart TD
-    Dashboard([Dashboard]) --> Menu[Click Manage Tours]
-    Menu --> List[Tour List]
+    Dashboard([Dashboard]) --> Menu[/admin/tours]
+    Menu --> List[Tour List — GET /api/tours]
 
-    List --> Action{Select Action}
+    List --> Action{Action}
 
-    Action -- Add --> Add[Add New Tour]
-    Add --> AddForm[Fill Form]
-    AddForm --> SaveAdd[Save]
+    Action -- Add --> Add[Create Tour Form]
+    Add --> AddForm[Fill: Title, Description, Price,<br>ChildPrice, Province, Region,<br>Category, Duration, Images]
+    AddForm --> SaveAdd[POST /api/tours — multipart]
     SaveAdd --> List
 
     Action -- Edit --> Edit[Edit Tour]
     Edit --> EditForm[Edit Form]
-    EditForm --> SaveEdit[Save]
+    EditForm --> SaveEdit[PATCH /api/tours/:id]
     SaveEdit --> List
 
-    Action -- Delete --> Delete[Delete Tour]
-    Delete --> Confirm{Confirm?}
-
-    Confirm -- No --> List
-    Confirm -- Yes --> DoDelete[Delete]
-    DoDelete --> List
+    Action -- Delete --> Delete[DELETE /api/tours/:id]
+    Delete --> List
 
     style Dashboard fill:#E1F5FE
     style List fill:#FFF9C4
@@ -274,113 +310,91 @@ flowchart TD
 
 ---
 
-### 2.3 Verify Payments
+### 2.3 Manage Tour Schedules
 
 ```mermaid
 flowchart TD
-    Dashboard([Dashboard]) --> Menu[Click Verify Payments]
-    Menu --> Load[Load Pending Payments]
-    Load --> List[Show Pending List]
+    Dashboard([Dashboard]) --> SchedulePage[/admin/schedules]
+    SchedulePage --> SelectTour[Select Tour]
+    SelectTour --> ViewSchedules[GET /api/tours/:id/schedules]
 
-    List --> Select{Select Payment}
+    ViewSchedules --> Action{Action}
 
-    Select --> View[View Payment Detail]
-    View --> Show[Show Slip + Details]
+    Action -- Add Date --> AddDate[Select Available Date]
+    AddDate --> SaveDate[POST /api/tours/:id/schedules]
+    SaveDate --> ViewSchedules
 
-    Show --> Decide{Admin Decision}
+    Action -- Toggle --> Toggle[Enable/Disable Date]
+    Toggle --> Update[PATCH /api/tours/:id/schedules/:schedId]
+    Update --> ViewSchedules
 
-    Decide -- Approve --> Approve[Click Approve]
-    Approve --> ProcessApprove[Process Approval]
-    ProcessApprove --> UpdatePay[Update: approved]
-    UpdatePay --> UpdateBook[Update: confirmed]
-    UpdateBook --> Log[console.log Email]
-    Log --> List
-
-    Decide -- Reject --> Reject[Click Reject]
-    Reject --> InputReason[Input Reason]
-    InputReason --> ProcessReject[Process Rejection]
-    ProcessReject --> UpdateReject[Update: rejected]
-    UpdateReject --> UpdatePending[Update: pending_pay]
-    UpdatePending --> LogReject[console.log Email]
-    LogReject --> List
+    Action -- Delete --> Delete[DELETE /api/tours/:id/schedules/:schedId]
+    Delete --> ViewSchedules
 
     style Dashboard fill:#E1F5FE
-    style List fill:#E1F5FE
 ```
 
 ---
 
-### 2.4 Dashboard Stats
+### 2.4 Verify Payments
 
 ```mermaid
 flowchart TD
-    Login([Admin Login]) --> Dashboard[Dashboard Page]
+    Dashboard([Dashboard]) --> Payments[GET /api/payments/pending]
+    Payments --> List[Show Pending Payment List]
 
-    Dashboard --> LoadStats[Load Statistics]
+    List --> Select[Select Payment]
+    Select --> View[View Slip + Booking Details]
 
-    LoadStats --> ShowStats[Show Stats]
-    ShowStats --> Cards[Stats Cards]
+    View --> Decide{Decision}
 
-    Cards --> Revenue[Total Revenue]
-    Cards --> Today[Today Bookings]
-    Cards --> Pending[Pending Payments]
+    Decide -- Approve --> Approve[PATCH /api/payments/:id/verify<br>status: approved]
+    Approve --> UpdateBooking[Booking → confirmed]
+    UpdateBooking --> List
 
-    Revenue --> Action{Select Action}
-    Today --> Action
-    Pending --> Action
+    Decide -- Reject --> Reject[PATCH /api/payments/:id/verify<br>status: rejected]
+    Reject --> BookingReset[Booking → pending_pay]
+    BookingReset --> List
 
-    Action -- Tours --> Tours[Manage Tours]
-    Action -- Payments --> Payments[Verify Payments]
-    Action -- Reports --> Reports[View Reports]
-
-    style Login fill:#E1F5FE
-    style Dashboard fill:#FFF9C4
+    style Dashboard fill:#E1F5FE
+    style UpdateBooking fill:#C8E6C9
+    style BookingReset fill:#FFCDD2
 ```
 
 ---
 
-## 3. Error Handling Flows
-
-### 3.1 Common Errors
+### 2.5 Manage Users / Reviews / Tickets
 
 ```mermaid
 flowchart TD
-    Start([User Action]) --> System[System Check]
+    Dashboard([Admin Dashboard]) --> UserManager[/admin/users<br>GET /api/users]
+    Dashboard --> ReviewManager[/admin/reviews<br>GET /api/reviews/admin]
+    Dashboard --> TicketManager[/admin/tickets<br>GET /api/tickets]
 
-    System --> Error{Error Type}
+    UserManager --> UserActions{User Actions}
+    UserActions --> ViewUser[View/Edit User]
+    UserActions --> DeleteUser[Delete User]
 
-    Error -- Network --> NetErr[Network Error]
-    NetErr --> ShowNet[Show: Check Internet]
-    ShowNet --> Retry[Retry]
-    Retry --> Start
+    ReviewManager --> ReviewActions{Review Actions}
+    ReviewActions --> ViewReview[View Reviews — Filter by Tour]
+    ReviewActions --> EditReview[Edit/Toggle Recommended]
 
-    Error -- Validation --> ValErr[Validation Error]
-    ValErr --> ShowVal[Show Field Errors]
-    ShowVal --> Fix[Fix Input]
-    Fix --> Start
+    TicketManager --> TicketActions{Ticket Actions}
+    TicketActions --> ViewTicket[View Message]
+    TicketActions --> ResolveTicket[Mark Resolved/Cancelled]
 
-    Error -- Auth --> AuthErr[Not Logged In]
-    AuthErr --> ShowAuth[Show: Please Login]
-    ShowAuth --> LoginPage[Login Page]
-
-    Error -- Server --> ServErr[Server Error]
-    ServErr --> ShowServ[Show: Try Again Later]
-
-    style Start fill:#E1F5FE
-    style LoginPage fill:#FFF9C4
-    style NetErr fill:#FFCDD2
-    style ValErr fill:#FFCDD2
+    style Dashboard fill:#E1F5FE
 ```
 
 ---
 
-## 4. Booking Status Flow
+## 3. Booking Status State Machine
 
 ```mermaid
 stateDiagram-v2
     [*] --> pending_pay : Customer creates booking
     pending_pay --> pending_verify : Customer uploads slip
-    pending_pay --> expired : 24h timeout
+    pending_pay --> expired : 15-min timeout — Cron job
     pending_pay --> cancelled : Customer cancels
 
     pending_verify --> confirmed : Admin approves
@@ -394,30 +408,20 @@ stateDiagram-v2
 
 ---
 
-## 5. Summary of Simplifications
-
-| Flow | Original | Simplified |
-|---|---|---|
-| Email Verification | Required | Skip in v1.0 |
-| Password Reset | Self-service | Admin reset |
-| Email Queue | Queue system | console.log() |
-| Audit Logs | Database table | console.log() |
-| Session Management | Session table | JWT only |
-
----
-
-## 6. Estimated Time
+## 4. Estimated Time
 
 | Process | Time |
 |---|---|
 | Register | 1-2 min |
 | Login | 30 sec |
-| Search Tours | 3-5 min |
+| Google OAuth Login | 15 sec |
+| Search & Browse Tours | 3-5 min |
 | Book Tour | 2-3 min |
 | Upload Slip | 1-2 min |
-| Verify Payment | ~12 hours (SLA) |
+| Verify Payment (Admin) | depends on admin |
+| Password Reset (OTP) | 2-3 min |
 
 ---
 
-**Last Updated:** 2026-02-10
-**Status:** Simplified for Year 1 Students 🚀
+**Last Updated:** 2026-03-06
+**Status:** สอดคล้องกับโค้ดปัจจุบัน

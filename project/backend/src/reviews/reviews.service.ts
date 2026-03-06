@@ -1,14 +1,17 @@
 import {
   BadRequestException,
   ConflictException,
+  ForbiddenException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { DataSource, Repository } from 'typeorm';
+import { DataSource, EntityManager, Repository } from 'typeorm';
 import { Booking, BookingStatus } from '../bookings/entities/booking.entity';
 import { Tour } from '../tours/entities/tour.entity';
+import { UserRole } from '../users/entities/user.entity';
 import { CreateReviewDto } from './dto/create-review.dto';
+import { UpdateReviewByAdminDto } from './dto/update-review-by-admin.dto';
 import { Review } from './entities/review.entity';
 
 @Injectable()
@@ -72,21 +75,7 @@ export class ReviewsService {
       });
       const savedReview = await manager.save(Review, review);
 
-      const tour = await manager.findOne(Tour, {
-        where: { id: booking.tourId },
-        lock: { mode: 'pessimistic_write' },
-      });
-
-      if (tour) {
-        const currentCount = Number(tour.review_count || 0);
-        const currentTotal = Number(tour.rating || 0) * currentCount;
-        const newCount = currentCount + 1;
-        const newRating = (currentTotal + rating) / newCount;
-
-        tour.review_count = newCount;
-        tour.rating = Number(newRating.toFixed(1));
-        await manager.save(Tour, tour);
-      }
+      await this.refreshTourRating(manager, booking.tourId);
 
       return savedReview;
     });
@@ -105,6 +94,7 @@ export class ReviewsService {
         id: true,
         rating: true,
         comment: true,
+        is_recommended: true,
         createdAt: true,
         user: {
           id: true,
@@ -126,5 +116,204 @@ export class ReviewsService {
       limit: safeLimit,
       totalPages: Math.ceil(total / safeLimit),
     };
+  }
+
+  async findRecommended(limit = 6) {
+    const safeLimit =
+      Number.isFinite(limit) && limit > 0 ? Math.min(limit, 12) : 6;
+
+    return this.reviewRepository
+      .createQueryBuilder('review')
+      .leftJoin('review.user', 'user')
+      .leftJoin('review.tour', 'tour')
+      .select([
+        'review.id',
+        'review.rating',
+        'review.comment',
+        'review.is_recommended',
+        'review.createdAt',
+        'user.id',
+        'user.username',
+        'user.full_name',
+        'user.first_name',
+        'user.last_name',
+        'tour.id',
+        'tour.title',
+      ])
+      .where('review.is_recommended = :recommended', { recommended: true })
+      .andWhere("COALESCE(TRIM(review.comment), '') <> ''")
+      .orderBy('review.createdAt', 'DESC')
+      .take(safeLimit)
+      .getMany();
+  }
+
+  async findForAdmin(
+    params: {
+      page?: number;
+      limit?: number;
+      search?: string;
+      recommended?: boolean;
+      rating?: number;
+    },
+    requestUser?: { role?: string },
+  ) {
+    if (requestUser?.role !== UserRole.ADMIN) {
+      throw new ForbiddenException('Only admin can access review management');
+    }
+
+    const safePage =
+      Number.isFinite(params.page) && (params.page as number) > 0
+        ? Number(params.page)
+        : 1;
+    const safeLimit =
+      Number.isFinite(params.limit) && (params.limit as number) > 0
+        ? Math.min(Number(params.limit), 50)
+        : 12;
+    const skip = (safePage - 1) * safeLimit;
+
+    const qb = this.reviewRepository
+      .createQueryBuilder('review')
+      .leftJoin('review.user', 'user')
+      .leftJoin('review.tour', 'tour')
+      .leftJoin('review.booking', 'booking')
+      .select([
+        'review.id',
+        'review.bookingId',
+        'review.userId',
+        'review.tourId',
+        'review.rating',
+        'review.comment',
+        'review.is_recommended',
+        'review.createdAt',
+        'review.updatedAt',
+        'user.id',
+        'user.username',
+        'user.full_name',
+        'user.first_name',
+        'user.last_name',
+        'tour.id',
+        'tour.title',
+        'tour.province',
+        'booking.id',
+        'booking.bookingReference',
+        'booking.travelDate',
+        'booking.startDate',
+        'booking.endDate',
+      ])
+      .orderBy('review.createdAt', 'DESC')
+      .skip(skip)
+      .take(safeLimit);
+
+    if (params.search?.trim()) {
+      const search = `%${params.search.trim().toLowerCase()}%`;
+      qb.andWhere(
+        `(
+          LOWER(COALESCE(review.comment, '')) LIKE :search
+          OR LOWER(COALESCE(tour.title, '')) LIKE :search
+          OR LOWER(COALESCE(user.full_name, '')) LIKE :search
+          OR LOWER(COALESCE(user.username, '')) LIKE :search
+          OR LOWER(CONCAT(COALESCE(user.first_name, ''), ' ', COALESCE(user.last_name, ''))) LIKE :search
+          OR LOWER(COALESCE(booking.bookingReference, '')) LIKE :search
+        )`,
+        { search },
+      );
+    }
+
+    if (typeof params.recommended === 'boolean') {
+      qb.andWhere('review.is_recommended = :recommended', {
+        recommended: params.recommended,
+      });
+    }
+
+    if (
+      Number.isFinite(params.rating) &&
+      Number(params.rating) >= 1 &&
+      Number(params.rating) <= 5
+    ) {
+      qb.andWhere('review.rating = :rating', { rating: Number(params.rating) });
+    }
+
+    const [data, total] = await qb.getManyAndCount();
+
+    return {
+      data,
+      total,
+      page: safePage,
+      limit: safeLimit,
+      totalPages: Math.ceil(total / safeLimit),
+    };
+  }
+
+  async updateByAdmin(
+    id: string,
+    dto: UpdateReviewByAdminDto,
+    requestUser?: { role?: string },
+  ) {
+    if (requestUser?.role !== UserRole.ADMIN) {
+      throw new ForbiddenException('Only admin can update reviews');
+    }
+
+    const hasUpdateField =
+      dto.rating !== undefined ||
+      dto.comment !== undefined ||
+      dto.is_recommended !== undefined;
+
+    if (!hasUpdateField) {
+      throw new BadRequestException('No editable fields were provided');
+    }
+
+    const review = await this.reviewRepository.findOne({ where: { id } });
+    if (!review) {
+      throw new NotFoundException('Review not found');
+    }
+
+    return this.dataSource.transaction(async (manager) => {
+      if (dto.rating !== undefined) {
+        review.rating = dto.rating;
+      }
+
+      if (dto.comment !== undefined) {
+        const trimmed = dto.comment.trim();
+        review.comment = trimmed || null;
+      }
+
+      if (dto.is_recommended !== undefined) {
+        review.is_recommended = dto.is_recommended;
+      }
+
+      const savedReview = await manager.save(Review, review);
+
+      if (dto.rating !== undefined) {
+        await this.refreshTourRating(manager, review.tourId);
+      }
+
+      return savedReview;
+    });
+  }
+
+  private async refreshTourRating(manager: EntityManager, tourId: string) {
+    const aggregate = await manager
+      .getRepository(Review)
+      .createQueryBuilder('review')
+      .select('COUNT(review.id)', 'count')
+      .addSelect('AVG(review.rating)', 'avg')
+      .where('review.tourId = :tourId', { tourId })
+      .getRawOne<{ count: string; avg: string | null }>();
+
+    const tour = await manager.findOne(Tour, {
+      where: { id: tourId },
+      lock: { mode: 'pessimistic_write' },
+    });
+
+    if (!tour) {
+      return;
+    }
+
+    const reviewCount = Number(aggregate?.count || 0);
+    const average = aggregate?.avg ? Number(aggregate.avg) : 0;
+
+    tour.review_count = reviewCount;
+    tour.rating = Number(average.toFixed(1));
+    await manager.save(Tour, tour);
   }
 }

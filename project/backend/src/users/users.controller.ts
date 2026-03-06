@@ -29,7 +29,7 @@ import { mkdirSync } from 'fs';
 const AVATAR_UPLOAD_DIR = join(process.cwd(), 'uploads', 'avatars');
 mkdirSync(AVATAR_UPLOAD_DIR, { recursive: true });
 
-@Controller(['users', 'api/v1/users'])
+@Controller('api/users')
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 

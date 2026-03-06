@@ -4,19 +4,35 @@ import { AuthController } from './auth.controller';
 import { UsersModule } from '../users/users.module'; // Import เพื่อนบ้าน
 import { PassportModule } from '@nestjs/passport';
 import { JwtModule } from '@nestjs/jwt';
+import { ConfigModule, ConfigService } from '@nestjs/config';
 import { JwtStrategy } from './jwt.strategy';
 import { GoogleStrategy } from './google.strategy';
 @Module({
   imports: [
     UsersModule, // เรียกใช้ความสามารถของ Users
+    ConfigModule,
     PassportModule.register({ defaultStrategy: 'jwt' }),
-    JwtModule.register({
-      secret: 'YOUR_SECRET_KEY', // ควรเก็บใน .env
-      signOptions: { expiresIn: '3d' },
+    JwtModule.registerAsync({
+      imports: [ConfigModule],
+      inject: [ConfigService],
+      useFactory: (configService: ConfigService) => {
+        const jwtSecret = configService.get<string>('JWT_SECRET');
+        if (!jwtSecret) {
+          throw new Error('JWT_SECRET is not configured');
+        }
+
+        return {
+          secret: jwtSecret,
+          signOptions: {
+            expiresIn: (configService.get<string>('JWT_EXPIRES_IN') ||
+              '3d') as any,
+          },
+        };
+      },
     }),
   ],
   controllers: [AuthController],
-  providers: [AuthService, JwtStrategy,GoogleStrategy],
+  providers: [AuthService, JwtStrategy, GoogleStrategy],
   exports: [GoogleStrategy, JwtStrategy, PassportModule],
 })
 export class AuthModule {}

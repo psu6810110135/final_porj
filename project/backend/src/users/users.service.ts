@@ -1,9 +1,9 @@
 import {
+  BadRequestException,
   Injectable,
   ConflictException,
   InternalServerErrorException,
   NotFoundException,
-
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { DataSource, Repository } from 'typeorm';
@@ -11,6 +11,7 @@ import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { UpdateProfileDto } from './dto/update-profile.dto';
 import { User, UserRole } from './entities/user.entity';
+import * as bcrypt from 'bcrypt';
 
 export interface UserProfileResponse {
   id: string;
@@ -58,10 +59,13 @@ export class UsersService {
   }
 
   // เซฟรหัสผ่านใหม่และล้าง Token ทิ้ง
-  async updatePasswordAndClearToken(id: string | number, newHashedPassword: string) {
-    await this.usersRepository.update(id, { 
+  async updatePasswordAndClearToken(
+    id: string | number,
+    newHashedPassword: string,
+  ) {
+    await this.usersRepository.update(id, {
       password: newHashedPassword,
-      resetPasswordToken: '' // ล้างค่าทิ้งเพื่อความปลอดภัย
+      resetPasswordToken: '', // ล้างค่าทิ้งเพื่อความปลอดภัย
     });
   }
   // ── สร้าง user พร้อม profile fields ในคราวเดียว ──
@@ -74,21 +78,41 @@ export class UsersService {
     },
   ): Promise<User> {
     const firstName = profileData?.firstName?.trim() || undefined;
-    const lastName  = profileData?.lastName?.trim()  || undefined;
-    const phone     = profileData?.phoneNumber?.trim() || undefined;
-    const fullName  = [firstName, lastName].filter(Boolean).join(' ') || userData.full_name;
+    const lastName = profileData?.lastName?.trim() || undefined;
+    const phone = profileData?.phoneNumber?.trim() || undefined;
+    const fullName =
+      [firstName, lastName].filter(Boolean).join(' ') || userData.full_name;
 
     return this.createUser({
       ...userData,
       ...(firstName && { first_name: firstName }),
-      ...(lastName  && { last_name:  lastName  }),
-      ...(phone     && { phone                 }),
-      ...(fullName  && { full_name:  fullName  }),
+      ...(lastName && { last_name: lastName }),
+      ...(phone && { phone }),
+      ...(fullName && { full_name: fullName }),
     });
   }
 
-  create(createUserDto: CreateUserDto) {
-    return 'This action adds a new user';
+  async create(createUserDto: CreateUserDto): Promise<User> {
+    const firstName = createUserDto.first_name?.trim();
+    const lastName = createUserDto.last_name?.trim();
+    const fullName =
+      createUserDto.full_name?.trim() ||
+      [firstName, lastName].filter(Boolean).join(' ').trim() ||
+      undefined;
+
+    const hashedPassword = await bcrypt.hash(createUserDto.password, 10);
+
+    return this.createUser({
+      username: createUserDto.username.trim(),
+      password: hashedPassword,
+      email: createUserDto.email?.trim(),
+      first_name: firstName,
+      last_name: lastName,
+      full_name: fullName,
+      phone: createUserDto.phone?.trim(),
+      role: createUserDto.role || UserRole.USER,
+      is_active: createUserDto.is_active ?? true,
+    });
   }
 
   async findAll(): Promise<User[]> {
@@ -112,7 +136,10 @@ export class UsersService {
     return this.toProfileResponse(user);
   }
 
-  async updateAvatar(id: string, avatarUrl: string): Promise<UserProfileResponse> {
+  async updateAvatar(
+    id: string,
+    avatarUrl: string,
+  ): Promise<UserProfileResponse> {
     const user = await this.findById(id);
     if (!user) {
       throw new NotFoundException(`ไม่พบผู้ใช้งานไอดี #${id} ครับ`);
@@ -153,36 +180,64 @@ export class UsersService {
       throw new NotFoundException(`ไม่พบผู้ใช้งานไอดี #${id} ครับ`);
     }
 
-    if (updateUserDto.email      !== undefined) user.email      = updateUserDto.email;
-    if (updateUserDto.username   !== undefined) user.username   = updateUserDto.username;
-    if (updateUserDto.password   !== undefined) user.password   = updateUserDto.password;
-    if (updateUserDto.role       !== undefined) user.role       = updateUserDto.role;
-    if (updateUserDto.is_active  !== undefined) user.is_active  = updateUserDto.is_active;
-    if (updateUserDto.full_name  !== undefined) user.full_name  = updateUserDto.full_name;
-    if (updateUserDto.first_name !== undefined) user.first_name = updateUserDto.first_name;
-    if (updateUserDto.last_name  !== undefined) user.last_name  = updateUserDto.last_name;
-    if (updateUserDto.phone      !== undefined) user.phone      = updateUserDto.phone;
+    if (updateUserDto.email !== undefined) user.email = updateUserDto.email;
+    if (updateUserDto.username !== undefined)
+      user.username = updateUserDto.username;
+    if (updateUserDto.password !== undefined)
+      user.password = updateUserDto.password;
+    if (updateUserDto.role !== undefined) user.role = updateUserDto.role;
+    if (updateUserDto.is_active !== undefined)
+      user.is_active = updateUserDto.is_active;
+    if (updateUserDto.full_name !== undefined)
+      user.full_name = updateUserDto.full_name;
+    if (updateUserDto.first_name !== undefined)
+      user.first_name = updateUserDto.first_name;
+    if (updateUserDto.last_name !== undefined)
+      user.last_name = updateUserDto.last_name;
+    if (updateUserDto.phone !== undefined) user.phone = updateUserDto.phone;
 
-    if (updateUserDto.first_name !== undefined || updateUserDto.last_name !== undefined) {
-      user.full_name = `${user.first_name ?? ''} ${user.last_name ?? ''}`.trim();
+    if (
+      updateUserDto.first_name !== undefined ||
+      updateUserDto.last_name !== undefined
+    ) {
+      user.full_name =
+        `${user.first_name ?? ''} ${user.last_name ?? ''}`.trim();
     }
 
     if (!user.first_name || !user.last_name) {
       const [derivedFirst, derivedLast] = this.splitFullName(user.full_name);
       if (!user.first_name && derivedFirst) user.first_name = derivedFirst;
-      if (!user.last_name  && derivedLast)  user.last_name  = derivedLast;
+      if (!user.last_name && derivedLast) user.last_name = derivedLast;
     }
 
     return this.usersRepository.save(user);
   }
 
-  remove(id: string) {
-    return `This action removes a #${id} user`;
+  async remove(id: string) {
+    const user = await this.usersRepository.findOne({ where: { id } });
+    if (!user) {
+      throw new NotFoundException(`ไม่พบผู้ใช้งานไอดี #${id} ครับ`);
+    }
+
+    try {
+      await this.usersRepository.remove(user);
+      return { success: true, message: 'ลบผู้ใช้งานเรียบร้อยแล้ว' };
+    } catch (error) {
+      const dbError = error as any;
+      if (dbError?.code === '23503') {
+        throw new BadRequestException(
+          'ไม่สามารถลบผู้ใช้งานนี้ได้ เนื่องจากมีข้อมูลที่อ้างอิงอยู่',
+        );
+      }
+      throw new InternalServerErrorException('ไม่สามารถลบผู้ใช้งานได้');
+    }
   }
 
   // ── Private helpers ──
 
-  private splitFullName(fullName?: string | null): [string | null, string | null] {
+  private splitFullName(
+    fullName?: string | null,
+  ): [string | null, string | null] {
     if (!fullName) return [null, null];
     const parts = fullName.trim().split(/\s+/);
     if (parts.length === 0) return [null, null];
@@ -192,15 +247,17 @@ export class UsersService {
   }
 
   private toProfileResponse(user: User): UserProfileResponse {
-    const [derivedFirstName, derivedLastName] = this.splitFullName(user.full_name);
+    const [derivedFirstName, derivedLastName] = this.splitFullName(
+      user.full_name,
+    );
     return {
-      id:        user.id,
-      email:     user.email ?? user.username,
+      id: user.id,
+      email: user.email ?? user.username,
       firstName: user.first_name ?? derivedFirstName,
-      lastName:  user.last_name  ?? derivedLastName,
-      role:      user.role,
+      lastName: user.last_name ?? derivedLastName,
+      role: user.role,
       createdAt: user.created_at,
-      phone:     user.phone      ?? null,
+      phone: user.phone ?? null,
       avatarUrl: user.avatar_url ?? null,
     };
   }
@@ -211,11 +268,14 @@ export class UsersService {
 
     return users.map((user) => {
       const legacy = legacyMap.get(user.id);
-      if (!user.first_name && legacy?.first_name) user.first_name = legacy.first_name;
-      if (!user.last_name  && legacy?.last_name)  user.last_name  = legacy.last_name;
-      if (!user.phone      && legacy?.phone)       user.phone      = legacy.phone;
+      if (!user.first_name && legacy?.first_name)
+        user.first_name = legacy.first_name;
+      if (!user.last_name && legacy?.last_name)
+        user.last_name = legacy.last_name;
+      if (!user.phone && legacy?.phone) user.phone = legacy.phone;
       if (!user.full_name) {
-        user.full_name = `${user.first_name ?? ''} ${user.last_name ?? ''}`.trim();
+        user.full_name =
+          `${user.first_name ?? ''} ${user.last_name ?? ''}`.trim();
       }
       if (!user.email) user.email = user.username;
       return user;
@@ -241,12 +301,15 @@ export class UsersService {
         INNER JOIN user_profiles up ON u."profileId" = up.id
       `);
 
-      const map = new Map<string, { first_name?: string; last_name?: string; phone?: string }>();
+      const map = new Map<
+        string,
+        { first_name?: string; last_name?: string; phone?: string }
+      >();
       for (const row of rows) {
         map.set(row.user_id, {
           first_name: row.first_name ?? undefined,
-          last_name:  row.last_name  ?? undefined,
-          phone:      row.phone      ?? undefined,
+          last_name: row.last_name ?? undefined,
+          phone: row.phone ?? undefined,
         });
       }
       return map;

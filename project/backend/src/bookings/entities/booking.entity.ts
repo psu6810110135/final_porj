@@ -3,6 +3,7 @@ import {
   PrimaryGeneratedColumn,
   Column,
   ManyToOne,
+  OneToOne,
   JoinColumn,
   CreateDateColumn,
   UpdateDateColumn,
@@ -10,6 +11,7 @@ import {
 import { User } from '../../users/entities/user.entity';
 import { Tour } from '../../tours/entities/tour.entity';
 import { TourSchedule } from '../../tours/entities/tour-schedule.entity';
+import { Payment } from '../../payments/entities/payment.entity';
 
 export enum BookingStatus {
   PENDING_PAY = 'pending_pay',
@@ -113,4 +115,8 @@ export class Booking {
   @ManyToOne(() => TourSchedule, { nullable: true })
   @JoinColumn({ name: 'tour_schedule_id' })
   tourSchedule?: TourSchedule;
+
+  // --- ADDED: Relation back to Payment ---
+  @OneToOne(() => Payment, (payment) => payment.booking)
+  payment: Payment;
 }

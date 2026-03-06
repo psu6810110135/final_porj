@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import axios from 'axios';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 
 /* ─── Types ─────────────────────────────────────── */
@@ -82,13 +82,18 @@ const STRENGTH_COLOR = ['', '#ef4444', '#f97316', '#eab308', '#22c55e'];
 /* ─── Main Component ─────────────────────────────── */
 const LoginPage: React.FC = () => {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [view, setView] = useState<View>('login');
+
+  /* Google Conflict Modal state */
+  const [showConflictModal, setShowConflictModal] = useState(false);
 
   /* Login state */
   const [loginForm, setLoginForm] = useState({ username: '', password: '' });
   const [loginLoading, setLoginLoading] = useState(false);
   const [loginError, setLoginError] = useState('');
   const [showLoginPass, setShowLoginPass] = useState(false);
+  const [isGoogleAccountError, setIsGoogleAccountError] = useState(false);
 
   /* Forgot state */
   const [forgotEmail, setForgotEmail] = useState('');
@@ -109,6 +114,16 @@ const LoginPage: React.FC = () => {
   const [showConfirmPass, setShowConfirmPass] = useState(false);
   const [otpToken, setOtpToken] = useState(''); // token จาก OTP verify
 
+  /* Detect ?error=google_conflict จาก Google OAuth redirect */
+  useEffect(() => {
+    const error = searchParams.get('error');
+    if (error === 'email_exists' || error === 'google_conflict') {
+      setShowConflictModal(true);
+      // ล้าง query param ออกจาก URL โดยไม่ reload
+      setSearchParams({}, { replace: true });
+    }
+  }, [searchParams, setSearchParams]);
+
   /* Countdown timer */
   useEffect(() => {
     if (countdown <= 0) return;
@@ -123,12 +138,19 @@ const LoginPage: React.FC = () => {
     e.preventDefault();
     setLoginLoading(true);
     setLoginError('');
+    setIsGoogleAccountError(false);
     try {
       const res = await axios.post('http://localhost:3000/auth/signin', loginForm);
       localStorage.setItem('jwt_token', res.data.accessToken);
       navigate('/');
-    } catch {
-      setLoginError('ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง กรุณาลองใหม่อีกครั้ง');
+    } catch (err: any) {
+      const msg = err.response?.data?.message;
+      if (msg === 'GOOGLE_ACCOUNT') {
+        setIsGoogleAccountError(true);
+        setLoginError('บัญชีนี้ผูกกับ Google กรุณากดปุ่ม "เข้าสู่ระบบด้วย Google" ด้านล่าง');
+      } else {
+        setLoginError('ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง กรุณาลองใหม่อีกครั้ง');
+      }
     } finally {
       setLoginLoading(false);
     }
@@ -146,8 +168,14 @@ const LoginPage: React.FC = () => {
       setCountdown(60);
       setView('otp');
     } catch (err: any) {
-      if (err.response?.status === 404) setForgotError('ไม่พบอีเมลนี้ในระบบ');
-      else setForgotError('เกิดข้อผิดพลาด กรุณาลองใหม่');
+      const msg = err.response?.data?.message;
+      if (msg === 'GOOGLE_ACCOUNT') {
+        setForgotError('บัญชีนี้ลงทะเบียนผ่าน Google ไม่สามารถรีเซ็ตรหัสผ่านได้ กรุณากลับไปเข้าสู่ระบบด้วย Google');
+      } else if (err.response?.status === 400) {
+        setForgotError('ไม่พบอีเมลนี้ในระบบ');
+      } else {
+        setForgotError('เกิดข้อผิดพลาด กรุณาลองใหม่');
+      }
     } finally {
       setForgotLoading(false);
     }
@@ -225,10 +253,10 @@ const LoginPage: React.FC = () => {
   });
 
   const VIEW_TITLES: Record<View, { title: string; subtitle: string; icon: string }> = {
-    login:  { title: 'เข้าสู่ระบบ',       subtitle: 'ยินดีต้อนรับกลับมา! เข้าสู่ระบบเพื่อดำเนินการต่อ', icon: '👋' },
-    forgot: { title: 'ลืมรหัสผ่าน',       subtitle: 'กรอกอีเมลที่ผูกกับบัญชีของคุณ เราจะส่ง OTP ให้', icon: '🔑' },
-    otp:    { title: 'ยืนยัน OTP',         subtitle: `กรอกรหัส 6 หลักที่ส่งไปยัง ${forgotEmail}`, icon: '📨' },
-    reset:  { title: 'ตั้งรหัสผ่านใหม่',  subtitle: 'รหัสผ่านใหม่ต้องมีอย่างน้อย 8 ตัวอักษร', icon: '🛡️' },
+    login: { title: 'เข้าสู่ระบบ', subtitle: 'ยินดีต้อนรับกลับมา! เข้าสู่ระบบเพื่อดำเนินการต่อ', icon: '👋' },
+    forgot: { title: 'ลืมรหัสผ่าน', subtitle: 'กรอกอีเมลที่ผูกกับบัญชีของคุณ เราจะส่ง OTP ให้', icon: '🔑' },
+    otp: { title: 'ยืนยัน OTP', subtitle: `กรอกรหัส 6 หลักที่ส่งไปยัง ${forgotEmail}`, icon: '📨' },
+    reset: { title: 'ตั้งรหัสผ่านใหม่', subtitle: 'รหัสผ่านใหม่ต้องมีอย่างน้อย 8 ตัวอักษร', icon: '🛡️' },
   };
 
   const { title, subtitle, icon } = VIEW_TITLES[view];
@@ -339,7 +367,179 @@ const LoginPage: React.FC = () => {
 
         @keyframes slideIn { from { opacity:0; transform:translateY(-6px); } to { opacity:1; transform:translateY(0); } }
         .slide-in { animation: slideIn 0.22s ease; }
+
+        @keyframes pulse-border {
+          0%, 100% { box-shadow: 0 0 0 3px rgba(255,140,0,0.25); }
+          50% { box-shadow: 0 0 0 6px rgba(255,140,0,0.1); }
+        }
+
+        /* ── Conflict Modal ── */
+        .conflict-overlay {
+          position: fixed; inset: 0; z-index: 9999;
+          background: rgba(30, 15, 5, 0.55);
+          backdrop-filter: blur(4px);
+          display: flex; align-items: center; justify-content: center;
+          padding: 20px;
+          animation: fadeOverlay 0.25s ease;
+        }
+        @keyframes fadeOverlay {
+          from { opacity: 0; } to { opacity: 1; }
+        }
+
+        .conflict-modal {
+          background: white;
+          border-radius: 24px;
+          width: 100%; max-width: 420px;
+          box-shadow: 0 28px 80px rgba(30,15,5,0.22), 0 6px 24px rgba(255,140,0,0.1);
+          overflow: hidden;
+          animation: popModal 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        @keyframes popModal {
+          from { opacity: 0; transform: scale(0.88) translateY(20px); }
+          to   { opacity: 1; transform: scale(1) translateY(0); }
+        }
+
+        .conflict-banner {
+          background: linear-gradient(135deg, #FF8C00, #FF5722);
+          padding: 28px 32px 24px;
+          text-align: center;
+          position: relative;
+        }
+        .conflict-icon-ring {
+          width: 68px; height: 68px;
+          background: rgba(255,255,255,0.18);
+          border-radius: 50%;
+          display: flex; align-items: center; justify-content: center;
+          font-size: 30px;
+          margin: 0 auto 14px;
+          box-shadow: 0 0 0 10px rgba(255,255,255,0.08);
+        }
+
+        .conflict-body {
+          padding: 28px 32px 32px;
+        }
+
+        .conflict-step {
+          display: flex; align-items: flex-start; gap: 14px;
+          padding: 14px 16px;
+          border-radius: 14px;
+          margin-bottom: 10px;
+          background: #FFF8F0;
+          border: 1.5px solid #FFE0B2;
+          transition: background 0.2s;
+        }
+        .conflict-step:last-of-type { margin-bottom: 0; }
+        .conflict-step-num {
+          width: 26px; height: 26px; min-width: 26px;
+          background: linear-gradient(135deg, #FF8C00, #FF6B00);
+          border-radius: 50%;
+          color: white; font-size: 12px; font-weight: 800;
+          display: flex; align-items: center; justify-content: center;
+          margin-top: 1px;
+        }
+        .conflict-step-text {
+          font-size: 13.5px; color: #4E342E;
+          line-height: 1.55; font-weight: 500;
+          font-family: 'Prompt', sans-serif;
+        }
+        .conflict-step-text b { color: #E65100; }
+
+        .conflict-btn-primary {
+          width: 100%; padding: 14px;
+          background: linear-gradient(135deg, #FF8C00, #FF6B00);
+          color: white; border: none; border-radius: 13px;
+          font-size: 15.5px; font-weight: 700;
+          font-family: 'Prompt', sans-serif;
+          cursor: pointer; letter-spacing: 0.2px;
+          box-shadow: 0 5px 18px rgba(255,140,0,0.4);
+          transition: all 0.2s; margin-top: 20px;
+        }
+        .conflict-btn-primary:hover { transform: translateY(-1px); box-shadow: 0 7px 22px rgba(255,140,0,0.5); }
+        .conflict-btn-primary:active { transform: translateY(0); }
+
+        .conflict-btn-secondary {
+          width: 100%; padding: 12px;
+          background: transparent;
+          color: #A1887F; border: 1.5px solid #E0D5CF;
+          border-radius: 13px;
+          font-size: 14px; font-weight: 600;
+          font-family: 'Prompt', sans-serif;
+          cursor: pointer; margin-top: 10px;
+          transition: all 0.2s;
+        }
+        .conflict-btn-secondary:hover { border-color: #A1887F; color: #6D4C41; background: #FFF8F0; }
+
+        .conflict-close {
+          position: absolute; top: 14px; right: 16px;
+          background: rgba(255,255,255,0.2); border: none;
+          width: 30px; height: 30px; border-radius: 50%;
+          color: white; font-size: 14px; cursor: pointer;
+          display: flex; align-items: center; justify-content: center;
+          transition: background 0.2s; font-weight: 700;
+        }
+        .conflict-close:hover { background: rgba(255,255,255,0.35); }
       `}</style>
+
+      {/* ── Google Conflict Modal ── */}
+      {showConflictModal && (
+        <div className="conflict-overlay" onClick={() => setShowConflictModal(false)}>
+          <div className="conflict-modal" onClick={e => e.stopPropagation()}>
+
+            {/* Banner */}
+            <div className="conflict-banner">
+              <button className="conflict-close" onClick={() => setShowConflictModal(false)}>✕</button>
+              <div className="conflict-icon-ring">⚠️</div>
+              <h2 style={{ color: 'white', fontSize: 19, fontWeight: 800, margin: '0 0 6px', fontFamily: 'Prompt, sans-serif' }}>
+                อีเมลนี้มีบัญชีอยู่แล้ว!
+              </h2>
+              <p style={{ color: 'rgba(255,255,255,0.85)', fontSize: 13, margin: 0, fontFamily: 'Prompt, sans-serif', lineHeight: 1.5 }}>
+                บัญชีนี้ลงทะเบียนด้วยรหัสผ่านปกติ<br />ไม่สามารถเข้าสู่ระบบด้วย Google ได้โดยตรง
+              </p>
+            </div>
+
+            {/* Body */}
+            <div className="conflict-body">
+              <p style={{ color: '#5D4037', fontWeight: 700, fontSize: 14, margin: '0 0 14px', fontFamily: 'Prompt, sans-serif' }}>
+                📋 วิธีแก้ไข:
+              </p>
+
+              <div className="conflict-step">
+                <div className="conflict-step-num">1</div>
+                <div className="conflict-step-text">
+                  ถ้า<b>จำรหัสผ่านได้</b> — กดปิดหน้าต่างนี้แล้วกรอก
+                  <b> Username / Email + รหัสผ่าน</b> เข้าสู่ระบบปกติ
+                </div>
+              </div>
+
+              <div className="conflict-step">
+                <div className="conflict-step-num">2</div>
+                <div className="conflict-step-text">
+                  ถ้า<b>ลืมรหัสผ่าน</b> — กดปุ่มด้านล่างเพื่อไปหน้า
+                  <b> รีเซ็ตรหัสผ่าน</b> ผ่านอีเมลได้เลย
+                </div>
+              </div>
+
+              <button
+                className="conflict-btn-primary"
+                onClick={() => {
+                  setShowConflictModal(false);
+                  setView('forgot');
+                }}
+              >
+                🔑 ลืมรหัสผ่าน — ไปรีเซ็ตรหัสผ่าน
+              </button>
+
+              <button
+                className="conflict-btn-secondary"
+                onClick={() => setShowConflictModal(false)}
+              >
+                ✕ ปิด — ฉันจำรหัสผ่านได้แล้ว
+              </button>
+            </div>
+
+          </div>
+        </div>
+      )}
 
       <Navbar />
       <div className="auth-page">
@@ -417,14 +617,24 @@ const LoginPage: React.FC = () => {
                     <div className="divider-line" /><span className="divider-text">หรือ เข้าสู่ระบบกับ</span><div className="divider-line" />
                   </div>
 
-                  <button type="button" className="google-btn" onClick={() => { window.location.href = 'http://localhost:3000/auth/google'; }}>
+                  <button
+                    type="button"
+                    className="google-btn"
+                    style={isGoogleAccountError ? {
+                      borderColor: '#FF8C00',
+                      background: '#FFF8F0',
+                      boxShadow: '0 0 0 3px rgba(255,140,0,0.25)',
+                      animation: 'pulse-border 1.5s ease-in-out infinite',
+                    } : {}}
+                    onClick={() => { window.location.href = 'http://localhost:3000/auth/google'; }}
+                  >
                     <svg width="20" height="20" viewBox="0 0 24 24">
-                      <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
-                      <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
-                      <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
-                      <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+                      <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
+                      <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
+                      <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" />
+                      <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
                     </svg>
-                    Google
+                    {isGoogleAccountError ? '👉 กดที่นี่เพื่อเข้าสู่ระบบด้วย Google' : 'Google'}
                   </button>
 
                   <p className="footer-text">
@@ -538,7 +748,7 @@ const LoginPage: React.FC = () => {
                       {resetForm.password && (
                         <>
                           <div className="strength-bar">
-                            {[1,2,3,4].map(n => (
+                            {[1, 2, 3, 4].map(n => (
                               <div key={n} className="strength-seg" style={{ background: strength >= n ? STRENGTH_COLOR[strength] : '#E0D5CF' }} />
                             ))}
                           </div>

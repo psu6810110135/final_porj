@@ -1,32 +1,34 @@
 //auth.controller.ts
-import { Controller, Post, Body, ValidationPipe,BadRequestException, HttpCode, HttpStatus, Get, UseGuards, Req, Res } from '@nestjs/common';
+import { Controller, Post, Body, ValidationPipe, BadRequestException, HttpCode, HttpStatus, Get, UseGuards, Req, Res } from '@nestjs/common';
 import { AuthCredentialsDto } from './dto/auth-credentials.dto';
 import { AuthService } from './auth.service';
 import { AuthGuard } from '@nestjs/passport';
 
 @Controller('auth')
 export class AuthController {
-  constructor(private authService: AuthService) {}
+  constructor(private authService: AuthService) { }
   @Get('/google')
   @UseGuards(AuthGuard('google'))
   async googleAuth(@Req() req) {
-  // ปล่อยว่างไว้ได้เลย NestJS จะพาไปหน้า Google อัตโนมัติ
+    // ปล่อยว่างไว้ได้เลย NestJS จะพาไปหน้า Google อัตโนมัติ
   }
   @Get('/google/callback')
   @UseGuards(AuthGuard('google'))
   async googleAuthRedirect(@Req() req, @Res() res) {
-    // สร้าง Token จากข้อมูล Google
-    const jwt = await this.authService.googleLogin(req);
-    
-    // ดีดกลับไปที่หน้าบ้าน (React) พร้อมแนบ Token ไปที่ URL
-    // *ตรง 5173 ให้เปลี่ยนเป็น Port ที่ React ของคุณรันอยู่นะครับ*
-    res.redirect(`http://localhost:5173/login/success?token=${jwt.accessToken}`); 
+    const result = await this.authService.googleLogin(req);
+
+    // ถ้า email นี้มีบัญชีปกติอยู่แล้ว → redirect กลับพร้อม error
+    if ('conflict' in result) {
+      return res.redirect('http://localhost:5173/login?error=email_exists');
+    }
+
+    res.redirect(`http://localhost:5173/login/success?token=${result.accessToken}`);
   }
   @Post('/signup')
   signUp(@Body(ValidationPipe) authCredentialsDto: AuthCredentialsDto): Promise<void> {
     return this.authService.signUp(authCredentialsDto);
   }
-  
+
   @Post('/signin')
   @HttpCode(HttpStatus.OK)
   signIn(@Body(ValidationPipe) authCredentialsDto: AuthCredentialsDto): Promise<{ accessToken: string }> {

@@ -24,6 +24,7 @@ import UserManager from "./pages/admin/UserManager";
 import BookingHistory from "./pages/admin/BookingHistory";
 import TicketManager from "./pages/admin/TicketManager"; // 👈 นำเข้า TicketManager
 import AdminGuard from "./pages/AdminGuard";
+import GuestGuard from "./pages/GuestGuard";
 
 export default function App() {
   return (
@@ -33,15 +34,19 @@ export default function App() {
         <Route path="/" element={<HomePage />} />
         <Route path="/tours" element={<ToursPage />} />
         <Route path="/tours/:id" element={<TourDetailPage />} />
-        <Route path="/login" element={<LoginPage />} />
         <Route path="/login/success" element={<LoginSuccess />} />
-        <Route path="/register" element={<RegisterPage />} />
+
+        {/* --- 🚪 ป้องกัน user ที่ login แล้ว เข้าหน้า login/register ไม่ได้ --- */}
+        <Route element={<GuestGuard />}>
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/register" element={<RegisterPage />} />
+        </Route>
         <Route path="/payment/:id" element={<PaymentPage />} />
         <Route path="/booking-history" element={<BookingHistoryPage />} />
         <Route path="/profile" element={<ProfilePage />} />
         <Route path="/contact" element={<ContactPage />} />
         <Route path="/about" element={<AboutUsPage />} />
-        
+
         {/* --- 🛡️ โซนป้องกันแอดมิน --- */}
         <Route element={<AdminGuard />}>
           <Route path="/admin" element={<AdminLayout />}>

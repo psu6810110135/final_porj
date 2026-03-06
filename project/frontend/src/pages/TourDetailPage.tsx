@@ -262,6 +262,10 @@ function BookingSheet({ tour, onClose, showToast }: {
         if (!contactName)  setContactName(d.full_name || p.full_name || d.username || "");
         if (!contactEmail) setContactEmail(d.email || p.email || "");
         if (!contactPhone) setContactPhone(p.phone || p.tel || d.phone || "");
+         if (!contactPhone)
+        setContactPhone(
+          p.phoneNumber || p.phone_number || p.phone || p.tel || d.phone || ""
+        );
       }).catch(() => {});
   }, []);
 

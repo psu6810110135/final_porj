@@ -194,6 +194,9 @@ const RegisterPage: React.FC = () => {
     if (!formData.username.trim()) e.username = 'กรุณากรอกชื่อผู้ใช้';
     if (!formData.email.trim()) e.email = 'กรุณากรอกอีเมล';
     else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) e.email = 'รูปแบบอีเมลไม่ถูกต้อง';
+    if (!formData.phoneNumber.trim()) e.phoneNumber = 'กรุณากรอกเบอร์โทรศัพท์';
+    else if (!/^[0-9]{9,10}$/.test(formData.phoneNumber.replace(/-/g, '')))
+    e.phoneNumber = 'เบอร์โทรต้องเป็นตัวเลข 9-10 หลัก';
     setErrors(e);
     return Object.keys(e).length === 0;
   };
@@ -376,7 +379,7 @@ const RegisterPage: React.FC = () => {
                   </div>
                   <Field label="ชื่อผู้ใช้" name="username" placeholder="เช่น chaichai99" icon="🪪" required value={formData.username} onChange={handleChange} error={errors.username} />
                   <Field label="อีเมล" name="email" type="email" placeholder="email@example.com" icon="✉️" required value={formData.email} onChange={handleChange} error={errors.email} />
-                  <Field label="เบอร์โทรศัพท์" name="phoneNumber" type="tel" placeholder="08X-XXX-XXXX (ไม่จำเป็น)" icon="📱" value={formData.phoneNumber} onChange={handleChange} />
+                  <Field label="เบอร์โทรศัพท์" name="phoneNumber" type="tel" placeholder="08X-XXX-XXXX" icon="📱" required value={formData.phoneNumber} onChange={handleChange} error={errors.phoneNumber} />
 
                   <button type="button" className="submit-btn" onClick={handleNext} style={{ marginTop: 6, marginBottom: 18 }}>
                     ถัดไป →

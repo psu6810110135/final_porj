@@ -29,10 +29,21 @@ export class UsersService {
     @InjectRepository(User)
     private usersRepository: Repository<User>,
     private dataSource: DataSource,
-  ) {}
+  ) { }
 
   async findOne(username: string): Promise<User | null> {
     return this.usersRepository.findOne({ where: { username } });
+  }
+
+  async findByEmail(email: string): Promise<User | null> {
+    return this.usersRepository.findOne({ where: { email } });
+  }
+
+  async findByUsernameOrEmail(identifier: string): Promise<User | null> {
+    return this.usersRepository
+      .createQueryBuilder('user')
+      .where('user.username = :id OR user.email = :id', { id: identifier })
+      .getOne();
   }
 
   async createUser(userData: Partial<User>): Promise<User> {
@@ -59,9 +70,11 @@ export class UsersService {
 
   // เซฟรหัสผ่านใหม่และล้าง Token ทิ้ง
   async updatePasswordAndClearToken(id: string | number, newHashedPassword: string) {
-    await this.usersRepository.update(id, { 
+    await this.usersRepository.update(id, {
       password: newHashedPassword,
-      resetPasswordToken: '' // ล้างค่าทิ้งเพื่อความปลอดภัย
+      resetPasswordToken: null as any,       // ✅ ต้องเป็น null ไม่ใช่ '' (empty string จะ match token ได้)
+      resetPasswordOtp: null as any,          // ✅ ล้าง OTP ด้วย
+      resetPasswordOtpExpires: null as any,   // ✅ ล้างเวลา OTP ด้วย
     });
   }
   // ── สร้าง user พร้อม profile fields ในคราวเดียว ──
@@ -74,16 +87,16 @@ export class UsersService {
     },
   ): Promise<User> {
     const firstName = profileData?.firstName?.trim() || undefined;
-    const lastName  = profileData?.lastName?.trim()  || undefined;
-    const phone     = profileData?.phoneNumber?.trim() || undefined;
-    const fullName  = [firstName, lastName].filter(Boolean).join(' ') || userData.full_name;
+    const lastName = profileData?.lastName?.trim() || undefined;
+    const phone = profileData?.phoneNumber?.trim() || undefined;
+    const fullName = [firstName, lastName].filter(Boolean).join(' ') || userData.full_name;
 
     return this.createUser({
       ...userData,
       ...(firstName && { first_name: firstName }),
-      ...(lastName  && { last_name:  lastName  }),
-      ...(phone     && { phone                 }),
-      ...(fullName  && { full_name:  fullName  }),
+      ...(lastName && { last_name: lastName }),
+      ...(phone && { phone }),
+      ...(fullName && { full_name: fullName }),
     });
   }
 
@@ -153,15 +166,15 @@ export class UsersService {
       throw new NotFoundException(`ไม่พบผู้ใช้งานไอดี #${id} ครับ`);
     }
 
-    if (updateUserDto.email      !== undefined) user.email      = updateUserDto.email;
-    if (updateUserDto.username   !== undefined) user.username   = updateUserDto.username;
-    if (updateUserDto.password   !== undefined) user.password   = updateUserDto.password;
-    if (updateUserDto.role       !== undefined) user.role       = updateUserDto.role;
-    if (updateUserDto.is_active  !== undefined) user.is_active  = updateUserDto.is_active;
-    if (updateUserDto.full_name  !== undefined) user.full_name  = updateUserDto.full_name;
+    if (updateUserDto.email !== undefined) user.email = updateUserDto.email;
+    if (updateUserDto.username !== undefined) user.username = updateUserDto.username;
+    if (updateUserDto.password !== undefined) user.password = updateUserDto.password;
+    if (updateUserDto.role !== undefined) user.role = updateUserDto.role;
+    if (updateUserDto.is_active !== undefined) user.is_active = updateUserDto.is_active;
+    if (updateUserDto.full_name !== undefined) user.full_name = updateUserDto.full_name;
     if (updateUserDto.first_name !== undefined) user.first_name = updateUserDto.first_name;
-    if (updateUserDto.last_name  !== undefined) user.last_name  = updateUserDto.last_name;
-    if (updateUserDto.phone      !== undefined) user.phone      = updateUserDto.phone;
+    if (updateUserDto.last_name !== undefined) user.last_name = updateUserDto.last_name;
+    if (updateUserDto.phone !== undefined) user.phone = updateUserDto.phone;
 
     if (updateUserDto.first_name !== undefined || updateUserDto.last_name !== undefined) {
       user.full_name = `${user.first_name ?? ''} ${user.last_name ?? ''}`.trim();
@@ -170,7 +183,7 @@ export class UsersService {
     if (!user.first_name || !user.last_name) {
       const [derivedFirst, derivedLast] = this.splitFullName(user.full_name);
       if (!user.first_name && derivedFirst) user.first_name = derivedFirst;
-      if (!user.last_name  && derivedLast)  user.last_name  = derivedLast;
+      if (!user.last_name && derivedLast) user.last_name = derivedLast;
     }
 
     return this.usersRepository.save(user);
@@ -194,13 +207,13 @@ export class UsersService {
   private toProfileResponse(user: User): UserProfileResponse {
     const [derivedFirstName, derivedLastName] = this.splitFullName(user.full_name);
     return {
-      id:        user.id,
-      email:     user.email ?? user.username,
+      id: user.id,
+      email: user.email ?? user.username,
       firstName: user.first_name ?? derivedFirstName,
-      lastName:  user.last_name  ?? derivedLastName,
-      role:      user.role,
+      lastName: user.last_name ?? derivedLastName,
+      role: user.role,
       createdAt: user.created_at,
-      phone:     user.phone      ?? null,
+      phone: user.phone ?? null,
       avatarUrl: user.avatar_url ?? null,
     };
   }
@@ -212,8 +225,8 @@ export class UsersService {
     return users.map((user) => {
       const legacy = legacyMap.get(user.id);
       if (!user.first_name && legacy?.first_name) user.first_name = legacy.first_name;
-      if (!user.last_name  && legacy?.last_name)  user.last_name  = legacy.last_name;
-      if (!user.phone      && legacy?.phone)       user.phone      = legacy.phone;
+      if (!user.last_name && legacy?.last_name) user.last_name = legacy.last_name;
+      if (!user.phone && legacy?.phone) user.phone = legacy.phone;
       if (!user.full_name) {
         user.full_name = `${user.first_name ?? ''} ${user.last_name ?? ''}`.trim();
       }
@@ -245,8 +258,8 @@ export class UsersService {
       for (const row of rows) {
         map.set(row.user_id, {
           first_name: row.first_name ?? undefined,
-          last_name:  row.last_name  ?? undefined,
-          phone:      row.phone      ?? undefined,
+          last_name: row.last_name ?? undefined,
+          phone: row.phone ?? undefined,
         });
       }
       return map;

@@ -333,7 +333,7 @@ export default function Navbar({ activePage = "home" }: NavbarProps) {
             {/* ── Logo (left) ── */}
             <div className="flex-1 flex items-center">
               <Link to="/" className="flex items-center gap-2">
-                <div className="relative h-10 md:h-16">
+                <div className="relative h-20 md:h-20">
                   <img
                     src={logoImage}
                     alt="Thai Tours Logo"

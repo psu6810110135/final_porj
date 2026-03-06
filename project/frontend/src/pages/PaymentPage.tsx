@@ -244,8 +244,6 @@ export default function PaymentPage() {
         <div className="mt-2 min-h-[24px]">
           {paymentStatus === 'pending' && (
             <div className="flex items-center justify-center gap-2 text-orange-600">
-              <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin"></div>
-              <p className="font-medium text-sm">ระบบตรวจสอบอัตโนมัติ...</p>
             </div>
           )}
         </div>

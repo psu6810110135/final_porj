@@ -5,6 +5,13 @@ import { useNavigate } from "react-router-dom";
 
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+import {
+  CATEGORY_OPTIONS,
+  DURATION_OPTIONS,
+  getCategoryLabel,
+  getDurationLabel,
+  getProvinceLabel,
+} from "@/utils/tourLabels";
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -263,11 +270,20 @@ function RichDropdown({
   label: string;
   icon: React.ReactNode;
   value: string;
-  options: string[];
+  options: string[] | { value: string; label: string }[];
   isOpen: boolean;
   onToggle: () => void;
   onSelect: (val: string) => void;
 }) {
+  // Normalise to {value, label} shape regardless of what was passed
+  const normalised: { value: string; label: string }[] = options.map((o) =>
+    typeof o === "string" ? { value: o, label: o } : o,
+  );
+
+  // Resolve the selected display label
+  const displayLabel =
+    normalised.find((o) => o.value === value)?.label ?? value;
+
   return (
     <div className="flex-1 relative min-w-[0]">
       <button
@@ -286,7 +302,7 @@ function RichDropdown({
         <span
           className={`text-xs md:text-sm text-left flex-1 truncate font-semibold ${value ? "text-[#4F200D]" : "text-[#4F200D]/45"}`}
         >
-          {value || label}
+          {displayLabel || label}
         </span>
         <ChevronDownSmall open={isOpen} />
       </button>
@@ -316,20 +332,20 @@ function RichDropdown({
             )}
             ทั้งหมด
           </button>
-          {options.map((opt) => (
+          {normalised.map((opt) => (
             <button
-              key={opt}
-              onClick={() => onSelect(opt)}
+              key={opt.value}
+              onClick={() => onSelect(opt.value)}
               className={`w-full px-4 py-2.5 text-left text-sm flex items-center gap-2 transition-colors ${
-                value === opt
+                value === opt.value
                   ? "bg-[#FF8400]/8 text-[#FF8400] font-bold"
                   : "text-[#4F200D] hover:bg-[#F6F1E9]"
               }`}
             >
-              {value === opt && (
+              {value === opt.value && (
                 <span className="w-1.5 h-1.5 rounded-full bg-[#FF8400]" />
               )}
-              {opt}
+              {opt.label}
             </button>
           ))}
         </div>
@@ -353,10 +369,9 @@ export default function HomePage() {
   // Dropdown open states
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
 
-  // Filter options from API
+  // Filter options — provinces come from the API (already in Thai), categories
+  // and durations use the fixed lists from tourLabels.ts
   const [provinces, setProvinces] = useState<string[]>([]);
-  const [categories, setCategories] = useState<string[]>([]);
-  const [durations, setDurations] = useState<string[]>([]);
 
   const API_BASE = "http://localhost:3000/api";
 
@@ -415,7 +430,7 @@ export default function HomePage() {
       ? [...testimonials, ...testimonials, ...testimonials]
       : testimonials;
 
-  // ── Fetch filter options ──
+  // ── Fetch province list for dropdown ──
   useEffect(() => {
     fetch(`${API_BASE}/tours`)
       .then((res) => res.json())
@@ -423,14 +438,8 @@ export default function HomePage() {
         setProvinces(
           [...new Set(data.map((t) => t.province))].filter(Boolean) as string[],
         );
-        setCategories(
-          [...new Set(data.map((t) => t.category))].filter(Boolean) as string[],
-        );
-        setDurations(
-          [...new Set(data.map((t) => t.duration))].filter(Boolean) as string[],
-        );
       })
-      .catch((err) => console.error("Error fetching filter options:", err));
+      .catch((err) => console.error("Error fetching provinces:", err));
   }, []);
 
   // ── Fetch recommended tours (fallback to first 3 from all) ──
@@ -553,7 +562,7 @@ export default function HomePage() {
 
   const handleSearch = () => {
     const params = new URLSearchParams();
-    if (selectedProvince) params.append("location", selectedProvince);
+    if (selectedProvince) params.append("province", selectedProvince);
     if (selectedCategory) params.append("category", selectedCategory);
     if (selectedDuration) params.append("duration", selectedDuration);
     navigate(`/tours?${params.toString()}`);
@@ -716,7 +725,7 @@ export default function HomePage() {
                   </svg>
                 }
                 value={selectedCategory}
-                options={categories}
+                options={CATEGORY_OPTIONS}
                 isOpen={openDropdown === "category"}
                 onToggle={() => toggleDropdown("category")}
                 onSelect={(v) => {
@@ -748,7 +757,7 @@ export default function HomePage() {
                   </svg>
                 }
                 value={selectedDuration}
-                options={durations}
+                options={DURATION_OPTIONS}
                 isOpen={openDropdown === "duration"}
                 onToggle={() => toggleDropdown("duration")}
                 onSelect={(v) => {
@@ -1035,12 +1044,12 @@ export default function HomePage() {
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
                     <div className="absolute top-3 right-3 bg-white/90 backdrop-blur-sm px-3 py-1 rounded-full text-xs font-bold text-[#FF8400] shadow-sm">
-                      {tour.category || "แนะนำ"}
+                      {getCategoryLabel(tour.category || "") || "แนะนำ"}
                     </div>
                     {tour.province && (
                       <div className="absolute bottom-3 left-3 flex items-center gap-1 bg-black/30 backdrop-blur-sm text-white text-xs font-medium px-2.5 py-1 rounded-full">
                         <MapIcon className="w-3 h-3" />
-                        {tour.province}
+                        {getProvinceLabel(tour.province)}
                       </div>
                     )}
                   </div>
@@ -1056,7 +1065,9 @@ export default function HomePage() {
                     <div className="flex items-center justify-between mt-auto">
                       <div>
                         <p className="text-[11px] md:text-xs text-[#4F200D]/50 font-medium">
-                          {tour.duration || "กำลังจัดตาราง"}
+                          {tour.duration
+                            ? getDurationLabel(tour.duration)
+                            : "กำลังจัดตาราง"}
                         </p>
                         <p className="text-lg md:text-xl font-extrabold text-[#FF8400]">
                           {tour.price

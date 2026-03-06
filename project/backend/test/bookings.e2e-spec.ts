@@ -119,7 +119,7 @@ describe('BookingsController (e2e)', () => {
     await app.close();
   });
 
-  describe('POST /api/v1/bookings/calculate', () => {
+  describe('POST /api/bookings/calculate', () => {
     it('should calculate booking price successfully', () => {
       const calculateDto = {
         tourId: mockTourId,
@@ -128,7 +128,7 @@ describe('BookingsController (e2e)', () => {
       };
 
       return request(app.getHttpServer())
-        .post('/api/v1/bookings/calculate')
+        .post('/api/bookings/calculate')
         .send(calculateDto)
         .expect(201)
         .expect((res) => {
@@ -153,7 +153,7 @@ describe('BookingsController (e2e)', () => {
       };
 
       return request(app.getHttpServer())
-        .post('/api/v1/bookings/calculate')
+        .post('/api/bookings/calculate')
         .send(calculateDto)
         .expect(201)
         .expect((res) => {
@@ -171,7 +171,7 @@ describe('BookingsController (e2e)', () => {
       };
 
       return request(app.getHttpServer())
-        .post('/api/v1/bookings/calculate')
+        .post('/api/bookings/calculate')
         .send(calculateDto)
         .expect(201)
         .expect((res) => {
@@ -189,7 +189,7 @@ describe('BookingsController (e2e)', () => {
       };
 
       return request(app.getHttpServer())
-        .post('/api/v1/bookings/calculate')
+        .post('/api/bookings/calculate')
         .send(calculateDto)
         .expect(400);
     });
@@ -202,7 +202,7 @@ describe('BookingsController (e2e)', () => {
       };
 
       return request(app.getHttpServer())
-        .post('/api/v1/bookings/calculate')
+        .post('/api/bookings/calculate')
         .send(calculateDto)
         .expect(400);
     });
@@ -214,7 +214,7 @@ describe('BookingsController (e2e)', () => {
       };
 
       return request(app.getHttpServer())
-        .post('/api/v1/bookings/calculate')
+        .post('/api/bookings/calculate')
         .send(calculateDto)
         .expect(400);
     });
@@ -254,7 +254,7 @@ describe('BookingsController (e2e)', () => {
     });
   });
 
-  describe('POST /api/v1/bookings', () => {
+  describe('POST /api/bookings', () => {
     const validBookingDto = {
       tourId: mockTourId,
       startDate: '2025-01-15',
@@ -271,7 +271,7 @@ describe('BookingsController (e2e)', () => {
 
     it('should create a new booking successfully', () => {
       return request(app.getHttpServer())
-        .post('/api/v1/bookings')
+        .post('/api/bookings')
         .set('Authorization', `Bearer ${authToken}`)
         .send(validBookingDto)
         .expect(201)
@@ -303,7 +303,7 @@ describe('BookingsController (e2e)', () => {
       };
 
       return request(app.getHttpServer())
-        .post('/api/v1/bookings')
+        .post('/api/bookings')
         .set('Authorization', `Bearer ${authToken}`)
         .send(bookingDtoWithoutSpecialRequests)
         .expect(201)
@@ -337,11 +337,11 @@ describe('BookingsController (e2e)', () => {
 
       const [resA, resB] = await Promise.all([
         request(app.getHttpServer())
-          .post('/api/v1/bookings')
+          .post('/api/bookings')
           .set('Authorization', `Bearer ${authToken}`)
           .send(payload),
         request(app.getHttpServer())
-          .post('/api/v1/bookings')
+          .post('/api/bookings')
           .set('Authorization', `Bearer ${authToken}`)
           .send(payload),
       ]);
@@ -362,7 +362,7 @@ describe('BookingsController (e2e)', () => {
       };
 
       return request(app.getHttpServer())
-        .post('/api/v1/bookings')
+        .post('/api/bookings')
         .set('Authorization', `Bearer ${authToken}`)
         .send(invalidBookingDto)
         .expect(400);
@@ -372,7 +372,7 @@ describe('BookingsController (e2e)', () => {
       const { contactInfo, ...bookingWithoutContactInfo } = validBookingDto;
 
       return request(app.getHttpServer())
-        .post('/api/v1/bookings')
+        .post('/api/bookings')
         .set('Authorization', `Bearer ${authToken}`)
         .send(bookingWithoutContactInfo)
         .expect(400);
@@ -385,7 +385,7 @@ describe('BookingsController (e2e)', () => {
       };
 
       return request(app.getHttpServer())
-        .post('/api/v1/bookings')
+        .post('/api/bookings')
         .set('Authorization', `Bearer ${authToken}`)
         .send(invalidBookingDto)
         .expect(400);
@@ -398,17 +398,17 @@ describe('BookingsController (e2e)', () => {
       };
 
       return request(app.getHttpServer())
-        .post('/api/v1/bookings')
+        .post('/api/bookings')
         .set('Authorization', `Bearer ${authToken}`)
         .send(invalidBookingDto)
         .expect(400);
     });
   });
 
-  describe('GET /api/v1/bookings/my-bookings', () => {
+  describe('GET /api/bookings/my-bookings', () => {
     it('should return empty array when user has no bookings', () => {
       return request(app.getHttpServer())
-        .get('/api/v1/bookings/my-bookings')
+        .get('/api/bookings/my-bookings')
         .set('Authorization', `Bearer ${authToken}`)
         .expect(200)
         .expect((res) => {
@@ -446,19 +446,19 @@ describe('BookingsController (e2e)', () => {
       };
 
       await request(app.getHttpServer())
-        .post('/api/v1/bookings')
+        .post('/api/bookings')
         .set('Authorization', `Bearer ${authToken}`)
         .send(bookingDto1)
         .expect(201);
 
       await request(app.getHttpServer())
-        .post('/api/v1/bookings')
+        .post('/api/bookings')
         .set('Authorization', `Bearer ${authToken}`)
         .send(bookingDto2)
         .expect(201);
 
       return request(app.getHttpServer())
-        .get('/api/v1/bookings/my-bookings')
+        .get('/api/bookings/my-bookings')
         .set('Authorization', `Bearer ${authToken}`)
         .expect(200)
         .expect((res) => {
@@ -471,10 +471,10 @@ describe('BookingsController (e2e)', () => {
     });
   });
 
-  describe('GET /api/v1/bookings/:id', () => {
+  describe('GET /api/bookings/:id', () => {
     it('should return a booking by id', async () => {
       const createResponse = await request(app.getHttpServer())
-        .post('/api/v1/bookings')
+        .post('/api/bookings')
         .set('Authorization', `Bearer ${authToken}`)
         .send({
           tourId: mockTourId,
@@ -492,7 +492,7 @@ describe('BookingsController (e2e)', () => {
       const bookingId = createResponse.body.id;
 
       return request(app.getHttpServer())
-        .get(`/api/v1/bookings/${bookingId}`)
+        .get(`/api/bookings/${bookingId}`)
         .set('Authorization', `Bearer ${authToken}`)
         .expect(200)
         .expect((res) => {
@@ -517,7 +517,7 @@ describe('BookingsController (e2e)', () => {
       const nonExistentId = '00000000-0000-4000-a000-000000000000';
 
       return request(app.getHttpServer())
-        .get(`/api/v1/bookings/${nonExistentId}`)
+        .get(`/api/bookings/${nonExistentId}`)
         .set('Authorization', `Bearer ${authToken}`)
         .expect(404)
         .expect((res) => {
@@ -528,13 +528,13 @@ describe('BookingsController (e2e)', () => {
 
     it('should return 400 for invalid UUID format', () => {
       return request(app.getHttpServer())
-        .get('/api/v1/bookings/invalid-uuid')
+        .get('/api/bookings/invalid-uuid')
         .set('Authorization', `Bearer ${authToken}`)
         .expect(400);
     });
   });
 
-  describe('PATCH /api/v1/bookings/:id/cancel', () => {
+  describe('PATCH /api/bookings/:id/cancel', () => {
     it('should cancel a booking with 100% refund (7+ days before start)', async () => {
       const futureDate = new Date();
       futureDate.setDate(futureDate.getDate() + 10);
@@ -544,7 +544,7 @@ describe('BookingsController (e2e)', () => {
         .split('T')[0];
 
       const createResponse = await request(app.getHttpServer())
-        .post('/api/v1/bookings')
+        .post('/api/bookings')
         .set('Authorization', `Bearer ${authToken}`)
         .send({
           tourId: mockTourId,
@@ -565,7 +565,7 @@ describe('BookingsController (e2e)', () => {
       };
 
       return request(app.getHttpServer())
-        .patch(`/api/v1/bookings/${bookingId}/cancel`)
+        .patch(`/api/bookings/${bookingId}/cancel`)
         .set('Authorization', `Bearer ${authToken}`)
         .send(cancelDto)
         .expect(200)
@@ -591,7 +591,7 @@ describe('BookingsController (e2e)', () => {
         .split('T')[0];
 
       const createResponse = await request(app.getHttpServer())
-        .post('/api/v1/bookings')
+        .post('/api/bookings')
         .set('Authorization', `Bearer ${authToken}`)
         .send({
           tourId: mockTourId,
@@ -612,7 +612,7 @@ describe('BookingsController (e2e)', () => {
       };
 
       return request(app.getHttpServer())
-        .patch(`/api/v1/bookings/${bookingId}/cancel`)
+        .patch(`/api/bookings/${bookingId}/cancel`)
         .set('Authorization', `Bearer ${authToken}`)
         .send(cancelDto)
         .expect(200)
@@ -633,7 +633,7 @@ describe('BookingsController (e2e)', () => {
         .split('T')[0];
 
       const createResponse = await request(app.getHttpServer())
-        .post('/api/v1/bookings')
+        .post('/api/bookings')
         .set('Authorization', `Bearer ${authToken}`)
         .send({
           tourId: mockTourId,
@@ -654,7 +654,7 @@ describe('BookingsController (e2e)', () => {
       };
 
       return request(app.getHttpServer())
-        .patch(`/api/v1/bookings/${bookingId}/cancel`)
+        .patch(`/api/bookings/${bookingId}/cancel`)
         .set('Authorization', `Bearer ${authToken}`)
         .send(cancelDto)
         .expect(200)
@@ -674,7 +674,7 @@ describe('BookingsController (e2e)', () => {
         .split('T')[0];
 
       const createResponse = await request(app.getHttpServer())
-        .post('/api/v1/bookings')
+        .post('/api/bookings')
         .set('Authorization', `Bearer ${authToken}`)
         .send({
           tourId: mockTourId,
@@ -696,14 +696,14 @@ describe('BookingsController (e2e)', () => {
 
       // First cancellation
       await request(app.getHttpServer())
-        .patch(`/api/v1/bookings/${bookingId}/cancel`)
+        .patch(`/api/bookings/${bookingId}/cancel`)
         .set('Authorization', `Bearer ${authToken}`)
         .send(cancelDto)
         .expect(200);
 
       // Second cancellation attempt
       return request(app.getHttpServer())
-        .patch(`/api/v1/bookings/${bookingId}/cancel`)
+        .patch(`/api/bookings/${bookingId}/cancel`)
         .set('Authorization', `Bearer ${authToken}`)
         .send({ reason: 'Second cancellation' })
         .expect(400)
@@ -717,7 +717,7 @@ describe('BookingsController (e2e)', () => {
       const nonExistentId = '00000000-0000-4000-a000-000000000000';
 
       return request(app.getHttpServer())
-        .patch(`/api/v1/bookings/${nonExistentId}/cancel`)
+        .patch(`/api/bookings/${nonExistentId}/cancel`)
         .set('Authorization', `Bearer ${authToken}`)
         .send({ reason: 'Test' })
         .expect(404);
@@ -732,7 +732,7 @@ describe('BookingsController (e2e)', () => {
         .split('T')[0];
 
       const createResponse = await request(app.getHttpServer())
-        .post('/api/v1/bookings')
+        .post('/api/bookings')
         .set('Authorization', `Bearer ${authToken}`)
         .send({
           tourId: mockTourId,
@@ -750,7 +750,7 @@ describe('BookingsController (e2e)', () => {
       const bookingId = createResponse.body.id;
 
       return request(app.getHttpServer())
-        .patch(`/api/v1/bookings/${bookingId}/cancel`)
+        .patch(`/api/bookings/${bookingId}/cancel`)
         .set('Authorization', `Bearer ${authToken}`)
         .send({})
         .expect(400);

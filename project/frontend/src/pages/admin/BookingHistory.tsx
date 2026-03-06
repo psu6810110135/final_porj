@@ -38,6 +38,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import axios from "axios";
+import { API_BASE_URL } from "@/config/api";
 
 interface BookingTour {
   id: string;
@@ -76,10 +77,10 @@ interface Booking {
   selectedOptions: Record<string, unknown> | null;
   createdAt: string;
   updatedAt: string;
-  paymentSlipUrl?: string; 
+  paymentSlipUrl?: string;
   payment?: {
-    slip_url?: string;     
-    slipUrl?: string;      
+    slip_url?: string;
+    slipUrl?: string;
   };
 }
 
@@ -117,7 +118,9 @@ const CustomSelect = ({
   menuPlacement?: "top" | "bottom" | "auto";
 }) => {
   const [isOpen, setIsOpen] = useState(false);
-  const [resolvedPlacement, setResolvedPlacement] = useState<"top" | "bottom">("bottom");
+  const [resolvedPlacement, setResolvedPlacement] = useState<"top" | "bottom">(
+    "bottom",
+  );
   const [menuMaxHeight, setMenuMaxHeight] = useState(240);
   const ref = useRef<HTMLDivElement>(null);
 
@@ -146,7 +149,9 @@ const CustomSelect = ({
           : menuPlacement;
       setResolvedPlacement(nextPlacement === "top" ? "top" : "bottom");
       const availableSpace = nextPlacement === "top" ? spaceAbove : spaceBelow;
-      setMenuMaxHeight(Math.max(120, Math.min(240, Math.floor(availableSpace))));
+      setMenuMaxHeight(
+        Math.max(120, Math.min(240, Math.floor(availableSpace))),
+      );
     };
     updateMenuLayout();
     window.addEventListener("resize", updateMenuLayout);
@@ -157,16 +162,24 @@ const CustomSelect = ({
     };
   }, [isOpen, menuPlacement]);
 
-  const selectedOption = options.find((o) => String(o.value) === String(value)) || options[0];
+  const selectedOption =
+    options.find((o) => String(o.value) === String(value)) || options[0];
 
   return (
-    <div className={containerClassName ?? "relative flex-1 sm:flex-none w-full sm:w-auto"} ref={ref}>
+    <div
+      className={
+        containerClassName ?? "relative flex-1 sm:flex-none w-full sm:w-auto"
+      }
+      ref={ref}
+    >
       <div
         className={`flex items-center justify-between ${className}`}
         onClick={() => setIsOpen(!isOpen)}
       >
         <span className="truncate">{selectedOption?.label}</span>
-        <ChevronDown className={`w-4 h-4 ml-2 transition-transform duration-200 text-[#4F200D]/50 shrink-0 ${isOpen ? "rotate-180" : ""}`} />
+        <ChevronDown
+          className={`w-4 h-4 ml-2 transition-transform duration-200 text-[#4F200D]/50 shrink-0 ${isOpen ? "rotate-180" : ""}`}
+        />
       </div>
       {isOpen && (
         <div
@@ -174,7 +187,10 @@ const CustomSelect = ({
             resolvedPlacement === "top" ? "bottom-full mb-2" : "top-full mt-2"
           }`}
         >
-          <div className="overflow-y-auto custom-scrollbar py-2" style={{ maxHeight: `${menuMaxHeight}px` }}>
+          <div
+            className="overflow-y-auto custom-scrollbar py-2"
+            style={{ maxHeight: `${menuMaxHeight}px` }}
+          >
             {options.map((opt) => (
               <div
                 key={String(opt.value)}
@@ -209,7 +225,8 @@ export default function BookingHistory() {
   const [deleting, setDeleting] = useState(false);
 
   // States สำหรับ Mini Pop-up เปลี่ยนสถานะ
-  const [editingStatusBooking, setEditingStatusBooking] = useState<Booking | null>(null);
+  const [editingStatusBooking, setEditingStatusBooking] =
+    useState<Booking | null>(null);
   const [draftStatus, setDraftStatus] = useState<string>("");
   const [updatingStatus, setUpdatingStatus] = useState(false);
 
@@ -229,7 +246,7 @@ export default function BookingHistory() {
     setError(null);
     const token = localStorage.getItem("jwt_token");
     axios
-      .get<Booking[]>("http://localhost:3000/api/v1/admin/bookings", {
+      .get<Booking[]>(`${API_BASE_URL}/api/admin/bookings`, {
         headers: token ? { Authorization: `Bearer ${token}` } : {},
       })
       .then((res) => {
@@ -263,25 +280,38 @@ export default function BookingHistory() {
 
   // สีสำหรับ Pop-up
   const getPopupOptionStyle = (val: string, isSelected: boolean) => {
-    if (!isSelected) return "border-[#F6F1E9] bg-white text-[#4F200D]/60 hover:border-gray-200 hover:bg-gray-50";
-    switch(val) {
-      case 'confirmed': return "border-emerald-400 bg-emerald-50 text-emerald-700";
-      case 'pending_verify': return "border-amber-400 bg-amber-50 text-amber-700";
-      case 'pending_pay': return "border-blue-400 bg-blue-50 text-blue-700";
-      case 'cancelled': return "border-red-400 bg-red-50 text-red-700";
-      case 'expired': return "border-gray-400 bg-gray-100 text-gray-700";
-      default: return "border-[#FF8400] bg-[#FF8400]/10 text-[#FF8400]";
+    if (!isSelected)
+      return "border-[#F6F1E9] bg-white text-[#4F200D]/60 hover:border-gray-200 hover:bg-gray-50";
+    switch (val) {
+      case "confirmed":
+        return "border-emerald-400 bg-emerald-50 text-emerald-700";
+      case "pending_verify":
+        return "border-amber-400 bg-amber-50 text-amber-700";
+      case "pending_pay":
+        return "border-blue-400 bg-blue-50 text-blue-700";
+      case "cancelled":
+        return "border-red-400 bg-red-50 text-red-700";
+      case "expired":
+        return "border-gray-400 bg-gray-100 text-gray-700";
+      default:
+        return "border-[#FF8400] bg-[#FF8400]/10 text-[#FF8400]";
     }
   };
 
   const getDotColor = (val: string) => {
-    switch(val) {
-      case 'confirmed': return "bg-emerald-500";
-      case 'pending_verify': return "bg-amber-500";
-      case 'pending_pay': return "bg-blue-500";
-      case 'cancelled': return "bg-red-500";
-      case 'expired': return "bg-gray-500";
-      default: return "bg-gray-400";
+    switch (val) {
+      case "confirmed":
+        return "bg-emerald-500";
+      case "pending_verify":
+        return "bg-amber-500";
+      case "pending_pay":
+        return "bg-blue-500";
+      case "cancelled":
+        return "bg-red-500";
+      case "expired":
+        return "bg-gray-500";
+      default:
+        return "bg-gray-400";
     }
   };
 
@@ -290,37 +320,43 @@ export default function BookingHistory() {
       case "confirmed":
         return (
           <Badge className="bg-emerald-100 text-emerald-700 border-0 px-3 py-1 font-bold shadow-none text-xs rounded-full flex items-center gap-1.5">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> ยืนยันแล้ว
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>{" "}
+            ยืนยันแล้ว
           </Badge>
         );
       case "pending_verify":
         return (
           <Badge className="bg-amber-100 text-amber-700 border-0 px-3 py-1 font-bold shadow-none text-xs rounded-full flex items-center gap-1.5">
-            <span className="w-1.5 h-1.5 rounded-full bg-amber-500"></span> รอตรวจสอบ
+            <span className="w-1.5 h-1.5 rounded-full bg-amber-500"></span>{" "}
+            รอตรวจสอบ
           </Badge>
         );
       case "pending_pay":
         return (
           <Badge className="bg-blue-100 text-blue-700 border-0 px-3 py-1 font-bold shadow-none text-xs rounded-full flex items-center gap-1.5">
-            <span className="w-1.5 h-1.5 rounded-full bg-blue-500"></span> รอชำระเงิน
+            <span className="w-1.5 h-1.5 rounded-full bg-blue-500"></span>{" "}
+            รอชำระเงิน
           </Badge>
         );
       case "cancelled":
         return (
           <Badge className="bg-red-100 text-red-700 border-0 px-3 py-1 font-bold shadow-none text-xs rounded-full flex items-center gap-1.5">
-            <span className="w-1.5 h-1.5 rounded-full bg-red-500"></span> ยกเลิกแล้ว
+            <span className="w-1.5 h-1.5 rounded-full bg-red-500"></span>{" "}
+            ยกเลิกแล้ว
           </Badge>
         );
       case "expired":
         return (
           <Badge className="bg-gray-200 text-gray-600 border-0 px-3 py-1 font-bold shadow-none text-xs rounded-full flex items-center gap-1.5">
-            <span className="w-1.5 h-1.5 rounded-full bg-gray-500"></span> หมดอายุ
+            <span className="w-1.5 h-1.5 rounded-full bg-gray-500"></span>{" "}
+            หมดอายุ
           </Badge>
         );
       default:
         return (
           <Badge className="bg-gray-100 text-gray-600 border-0 px-3 py-1 font-bold shadow-none text-xs rounded-full flex items-center gap-1.5">
-            <span className="w-1.5 h-1.5 rounded-full bg-gray-400"></span> {status}
+            <span className="w-1.5 h-1.5 rounded-full bg-gray-400"></span>{" "}
+            {status}
           </Badge>
         );
     }
@@ -352,7 +388,7 @@ export default function BookingHistory() {
     try {
       const token = localStorage.getItem("jwt_token");
       await axios.delete(
-        `http://localhost:3000/api/v1/admin/bookings/${bookingToDelete.id}`,
+        `${API_BASE_URL}/api/admin/bookings/${bookingToDelete.id}`,
         { headers: token ? { Authorization: `Bearer ${token}` } : {} },
       );
       setBookings((prev) => prev.filter((b) => b.id !== bookingToDelete.id));
@@ -374,7 +410,7 @@ export default function BookingHistory() {
     if (!editingStatusBooking) return;
     const bookingId = editingStatusBooking.id;
     const nextStatus = draftStatus;
-    
+
     if (nextStatus === editingStatusBooking.status) {
       setEditingStatusBooking(null);
       return;
@@ -384,7 +420,7 @@ export default function BookingHistory() {
     try {
       const token = localStorage.getItem("jwt_token");
       await axios.patch(
-        `http://localhost:3000/api/v1/admin/bookings/${bookingId}/status`,
+        `${API_BASE_URL}/api/admin/bookings/${bookingId}/status`,
         { status: nextStatus },
         { headers: token ? { Authorization: `Bearer ${token}` } : {} },
       );
@@ -582,7 +618,9 @@ export default function BookingHistory() {
                 value={dateFrom}
                 onChange={(e) => setDateFrom(e.target.value)}
               />
-              <span className="text-[#4F200D]/40 font-bold text-xs sm:text-sm">ถึง</span>
+              <span className="text-[#4F200D]/40 font-bold text-xs sm:text-sm">
+                ถึง
+              </span>
               <input
                 type="date"
                 className="text-sm w-full sm:w-auto border-0 bg-white px-3 py-2 rounded-xl focus:ring-2 focus:ring-[#FFD93D] text-[#4F200D] font-bold cursor-pointer outline-none transition-all"
@@ -604,7 +642,8 @@ export default function BookingHistory() {
                 className="text-xs sm:text-sm font-bold text-red-500 hover:text-red-600 hover:bg-red-50 rounded-xl px-3 sm:px-4 py-2 h-auto"
                 onClick={clearFilters}
               >
-                <X size={14} className="mr-1" />ล้างตัวกรอง
+                <X size={14} className="mr-1" />
+                ล้างตัวกรอง
               </Button>
             )}
           </div>
@@ -614,7 +653,9 @@ export default function BookingHistory() {
       {loading && (
         <div className="bg-white rounded-3xl border-0 shadow-sm p-16 flex flex-col items-center gap-4">
           <Loader2 className="w-8 h-8 text-[#FF8400] animate-spin" />
-          <p className="text-[#4F200D]/60 font-bold text-sm">กำลังโหลดข้อมูลการจอง...</p>
+          <p className="text-[#4F200D]/60 font-bold text-sm">
+            กำลังโหลดข้อมูลการจอง...
+          </p>
         </div>
       )}
 
@@ -625,7 +666,9 @@ export default function BookingHistory() {
           <Button
             className="bg-[#FF8400] hover:bg-[#FF8400]/90 text-white font-bold rounded-2xl px-6"
             onClick={() => window.location.reload()}
-          >ลองใหม่อีกครั้ง</Button>
+          >
+            ลองใหม่อีกครั้ง
+          </Button>
         </div>
       )}
 
@@ -635,35 +678,68 @@ export default function BookingHistory() {
             <table className="w-full text-left text-sm min-w-[900px]">
               <thead className="bg-[#F6F1E9]/80 border-b-2 border-[#F6F1E9]">
                 <tr>
-                  <th className="px-4 py-4 sm:px-5 sm:py-5 font-black text-[#4F200D] uppercase tracking-wider text-[10px] sm:text-xs whitespace-nowrap">รหัสการจอง</th>
-                  <th className="px-4 py-4 sm:px-5 sm:py-5 font-black text-[#4F200D] uppercase tracking-wider text-[10px] sm:text-xs">ข้อมูลทัวร์</th>
-                  <th className="px-4 py-4 sm:px-5 sm:py-5 font-black text-[#4F200D] uppercase tracking-wider text-[10px] sm:text-xs">ข้อมูลลูกค้า</th>
-                  <SortableHeader field="startDate">วันเริ่มทัวร์</SortableHeader>
                   <th className="px-4 py-4 sm:px-5 sm:py-5 font-black text-[#4F200D] uppercase tracking-wider text-[10px] sm:text-xs whitespace-nowrap">
-                    <div className="flex items-center gap-1.5"><Users size={13} />จำนวน</div>
+                    รหัสการจอง
+                  </th>
+                  <th className="px-4 py-4 sm:px-5 sm:py-5 font-black text-[#4F200D] uppercase tracking-wider text-[10px] sm:text-xs">
+                    ข้อมูลทัวร์
+                  </th>
+                  <th className="px-4 py-4 sm:px-5 sm:py-5 font-black text-[#4F200D] uppercase tracking-wider text-[10px] sm:text-xs">
+                    ข้อมูลลูกค้า
+                  </th>
+                  <SortableHeader field="startDate">
+                    วันเริ่มทัวร์
+                  </SortableHeader>
+                  <th className="px-4 py-4 sm:px-5 sm:py-5 font-black text-[#4F200D] uppercase tracking-wider text-[10px] sm:text-xs whitespace-nowrap">
+                    <div className="flex items-center gap-1.5">
+                      <Users size={13} />
+                      จำนวน
+                    </div>
                   </th>
                   <SortableHeader field="totalPrice">ยอดรวม</SortableHeader>
-                  <th className="px-4 py-4 sm:px-5 sm:py-5 font-black text-[#4F200D] uppercase tracking-wider text-[10px] sm:text-xs text-center whitespace-nowrap">สลิป</th>
-                  <th className="px-4 py-4 sm:px-5 sm:py-5 font-black text-[#4F200D] uppercase tracking-wider text-[10px] sm:text-xs whitespace-nowrap">สถานะ</th>
+                  <th className="px-4 py-4 sm:px-5 sm:py-5 font-black text-[#4F200D] uppercase tracking-wider text-[10px] sm:text-xs text-center whitespace-nowrap">
+                    สลิป
+                  </th>
+                  <th className="px-4 py-4 sm:px-5 sm:py-5 font-black text-[#4F200D] uppercase tracking-wider text-[10px] sm:text-xs whitespace-nowrap">
+                    สถานะ
+                  </th>
                   <SortableHeader field="createdAt">วันที่จอง</SortableHeader>
-                  <th className="px-4 py-4 sm:px-5 sm:py-5 font-black text-[#4F200D] uppercase tracking-wider text-[10px] sm:text-xs text-right whitespace-nowrap">จัดการ</th>
+                  <th className="px-4 py-4 sm:px-5 sm:py-5 font-black text-[#4F200D] uppercase tracking-wider text-[10px] sm:text-xs text-right whitespace-nowrap">
+                    จัดการ
+                  </th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-[#F6F1E9]">
                 {paginatedBookings.length === 0 ? (
                   <tr>
-                    <td colSpan={10} className="px-6 py-16 text-center text-[#4F200D]/40 font-bold text-sm">
+                    <td
+                      colSpan={10}
+                      className="px-6 py-16 text-center text-[#4F200D]/40 font-bold text-sm"
+                    >
                       ไม่พบข้อมูลการจองที่ตรงกับเงื่อนไข
                     </td>
                   </tr>
                 ) : (
                   paginatedBookings.map((b) => {
                     const dates = getTourDates(b);
-                    const slipPath = b.paymentSlipUrl || b.payment?.slipUrl || b.payment?.slip_url;
-                    const fullSlipUrl = slipPath ? (slipPath.startsWith('http') ? slipPath : `http://localhost:3000/${slipPath}`.replace(/([^:]\/)\/+/g, "$1")) : null;
+                    const slipPath =
+                      b.paymentSlipUrl ||
+                      b.payment?.slipUrl ||
+                      b.payment?.slip_url;
+                    const fullSlipUrl = slipPath
+                      ? slipPath.startsWith("http")
+                        ? slipPath
+                        : `${API_BASE_URL}/${slipPath}`.replace(
+                            /([^:]\/)\/+/g,
+                            "$1",
+                          )
+                      : null;
 
                     return (
-                      <tr key={b.id} className="hover:bg-[#FFD93D]/5 transition-colors group">
+                      <tr
+                        key={b.id}
+                        className="hover:bg-[#FFD93D]/5 transition-colors group"
+                      >
                         <td className="px-4 py-3 sm:px-5 sm:py-4">
                           <span className="font-black text-[#FF8400] bg-[#FF8400]/10 px-2 py-1 sm:px-3 sm:py-1.5 rounded-lg whitespace-nowrap text-[10px] sm:text-xs">
                             {b.bookingReference || b.id.slice(0, 8)}
@@ -682,7 +758,11 @@ export default function BookingHistory() {
                         <td className="px-4 py-3 sm:px-5 sm:py-4">
                           <div className="flex flex-col gap-0.5">
                             <div className="flex items-center gap-1.5 sm:gap-2">
-                              <User size={12} className="text-[#4F200D]/40 shrink-0" strokeWidth={3} />
+                              <User
+                                size={12}
+                                className="text-[#4F200D]/40 shrink-0"
+                                strokeWidth={3}
+                              />
                               <span className="font-bold text-[#4F200D] truncate text-xs sm:text-sm">
                                 {b.contactInfo?.name || b.user?.username || "-"}
                               </span>
@@ -697,7 +777,8 @@ export default function BookingHistory() {
                         <td className="px-4 py-3 sm:px-5 sm:py-4 whitespace-nowrap">
                           <div className="flex flex-col">
                             <div className="flex items-center gap-1.5 text-emerald-600 font-semibold text-[10px] sm:text-sm">
-                              <Calendar size={12} strokeWidth={2.5} /> {dates.start}
+                              <Calendar size={12} strokeWidth={2.5} />{" "}
+                              {dates.start}
                             </div>
                             {dates.end !== dates.start && (
                               <div className="flex items-center gap-1.5 text-red-500 font-semibold text-[10px] sm:text-xs mt-0.5 ml-0.5">
@@ -727,7 +808,9 @@ export default function BookingHistory() {
                               <Eye className="w-3.5 h-3.5" /> ดูสลิป
                             </button>
                           ) : (
-                            <span className="text-[#4F200D]/30 text-xs font-semibold">-</span>
+                            <span className="text-[#4F200D]/30 text-xs font-semibold">
+                              -
+                            </span>
                           )}
                         </td>
                         <td className="px-4 py-3 sm:px-5 sm:py-4 whitespace-nowrap">
@@ -820,7 +903,12 @@ export default function BookingHistory() {
                 <div className="flex items-center gap-0.5 sm:gap-1 px-1">
                   {getPageNumbers().map((page, i) =>
                     page === "..." ? (
-                      <span key={`dots-${i}`} className="px-1 text-[#4F200D]/30 font-bold text-xs sm:text-sm">...</span>
+                      <span
+                        key={`dots-${i}`}
+                        className="px-1 text-[#4F200D]/30 font-bold text-xs sm:text-sm"
+                      >
+                        ...
+                      </span>
                     ) : (
                       <Button
                         key={page}
@@ -839,7 +927,9 @@ export default function BookingHistory() {
                   size="icon"
                   className="h-7 w-7 sm:h-8 sm:w-8 rounded-xl text-[#4F200D]/40 hover:text-[#FF8400] hover:bg-[#FF8400]/10 disabled:opacity-30"
                   disabled={safeCurrentPage >= totalPages}
-                  onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                  onClick={() =>
+                    setCurrentPage((p) => Math.min(totalPages, p + 1))
+                  }
                 >
                   <ChevronRight size={16} />
                 </Button>
@@ -871,20 +961,36 @@ export default function BookingHistory() {
 
       {/* ===== Mini Pop-up เปลี่ยนสถานะ Booking ===== */}
       {editingStatusBooking && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in duration-200" onClick={() => !updatingStatus && setEditingStatusBooking(null)}>
-          <div className="bg-white rounded-3xl p-6 w-full max-w-sm shadow-2xl animate-in zoom-in-95 duration-200" onClick={e => e.stopPropagation()}>
+        <div
+          className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in duration-200"
+          onClick={() => !updatingStatus && setEditingStatusBooking(null)}
+        >
+          <div
+            className="bg-white rounded-3xl p-6 w-full max-w-sm shadow-2xl animate-in zoom-in-95 duration-200"
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="flex items-center justify-between mb-5">
               <div>
-                <h3 className="text-xl font-extrabold text-[#4F200D]">เปลี่ยนสถานะการจอง</h3>
+                <h3 className="text-xl font-extrabold text-[#4F200D]">
+                  เปลี่ยนสถานะการจอง
+                </h3>
                 <p className="text-xs font-semibold text-[#4F200D]/50 mt-1">
-                  รหัส: {editingStatusBooking.bookingReference || editingStatusBooking.id.slice(0, 8)}
+                  รหัส:{" "}
+                  {editingStatusBooking.bookingReference ||
+                    editingStatusBooking.id.slice(0, 8)}
                 </p>
               </div>
-              <Button variant="ghost" size="icon" className="h-8 w-8 text-[#4F200D]/40 hover:text-red-500 hover:bg-red-50 rounded-xl" onClick={() => setEditingStatusBooking(null)} disabled={updatingStatus}>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 text-[#4F200D]/40 hover:text-red-500 hover:bg-red-50 rounded-xl"
+                onClick={() => setEditingStatusBooking(null)}
+                disabled={updatingStatus}
+              >
                 <X className="w-5 h-5" />
               </Button>
             </div>
-            
+
             <div className="space-y-2.5">
               {STATUS_OPTIONS.map((opt) => (
                 <button
@@ -894,7 +1000,9 @@ export default function BookingHistory() {
                   className={`w-full flex items-center justify-between p-3.5 rounded-2xl border-2 transition-all font-bold text-sm ${getPopupOptionStyle(opt.value, draftStatus === opt.value)}`}
                 >
                   <div className="flex items-center gap-2.5">
-                    <span className={`w-3 h-3 rounded-full shadow-sm ${getDotColor(opt.value)}`}></span>
+                    <span
+                      className={`w-3 h-3 rounded-full shadow-sm ${getDotColor(opt.value)}`}
+                    ></span>
                     {opt.label}
                   </div>
                   {draftStatus === opt.value && <Check className="w-5 h-5" />}
@@ -903,15 +1011,25 @@ export default function BookingHistory() {
             </div>
 
             <div className="mt-6 flex gap-3">
-              <Button className="flex-1 bg-[#F6F1E9] hover:bg-[#EFE6DA] text-[#4F200D] font-bold rounded-xl py-5 shadow-none text-sm transition-colors" onClick={() => setEditingStatusBooking(null)} disabled={updatingStatus}>
+              <Button
+                className="flex-1 bg-[#F6F1E9] hover:bg-[#EFE6DA] text-[#4F200D] font-bold rounded-xl py-5 shadow-none text-sm transition-colors"
+                onClick={() => setEditingStatusBooking(null)}
+                disabled={updatingStatus}
+              >
                 ยกเลิก
               </Button>
-              <Button 
-                className="flex-1 bg-[#FF8400] hover:bg-[#e67600] text-white font-bold rounded-xl py-5 shadow-lg shadow-[#FF8400]/20 text-sm transition-all" 
-                onClick={handleSaveStatus} 
-                disabled={updatingStatus || draftStatus === editingStatusBooking.status}
+              <Button
+                className="flex-1 bg-[#FF8400] hover:bg-[#e67600] text-white font-bold rounded-xl py-5 shadow-lg shadow-[#FF8400]/20 text-sm transition-all"
+                onClick={handleSaveStatus}
+                disabled={
+                  updatingStatus || draftStatus === editingStatusBooking.status
+                }
               >
-                {updatingStatus ? <Loader2 className="w-5 h-5 animate-spin mx-auto" /> : "บันทึกสถานะ"}
+                {updatingStatus ? (
+                  <Loader2 className="w-5 h-5 animate-spin mx-auto" />
+                ) : (
+                  "บันทึกสถานะ"
+                )}
               </Button>
             </div>
           </div>
@@ -999,13 +1117,13 @@ export default function BookingHistory() {
 
       {/* ===== POPUP รูปภาพสลิปแบบเต็มจอ ===== */}
       {viewSlipUrl && (
-        <div 
+        <div
           className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-8 bg-black/85 backdrop-blur-sm animate-in fade-in duration-200"
           onClick={() => setViewSlipUrl(null)}
         >
-          <div 
-            className="relative max-w-4xl w-full flex flex-col items-center justify-center animate-in zoom-in-95 duration-200" 
-            onClick={e => e.stopPropagation()}
+          <div
+            className="relative max-w-4xl w-full flex flex-col items-center justify-center animate-in zoom-in-95 duration-200"
+            onClick={(e) => e.stopPropagation()}
           >
             <Button
               variant="ghost"
@@ -1015,12 +1133,13 @@ export default function BookingHistory() {
             >
               <X className="w-6 h-6" />
             </Button>
-            <img 
-              src={viewSlipUrl} 
-              alt="Payment Slip Full Size" 
+            <img
+              src={viewSlipUrl}
+              alt="Payment Slip Full Size"
               className="max-h-[85vh] w-auto object-contain rounded-xl shadow-2xl"
               onError={(e) => {
-                (e.target as HTMLImageElement).src = "https://placehold.co/400x600?text=Slip+Not+Found";
+                (e.target as HTMLImageElement).src =
+                  "https://placehold.co/400x600?text=Slip+Not+Found";
               }}
             />
           </div>
@@ -1035,7 +1154,7 @@ function BookingDetailModal({
   onClose,
   getStatusBadge,
   getTourDates,
-  onViewSlip, 
+  onViewSlip,
 }: any) {
   const dates = getTourDates(b);
   const statusLabel = (s: string) =>
@@ -1067,8 +1186,13 @@ function BookingDetailModal({
   const isDeadlinePassed =
     b.paymentDeadline && new Date(b.paymentDeadline) < new Date();
 
-  const slipPath = b.paymentSlipUrl || b.payment?.slipUrl || b.payment?.slip_url;
-  const fullSlipUrl = slipPath ? (slipPath.startsWith('http') ? slipPath : `http://localhost:3000/${slipPath}`.replace(/([^:]\/)\/+/g, "$1")) : null;
+  const slipPath =
+    b.paymentSlipUrl || b.payment?.slipUrl || b.payment?.slip_url;
+  const fullSlipUrl = slipPath
+    ? slipPath.startsWith("http")
+      ? slipPath
+      : `${API_BASE_URL}/${slipPath}`.replace(/([^:]\/)\/+/g, "$1")
+    : null;
 
   return (
     <div
@@ -1112,32 +1236,57 @@ function BookingDetailModal({
               <Map size={18} className="sm:w-5 sm:h-5" strokeWidth={2.5} />
             </div>
             <div>
-              <p className="text-[10px] sm:text-xs font-bold text-[#4F200D]/50 uppercase tracking-wider">ทัวร์</p>
-              <p className="font-extrabold text-[#4F200D] text-sm sm:text-lg mt-0.5">{b.tour?.title || "ทัวร์ถูกลบ"}</p>
+              <p className="text-[10px] sm:text-xs font-bold text-[#4F200D]/50 uppercase tracking-wider">
+                ทัวร์
+              </p>
+              <p className="font-extrabold text-[#4F200D] text-sm sm:text-lg mt-0.5">
+                {b.tour?.title || "ทัวร์ถูกลบ"}
+              </p>
             </div>
           </div>
-          
+
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-3">
             <div className="p-3 sm:p-4 bg-emerald-50 rounded-xl sm:rounded-2xl text-center flex flex-row sm:flex-col items-center sm:items-stretch justify-between sm:justify-start">
               <div className="flex items-center gap-2 sm:block">
-                <CalendarDays size={16} className="text-emerald-600 sm:mx-auto sm:mb-1.5" />
-                <p className="text-[10px] sm:text-xs font-bold text-emerald-600/70 text-left sm:text-center">เริ่มทัวร์</p>
+                <CalendarDays
+                  size={16}
+                  className="text-emerald-600 sm:mx-auto sm:mb-1.5"
+                />
+                <p className="text-[10px] sm:text-xs font-bold text-emerald-600/70 text-left sm:text-center">
+                  เริ่มทัวร์
+                </p>
               </div>
-              <p className="font-extrabold text-emerald-700 text-xs sm:text-sm mt-0 sm:mt-0.5">{dates.start}</p>
+              <p className="font-extrabold text-emerald-700 text-xs sm:text-sm mt-0 sm:mt-0.5">
+                {dates.start}
+              </p>
             </div>
             <div className="p-3 sm:p-4 bg-red-50 rounded-xl sm:rounded-2xl text-center flex flex-row sm:flex-col items-center sm:items-stretch justify-between sm:justify-start">
               <div className="flex items-center gap-2 sm:block">
-                <CalendarDays size={16} className="text-red-500 sm:mx-auto sm:mb-1.5" />
-                <p className="text-[10px] sm:text-xs font-bold text-red-500/70 text-left sm:text-center">สิ้นสุดทัวร์</p>
+                <CalendarDays
+                  size={16}
+                  className="text-red-500 sm:mx-auto sm:mb-1.5"
+                />
+                <p className="text-[10px] sm:text-xs font-bold text-red-500/70 text-left sm:text-center">
+                  สิ้นสุดทัวร์
+                </p>
               </div>
-              <p className="font-extrabold text-red-600 text-xs sm:text-sm mt-0 sm:mt-0.5">{dates.end}</p>
+              <p className="font-extrabold text-red-600 text-xs sm:text-sm mt-0 sm:mt-0.5">
+                {dates.end}
+              </p>
             </div>
             <div className="p-3 sm:p-4 bg-blue-50 rounded-xl sm:rounded-2xl text-center flex flex-row sm:flex-col items-center sm:items-stretch justify-between sm:justify-start">
               <div className="flex items-center gap-2 sm:block">
-                <Users size={16} className="text-blue-600 sm:mx-auto sm:mb-1.5" />
-                <p className="text-[10px] sm:text-xs font-bold text-blue-600/70 text-left sm:text-center">ผู้เดินทาง</p>
+                <Users
+                  size={16}
+                  className="text-blue-600 sm:mx-auto sm:mb-1.5"
+                />
+                <p className="text-[10px] sm:text-xs font-bold text-blue-600/70 text-left sm:text-center">
+                  ผู้เดินทาง
+                </p>
               </div>
-              <p className="font-extrabold text-blue-700 text-xs sm:text-sm mt-0 sm:mt-0.5">{b.pax} คน</p>
+              <p className="font-extrabold text-blue-700 text-xs sm:text-sm mt-0 sm:mt-0.5">
+                {b.pax} คน
+              </p>
             </div>
           </div>
 
@@ -1152,8 +1301,12 @@ function BookingDetailModal({
                   <User size={14} className="text-[#FF8400]" />
                 </div>
                 <div>
-                  <p className="text-[10px] sm:text-xs text-[#4F200D]/40 font-semibold">ชื่อ</p>
-                  <p className="font-bold text-[#4F200D] text-xs sm:text-sm">{b.contactInfo?.name || "-"}</p>
+                  <p className="text-[10px] sm:text-xs text-[#4F200D]/40 font-semibold">
+                    ชื่อ
+                  </p>
+                  <p className="font-bold text-[#4F200D] text-xs sm:text-sm">
+                    {b.contactInfo?.name || "-"}
+                  </p>
                 </div>
               </div>
               <div className="flex items-center gap-2.5">
@@ -1161,8 +1314,12 @@ function BookingDetailModal({
                   <Mail size={14} className="text-[#FF8400]" />
                 </div>
                 <div className="min-w-0">
-                  <p className="text-[10px] sm:text-xs text-[#4F200D]/40 font-semibold">อีเมล</p>
-                  <p className="font-bold text-[#4F200D] text-xs sm:text-sm truncate">{b.contactInfo?.email || "-"}</p>
+                  <p className="text-[10px] sm:text-xs text-[#4F200D]/40 font-semibold">
+                    อีเมล
+                  </p>
+                  <p className="font-bold text-[#4F200D] text-xs sm:text-sm truncate">
+                    {b.contactInfo?.email || "-"}
+                  </p>
                 </div>
               </div>
               <div className="flex items-center gap-2.5">
@@ -1170,8 +1327,12 @@ function BookingDetailModal({
                   <Phone size={14} className="text-[#FF8400]" />
                 </div>
                 <div>
-                  <p className="text-[10px] sm:text-xs text-[#4F200D]/40 font-semibold">เบอร์โทร</p>
-                  <p className="font-bold text-[#4F200D] text-xs sm:text-sm">{b.contactInfo?.phone || "-"}</p>
+                  <p className="text-[10px] sm:text-xs text-[#4F200D]/40 font-semibold">
+                    เบอร์โทร
+                  </p>
+                  <p className="font-bold text-[#4F200D] text-xs sm:text-sm">
+                    {b.contactInfo?.phone || "-"}
+                  </p>
                 </div>
               </div>
             </div>
@@ -1185,23 +1346,31 @@ function BookingDetailModal({
             <div className="space-y-2">
               <div className="flex justify-between items-center">
                 <span className="text-xs sm:text-sm text-[#4F200D]/60 font-semibold flex items-center gap-2">
-                  <CircleDollarSign size={14} className="text-[#4F200D]/40" /> ราคาฐาน
+                  <CircleDollarSign size={14} className="text-[#4F200D]/40" />{" "}
+                  ราคาฐาน
                 </span>
-                <span className="font-bold text-[#4F200D] text-xs sm:text-sm">฿{Number(b.basePrice || 0).toLocaleString()}</span>
+                <span className="font-bold text-[#4F200D] text-xs sm:text-sm">
+                  ฿{Number(b.basePrice || 0).toLocaleString()}
+                </span>
               </div>
               {Number(b.discount) > 0 && (
                 <div className="flex justify-between items-center">
                   <span className="text-xs sm:text-sm text-emerald-600 font-semibold flex items-center gap-2">
                     <Percent size={14} className="text-emerald-500" /> ส่วนลด
                   </span>
-                  <span className="font-bold text-emerald-600 text-xs sm:text-sm">-฿{Number(b.discount).toLocaleString()}</span>
+                  <span className="font-bold text-emerald-600 text-xs sm:text-sm">
+                    -฿{Number(b.discount).toLocaleString()}
+                  </span>
                 </div>
               )}
               <div className="border-t border-[#4F200D]/10 pt-2 flex justify-between items-center">
                 <span className="text-sm sm:text-base text-[#4F200D] font-extrabold flex items-center gap-2">
-                  <Banknote size={14} className="text-[#FF8400]" /> ยอดรวมทั้งหมด
+                  <Banknote size={14} className="text-[#FF8400]" />{" "}
+                  ยอดรวมทั้งหมด
                 </span>
-                <span className="font-black text-[#FF8400] text-base sm:text-lg">฿{Number(b.totalPrice).toLocaleString()}</span>
+                <span className="font-black text-[#FF8400] text-base sm:text-lg">
+                  ฿{Number(b.totalPrice).toLocaleString()}
+                </span>
               </div>
             </div>
           </div>
@@ -1221,7 +1390,7 @@ function BookingDetailModal({
                   เปิดภาพเต็ม
                 </button>
               </div>
-              <div 
+              <div
                 className="flex justify-center bg-white p-2 rounded-xl shadow-sm border border-blue-100/50 cursor-pointer hover:shadow-md transition-shadow"
                 onClick={() => onViewSlip(fullSlipUrl)}
               >
@@ -1230,7 +1399,8 @@ function BookingDetailModal({
                   alt="Payment Slip"
                   className="max-h-[350px] w-auto object-contain rounded-lg"
                   onError={(e) => {
-                    (e.target as HTMLImageElement).src = "https://placehold.co/400x600?text=Slip+Not+Found";
+                    (e.target as HTMLImageElement).src =
+                      "https://placehold.co/400x600?text=Slip+Not+Found";
                   }}
                 />
               </div>
@@ -1241,11 +1411,19 @@ function BookingDetailModal({
             <div
               className={`p-3 sm:p-4 rounded-xl sm:rounded-2xl flex items-center gap-3 ${isDeadlinePassed ? "bg-red-50 border border-red-200" : "bg-amber-50 border border-amber-200"}`}
             >
-              <Clock size={18} className={isDeadlinePassed ? "text-red-500" : "text-amber-600"} />
+              <Clock
+                size={18}
+                className={isDeadlinePassed ? "text-red-500" : "text-amber-600"}
+              />
               <div>
-                <p className="text-[10px] sm:text-xs font-bold text-[#4F200D]/50">กำหนดชำระเงิน</p>
-                <p className={`font-extrabold text-xs sm:text-sm ${isDeadlinePassed ? "text-red-600" : "text-amber-700"}`}>
-                  {formatDateTime(b.paymentDeadline)} {isDeadlinePassed && " (เลยกำหนดแล้ว)"}
+                <p className="text-[10px] sm:text-xs font-bold text-[#4F200D]/50">
+                  กำหนดชำระเงิน
+                </p>
+                <p
+                  className={`font-extrabold text-xs sm:text-sm ${isDeadlinePassed ? "text-red-600" : "text-amber-700"}`}
+                >
+                  {formatDateTime(b.paymentDeadline)}{" "}
+                  {isDeadlinePassed && " (เลยกำหนดแล้ว)"}
                 </p>
               </div>
             </div>

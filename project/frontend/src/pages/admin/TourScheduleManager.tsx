@@ -17,6 +17,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { API_BASE_URL } from "@/config/api";
 
 const getAuthHeader = (): Record<string, string> => {
   const token = localStorage.getItem("jwt_token");
@@ -40,7 +41,7 @@ interface Schedule {
   booked_seats?: number;
 }
 
-const API_BASE = "http://localhost:3000/api";
+const API_BASE = `${API_BASE_URL}/api`;
 const ITEMS_PER_PAGE = 10;
 
 const toDateInputValue = (date: Date) => {
@@ -99,7 +100,9 @@ const CustomSelect = ({
   menuPlacement?: "top" | "bottom" | "auto";
 }) => {
   const [isOpen, setIsOpen] = useState(false);
-  const [resolvedPlacement, setResolvedPlacement] = useState<"top" | "bottom">("bottom");
+  const [resolvedPlacement, setResolvedPlacement] = useState<"top" | "bottom">(
+    "bottom",
+  );
   const [menuMaxHeight, setMenuMaxHeight] = useState(240);
   const ref = useRef<HTMLDivElement>(null);
 
@@ -133,7 +136,9 @@ const CustomSelect = ({
       setResolvedPlacement(nextPlacement === "top" ? "top" : "bottom");
 
       const availableSpace = nextPlacement === "top" ? spaceAbove : spaceBelow;
-      setMenuMaxHeight(Math.max(120, Math.min(240, Math.floor(availableSpace))));
+      setMenuMaxHeight(
+        Math.max(120, Math.min(240, Math.floor(availableSpace))),
+      );
     };
 
     updateMenuLayout();
@@ -146,10 +151,16 @@ const CustomSelect = ({
     };
   }, [isOpen, menuPlacement]);
 
-  const selectedOption = options.find((o) => String(o.value) === String(value)) || options[0];
+  const selectedOption =
+    options.find((o) => String(o.value) === String(value)) || options[0];
 
   return (
-    <div className={containerClassName ?? "relative flex-1 sm:flex-none w-full sm:w-auto"} ref={ref}>
+    <div
+      className={
+        containerClassName ?? "relative flex-1 sm:flex-none w-full sm:w-auto"
+      }
+      ref={ref}
+    >
       <div
         className={`flex items-center justify-between ${className}`}
         onClick={() => setIsOpen(!isOpen)}
@@ -168,7 +179,10 @@ const CustomSelect = ({
             resolvedPlacement === "top" ? "bottom-full mb-2" : "top-full mt-2"
           }`}
         >
-          <div className="overflow-y-auto custom-scrollbar py-2" style={{ maxHeight: `${menuMaxHeight}px` }}>
+          <div
+            className="overflow-y-auto custom-scrollbar py-2"
+            style={{ maxHeight: `${menuMaxHeight}px` }}
+          >
             {options.map((opt) => (
               <div
                 key={String(opt.value)}
@@ -994,7 +1008,7 @@ const TourScheduleManager = () => {
                 </div>
               </div>
             </form>
-            
+
             <div className="p-5 sm:p-6 flex items-center justify-end gap-3 border-t-2 border-[#F6F1E9] bg-white rounded-b-3xl shrink-0">
               <Button
                 type="button"

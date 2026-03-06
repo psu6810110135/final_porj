@@ -23,7 +23,7 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import { extname } from 'path';
 
-@Controller('api/v1/bookings')
+@Controller('api/bookings')
 export class BookingsController {
   constructor(private readonly bookingsService: BookingsService) {}
 
@@ -94,7 +94,8 @@ export class BookingsController {
       storage: diskStorage({
         destination: './uploads/slips',
         filename: (req, file, cb) => {
-          const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
+          const uniqueSuffix =
+            Date.now() + '-' + Math.round(Math.random() * 1e9);
           cb(null, `slip-${uniqueSuffix}${extname(file.originalname)}`);
         },
       }),
@@ -110,13 +111,13 @@ export class BookingsController {
       throw new BadRequestException('กรุณาอัปโหลดไฟล์รูปภาพ');
     }
 
-    // 🌟 จุดเปลี่ยนอยู่ตรงนี้ครับ: 
+    // 🌟 จุดเปลี่ยนอยู่ตรงนี้ครับ:
     // ถ้า req.user.id เป็น undefined ให้ลองใช้ req.user.userId หรือ req.user.sub
     // หรือลอง console.log(req.user) ใน Terminal ดูว่าในนั้นมีชื่อฟิลด์ว่าอะไร
     const userId = req.user?.id || req.user?.userId || req.user?.sub;
-    
+
     if (!userId) {
-       throw new UnauthorizedException('ไม่พบข้อมูล User ID ในระบบ');
+      throw new UnauthorizedException('ไม่พบข้อมูล User ID ในระบบ');
     }
 
     return this.bookingsService.uploadPaymentSlip(id, file.filename, userId);

@@ -15,7 +15,7 @@ import { CreateReviewDto } from './dto/create-review.dto';
 import { UpdateReviewByAdminDto } from './dto/update-review-by-admin.dto';
 import { ReviewsService } from './reviews.service';
 
-@Controller('api/v1/reviews')
+@Controller('api/reviews')
 export class ReviewsController {
   constructor(private readonly reviewsService: ReviewsService) {}
 

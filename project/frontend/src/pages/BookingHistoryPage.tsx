@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import logoImage from "../assets/logo.png";
+import { API_BASE_URL } from "@/config/api";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -105,7 +106,7 @@ const getAssetUrl = (path?: string) => {
   if (!path) return "";
   if (/^https?:\/\//i.test(path)) return path;
   const normalized = path.startsWith("/") ? path : `/${path}`;
-  return `http://localhost:3000${normalized}`;
+  return `${API_BASE_URL}${normalized}`;
 };
 
 const getTravelDate = (b: Booking) => b.travelDate ?? b.startDate;
@@ -253,12 +254,9 @@ export default function BookingHistoryPage() {
     }
 
     try {
-      const res = await fetch(
-        "http://localhost:3000/api/v1/bookings/my-bookings",
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        },
-      );
+      const res = await fetch(`${API_BASE_URL}/api/bookings/my-bookings`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
       if (!res.ok) throw new Error("Failed to fetch bookings");
       const data = await res.json();
       const items = Array.isArray(data)
@@ -347,7 +345,7 @@ export default function BookingHistoryPage() {
     try {
       setActionLoadingId(cancelModalBooking.id);
       const res = await fetch(
-        `http://localhost:3000/api/v1/bookings/${cancelModalBooking.id}/cancel`,
+        `${API_BASE_URL}/api/bookings/${cancelModalBooking.id}/cancel`,
         {
           method: "PATCH",
           headers: {
@@ -408,7 +406,7 @@ export default function BookingHistoryPage() {
       setReviewSubmitting(true);
       setReviewError(null);
 
-      const res = await fetch("http://localhost:3000/api/v1/reviews", {
+      const res = await fetch(`${API_BASE_URL}/api/reviews`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

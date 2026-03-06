@@ -13,6 +13,7 @@ import { UpdateBookingDto } from './dto/update-booking.dto';
 import { CancelBookingDto } from './dto/cancel-booking.dto';
 import { Tour } from '../tours/entities/tour.entity';
 import { TourSchedule } from '../tours/entities/tour-schedule.entity';
+import { Payment } from '../payments/entities/payment.entity';
 
 @Injectable()
 export class BookingsService {
@@ -23,6 +24,8 @@ export class BookingsService {
     private toursRepository: Repository<Tour>,
     @InjectRepository(TourSchedule)
     private schedulesRepository: Repository<TourSchedule>,
+    @InjectRepository(Payment)
+    private paymentsRepository: Repository<Payment>,
     private readonly dataSource: DataSource,
   ) {}
 
@@ -242,12 +245,33 @@ export class BookingsService {
     booking.paymentSlipUrl = `/uploads/slips/${filename}`;
     booking.status = BookingStatus.PENDING_VERIFY;
 
-    await this.bookingsRepository.save(booking);
+    const savedBooking = await this.bookingsRepository.save(booking);
+
+    const existingPayment = await this.paymentsRepository.findOne({
+      where: { booking: { id: savedBooking.id } },
+      relations: ['booking'],
+    });
+
+    if (existingPayment) {
+      existingPayment.amount = Number(savedBooking.totalPrice);
+      existingPayment.slip_url = savedBooking.paymentSlipUrl;
+      existingPayment.status = 'pending_verify';
+      existingPayment.booking = savedBooking as Booking;
+      await this.paymentsRepository.save(existingPayment);
+    } else {
+      const payment = this.paymentsRepository.create({
+        amount: Number(savedBooking.totalPrice),
+        slip_url: savedBooking.paymentSlipUrl,
+        status: 'pending_verify',
+        booking: savedBooking as Booking,
+      });
+      await this.paymentsRepository.save(payment);
+    }
 
     return {
       message: 'อัปโหลดสลิปสำเร็จ รอแอดมินตรวจสอบ',
-      status: booking.status,
-      paymentSlipUrl: booking.paymentSlipUrl,
+      status: savedBooking.status,
+      paymentSlipUrl: savedBooking.paymentSlipUrl,
     };
   }
 

@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { useNavigate } from "react-router-dom";
+import { API_BASE_URL } from "@/config/api";
 
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
@@ -373,7 +374,7 @@ export default function HomePage() {
   // and durations use the fixed lists from tourLabels.ts
   const [provinces, setProvinces] = useState<string[]>([]);
 
-  const API_BASE = "http://localhost:3000/api";
+  const API_BASE = `${API_BASE_URL}/api`;
 
   const defaultDestinations: TourCardData[] = [
     {
@@ -503,7 +504,7 @@ export default function HomePage() {
   useEffect(() => {
     setTestimonialsLoading(true);
 
-    fetch(`http://localhost:3000/api/v1/reviews/recommended?limit=30`)
+    fetch(`${API_BASE_URL}/api/reviews/recommended?limit=30`)
       .then((res) => {
         if (!res.ok) {
           throw new Error("Failed to load recommended reviews");

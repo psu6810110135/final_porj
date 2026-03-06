@@ -1,10 +1,11 @@
-import React, { useState, useRef, useEffect } from 'react';
-import axios from 'axios';
-import { Link, useNavigate } from 'react-router-dom';
-import Navbar from '../components/Navbar';
+import React, { useState, useRef, useEffect } from "react";
+import axios from "axios";
+import { Link, useNavigate } from "react-router-dom";
+import Navbar from "../components/Navbar";
+import { API_BASE_URL } from "@/config/api";
 
 /* ─── Types ─────────────────────────────────────── */
-type View = 'login' | 'forgot' | 'otp' | 'reset';
+type View = "login" | "forgot" | "otp" | "reset";
 
 /* ─── OTP Input Component (outside to prevent remount) ── */
 interface OtpInputProps {
@@ -17,51 +18,91 @@ const OtpInput: React.FC<OtpInputProps> = ({ value, onChange, hasError }) => {
   const refs = useRef<(HTMLInputElement | null)[]>([]);
 
   const handleKey = (i: number, e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Backspace' && !value[i] && i > 0) refs.current[i - 1]?.focus();
+    if (e.key === "Backspace" && !value[i] && i > 0)
+      refs.current[i - 1]?.focus();
   };
 
   const handleChange = (i: number, e: React.ChangeEvent<HTMLInputElement>) => {
-    const raw = e.target.value.replace(/\D/g, '');
+    const raw = e.target.value.replace(/\D/g, "");
     if (!raw) {
-      const next = [...value]; next[i] = ''; onChange(next); return;
+      const next = [...value];
+      next[i] = "";
+      onChange(next);
+      return;
     }
     // paste สูงสุด 6 ตัว
     if (raw.length > 1) {
-      const digits = raw.slice(0, 6).split('');
-      const next = Array(6).fill('');
-      digits.forEach((d, idx) => { next[idx] = d; });
+      const digits = raw.slice(0, 6).split("");
+      const next = Array(6).fill("");
+      digits.forEach((d, idx) => {
+        next[idx] = d;
+      });
       onChange(next);
       refs.current[Math.min(digits.length, 5)]?.focus();
       return;
     }
-    const next = [...value]; next[i] = raw;
+    const next = [...value];
+    next[i] = raw;
     onChange(next);
     if (i < 5) refs.current[i + 1]?.focus();
   };
 
   return (
-    <div style={{ display: 'flex', gap: 10, justifyContent: 'center', margin: '8px 0 4px' }}>
-      {Array(6).fill(0).map((_, i) => (
-        <input
-          key={i}
-          ref={el => { refs.current[i] = el; }}
-          type="text"
-          inputMode="numeric"
-          maxLength={6}
-          value={value[i] || ''}
-          onChange={e => handleChange(i, e)}
-          onKeyDown={e => handleKey(i, e)}
-          style={{
-            width: 46, height: 54, textAlign: 'center', fontSize: 22, fontWeight: 700,
-            fontFamily: 'Prompt, sans-serif', borderRadius: 12, outline: 'none',
-            border: `2px solid ${hasError ? '#ef4444' : value[i] ? '#FF8C00' : '#E0D5CF'}`,
-            background: hasError ? '#fff5f5' : value[i] ? '#FFF8F0' : '#FAFAFA',
-            color: '#3E2723', transition: 'all 0.15s', boxSizing: 'border-box',
-          }}
-          onFocus={e => { e.target.style.borderColor = '#FF8C00'; e.target.style.boxShadow = '0 0 0 3px rgba(255,140,0,0.12)'; }}
-          onBlur={e => { e.target.style.boxShadow = 'none'; e.target.style.borderColor = hasError ? '#ef4444' : value[i] ? '#FF8C00' : '#E0D5CF'; }}
-        />
-      ))}
+    <div
+      style={{
+        display: "flex",
+        gap: 10,
+        justifyContent: "center",
+        margin: "8px 0 4px",
+      }}
+    >
+      {Array(6)
+        .fill(0)
+        .map((_, i) => (
+          <input
+            key={i}
+            ref={(el) => {
+              refs.current[i] = el;
+            }}
+            type="text"
+            inputMode="numeric"
+            maxLength={6}
+            value={value[i] || ""}
+            onChange={(e) => handleChange(i, e)}
+            onKeyDown={(e) => handleKey(i, e)}
+            style={{
+              width: 46,
+              height: 54,
+              textAlign: "center",
+              fontSize: 22,
+              fontWeight: 700,
+              fontFamily: "Prompt, sans-serif",
+              borderRadius: 12,
+              outline: "none",
+              border: `2px solid ${hasError ? "#ef4444" : value[i] ? "#FF8C00" : "#E0D5CF"}`,
+              background: hasError
+                ? "#fff5f5"
+                : value[i]
+                  ? "#FFF8F0"
+                  : "#FAFAFA",
+              color: "#3E2723",
+              transition: "all 0.15s",
+              boxSizing: "border-box",
+            }}
+            onFocus={(e) => {
+              e.target.style.borderColor = "#FF8C00";
+              e.target.style.boxShadow = "0 0 0 3px rgba(255,140,0,0.12)";
+            }}
+            onBlur={(e) => {
+              e.target.style.boxShadow = "none";
+              e.target.style.borderColor = hasError
+                ? "#ef4444"
+                : value[i]
+                  ? "#FF8C00"
+                  : "#E0D5CF";
+            }}
+          />
+        ))}
     </div>
   );
 };
@@ -76,43 +117,43 @@ const getStrength = (pw: string) => {
   if (/[^A-Za-z0-9]/.test(pw)) s++;
   return s;
 };
-const STRENGTH_LABEL = ['', 'อ่อนมาก', 'อ่อน', 'ปานกลาง', 'แข็งแกร่ง'];
-const STRENGTH_COLOR = ['', '#ef4444', '#f97316', '#eab308', '#22c55e'];
+const STRENGTH_LABEL = ["", "อ่อนมาก", "อ่อน", "ปานกลาง", "แข็งแกร่ง"];
+const STRENGTH_COLOR = ["", "#ef4444", "#f97316", "#eab308", "#22c55e"];
 
 /* ─── Main Component ─────────────────────────────── */
 const LoginPage: React.FC = () => {
   const navigate = useNavigate();
-  const [view, setView] = useState<View>('login');
+  const [view, setView] = useState<View>("login");
 
   /* Login state */
-  const [loginForm, setLoginForm] = useState({ username: '', password: '' });
+  const [loginForm, setLoginForm] = useState({ username: "", password: "" });
   const [loginLoading, setLoginLoading] = useState(false);
-  const [loginError, setLoginError] = useState('');
+  const [loginError, setLoginError] = useState("");
   const [showLoginPass, setShowLoginPass] = useState(false);
 
   /* Forgot state */
-  const [forgotEmail, setForgotEmail] = useState('');
+  const [forgotEmail, setForgotEmail] = useState("");
   const [forgotLoading, setForgotLoading] = useState(false);
-  const [forgotError, setForgotError] = useState('');
+  const [forgotError, setForgotError] = useState("");
 
   /* OTP state */
-  const [otp, setOtp] = useState<string[]>(Array(6).fill(''));
+  const [otp, setOtp] = useState<string[]>(Array(6).fill(""));
   const [otpLoading, setOtpLoading] = useState(false);
-  const [otpError, setOtpError] = useState('');
+  const [otpError, setOtpError] = useState("");
   const [countdown, setCountdown] = useState(0);
 
   /* Reset state */
-  const [resetForm, setResetForm] = useState({ password: '', confirm: '' });
+  const [resetForm, setResetForm] = useState({ password: "", confirm: "" });
   const [resetLoading, setResetLoading] = useState(false);
-  const [resetError, setResetError] = useState('');
+  const [resetError, setResetError] = useState("");
   const [showNewPass, setShowNewPass] = useState(false);
   const [showConfirmPass, setShowConfirmPass] = useState(false);
-  const [otpToken, setOtpToken] = useState(''); // token จาก OTP verify
+  const [otpToken, setOtpToken] = useState(""); // token จาก OTP verify
 
   /* Countdown timer */
   useEffect(() => {
     if (countdown <= 0) return;
-    const t = setTimeout(() => setCountdown(c => c - 1), 1000);
+    const t = setTimeout(() => setCountdown((c) => c - 1), 1000);
     return () => clearTimeout(t);
   }, [countdown]);
 
@@ -122,13 +163,16 @@ const LoginPage: React.FC = () => {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoginLoading(true);
-    setLoginError('');
+    setLoginError("");
     try {
-      const res = await axios.post('http://localhost:3000/auth/signin', loginForm);
-      localStorage.setItem('jwt_token', res.data.accessToken);
-      navigate('/');
+      const res = await axios.post(
+        `${API_BASE_URL}/api/auth/signin`,
+        loginForm,
+      );
+      localStorage.setItem("jwt_token", res.data.accessToken);
+      navigate("/");
     } catch {
-      setLoginError('ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง กรุณาลองใหม่อีกครั้ง');
+      setLoginError("ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง กรุณาลองใหม่อีกครั้ง");
     } finally {
       setLoginLoading(false);
     }
@@ -137,17 +181,25 @@ const LoginPage: React.FC = () => {
   /* ── Forgot: ส่ง OTP ── */
   const handleForgot = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!forgotEmail.trim()) { setForgotError('กรุณากรอกอีเมล'); return; }
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(forgotEmail)) { setForgotError('รูปแบบอีเมลไม่ถูกต้อง'); return; }
+    if (!forgotEmail.trim()) {
+      setForgotError("กรุณากรอกอีเมล");
+      return;
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(forgotEmail)) {
+      setForgotError("รูปแบบอีเมลไม่ถูกต้อง");
+      return;
+    }
     setForgotLoading(true);
-    setForgotError('');
+    setForgotError("");
     try {
-      await axios.post('http://localhost:3000/auth/forgot-password', { email: forgotEmail });
+      await axios.post(`${API_BASE_URL}/api/auth/forgot-password`, {
+        email: forgotEmail,
+      });
       setCountdown(60);
-      setView('otp');
+      setView("otp");
     } catch (err: any) {
-      if (err.response?.status === 404) setForgotError('ไม่พบอีเมลนี้ในระบบ');
-      else setForgotError('เกิดข้อผิดพลาด กรุณาลองใหม่');
+      if (err.response?.status === 404) setForgotError("ไม่พบอีเมลนี้ในระบบ");
+      else setForgotError("เกิดข้อผิดพลาด กรุณาลองใหม่");
     } finally {
       setForgotLoading(false);
     }
@@ -157,29 +209,38 @@ const LoginPage: React.FC = () => {
   const handleResend = async () => {
     if (countdown > 0) return;
     try {
-      await axios.post('http://localhost:3000/auth/forgot-password', { email: forgotEmail });
+      await axios.post(`${API_BASE_URL}/api/auth/forgot-password`, {
+        email: forgotEmail,
+      });
       setCountdown(60);
-      setOtp(Array(6).fill(''));
-      setOtpError('');
+      setOtp(Array(6).fill(""));
+      setOtpError("");
     } catch {
-      setOtpError('ส่ง OTP ใหม่ไม่สำเร็จ กรุณาลองใหม่');
+      setOtpError("ส่ง OTP ใหม่ไม่สำเร็จ กรุณาลองใหม่");
     }
   };
 
   /* ── OTP verify ── */
   const handleOtpSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const code = otp.join('');
-    if (code.length < 6) { setOtpError('กรุณากรอก OTP ให้ครบ 6 หลัก'); return; }
+    const code = otp.join("");
+    if (code.length < 6) {
+      setOtpError("กรุณากรอก OTP ให้ครบ 6 หลัก");
+      return;
+    }
     setOtpLoading(true);
-    setOtpError('');
+    setOtpError("");
     try {
-      const res = await axios.post('http://localhost:3000/auth/verify-otp', { email: forgotEmail, otp: code });
-      setOtpToken(res.data.resetToken || '');
-      setView('reset');
+      const res = await axios.post(`${API_BASE_URL}/api/auth/verify-otp`, {
+        email: forgotEmail,
+        otp: code,
+      });
+      setOtpToken(res.data.resetToken || "");
+      setView("reset");
     } catch (err: any) {
-      if (err.response?.status === 400) setOtpError('รหัส OTP ไม่ถูกต้องหรือหมดอายุแล้ว');
-      else setOtpError('เกิดข้อผิดพลาด กรุณาลองใหม่');
+      if (err.response?.status === 400)
+        setOtpError("รหัส OTP ไม่ถูกต้องหรือหมดอายุแล้ว");
+      else setOtpError("เกิดข้อผิดพลาด กรุณาลองใหม่");
     } finally {
       setOtpLoading(false);
     }
@@ -188,24 +249,30 @@ const LoginPage: React.FC = () => {
   /* ── Reset password ── */
   const handleReset = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (resetForm.password.length < 8) { setResetError('รหัสผ่านต้องมีอย่างน้อย 8 ตัว'); return; }
-    if (resetForm.password !== resetForm.confirm) { setResetError('รหัสผ่านไม่ตรงกัน'); return; }
+    if (resetForm.password.length < 8) {
+      setResetError("รหัสผ่านต้องมีอย่างน้อย 8 ตัว");
+      return;
+    }
+    if (resetForm.password !== resetForm.confirm) {
+      setResetError("รหัสผ่านไม่ตรงกัน");
+      return;
+    }
     setResetLoading(true);
-    setResetError('');
+    setResetError("");
     try {
-      await axios.post('http://localhost:3000/auth/reset-password', {
+      await axios.post(`${API_BASE_URL}/api/auth/reset-password`, {
         email: forgotEmail,
         resetToken: otpToken,
         newPassword: resetForm.password,
       });
       /* สำเร็จ — กลับ login พร้อม banner */
-      setView('login');
-      setLoginError('');
-      setResetForm({ password: '', confirm: '' });
-      setOtp(Array(6).fill(''));
-      setForgotEmail('');
+      setView("login");
+      setLoginError("");
+      setResetForm({ password: "", confirm: "" });
+      setOtp(Array(6).fill(""));
+      setForgotEmail("");
     } catch (err: any) {
-      setResetError('ไม่สามารถรีเซ็ตรหัสผ่านได้ กรุณาเริ่มใหม่');
+      setResetError("ไม่สามารถรีเซ็ตรหัสผ่านได้ กรุณาเริ่มใหม่");
     } finally {
       setResetLoading(false);
     }
@@ -213,22 +280,48 @@ const LoginPage: React.FC = () => {
 
   /* ── Shared input style ── */
   const iStyle = (hasError: boolean): React.CSSProperties => ({
-    width: '100%', padding: '13px 16px', borderRadius: 12,
-    border: `1.5px solid ${hasError ? '#E53935' : '#E0D5CF'}`,
-    fontSize: 15, fontFamily: 'Prompt, sans-serif', boxSizing: 'border-box',
-    transition: 'all 0.2s', background: hasError ? '#FFF5F5' : '#FAFAFA',
-    color: '#3E2723', outline: 'none',
+    width: "100%",
+    padding: "13px 16px",
+    borderRadius: 12,
+    border: `1.5px solid ${hasError ? "#E53935" : "#E0D5CF"}`,
+    fontSize: 15,
+    fontFamily: "Prompt, sans-serif",
+    boxSizing: "border-box",
+    transition: "all 0.2s",
+    background: hasError ? "#FFF5F5" : "#FAFAFA",
+    color: "#3E2723",
+    outline: "none",
   });
 
   const iStylePw = (hasError: boolean): React.CSSProperties => ({
-    ...iStyle(hasError), paddingRight: 44,
+    ...iStyle(hasError),
+    paddingRight: 44,
   });
 
-  const VIEW_TITLES: Record<View, { title: string; subtitle: string; icon: string }> = {
-    login:  { title: 'เข้าสู่ระบบ',       subtitle: 'ยินดีต้อนรับกลับมา! เข้าสู่ระบบเพื่อดำเนินการต่อ', icon: '👋' },
-    forgot: { title: 'ลืมรหัสผ่าน',       subtitle: 'กรอกอีเมลที่ผูกกับบัญชีของคุณ เราจะส่ง OTP ให้', icon: '🔑' },
-    otp:    { title: 'ยืนยัน OTP',         subtitle: `กรอกรหัส 6 หลักที่ส่งไปยัง ${forgotEmail}`, icon: '📨' },
-    reset:  { title: 'ตั้งรหัสผ่านใหม่',  subtitle: 'รหัสผ่านใหม่ต้องมีอย่างน้อย 8 ตัวอักษร', icon: '🛡️' },
+  const VIEW_TITLES: Record<
+    View,
+    { title: string; subtitle: string; icon: string }
+  > = {
+    login: {
+      title: "เข้าสู่ระบบ",
+      subtitle: "ยินดีต้อนรับกลับมา! เข้าสู่ระบบเพื่อดำเนินการต่อ",
+      icon: "👋",
+    },
+    forgot: {
+      title: "ลืมรหัสผ่าน",
+      subtitle: "กรอกอีเมลที่ผูกกับบัญชีของคุณ เราจะส่ง OTP ให้",
+      icon: "🔑",
+    },
+    otp: {
+      title: "ยืนยัน OTP",
+      subtitle: `กรอกรหัส 6 หลักที่ส่งไปยัง ${forgotEmail}`,
+      icon: "📨",
+    },
+    reset: {
+      title: "ตั้งรหัสผ่านใหม่",
+      subtitle: "รหัสผ่านใหม่ต้องมีอย่างน้อย 8 ตัวอักษร",
+      icon: "🛡️",
+    },
   };
 
   const { title, subtitle, icon } = VIEW_TITLES[view];
@@ -345,204 +438,517 @@ const LoginPage: React.FC = () => {
       <div className="auth-page">
         <div className="auth-container">
           <div className="auth-card">
-
             {/* ── Header ── */}
             <div className="auth-header">
-              <div style={{ display: 'flex', alignItems: 'center', gap: 12, position: 'relative', zIndex: 1 }}>
-                <div style={{ width: 46, height: 46, background: 'rgba(255,255,255,0.22)', borderRadius: 14, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22 }}>
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 12,
+                  position: "relative",
+                  zIndex: 1,
+                }}
+              >
+                <div
+                  style={{
+                    width: 46,
+                    height: 46,
+                    background: "rgba(255,255,255,0.22)",
+                    borderRadius: 14,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    fontSize: 22,
+                  }}
+                >
                   {icon}
                 </div>
                 <div>
-                  <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: 11, fontWeight: 500, margin: 0 }}>GoTrip</p>
-                  <h2 style={{ color: 'white', fontSize: 22, fontWeight: 800, margin: 0, letterSpacing: '-0.4px' }}>{title}</h2>
+                  <p
+                    style={{
+                      color: "rgba(255,255,255,0.7)",
+                      fontSize: 11,
+                      fontWeight: 500,
+                      margin: 0,
+                    }}
+                  >
+                    GoTrip
+                  </p>
+                  <h2
+                    style={{
+                      color: "white",
+                      fontSize: 22,
+                      fontWeight: 800,
+                      margin: 0,
+                      letterSpacing: "-0.4px",
+                    }}
+                  >
+                    {title}
+                  </h2>
                 </div>
               </div>
             </div>
 
             {/* ── Body ── */}
             <div className="auth-body">
-
               {/* ─────────── VIEW: LOGIN ─────────── */}
-              {view === 'login' && (
+              {view === "login" && (
                 <div className="slide-in">
-                  <p style={{ color: '#8D6E63', fontSize: 14, margin: '0 0 22px', textAlign: 'center' }}>{subtitle}</p>
+                  <p
+                    style={{
+                      color: "#8D6E63",
+                      fontSize: 14,
+                      margin: "0 0 22px",
+                      textAlign: "center",
+                    }}
+                  >
+                    {subtitle}
+                  </p>
 
                   {loginError && (
-                    <div className="error-banner"><span>⚠️</span>{loginError}</div>
+                    <div className="error-banner">
+                      <span>⚠️</span>
+                      {loginError}
+                    </div>
                   )}
 
                   <form onSubmit={handleLogin}>
                     <div className="input-group">
                       <label className="input-label">ชื่อผู้ใช้</label>
                       <input
-                        type="text" name="username" value={loginForm.username} placeholder="Username"
-                        required autoComplete="username"
+                        type="text"
+                        name="username"
+                        value={loginForm.username}
+                        placeholder="Username"
+                        required
+                        autoComplete="username"
                         style={iStyle(!!loginError)}
-                        onChange={e => { setLoginForm(p => ({ ...p, username: e.target.value })); setLoginError(''); }}
-                        onFocus={e => { e.target.style.borderColor = '#FF8C00'; e.target.style.boxShadow = '0 0 0 4px rgba(255,140,0,0.1)'; e.target.style.background = 'white'; }}
-                        onBlur={e => { e.target.style.borderColor = loginError ? '#E53935' : '#E0D5CF'; e.target.style.boxShadow = 'none'; e.target.style.background = loginError ? '#FFF5F5' : '#FAFAFA'; }}
+                        onChange={(e) => {
+                          setLoginForm((p) => ({
+                            ...p,
+                            username: e.target.value,
+                          }));
+                          setLoginError("");
+                        }}
+                        onFocus={(e) => {
+                          e.target.style.borderColor = "#FF8C00";
+                          e.target.style.boxShadow =
+                            "0 0 0 4px rgba(255,140,0,0.1)";
+                          e.target.style.background = "white";
+                        }}
+                        onBlur={(e) => {
+                          e.target.style.borderColor = loginError
+                            ? "#E53935"
+                            : "#E0D5CF";
+                          e.target.style.boxShadow = "none";
+                          e.target.style.background = loginError
+                            ? "#FFF5F5"
+                            : "#FAFAFA";
+                        }}
                       />
                     </div>
 
-                    <div className="input-group" style={{ position: 'relative' }}>
+                    <div
+                      className="input-group"
+                      style={{ position: "relative" }}
+                    >
                       <label className="input-label">รหัสผ่าน</label>
-                      <div style={{ position: 'relative' }}>
+                      <div style={{ position: "relative" }}>
                         <input
-                          type={showLoginPass ? 'text' : 'password'} name="password"
-                          value={loginForm.password} placeholder="Password"
-                          required autoComplete="current-password"
+                          type={showLoginPass ? "text" : "password"}
+                          name="password"
+                          value={loginForm.password}
+                          placeholder="Password"
+                          required
+                          autoComplete="current-password"
                           style={iStylePw(!!loginError)}
-                          onChange={e => { setLoginForm(p => ({ ...p, password: e.target.value })); setLoginError(''); }}
-                          onFocus={e => { e.target.style.borderColor = '#FF8C00'; e.target.style.boxShadow = '0 0 0 4px rgba(255,140,0,0.1)'; e.target.style.background = 'white'; }}
-                          onBlur={e => { e.target.style.borderColor = loginError ? '#E53935' : '#E0D5CF'; e.target.style.boxShadow = 'none'; e.target.style.background = loginError ? '#FFF5F5' : '#FAFAFA'; }}
+                          onChange={(e) => {
+                            setLoginForm((p) => ({
+                              ...p,
+                              password: e.target.value,
+                            }));
+                            setLoginError("");
+                          }}
+                          onFocus={(e) => {
+                            e.target.style.borderColor = "#FF8C00";
+                            e.target.style.boxShadow =
+                              "0 0 0 4px rgba(255,140,0,0.1)";
+                            e.target.style.background = "white";
+                          }}
+                          onBlur={(e) => {
+                            e.target.style.borderColor = loginError
+                              ? "#E53935"
+                              : "#E0D5CF";
+                            e.target.style.boxShadow = "none";
+                            e.target.style.background = loginError
+                              ? "#FFF5F5"
+                              : "#FAFAFA";
+                          }}
                         />
-                        <button type="button" className="eyebtn" onClick={() => setShowLoginPass(p => !p)}>{showLoginPass ? '🙈' : '👁️'}</button>
+                        <button
+                          type="button"
+                          className="eyebtn"
+                          onClick={() => setShowLoginPass((p) => !p)}
+                        >
+                          {showLoginPass ? "🙈" : "👁️"}
+                        </button>
                       </div>
                     </div>
 
                     {/* Forgot link */}
-                    <div style={{ textAlign: 'right', marginTop: -10, marginBottom: 18 }}>
-                      <button type="button" onClick={() => { setView('forgot'); setLoginError(''); }}
-                        style={{ background: 'none', border: 'none', color: '#FF8C00', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'Prompt, sans-serif', padding: 0 }}>
+                    <div
+                      style={{
+                        textAlign: "right",
+                        marginTop: -10,
+                        marginBottom: 18,
+                      }}
+                    >
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setView("forgot");
+                          setLoginError("");
+                        }}
+                        style={{
+                          background: "none",
+                          border: "none",
+                          color: "#FF8C00",
+                          fontSize: 13,
+                          fontWeight: 600,
+                          cursor: "pointer",
+                          fontFamily: "Prompt, sans-serif",
+                          padding: 0,
+                        }}
+                      >
                         ลืมรหัสผ่าน?
                       </button>
                     </div>
 
-                    <button type="submit" className="submit-btn" disabled={loginLoading}>
-                      {loginLoading ? '⏳ กำลังเข้าสู่ระบบ...' : 'เข้าสู่ระบบ'}
+                    <button
+                      type="submit"
+                      className="submit-btn"
+                      disabled={loginLoading}
+                    >
+                      {loginLoading ? "⏳ กำลังเข้าสู่ระบบ..." : "เข้าสู่ระบบ"}
                     </button>
                   </form>
 
                   <div className="divider">
-                    <div className="divider-line" /><span className="divider-text">หรือ เข้าสู่ระบบกับ</span><div className="divider-line" />
+                    <div className="divider-line" />
+                    <span className="divider-text">หรือ เข้าสู่ระบบกับ</span>
+                    <div className="divider-line" />
                   </div>
 
-                  <button type="button" className="google-btn" onClick={() => { window.location.href = 'http://localhost:3000/auth/google'; }}>
+                  <button
+                    type="button"
+                    className="google-btn"
+                    onClick={() => {
+                      window.location.href = `${API_BASE_URL}/api/auth/google`;
+                    }}
+                  >
                     <svg width="20" height="20" viewBox="0 0 24 24">
-                      <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
-                      <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
-                      <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
-                      <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+                      <path
+                        fill="#4285F4"
+                        d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
+                      />
+                      <path
+                        fill="#34A853"
+                        d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+                      />
+                      <path
+                        fill="#FBBC05"
+                        d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
+                      />
+                      <path
+                        fill="#EA4335"
+                        d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
+                      />
                     </svg>
                     Google
                   </button>
 
                   <p className="footer-text">
                     หากยังไม่มีบัญชี
-                    <Link to="/register" className="footer-link">ลงทะเบียน</Link>
+                    <Link to="/register" className="footer-link">
+                      ลงทะเบียน
+                    </Link>
                   </p>
                 </div>
               )}
 
               {/* ─────────── VIEW: FORGOT ─────────── */}
-              {view === 'forgot' && (
+              {view === "forgot" && (
                 <div className="slide-in">
-                  <button className="back-link" onClick={() => { setView('login'); setForgotError(''); setForgotEmail(''); }}>
+                  <button
+                    className="back-link"
+                    onClick={() => {
+                      setView("login");
+                      setForgotError("");
+                      setForgotEmail("");
+                    }}
+                  >
                     ← กลับสู่หน้าเข้าสู่ระบบ
                   </button>
 
-                  <p style={{ color: '#8D6E63', fontSize: 14, margin: '0 0 22px' }}>{subtitle}</p>
+                  <p
+                    style={{
+                      color: "#8D6E63",
+                      fontSize: 14,
+                      margin: "0 0 22px",
+                    }}
+                  >
+                    {subtitle}
+                  </p>
 
-                  {forgotError && <div className="error-banner"><span>⚠️</span>{forgotError}</div>}
+                  {forgotError && (
+                    <div className="error-banner">
+                      <span>⚠️</span>
+                      {forgotError}
+                    </div>
+                  )}
 
                   <form onSubmit={handleForgot}>
                     <div className="input-group">
                       <label className="input-label">อีเมลที่ผูกกับบัญชี</label>
                       <input
-                        type="email" value={forgotEmail} placeholder="email@example.com"
-                        onChange={e => { setForgotEmail(e.target.value); setForgotError(''); }}
+                        type="email"
+                        value={forgotEmail}
+                        placeholder="email@example.com"
+                        onChange={(e) => {
+                          setForgotEmail(e.target.value);
+                          setForgotError("");
+                        }}
                         style={iStyle(!!forgotError)}
-                        onFocus={e => { e.target.style.borderColor = '#FF8C00'; e.target.style.boxShadow = '0 0 0 4px rgba(255,140,0,0.1)'; e.target.style.background = 'white'; }}
-                        onBlur={e => { e.target.style.borderColor = forgotError ? '#E53935' : '#E0D5CF'; e.target.style.boxShadow = 'none'; e.target.style.background = forgotError ? '#FFF5F5' : '#FAFAFA'; }}
+                        onFocus={(e) => {
+                          e.target.style.borderColor = "#FF8C00";
+                          e.target.style.boxShadow =
+                            "0 0 0 4px rgba(255,140,0,0.1)";
+                          e.target.style.background = "white";
+                        }}
+                        onBlur={(e) => {
+                          e.target.style.borderColor = forgotError
+                            ? "#E53935"
+                            : "#E0D5CF";
+                          e.target.style.boxShadow = "none";
+                          e.target.style.background = forgotError
+                            ? "#FFF5F5"
+                            : "#FAFAFA";
+                        }}
                       />
                     </div>
-                    <button type="submit" className="submit-btn" disabled={forgotLoading}>
-                      {forgotLoading ? '⏳ กำลังส่ง...' : '📨 ส่งรหัส OTP'}
+                    <button
+                      type="submit"
+                      className="submit-btn"
+                      disabled={forgotLoading}
+                    >
+                      {forgotLoading ? "⏳ กำลังส่ง..." : "📨 ส่งรหัส OTP"}
                     </button>
                   </form>
                 </div>
               )}
 
               {/* ─────────── VIEW: OTP ─────────── */}
-              {view === 'otp' && (
+              {view === "otp" && (
                 <div className="slide-in">
-                  <button className="back-link" onClick={() => { setView('forgot'); setOtpError(''); setOtp(Array(6).fill('')); }}>
+                  <button
+                    className="back-link"
+                    onClick={() => {
+                      setView("forgot");
+                      setOtpError("");
+                      setOtp(Array(6).fill(""));
+                    }}
+                  >
                     ← แก้ไขอีเมล
                   </button>
 
                   {/* Step dots */}
                   <div className="step-dots">
-                    <div className="dot done" /><div className="dot active" /><div className="dot" />
+                    <div className="dot done" />
+                    <div className="dot active" />
+                    <div className="dot" />
                   </div>
-                  <p style={{ textAlign: 'center', fontSize: 11, color: '#BCAAA4', margin: '4px 0 16px', fontWeight: 500 }}>ขั้นตอนที่ 2 จาก 3</p>
-
-                  <p style={{ color: '#8D6E63', fontSize: 13, margin: '0 0 6px', textAlign: 'center' }}>
-                    ส่ง OTP ไปที่ <span style={{ color: '#FF8C00', fontWeight: 700 }}>{forgotEmail}</span>
+                  <p
+                    style={{
+                      textAlign: "center",
+                      fontSize: 11,
+                      color: "#BCAAA4",
+                      margin: "4px 0 16px",
+                      fontWeight: 500,
+                    }}
+                  >
+                    ขั้นตอนที่ 2 จาก 3
                   </p>
-                  <p style={{ color: '#BCAAA4', fontSize: 12, margin: '0 0 18px', textAlign: 'center' }}>รหัสมีอายุ 10 นาที</p>
 
-                  {otpError && <div className="error-banner"><span>⚠️</span>{otpError}</div>}
+                  <p
+                    style={{
+                      color: "#8D6E63",
+                      fontSize: 13,
+                      margin: "0 0 6px",
+                      textAlign: "center",
+                    }}
+                  >
+                    ส่ง OTP ไปที่{" "}
+                    <span style={{ color: "#FF8C00", fontWeight: 700 }}>
+                      {forgotEmail}
+                    </span>
+                  </p>
+                  <p
+                    style={{
+                      color: "#BCAAA4",
+                      fontSize: 12,
+                      margin: "0 0 18px",
+                      textAlign: "center",
+                    }}
+                  >
+                    รหัสมีอายุ 10 นาที
+                  </p>
+
+                  {otpError && (
+                    <div className="error-banner">
+                      <span>⚠️</span>
+                      {otpError}
+                    </div>
+                  )}
 
                   <form onSubmit={handleOtpSubmit}>
-                    <OtpInput value={otp} onChange={setOtp} hasError={!!otpError} />
+                    <OtpInput
+                      value={otp}
+                      onChange={setOtp}
+                      hasError={!!otpError}
+                    />
 
                     {/* Resend */}
-                    <div style={{ textAlign: 'center', margin: '14px 0 20px' }}>
-                      <span style={{ color: '#A1887F', fontSize: 13 }}>ไม่ได้รับรหัส? </span>
+                    <div style={{ textAlign: "center", margin: "14px 0 20px" }}>
+                      <span style={{ color: "#A1887F", fontSize: 13 }}>
+                        ไม่ได้รับรหัส?{" "}
+                      </span>
                       <button
-                        type="button" className="resend-btn"
+                        type="button"
+                        className="resend-btn"
                         disabled={countdown > 0}
-                        style={{ color: countdown > 0 ? '#BCAAA4' : '#FF8C00' }}
+                        style={{ color: countdown > 0 ? "#BCAAA4" : "#FF8C00" }}
                         onClick={handleResend}
                       >
-                        {countdown > 0 ? `ส่งใหม่ใน ${countdown}s` : 'ส่งใหม่'}
+                        {countdown > 0 ? `ส่งใหม่ใน ${countdown}s` : "ส่งใหม่"}
                       </button>
                     </div>
 
-                    <button type="submit" className="submit-btn" disabled={otpLoading || otp.join('').length < 6}>
-                      {otpLoading ? '⏳ กำลังยืนยัน...' : 'ยืนยัน OTP →'}
+                    <button
+                      type="submit"
+                      className="submit-btn"
+                      disabled={otpLoading || otp.join("").length < 6}
+                    >
+                      {otpLoading ? "⏳ กำลังยืนยัน..." : "ยืนยัน OTP →"}
                     </button>
                   </form>
                 </div>
               )}
 
               {/* ─────────── VIEW: RESET ─────────── */}
-              {view === 'reset' && (
+              {view === "reset" && (
                 <div className="slide-in">
                   {/* Step dots */}
                   <div className="step-dots">
-                    <div className="dot done" /><div className="dot done" /><div className="dot active" />
+                    <div className="dot done" />
+                    <div className="dot done" />
+                    <div className="dot active" />
                   </div>
-                  <p style={{ textAlign: 'center', fontSize: 11, color: '#BCAAA4', margin: '4px 0 16px', fontWeight: 500 }}>ขั้นตอนที่ 3 จาก 3</p>
+                  <p
+                    style={{
+                      textAlign: "center",
+                      fontSize: 11,
+                      color: "#BCAAA4",
+                      margin: "4px 0 16px",
+                      fontWeight: 500,
+                    }}
+                  >
+                    ขั้นตอนที่ 3 จาก 3
+                  </p>
 
-                  <p style={{ color: '#8D6E63', fontSize: 14, margin: '0 0 20px', textAlign: 'center' }}>{subtitle}</p>
+                  <p
+                    style={{
+                      color: "#8D6E63",
+                      fontSize: 14,
+                      margin: "0 0 20px",
+                      textAlign: "center",
+                    }}
+                  >
+                    {subtitle}
+                  </p>
 
-                  {resetError && <div className="error-banner"><span>⚠️</span>{resetError}</div>}
+                  {resetError && (
+                    <div className="error-banner">
+                      <span>⚠️</span>
+                      {resetError}
+                    </div>
+                  )}
 
                   <form onSubmit={handleReset}>
                     {/* New password */}
                     <div className="input-group">
                       <label className="input-label">รหัสผ่านใหม่</label>
-                      <div style={{ position: 'relative' }}>
+                      <div style={{ position: "relative" }}>
                         <input
-                          type={showNewPass ? 'text' : 'password'} value={resetForm.password}
+                          type={showNewPass ? "text" : "password"}
+                          value={resetForm.password}
                           placeholder="อย่างน้อย 8 ตัวอักษร"
                           style={iStylePw(!!resetError)}
-                          onChange={e => { setResetForm(p => ({ ...p, password: e.target.value })); setResetError(''); }}
-                          onFocus={e => { e.target.style.borderColor = '#FF8C00'; e.target.style.boxShadow = '0 0 0 4px rgba(255,140,0,0.1)'; e.target.style.background = 'white'; }}
-                          onBlur={e => { e.target.style.borderColor = resetError ? '#E53935' : '#E0D5CF'; e.target.style.boxShadow = 'none'; e.target.style.background = resetError ? '#FFF5F5' : '#FAFAFA'; }}
+                          onChange={(e) => {
+                            setResetForm((p) => ({
+                              ...p,
+                              password: e.target.value,
+                            }));
+                            setResetError("");
+                          }}
+                          onFocus={(e) => {
+                            e.target.style.borderColor = "#FF8C00";
+                            e.target.style.boxShadow =
+                              "0 0 0 4px rgba(255,140,0,0.1)";
+                            e.target.style.background = "white";
+                          }}
+                          onBlur={(e) => {
+                            e.target.style.borderColor = resetError
+                              ? "#E53935"
+                              : "#E0D5CF";
+                            e.target.style.boxShadow = "none";
+                            e.target.style.background = resetError
+                              ? "#FFF5F5"
+                              : "#FAFAFA";
+                          }}
                         />
-                        <button type="button" className="eyebtn" onClick={() => setShowNewPass(p => !p)}>{showNewPass ? '🙈' : '👁️'}</button>
+                        <button
+                          type="button"
+                          className="eyebtn"
+                          onClick={() => setShowNewPass((p) => !p)}
+                        >
+                          {showNewPass ? "🙈" : "👁️"}
+                        </button>
                       </div>
                       {/* Strength */}
                       {resetForm.password && (
                         <>
                           <div className="strength-bar">
-                            {[1,2,3,4].map(n => (
-                              <div key={n} className="strength-seg" style={{ background: strength >= n ? STRENGTH_COLOR[strength] : '#E0D5CF' }} />
+                            {[1, 2, 3, 4].map((n) => (
+                              <div
+                                key={n}
+                                className="strength-seg"
+                                style={{
+                                  background:
+                                    strength >= n
+                                      ? STRENGTH_COLOR[strength]
+                                      : "#E0D5CF",
+                                }}
+                              />
                             ))}
                           </div>
-                          <p style={{ fontSize: 11, color: STRENGTH_COLOR[strength], fontWeight: 600, margin: '4px 0 0' }}>
+                          <p
+                            style={{
+                              fontSize: 11,
+                              color: STRENGTH_COLOR[strength],
+                              fontWeight: 600,
+                              margin: "4px 0 0",
+                            }}
+                          >
                             ความแข็งแกร่ง: {STRENGTH_LABEL[strength]}
                           </p>
                         </>
@@ -552,37 +958,77 @@ const LoginPage: React.FC = () => {
                     {/* Confirm */}
                     <div className="input-group">
                       <label className="input-label">ยืนยันรหัสผ่านใหม่</label>
-                      <div style={{ position: 'relative' }}>
+                      <div style={{ position: "relative" }}>
                         <input
-                          type={showConfirmPass ? 'text' : 'password'} value={resetForm.confirm}
+                          type={showConfirmPass ? "text" : "password"}
+                          value={resetForm.confirm}
                           placeholder="กรอกรหัสผ่านอีกครั้ง"
                           style={{
                             ...iStylePw(false),
                             borderColor: resetForm.confirm
-                              ? resetForm.confirm === resetForm.password ? '#22c55e' : '#E0D5CF'
-                              : '#E0D5CF',
+                              ? resetForm.confirm === resetForm.password
+                                ? "#22c55e"
+                                : "#E0D5CF"
+                              : "#E0D5CF",
                           }}
-                          onChange={e => { setResetForm(p => ({ ...p, confirm: e.target.value })); setResetError(''); }}
-                          onFocus={e => { e.target.style.borderColor = '#FF8C00'; e.target.style.boxShadow = '0 0 0 4px rgba(255,140,0,0.1)'; e.target.style.background = 'white'; }}
-                          onBlur={e => {
-                            e.target.style.borderColor = resetForm.confirm === resetForm.password && resetForm.confirm ? '#22c55e' : '#E0D5CF';
-                            e.target.style.boxShadow = 'none'; e.target.style.background = '#FAFAFA';
+                          onChange={(e) => {
+                            setResetForm((p) => ({
+                              ...p,
+                              confirm: e.target.value,
+                            }));
+                            setResetError("");
+                          }}
+                          onFocus={(e) => {
+                            e.target.style.borderColor = "#FF8C00";
+                            e.target.style.boxShadow =
+                              "0 0 0 4px rgba(255,140,0,0.1)";
+                            e.target.style.background = "white";
+                          }}
+                          onBlur={(e) => {
+                            e.target.style.borderColor =
+                              resetForm.confirm === resetForm.password &&
+                              resetForm.confirm
+                                ? "#22c55e"
+                                : "#E0D5CF";
+                            e.target.style.boxShadow = "none";
+                            e.target.style.background = "#FAFAFA";
                           }}
                         />
-                        <button type="button" className="eyebtn" onClick={() => setShowConfirmPass(p => !p)}>{showConfirmPass ? '🙈' : '👁️'}</button>
+                        <button
+                          type="button"
+                          className="eyebtn"
+                          onClick={() => setShowConfirmPass((p) => !p)}
+                        >
+                          {showConfirmPass ? "🙈" : "👁️"}
+                        </button>
                       </div>
-                      {resetForm.confirm && resetForm.confirm === resetForm.password && (
-                        <p style={{ color: '#22c55e', fontSize: 12, margin: '4px 0 0', fontWeight: 600 }}>✓ รหัสผ่านตรงกัน</p>
-                      )}
+                      {resetForm.confirm &&
+                        resetForm.confirm === resetForm.password && (
+                          <p
+                            style={{
+                              color: "#22c55e",
+                              fontSize: 12,
+                              margin: "4px 0 0",
+                              fontWeight: 600,
+                            }}
+                          >
+                            ✓ รหัสผ่านตรงกัน
+                          </p>
+                        )}
                     </div>
 
-                    <button type="submit" className="submit-btn" disabled={resetLoading}>
-                      {resetLoading ? '⏳ กำลังบันทึก...' : '🔒 บันทึกรหัสผ่านใหม่'}
+                    <button
+                      type="submit"
+                      className="submit-btn"
+                      disabled={resetLoading}
+                    >
+                      {resetLoading
+                        ? "⏳ กำลังบันทึก..."
+                        : "🔒 บันทึกรหัสผ่านใหม่"}
                     </button>
                   </form>
                 </div>
               )}
-
             </div>
           </div>
         </div>

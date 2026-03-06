@@ -21,6 +21,7 @@ import {
   getDurationLabel,
   getProvinceLabel,
 } from "@/utils/tourLabels";
+import { API_BASE_URL } from "@/config/api";
 
 interface Tour {
   id: number | string;
@@ -48,7 +49,7 @@ export default function ToursPage() {
   const searchFilter = searchParams.get("search") || "";
   const [searchInput, setSearchInput] = useState(searchFilter);
 
-  const apiBase = "http://localhost:3000/api";
+  const apiBase = `${API_BASE_URL}/api`;
 
   const provinceFilter = searchParams.get("province") || "";
   const regionFilter = searchParams.get("region") || "";
@@ -59,7 +60,7 @@ export default function ToursPage() {
   const getImageUrl = (path?: string) => {
     if (!path) return "https://via.placeholder.com/400x300?text=No+Img";
     if (path.startsWith("http")) return path;
-    return `http://localhost:3000/${path.replace(/^\//, "")}`;
+    return `${API_BASE_URL}/${path.replace(/^\//, "")}`;
   };
 
   useEffect(() => {

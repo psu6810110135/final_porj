@@ -1,8 +1,15 @@
 import { useState, useEffect } from "react";
-import { Search, ChevronRight, Loader2, CheckCircle2, XCircle } from "lucide-react"; // 👈 เพิ่ม Icon แจ้งเตือน
+import {
+  Search,
+  ChevronRight,
+  Loader2,
+  CheckCircle2,
+  XCircle,
+} from "lucide-react"; // 👈 เพิ่ม Icon แจ้งเตือน
 
-import Navbar from "../components/Navbar"; 
+import Navbar from "../components/Navbar";
 import Footer from "@/components/Footer";
+import { API_BASE_URL } from "@/config/api";
 
 const ContactPage = () => {
   const [formData, setFormData] = useState({
@@ -11,11 +18,13 @@ const ContactPage = () => {
     email: "",
     phoneCode: "+66",
     phoneNumber: "",
-    message: ""
+    message: "",
   });
 
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [submitStatus, setSubmitStatus] = useState<"idle" | "success" | "error">("idle");
+  const [submitStatus, setSubmitStatus] = useState<
+    "idle" | "success" | "error"
+  >("idle");
   const [statusMessage, setStatusMessage] = useState(""); // State สำหรับเก็บข้อความแจ้งเตือน
 
   const topics = [
@@ -42,10 +51,14 @@ const ContactPage = () => {
     }
   }, [submitStatus]);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+  const handleChange = (
+    e: React.ChangeEvent<
+      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
+    >,
+  ) => {
     setFormData({
       ...formData,
-      [e.target.name]: e.target.value
+      [e.target.name]: e.target.value,
     });
   };
 
@@ -61,10 +74,10 @@ const ContactPage = () => {
         last_name: formData.lastName,
         email: formData.email,
         phone: `${formData.phoneCode}${formData.phoneNumber}`,
-        message: formData.message
+        message: formData.message,
       };
 
-      const response = await fetch("http://localhost:3000/api/v1/tickets", {
+      const response = await fetch(`${API_BASE_URL}/api/tickets`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -76,7 +89,12 @@ const ContactPage = () => {
         setSubmitStatus("success");
         setStatusMessage("ส่งข้อความสำเร็จ! ทีมงานจะติดต่อกลับโดยเร็วที่สุด");
         setFormData({
-          firstName: "", lastName: "", email: "", phoneCode: "+66", phoneNumber: "", message: ""
+          firstName: "",
+          lastName: "",
+          email: "",
+          phoneCode: "+66",
+          phoneNumber: "",
+          message: "",
         });
       } else {
         setSubmitStatus("error");
@@ -85,7 +103,9 @@ const ContactPage = () => {
     } catch (error) {
       console.error("Error submitting form:", error);
       setSubmitStatus("error");
-      setStatusMessage("ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้ กรุณาตรวจสอบว่าเปิด Backend แล้วหรือยัง");
+      setStatusMessage(
+        "ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้ กรุณาตรวจสอบว่าเปิด Backend แล้วหรือยัง",
+      );
     } finally {
       setIsSubmitting(false);
     }
@@ -102,7 +122,6 @@ const ContactPage = () => {
           </h1>
 
           <div className="flex flex-col lg:flex-row gap-8 lg:gap-12">
-            
             {/* ซ้าย: หัวข้อ */}
             <div className="flex-1 order-2 lg:order-1">
               <div className="relative mb-6 md:mb-8">
@@ -116,7 +135,9 @@ const ContactPage = () => {
                 </button>
               </div>
 
-              <h2 className="text-xl md:text-2xl font-extrabold text-[#5C3D2E] mb-4 md:mb-6">เรียกดูตามหัวข้อ</h2>
+              <h2 className="text-xl md:text-2xl font-extrabold text-[#5C3D2E] mb-4 md:mb-6">
+                เรียกดูตามหัวข้อ
+              </h2>
               <div className="space-y-1">
                 {topics.map((topic, index) => (
                   <button
@@ -124,7 +145,10 @@ const ContactPage = () => {
                     className="w-full flex items-center justify-between p-4 border-b border-[#E0D8C8] hover:bg-white/60 transition text-left text-[#5C3D2E] font-bold text-base md:text-lg group"
                   >
                     <span className="pr-4">{topic}</span>
-                    <ChevronRight size={20} className="text-gray-400 group-hover:text-[#FF8A00] transition-colors shrink-0" />
+                    <ChevronRight
+                      size={20}
+                      className="text-gray-400 group-hover:text-[#FF8A00] transition-colors shrink-0"
+                    />
                   </button>
                 ))}
               </div>
@@ -133,45 +157,52 @@ const ContactPage = () => {
             {/* ขวา: ฟอร์มติดต่อ */}
             <div className="w-full lg:w-[450px] shrink-0 order-1 lg:order-2">
               <div className="bg-white p-6 md:p-8 rounded-[1.5rem] md:rounded-[2rem] shadow-xl border border-gray-50 lg:sticky lg:top-28">
-                <h2 className="text-2xl md:text-3xl font-extrabold text-[#5C3D2E] mb-6">สนใจติดต่อ</h2>
+                <h2 className="text-2xl md:text-3xl font-extrabold text-[#5C3D2E] mb-6">
+                  สนใจติดต่อ
+                </h2>
 
-                <form className="space-y-4 md:space-y-5" onSubmit={handleSubmit}>
+                <form
+                  className="space-y-4 md:space-y-5"
+                  onSubmit={handleSubmit}
+                >
                   <div className="flex flex-col sm:flex-row gap-3 md:gap-4">
-                    <input 
-                      type="text" 
+                    <input
+                      type="text"
                       name="firstName"
                       value={formData.firstName}
                       onChange={handleChange}
-                      placeholder="ชื่อจริง" 
+                      placeholder="ชื่อจริง"
                       required
-                      className="flex-1 min-w-0 p-3.5 rounded-2xl md:rounded-full border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#FF8A00] text-sm bg-gray-50/50" 
+                      className="flex-1 min-w-0 p-3.5 rounded-2xl md:rounded-full border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#FF8A00] text-sm bg-gray-50/50"
                     />
-                    <input 
-                      type="text" 
+                    <input
+                      type="text"
                       name="lastName"
                       value={formData.lastName}
                       onChange={handleChange}
-                      placeholder="นามสกุล" 
+                      placeholder="นามสกุล"
                       required
-                      className="flex-1 min-w-0 p-3.5 rounded-2xl md:rounded-full border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#FF8A00] text-sm bg-gray-50/50" 
+                      className="flex-1 min-w-0 p-3.5 rounded-2xl md:rounded-full border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#FF8A00] text-sm bg-gray-50/50"
                     />
                   </div>
-                  
+
                   <div className="relative">
-                    <input 
-                      type="email" 
+                    <input
+                      type="email"
                       name="email"
                       value={formData.email}
                       onChange={handleChange}
-                      placeholder="อีเมลของคุณ" 
+                      placeholder="อีเมลของคุณ"
                       required
-                      className="w-full p-3.5 pl-12 rounded-2xl md:rounded-full border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#FF8A00] text-sm bg-gray-50/50" 
+                      className="w-full p-3.5 pl-12 rounded-2xl md:rounded-full border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#FF8A00] text-sm bg-gray-50/50"
                     />
-                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400">✉️</span>
+                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400">
+                      ✉️
+                    </span>
                   </div>
 
                   <div className="flex border border-gray-200 rounded-2xl md:rounded-full overflow-hidden focus-within:ring-2 focus-within:ring-[#FF8A00] bg-gray-50/50">
-                    <select 
+                    <select
                       name="phoneCode"
                       value={formData.phoneCode}
                       onChange={handleChange}
@@ -179,14 +210,14 @@ const ContactPage = () => {
                     >
                       <option value="+66">+66</option>
                     </select>
-                    <input 
-                      type="tel" 
+                    <input
+                      type="tel"
                       name="phoneNumber"
                       value={formData.phoneNumber}
                       onChange={handleChange}
-                      placeholder="หมายเลขโทรศัพท์" 
+                      placeholder="หมายเลขโทรศัพท์"
                       required
-                      className="flex-1 p-3.5 text-sm outline-none bg-transparent" 
+                      className="flex-1 p-3.5 text-sm outline-none bg-transparent"
                     />
                   </div>
 
@@ -202,10 +233,18 @@ const ContactPage = () => {
 
                   {/* ส่วนกล่องข้อความแจ้งเตือน (ซ่อนถ้าไม่มีสถานะ) */}
                   {submitStatus !== "idle" && (
-                    <div className={`p-4 rounded-xl flex items-start gap-3 text-sm font-medium ${
-                      submitStatus === "success" ? "bg-green-50 text-green-700 border border-green-200" : "bg-red-50 text-red-700 border border-red-200"
-                    }`}>
-                      {submitStatus === "success" ? <CheckCircle2 className="shrink-0 mt-0.5" size={18} /> : <XCircle className="shrink-0 mt-0.5" size={18} />}
+                    <div
+                      className={`p-4 rounded-xl flex items-start gap-3 text-sm font-medium ${
+                        submitStatus === "success"
+                          ? "bg-green-50 text-green-700 border border-green-200"
+                          : "bg-red-50 text-red-700 border border-red-200"
+                      }`}
+                    >
+                      {submitStatus === "success" ? (
+                        <CheckCircle2 className="shrink-0 mt-0.5" size={18} />
+                      ) : (
+                        <XCircle className="shrink-0 mt-0.5" size={18} />
+                      )}
                       <p>{statusMessage}</p>
                     </div>
                   )}
@@ -227,7 +266,6 @@ const ContactPage = () => {
                 </form>
               </div>
             </div>
-
           </div>
         </div>
       </main>

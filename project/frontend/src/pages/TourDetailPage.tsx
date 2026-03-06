@@ -3,6 +3,7 @@ import { useParams, Link, useNavigate } from "react-router-dom";
 import axios from "axios";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+import { getCategoryLabel, getDurationLabel } from "@/utils/tourLabels";
 
 /* ─── Types ───────────────────────── */
 
@@ -963,7 +964,7 @@ export default function TourDetailPage() {
               </Link>
               <div className="absolute bottom-0 left-0 right-0 px-4 pb-5">
                 <span className="inline-block text-xs bg-[#FF8400] text-white px-3 py-1 rounded-full font-bold uppercase tracking-wide mb-2">
-                  {tour.category}
+                  {getCategoryLabel(tour.category)}
                 </span>
                 <h1 className="text-white text-xl md:text-3xl font-black leading-tight drop-shadow-lg">
                   {tour.title}
@@ -971,7 +972,7 @@ export default function TourDetailPage() {
                 <div className="flex flex-wrap gap-3 mt-2">
                   {[
                     { Icon: MapPinIcon, text: tour.province },
-                    { Icon: ClockIcon, text: tour.duration },
+                    { Icon: ClockIcon, text: getDurationLabel(tour.duration) },
                     ...(tour.max_group_size
                       ? [
                           {

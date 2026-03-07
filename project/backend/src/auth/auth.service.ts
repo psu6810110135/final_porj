@@ -1,7 +1,7 @@
 // src/auth/auth.service.ts
 import * as nodemailer from 'nodemailer';
 import * as crypto from 'crypto';
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { Injectable, UnauthorizedException, BadRequestException } from '@nestjs/common';
 import { UsersService } from '../users/users.service';
 import { JwtService } from '@nestjs/jwt';
 import { AuthCredentialsDto } from './dto/auth-credentials.dto';
@@ -12,18 +12,20 @@ export class AuthService {
   constructor(
     private usersService: UsersService,
     private jwtService: JwtService,
-  ) {}
+  ) { }
 
-  async googleLogin(req: any): Promise<{ accessToken: string }> {
+  async googleLogin(req: any): Promise<{ accessToken: string } | { conflict: true }> {
     if (!req.user) {
       throw new UnauthorizedException('ไม่พบข้อมูลจาก Google');
     }
 
     const { email, firstName, lastName } = req.user;
 
-    let user = await this.usersService.findOne(email);
+    // ค้นหาด้วย email column โดยตรง (ไม่ใช่ username)
+    let user = await this.usersService.findByEmail(email);
 
     if (!user) {
+      // ยังไม่มีบัญชี → สร้างใหม่เป็น google account
       const randomPassword = Math.random().toString(36).slice(-10);
       const salt = await bcrypt.genSalt();
       const hashedPassword = await bcrypt.hash(randomPassword, salt);
@@ -32,11 +34,16 @@ export class AuthService {
         username: email,
         email: email,
         password: hashedPassword,
-        first_name: firstName,           // ✅ ใส่ครบ
-        last_name: lastName,             // ✅ ใส่ครบ
+        provider: 'google',
+        first_name: firstName,
+        last_name: lastName,
         full_name: `${firstName} ${lastName}`,
       });
+    } else if (user.provider === 'local') {
+      // ❌ มีบัญชีปกติอยู่แล้ว → แจ้งเตือน conflict ห้าม overwrite provider
+      return { conflict: true };
     }
+    // provider === 'google' → login ปกติ ไม่ต้องทำอะไรเพิ่ม
 
     const payload = { username: user.username, role: user.role, sub: user.id };
     const accessToken = await this.jwtService.sign(payload);
@@ -54,7 +61,7 @@ export class AuthService {
       {
         username,
         password: hashedPassword,
-        ...(email     && { email }),
+        ...(email && { email }),
         ...(full_name && { full_name }),
       },
       profile,  // ✅ ส่ง profile { firstName, lastName, phoneNumber } ต่อให้ usersService
@@ -64,12 +71,22 @@ export class AuthService {
   async signIn(authCredentialsDto: AuthCredentialsDto): Promise<{ accessToken: string }> {
     const { username, password } = authCredentialsDto;
 
-    const user = await this.usersService.findOne(username);
+    // ค้นหาด้วย username หรือ email ก็ได้
+    const user = await this.usersService.findByUsernameOrEmail(username);
 
-    if (user && (await bcrypt.compare(password, user.password))) {
+    if (!user) {
+      throw new UnauthorizedException('Please check your login credentials');
+    }
+
+    // ถ้า user ลงทะเบียนผ่าน Google → ห้าม login ด้วย password
+    if (user.provider === 'google') {
+      throw new BadRequestException('GOOGLE_ACCOUNT');
+    }
+
+    if (await bcrypt.compare(password, user.password)) {
       const payload = {
-        username,
-        role: user.role,   // ✅ ใส่ role ใน payload
+        username: user.username,
+        role: user.role,
         sub: user.id,
       };
       const accessToken = await this.jwtService.sign(payload);
@@ -88,9 +105,15 @@ export class AuthService {
 
   // 1. ฟังก์ชันส่ง OTP ไปที่อีเมล
   async forgotPassword(email: string) {
-    const user = await this.usersService.findOne(email);
+    // ค้นหาด้วย email column โดยตรง (รองรับทั้ง manual user และ Gmail user)
+    const user = await this.usersService.findByEmail(email);
     if (!user) {
-      throw new Error('ไม่พบอีเมลนี้ในระบบ'); // React จะจับ 404 ให้
+      throw new Error('ไม่พบอีเมลนี้ในระบบ');
+    }
+
+    // Gmail user ไม่มีรหัสผ่านในระบบ — ให้ใช้ Google Login แทน
+    if (user.provider === 'google') {
+      throw new Error('GOOGLE_ACCOUNT');
     }
 
     // สร้าง OTP 6 หลัก และตั้งเวลาหมดอายุ 10 นาที
@@ -116,7 +139,8 @@ export class AuthService {
 
   // 2. ฟังก์ชันตรวจสอบรหัส OTP
   async verifyOtp(email: string, otp: string) {
-    const user = await this.usersService.findOne(email);
+    // ต้องใช้ findByEmail เหมือน forgotPassword เพื่อให้ค้นหา user เจอตัวเดียวกัน
+    const user = await this.usersService.findByEmail(email);
     if (!user) throw new Error('ไม่พบผู้ใช้งาน');
 
     if (user.resetPasswordOtp !== otp) {
@@ -141,8 +165,11 @@ export class AuthService {
 
   // 3. ฟังก์ชันบันทึกรหัสผ่านใหม่
   async resetPasswordWithToken(email: string, resetToken: string, newPassword: string) {
-    const user = await this.usersService.findOne(email);
-    if (!user || user.resetPasswordToken !== resetToken) {
+    // ต้องใช้ findByEmail เช่นกัน ไม่เช่นนั้นหา user ไม่เจอเพราะค้นด้วย username
+    const user = await this.usersService.findByEmail(email);
+
+    // ✅ ป้องกัน: token ต้องมีค่า, user ต้องมี token, และต้องตรงกัน
+    if (!user || !resetToken || !user.resetPasswordToken || user.resetPasswordToken !== resetToken) {
       throw new Error('Token ไม่ถูกต้องหรือหมดอายุ');
     }
 

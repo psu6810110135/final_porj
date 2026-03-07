@@ -1,22 +1,10 @@
-# System Component Design - Simplified (Thai Tour Website)
+# System Component Design — Thai Tour Website
 
-> เอกสารนี้แสดงการออกแบบส่วนประกอบระบบแบบ **Simplified** ที่เหมาะสำหรับนักศึกษาปี 1
-
----
-
-## Overview
-
-**Simplifications:**
-- ❌ Session class → JWT only (stateless)
-- ❌ AuditLog class → console.log()
-- ❌ NotificationService with Queue → console.log()
-- ❌ CacheService (Redis) → In-memory or none
-- ❌ LoggerService (Winston) → console.log()
-- ❌ RateLimitMiddleware → Simple or none
+> เอกสารนี้แสดง Use Case Diagram, Class Diagram และ Flow ที่สอดคล้องกับโค้ดปัจจุบัน
 
 ---
 
-## 1. Use Case Diagram (Simplified)
+## 1. Use Case Diagram
 
 ```mermaid
 graph LR
@@ -26,28 +14,40 @@ graph LR
     end
 
     subgraph Auth_Module
-        UC1(Register Account)
-        UC2(Login / Logout)
+        UC1(Sign Up)
+        UC2(Sign In)
+        UC3(Google OAuth Login)
+        UC4(Forgot Password — OTP)
     end
 
     subgraph Customer_Module
-        UC5(Search Tours)
-        UC6(View Tour Details)
-        UC7(Book Tour Package)
-        UC8(Upload Payment Slip)
-        UC9(View Booking History)
-        UC10(Cancel Booking)
-        UC11(Download E-Ticket)
+        UC5(Search & Filter Tours)
+        UC6(View Tour Detail)
+        UC7(View Tour Schedules)
+        UC8(Book Tour)
+        UC9(Upload Payment Slip)
+        UC10(View Booking History)
+        UC11(Cancel Booking)
+        UC12(Write Review)
+        UC13(Submit Contact Ticket)
+        UC14(Edit Profile & Avatar)
     end
 
     subgraph Admin_Module
-        UC13(Manage Tours CRUD)
-        UC14(Verify Payments)
-        UC15(View Financial Stats)
+        UC20(Manage Tours — CRUD)
+        UC21(Manage Tour Schedules)
+        UC22(Verify Payments)
+        UC23(Manage Bookings)
+        UC24(View Dashboard Stats)
+        UC25(Manage Users)
+        UC26(Manage Reviews)
+        UC27(Manage Contact Tickets)
     end
 
     Customer --- UC1
     Customer --- UC2
+    Customer --- UC3
+    Customer --- UC4
     Customer --- UC5
     Customer --- UC6
     Customer --- UC7
@@ -55,47 +55,73 @@ graph LR
     Customer --- UC9
     Customer --- UC10
     Customer --- UC11
+    Customer --- UC12
+    Customer --- UC13
+    Customer --- UC14
 
     Admin --- UC2
-    Admin --- UC13
-    Admin --- UC14
-    Admin --- UC15
+    Admin --- UC20
+    Admin --- UC21
+    Admin --- UC22
+    Admin --- UC23
+    Admin --- UC24
+    Admin --- UC25
+    Admin --- UC26
+    Admin --- UC27
 ```
 
 ---
 
-## 2. Class Diagram (Simplified)
+## 2. Class Diagram
 
 ```mermaid
 classDiagram
-    %% ========== Models ==========
+    %% ========== Models (Entities) ==========
     class User {
         +UUID id
+        +String username
+        +String password
         +String email
-        +String passwordHash
+        +String firstName
+        +String lastName
         +String fullName
-        +Enum role
+        +String phone
+        +String avatarUrl
+        +Enum role — ADMIN/CUSTOMER/USER
+        +Boolean isActive
+        +String resetPasswordOtp
+        +DateTime resetPasswordOtpExpires
+        +String resetPasswordToken
         +DateTime createdAt
+        +DateTime updatedAt
     }
 
     class Tour {
         +UUID id
         +String title
         +String description
-        +String itinerary "รายการท่องเที่ยว"
-        +Decimal basePrice
-        +String region
-        +String category
-        +String tourType "one_day | multi_day"
-        +Int durationDays "จำนวนวัน"
-        +String transportation "วิธีการเดินทาง"
-        +String accommodation "ที่พัก (สำหรับ multi-day)"
-        +Int maxCapacity
-        +String[] imageUrls
-        +Boolean isActive
-        +Boolean isFeatured
-        +Decimal averageRating
+        +Decimal price
+        +Decimal childPrice
+        +String province
+        +Enum region — North/South/Central/East/West/Northeast
+        +Enum duration — 1 day / 1 day 1 night / ...
+        +Int maxGroupSize
+        +Decimal rating
         +Int reviewCount
+        +String imageCover
+        +String[] images
+        +String[] highlights
+        +String[] preparation
+        +String itinerary
+        +JSONB itineraryData
+        +String included
+        +String excluded
+        +String conditions
+        +Enum category — Sea/Mountain/Cultural/Nature/City/Adventure
+        +Boolean isActive
+        +Boolean isRecommended
+        +DateTime createdAt
+        +DateTime updatedAt
     }
 
     class TourSchedule {
@@ -107,219 +133,284 @@ classDiagram
         +DateTime createdAt
     }
 
+    class Booking {
+        +UUID id
+        +String bookingReference
+        +UUID tourId
+        +UUID userId
+        +UUID tourScheduleId
+        +Date travelDate
+        +Date startDate
+        +Date endDate
+        +Int pax
+        +Decimal basePrice
+        +Decimal discount
+        +Decimal totalPrice
+        +Enum status — PENDING_PAY/PENDING_VERIFY/CONFIRMED/CANCELLED/EXPIRED
+        +String paymentSlipUrl
+        +DateTime paymentDeadline
+        +JSONB selectedOptions
+        +JSONB contactInfo
+        +String specialRequests
+        +String cancellationReason
+        +Decimal refundAmount
+        +DateTime createdAt
+        +DateTime updatedAt
+    }
+
+    class Payment {
+        +UUID id
+        +Decimal amount
+        +String slipUrl
+        +String status — pending_verify/approved/rejected
+        +DateTime verifiedAt
+        +DateTime uploadedAt
+    }
+
     class Review {
         +UUID id
         +UUID userId
         +UUID tourId
         +UUID bookingId
-        +Int rating "1-5"
+        +Int rating — 1-5
         +String comment
+        +Boolean isRecommended
         +DateTime createdAt
+        +DateTime updatedAt
     }
 
-    class Booking {
+    class Ticket {
         +UUID id
-        +UUID userId
-        +UUID tourId
-        +Int pax
-        +Decimal totalPrice
-        +Date travelDate "สำหรับ one-day tours"
-        +Date startDate "วันเริ่มต้น (สำหรับ multi-day)"
-        +Date endDate "วันสิ้นสุด (สำหรับ multi-day)"
-        +Enum status
-        +DateTime paymentDeadline
-    }
-
-    class Payment {
-        +UUID id
-        +UUID bookingId
-        +String slipUrl
-        +String slipHash
-        +Decimal amount
-        +Enum status
-        +UUID verifiedBy
+        +String firstName
+        +String lastName
+        +String email
+        +String phone
+        +String message
+        +String status — pending/resolved/cancelled
+        +DateTime createdAt
     }
 
     %% ========== Controllers ==========
     class AuthController {
-        +register(req, res): Response
-        +login(req, res): Response
+        +signUp(dto): Response
+        +signIn(dto): Response
+        +googleAuth(): Redirect
+        +googleCallback(): Redirect
+        +getProfile(req): Response
+        +forgotPassword(dto): Response
+        +verifyOtp(dto): Response
+        +resetPassword(dto): Response
     }
 
-    class TourController {
-        +getAllTours(req, res): Response
-        +getTourById(req, res): Response
-        +createTour(req, res): Response
-        +updateTour(req, res): Response
-        +deleteTour(req, res): Response
+    class UsersController {
+        +getMe(req): Response
+        +updateMe(req, dto): Response
+        +uploadAvatar(req, file): Response
+        +findAll(): Response
+        +create(dto): Response
+        +findOne(id): Response
+        +update(id, dto): Response
+        +remove(id): Response
     }
 
-    class BookingController {
-        +createBooking(req, res): Response
-        +getMyBookings(req, res): Response
-        +cancelBooking(req, res): Response
-        +calculatePrice(req, res): Response
+    class ToursController {
+        +getTours(filters): Response
+        +getRecommended(): Response
+        +getTourById(id): Response
+        +create(dto, files): Response
+        +update(id, dto, files): Response
+        +remove(id): Response
     }
 
-    class PaymentController {
-        +uploadSlip(req, res): Response
-        +verifyPayment(req, res): Response
-        +getPendingPayments(req, res): Response
+    class BookingsController {
+        +calculatePrice(dto): Response
+        +create(req, dto): Response
+        +getMyBookings(req): Response
+        +findOne(id): Response
+        +cancel(id, req): Response
+        +uploadSlip(id, file): Response
+    }
+
+    class PaymentsController {
+        +generateQr(id): Response
+        +getPending(): Response
+        +verify(id, dto): Response
+        +webhook(body): Response
+        +checkStatus(id): Response
+    }
+
+    class ReviewsController {
+        +create(req, dto): Response
+        +getRecommended(limit): Response
+        +getByTour(tourId, page): Response
+        +getForAdmin(filters): Response
+        +updateByAdmin(id, dto): Response
+    }
+
+    class TicketsController {
+        +create(dto): Response
+        +findAll(): Response
+        +updateStatus(id, dto): Response
     }
 
     class AdminController {
-        +getDashboardStats(req, res): Response
+        +getStats(): Response
+        +getBookings(): Response
+        +deleteBooking(id): Response
+        +updateBookingStatus(id, dto): Response
     }
 
     %% ========== Services ==========
     class AuthService {
-        +hashPassword(plain): String
-        +comparePassword(plain, hash): Boolean
-        +generateJWT(userId, role): String
-        +validateJWT(token): Object
+        +signUp(dto): Promise~User~
+        +signIn(dto): Promise~Token~
+        +googleLogin(profile): Promise~Token~
+        +forgotPassword(email): Promise~void~
+        +verifyOtp(email, otp): Promise~Token~
+        +resetPasswordWithToken(token, password): Promise~void~
     }
 
-    class TourService {
-        +findTours(filters): Promise~Tour[]~
-        +getOneDayTours(): Promise~Tour[]~
-        +getMultiDayTours(): Promise~Tour[]~
+    class ToursService {
+        +getTours(filters): Promise~Tour[]~
+        +getRecommendedTours(): Promise~Tour[]~
         +getTourById(id): Promise~Tour~
-        +createTour(data): Promise~Tour~
+        +create(data, images): Promise~Tour~
+        +update(id, data): Promise~Tour~
+        +remove(id): Promise~void~
     }
 
-    class BookingService {
-        +calculatePrice(tourId, pax, options): Promise~Decimal~
-        +createBooking(data): Promise~Booking~
+    class BookingsService {
+        +calculatePrice(dto): Promise~PriceResult~
+        +create(userId, dto): Promise~Booking~
+        +findAllByUser(userId): Promise~Booking[]~
+        +cancelBooking(id, userId): Promise~Booking~
+        +uploadPaymentSlip(id, file): Promise~Booking~
+        +expirePayments(): void — Cron
     }
 
-    class PaymentService {
-        +uploadSlip(file, bookingId): Promise~Payment~
-        +calculateSHA256(buffer): String
-        +verifyPayment(id, action): Promise~Boolean~
+    class PaymentsService {
+        +generateQrCode(bookingId): Promise~QR~
+        +findPending(): Promise~Payment[]~
+        +verifyPayment(id, status): Promise~Payment~
+        +checkStatus(id): Promise~Payment~
     }
 
-    class EmailService {
-        +sendBookingConfirmation(booking): void
-        +sendPaymentApproved(booking): void
-        +sendPaymentRejected(booking, reason): void
+    class ReviewsService {
+        +create(userId, dto): Promise~Review~
+        +findByTour(tourId): Promise~Review[]~
+        +findRecommended(): Promise~Review[]~
+        +refreshTourRating(tourId): Promise~void~
     }
 
     %% ========== Middleware ==========
-    class AuthMiddleware {
-        +authenticate(req, res, next): void
-        +checkRole(role): Function
+    class AuthGuard_JWT {
+        +canActivate(context): Boolean
+    }
+
+    class RolesGuard {
+        +canActivate(context): Boolean
     }
 
     %% ========== Relationships ==========
     User "1" --> "*" Booking : makes
     User "1" --> "*" Review : writes
-    Tour "1" --> "*" Booking : includes
-    Tour "1" --> "*" TourSchedule : has
+    Tour "1" --> "*" Booking : has
+    Tour "1" --> "*" TourSchedule : has schedules
     Tour "1" --> "*" Review : receives
     Booking "1" --> "1" Payment : has
     Booking "1" --> "0..1" Review : has
 
     AuthController ..> AuthService : uses
-    TourController ..> TourService : uses
-    BookingController ..> BookingService : uses
-    PaymentController ..> PaymentService : uses
-    BookingService ..> EmailService : uses
-    PaymentService ..> EmailService : uses
+    UsersController ..> UsersService : uses
+    ToursController ..> ToursService : uses
+    BookingsController ..> BookingsService : uses
+    PaymentsController ..> PaymentsService : uses
+    ReviewsController ..> ReviewsService : uses
+    TicketsController ..> TicketsService : uses
+    AdminController ..> AdminService : uses
 ```
 
 ---
 
-## 3. Payment Verification Flow (Simplified)
+## 3. Booking Creation Flow (Transaction)
+
+```mermaid
+sequenceDiagram
+    participant User
+    participant Controller as BookingsController
+    participant Service as BookingsService
+    participant DB as PostgreSQL
+
+    User->>Controller: POST /api/bookings
+    Controller->>Service: create(userId, dto)
+
+    Service->>DB: BEGIN TRANSACTION
+    Service->>DB: SELECT tour FOR UPDATE (pessimistic lock)
+    Service->>DB: Check schedule availability
+    Service->>DB: Check max active bookings (5 per user)
+
+    alt Not Available
+        Service-->>Controller: BadRequestException
+    else Available
+        Service->>DB: INSERT booking (status: pending_pay)
+        Service->>DB: INSERT payment (linked to booking)
+        Service->>DB: COMMIT
+        Service-->>Controller: Booking + Payment
+    end
+
+    Controller-->>User: Booking details + QR code info
+```
+
+---
+
+## 4. Payment Verification Flow
 
 ```mermaid
 sequenceDiagram
     participant Customer
-    participant UI as Customer Portal
-    participant API as Payment Service
-    participant DB as Database
+    participant UI as React Frontend
+    participant API as NestJS Backend
+    participant DB as PostgreSQL
     participant Admin
     participant Dashboard as Admin Dashboard
 
     Note over Customer, Dashboard: Payment Upload & Verification
 
-    Customer->>UI: Upload Slip
-    UI->>API: POST /upload
+    Customer->>UI: Upload Payment Slip
+    UI->>API: POST /api/bookings/:id/upload-slip (multipart)
 
-    API->>API: Calculate SHA-256
-    API->>DB: Check duplicate
+    API->>DB: Save slip URL → Update booking.payment_slip_url
+    API->>DB: Update booking status → pending_verify
+    API-->>UI: Success
 
-    alt Duplicate
-        API-->>UI: ERROR "Duplicate slip"
-    else New
-        API->>DB: Save payment
-        API->>API: console.log("Notify admin")
-        API-->>UI: Success
-    end
+    Admin->>Dashboard: View Pending
+    Dashboard->>API: GET /api/payments/pending
+    API->>DB: Query pending payments
+    API-->>Dashboard: Payment list
 
-    Admin->>Dashboard: View pending
-    Dashboard->>API: GET /pending
-    API->>DB: Query payments
-    API-->>Dashboard: Show list
+    Admin->>Dashboard: Approve / Reject
+    Dashboard->>API: PATCH /api/payments/:id/verify
 
-    Admin->>Dashboard: Approve/Reject
-    Dashboard->>API: PATCH /verify
-
-    API->>DB: Update status
-    API->>API: console.log("Email sent")
+    API->>DB: Update payment status → approved
+    API->>DB: Update booking status → confirmed
     API-->>Dashboard: Success
 ```
 
 ---
 
-## 4. Email Service Implementation (Simple)
+## 5. Summary
 
-```typescript
-@Injectable()
-export class EmailService {
-  sendBookingConfirmation(booking: any) {
-    console.log('=================================');
-    console.log('📧 BOOKING CONFIRMATION');
-    console.log(`Booking ID: ${booking.id}`);
-    console.log(`Total: ${booking.totalPrice}`);
-    console.log('Please pay within 24 hours');
-    console.log('=================================');
-  }
-
-  sendPaymentApproved(booking: any) {
-    console.log('=================================');
-    console.log('📧 PAYMENT APPROVED');
-    console.log(`Booking ID: ${booking.id}`);
-    console.log('E-Ticket ready');
-    console.log('=================================');
-  }
-
-  sendPaymentRejected(booking: any, reason: string) {
-    console.log('=================================');
-    console.log('📧 PAYMENT REJECTED');
-    console.log(`Booking ID: ${booking.id}`);
-    console.log(`Reason: ${reason}`);
-    console.log('=================================');
-  }
-}
-```
-
----
-
-## 5. Summary of Simplifications
-
-| Original | Simplified |
+| Aspect | สถานะปัจจุบัน |
 |---|---|
-| 7 Tables | 6 Tables |
-| Session Class | JWT only |
-| AuditLog Class | console.log() |
-| NotificationService (Queue) | EmailService (console.log) |
-| CacheService (Redis) | None |
-| LoggerService (Winston) | console.log() |
-| RateLimitMiddleware | None or @nestjs/throttler |
-| Email Queue | console.log() |
-| Password Reset | Admin reset |
+| Tables | 7 ตาราง (users, tours, tour_schedules, bookings, payments, reviews, tickets) |
+| Backend Modules | 9 modules (auth, users, tours, schedules, bookings, payments, reviews, tickets, admin) |
+| Auth | JWT + Google OAuth + OTP password reset |
+| Email | Nodemailer (OTP only), console.log สำหรับอื่น |
+| Cache | ไม่ใช้ |
+| Payment | PromptPay QR + Admin manual verify |
+| Scheduling | @Cron — expire pending bookings |
 
 ---
 
-**Last Updated:** 2026-02-10
-**Status:** Simplified for Year 1 Students 🚀
+**Last Updated:** 2026-03-06
+**Status:** สอดคล้องกับโค้ดปัจจุบัน

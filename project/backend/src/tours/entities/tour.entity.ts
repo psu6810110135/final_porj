@@ -30,6 +30,11 @@ export enum TourDuration {
   TWO_DAYS_ONE_NIGHT = '2 days 1 night',
   TWO_DAYS_TWO_NIGHTS = '2 days 2 nights',
   THREE_DAYS_TWO_NIGHTS = '3 days 2 nights',
+  THREE_DAYS_THREE_NIGHTS = '3 days 3 nights',
+  FOUR_DAYS_THREE_NIGHTS = '4 days 3 nights',
+  FOUR_DAYS_FOUR_NIGHTS = '4 days 4 nights',
+  FIVE_DAYS_FOUR_NIGHTS = '5 days 4 nights',
+  FIVE_DAYS_FIVE_NIGHTS = '5 days 5 nights',
 }
 
 @Entity('tours')

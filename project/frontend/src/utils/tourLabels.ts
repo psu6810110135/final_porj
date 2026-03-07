@@ -26,6 +26,11 @@ export const DURATION_OPTIONS = [
   { value: "2 days 1 night", label: "2 วัน 1 คืน" },
   { value: "2 days 2 nights", label: "2 วัน 2 คืน" },
   { value: "3 days 2 nights", label: "3 วัน 2 คืน" },
+  { value: "3 days 3 nights", label: "3 วัน 3 คืน" },
+  { value: "4 days 3 nights", label: "4 วัน 3 คืน" },
+  { value: "4 days 4 nights", label: "4 วัน 4 คืน" },
+  { value: "5 days 4 nights", label: "5 วัน 4 คืน" },
+  { value: "5 days 5 nights", label: "5 วัน 5 คืน" },
 ];
 
 export function getCategoryLabel(value: string): string {

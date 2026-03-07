@@ -433,6 +433,7 @@ function BookingSheet({
     };
 
     void prefillContact();
+
   }, []);
 
   const childPrice = Math.floor(tour.price * 0.6);
@@ -1006,11 +1007,11 @@ export default function TourDetailPage() {
                     { Icon: ClockIcon, text: getDurationLabel(tour.duration) },
                     ...(tour.max_group_size
                       ? [
-                          {
-                            Icon: UsersIcon,
-                            text: `สูงสุด ${tour.max_group_size} คน`,
-                          },
-                        ]
+                        {
+                          Icon: UsersIcon,
+                          text: `สูงสุด ${tour.max_group_size} คน`,
+                        },
+                      ]
                       : []),
                   ].map(({ Icon, text }, i) => (
                     <span

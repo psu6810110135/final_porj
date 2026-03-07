@@ -58,6 +58,11 @@ export const tourDurations = [
   { value: "2 days 1 night", label: "2 วัน 1 คืน" },
   { value: "2 days 2 nights", label: "2 วัน 2 คืน" },
   { value: "3 days 2 nights", label: "3 วัน 2 คืน" },
+  { value: "3 days 3 nights", label: "3 วัน 3 คืน" },
+  { value: "4 days 3 nights", label: "4 วัน 3 คืน" },
+  { value: "4 days 4 nights", label: "4 วัน 4 คืน" },
+  { value: "5 days 4 nights", label: "5 วัน 4 คืน" },
+  { value: "5 days 5 nights", label: "5 วัน 5 คืน" },
 ];
 
 export interface Tour {
@@ -217,20 +222,13 @@ const TourManager = () => {
   const additionalImagesRef = useRef<HTMLInputElement>(null);
 
   const getDaysFromDuration = (duration: string) => {
-    switch (duration) {
-      case "1 day":
-        return 1;
-      case "1 day 1 night":
-        return 2;
-      case "2 days 1 night":
-        return 2;
-      case "2 days 2 nights":
-        return 3;
-      case "3 days 2 nights":
-        return 3;
-      default:
-        return 1;
-    }
+    if (!duration) return 1;
+    if (duration.startsWith("1")) return 1;
+    if (duration.startsWith("2")) return 2;
+    if (duration.startsWith("3")) return 3;
+    if (duration.startsWith("4")) return 4;
+    if (duration.startsWith("5")) return 5;
+    return 1;
   };
 
   const getSafeItinerary = () => {

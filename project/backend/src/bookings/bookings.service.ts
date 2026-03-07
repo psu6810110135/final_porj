@@ -169,6 +169,7 @@ export class BookingsService {
 
       // 4) Capacity check
       const maxCapacity = schedule.max_capacity_override ?? tour.max_group_size;
+      const now = new Date();
 
       const booked = await manager
         .getRepository(Booking)
@@ -177,6 +178,10 @@ export class BookingsService {
         .where('b.tourScheduleId = :sid', { sid: schedule.id })
         .andWhere('b.status NOT IN (:...statuses)', {
           statuses: [BookingStatus.CANCELLED, BookingStatus.EXPIRED],
+        })
+        .andWhere('(b.status != :pendingStatus OR b.payment_deadline > :now)', {
+          pendingStatus: BookingStatus.PENDING_PAY,
+          now: now,
         })
         .getRawOne<{ total: string }>();
 
@@ -239,6 +244,13 @@ export class BookingsService {
 
     if (booking.status !== BookingStatus.PENDING_PAY) {
       throw new BadRequestException('บิลนี้ไม่สามารถอัปโหลดสลิปได้แล้ว');
+    }
+
+    const now = new Date();
+    if (booking.paymentDeadline && now > new Date(booking.paymentDeadline)) {
+      booking.status = BookingStatus.EXPIRED; // ปรับเป็นหมดอายุทันที
+      await this.bookingsRepository.save(booking);
+      throw new BadRequestException('หมดเวลาชำระเงินแล้ว ระบบได้ยกเลิกรายการนี้แล้ว หากโอนเงินมาแล้วกรุณาติดต่อแอดมิน');
     }
 
     // เซฟพาร์ทของรูปและเปลี่ยนสถานะเป็นรอตรวจสอบ
@@ -354,6 +366,74 @@ export class BookingsService {
       refundAmount: booking.refundAmount,
       cancellationReason: booking.cancellationReason,
     };
+  }
+
+  // 🌟 เพิ่มฟังก์ชันใหม่ สำหรับต่ออายุการจองที่หมดเวลาไปแล้ว
+  async renewBooking(id: string, userId: string) {
+    return this.dataSource.transaction(async (manager) => {
+      // 1) ดึงข้อมูลการจองเดิมขึ้นมา พร้อมล็อก Row เพื่อป้องกันคนแย่งที่นั่ง
+      const booking = await manager.findOne(Booking, {
+        where: { id, userId },
+        relations: ['tour', 'tourSchedule'],
+        lock: { mode: 'pessimistic_write' },
+      });
+
+      if (!booking) throw new NotFoundException('ไม่พบรายการจองนี้');
+
+      if (booking.status === BookingStatus.CANCELLED) {
+        throw new BadRequestException('รายการจองนี้ถูกยกเลิกไปแล้ว กรุณากดจองใหม่');
+      }
+
+      const now = new Date();
+
+      // 2) ถ้ายังไม่หมดเวลา ไม่ต้องทำอะไร ส่งข้อมูลเดิมกลับไปเลย
+      if (
+        booking.status === BookingStatus.PENDING_PAY && 
+        booking.paymentDeadline && 
+        booking.paymentDeadline > now
+      ) {
+        return booking;
+      }
+
+      // 3) --- ถ้าหมดเวลาแล้ว (EXPIRED) ต้องเช็คที่นั่งว่างใหม่ ---
+      const schedule = booking.tourSchedule;
+      const tour = booking.tour;
+
+      if (!schedule || !tour) {
+        throw new BadRequestException('ข้อมูลทัวร์หรือรอบทัวร์ไม่สมบูรณ์');
+      }
+      const maxCapacity = schedule.max_capacity_override ?? tour.max_group_size;
+
+      const booked = await manager
+        .getRepository(Booking)
+        .createQueryBuilder('b')
+        .select('COALESCE(SUM(b.pax), 0)', 'total')
+        .where('b.tourScheduleId = :sid', { sid: schedule.id })
+        // ไม่นับตัวเอง (เพราะจะต่ออายุตัวเอง)
+        .andWhere('b.id != :bookingId', { bookingId: booking.id }) 
+        .andWhere('b.status NOT IN (:...statuses)', {
+          statuses: [BookingStatus.CANCELLED, BookingStatus.EXPIRED],
+        })
+        .andWhere('(b.status != :pendingStatus OR b.payment_deadline > :now)', {
+          pendingStatus: BookingStatus.PENDING_PAY,
+          now: now,
+        })
+        .getRawOne<{ total: string }>();
+
+      const bookedSeatsTotal = Number(booked?.total ?? 0);
+      const available = maxCapacity - bookedSeatsTotal;
+
+      // 4) ถ้าที่นั่งเหลือน้อยกว่าจำนวนที่ลูกค้าจองไว้แต่แรก
+      if (available < booking.pax) {
+        throw new BadRequestException('ขออภัยค่ะ มีผู้ใช้ท่านอื่นจองที่นั่งนี้ไปแล้ว กรุณาเลือกรอบทัวร์ใหม่');
+      }
+
+      // 5) ถ้าที่นั่งพอ ให้ต่อเวลาไปอีก 15 นาที!
+      booking.status = BookingStatus.PENDING_PAY;
+      booking.paymentDeadline = new Date(now.getTime() + 15 * 60 * 1000); // เริ่มนับใหม่
+      
+      return await manager.save(booking);
+    });
   }
 
   @Cron('*/5 * * * *')

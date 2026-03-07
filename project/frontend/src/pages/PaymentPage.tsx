@@ -16,14 +16,14 @@ export default function PaymentPage() {
   const [paymentStatus, setPaymentStatus] = useState<
     "pending" | "pending_verify" | "approved" | "rejected" | "expired"
   >("pending");
-  const [timeLeft, setTimeLeft] = useState(900); // 15 นาที
+  const [timeLeft, setTimeLeft] = useState(20); // 15 นาที
 
   // ✨ State ที่เพิ่มมาใหม่สำหรับระบบอัปโหลดสลิป
   const [file, setFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
 
-  const getAuthHeader = () => {
+  const getAuthHeader = (): Record<string, string> => {
     const token = localStorage.getItem("jwt_token");
     return token ? { Authorization: `Bearer ${token}` } : {};
   };

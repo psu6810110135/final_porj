@@ -122,4 +122,13 @@ export class BookingsController {
 
     return this.bookingsService.uploadPaymentSlip(id, file.filename, userId);
   }
+
+  @UseGuards(AuthGuard('jwt'))
+  @Post(':id/renew')
+  async renewBooking(@Param('id') id: string, @Req() req: any) {
+    // ดึง userId จาก Token (ปรับชื่อ req.user.id หรือ req.user.sub ตามที่ตั้งไว้ใน payload)
+    const userId = req.user?.id || req.user?.sub; 
+    
+    return await this.bookingsService.renewBooking(id, userId);
+  }
 }

@@ -35,6 +35,30 @@ interface TestimonialData {
   rating: number;
 }
 
+// ─── พจนานุกรมสำหรับค้นหาจังหวัดด้วยภาษาอังกฤษ ─────────
+const PROVINCE_EN_MAPPING: Record<string, string> = {
+  "กรุงเทพมหานคร": "bangkok bkk", "กระบี่": "krabi", "กาญจนบุรี": "kanchanaburi", "กาฬสินธุ์": "kalasin",
+  "กำแพงเพชร": "kamphaengphet", "ขอนแก่น": "khonkaen", "จันทบุรี": "chanthaburi", "ฉะเชิงเทรา": "chachoengsao",
+  "ชลบุรี": "chonburi pattaya", "ชัยนาท": "chainat", "ชัยภูมิ": "chaiyaphum", "ชุมพร": "chumphon",
+  "เชียงราย": "chiangrai", "เชียงใหม่": "chiangmai", "ตรัง": "trang", "ตราด": "trat koh chang",
+  "ตาก": "tak", "นครนายก": "nakhonnayok", "นครปฐม": "nakhonpathom", "นครพนม": "nakhonphanom",
+  "นครราชสีมา": "nakhonratchasima korat khao yai", "นครศรีธรรมราช": "nakhonsithammarat", "นครสวรรค์": "nakhonsawan",
+  "นนทบุรี": "nonthaburi", "นราธิวาส": "narathiwat", "น่าน": "nan", "บึงกาฬ": "buengkan",
+  "บุรีรัมย์": "buriram", "ปทุมธานี": "pathumthani", "ประจวบคีรีขันธ์": "prachuapkhirikhan hua hin huahin",
+  "ปราจีนบุรี": "prachinburi", "ปัตตานี": "pattani", "พระนครศรีอยุธยา": "ayutthaya phranakhonsiayutthaya",
+  "พะเยา": "phayao", "พังงา": "phangnga khao lak", "พัทลุง": "phatthalung", "พิจิตร": "phichit",
+  "พิษณุโลก": "phitsanulok", "เพชรบุรี": "phetchaburi chaam cha-am", "เพชรบูรณ์": "phetchabun khao kho", "แพร่": "phrae",
+  "ภูเก็ต": "phuket", "มหาสารคาม": "mahasarakham", "มุกดาหาร": "mukdahan", "แม่ฮ่องสอน": "maehongson pai",
+  "ยโสธร": "yasothon", "ยะลา": "yala betong", "ร้อยเอ็ด": "roiet", "ระนอง": "ranong",
+  "ระยอง": "rayong koh samet", "ราชบุรี": "ratchaburi", "ลพบุรี": "lopburi", "ลำปาง": "lampang",
+  "ลำพูน": "lamphun", "เลย": "loei chiang khan", "ศรีสะเกษ": "sisaket", "สกลนคร": "sakonnakhon",
+  "สงขลา": "songkhla hatyai hat yai", "สตูล": "satun koh lipe", "สมุทรปราการ": "samutprakan", "สมุทรสงคราม": "samutsongkhram",
+  "สมุทรสาคร": "samutsakhon", "สระแก้ว": "sakaeo", "สระบุรี": "saraburi", "สิงห์บุรี": "singburi",
+  "สุโขทัย": "sukhothai", "สุพรรณบุรี": "suphanburi", "สุราษฎร์ธานี": "suratthani samui koh phangan tao", "สุรินทร์": "surin",
+  "หนองคาย": "nongkhai", "หนองบัวลำภู": "nongbualamphu", "อ่างทอง": "angthong", "อำนาจเจริญ": "amnatcharoen",
+  "อุดรธานี": "udonthani", "อุตรดิตถ์": "uttaradit", "อุทัยธานี": "uthaithani", "อุบลราชธานี": "ubonratchathani"
+};
+
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 const getImageUrl = (path?: string) => {
@@ -150,7 +174,7 @@ function RichDropdown({
   label: string;
   icon: React.ReactNode;
   value: string;
-  options: string[] | { value: string; label: string }[];
+  options: any[]; // รับอ็อบเจ็กต์ที่มี value, label, searchTerms ได้
   isOpen: boolean;
   onToggle: () => void;
   onSelect: (val: string) => void;
@@ -163,11 +187,15 @@ function RichDropdown({
     if (!isOpen) setSearch("");
   }, [isOpen]);
 
-  const normalised = options.map((o) => (typeof o === "string" ? { value: o, label: o } : o));
-  const displayLabel = normalised.find((o) => o.value === value)?.label ?? value;
+  const displayLabel = options.find((o) => o.value === value)?.label ?? value;
   
-  // กรองตัวเลือกตามคำที่พิมพ์
-  const filtered = normalised.filter(o => o.label.toLowerCase().includes(search.toLowerCase()));
+  // กรองตัวเลือกตามคำที่พิมพ์ (หาจากชื่อไทย หรือหาจากตัวย่อ/คำแปลอังกฤษ)
+  const filtered = options.filter(o => {
+    const s = search.toLowerCase();
+    const matchLabel = String(o.label).toLowerCase().includes(s);
+    const matchEnglish = o.searchTerms ? o.searchTerms.toLowerCase().includes(s) : false;
+    return matchLabel || matchEnglish;
+  });
 
   return (
     <div className="flex-1 relative min-w-[0]">
@@ -187,7 +215,7 @@ function RichDropdown({
               autoFocus
               type="text"
               className="w-full px-3 py-2 text-sm bg-[#F6F1E9]/50 text-[#4F200D] font-medium border-0 rounded-xl focus:ring-2 focus:ring-[#FF8400] outline-none transition-all"
-              placeholder="พิมพ์เพื่อค้นหา..."
+              placeholder="ค้นหา (ไทย/Eng)..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               onClick={(e) => e.stopPropagation()}
@@ -375,7 +403,7 @@ export default function HomePage() {
                 label="เลือกจังหวัด"
                 icon={<MapIcon className="w-4 h-4" />}
                 value={selectedProvince}
-                options={THAI_PROVINCES}
+                options={THAI_PROVINCES.map((p) => ({ value: p, label: p, searchTerms: PROVINCE_EN_MAPPING[p] || "" }))}
                 isOpen={openDropdown === "province"}
                 onToggle={() => toggleDropdown("province")}
                 onSelect={(v) => { setSelectedProvince(v); setOpenDropdown(null); }}
@@ -386,7 +414,7 @@ export default function HomePage() {
                 label="ประเภททัวร์"
                 icon={<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z" /><line x1="4" y1="22" x2="4" y2="15" /></svg>}
                 value={selectedCategory}
-                options={CATEGORY_OPTIONS}
+                options={CATEGORY_OPTIONS.map(o => ({ value: o.value, label: o.label }))}
                 isOpen={openDropdown === "category"}
                 onToggle={() => toggleDropdown("category")}
                 onSelect={(v) => { setSelectedCategory(v); setOpenDropdown(null); }}
@@ -396,7 +424,7 @@ export default function HomePage() {
                 label="จำนวนวัน"
                 icon={<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" /></svg>}
                 value={selectedDuration}
-                options={DURATION_OPTIONS}
+                options={DURATION_OPTIONS.map(o => ({ value: o.value, label: o.label }))}
                 isOpen={openDropdown === "duration"}
                 onToggle={() => toggleDropdown("duration")}
                 onSelect={(v) => { setSelectedDuration(v); setOpenDropdown(null); }}

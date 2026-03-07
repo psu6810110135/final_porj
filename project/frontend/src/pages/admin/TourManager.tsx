@@ -65,6 +65,30 @@ export const tourDurations = [
   { value: "5 days 5 nights", label: "5 วัน 5 คืน" },
 ];
 
+/* ─── พจนานุกรมสำหรับค้นหาจังหวัดด้วยภาษาอังกฤษ ───────── */
+const PROVINCE_EN_MAPPING: Record<string, string> = {
+  "กรุงเทพมหานคร": "bangkok bkk", "กระบี่": "krabi", "กาญจนบุรี": "kanchanaburi", "กาฬสินธุ์": "kalasin",
+  "กำแพงเพชร": "kamphaengphet", "ขอนแก่น": "khonkaen", "จันทบุรี": "chanthaburi", "ฉะเชิงเทรา": "chachoengsao",
+  "ชลบุรี": "chonburi pattaya", "ชัยนาท": "chainat", "ชัยภูมิ": "chaiyaphum", "ชุมพร": "chumphon",
+  "เชียงราย": "chiangrai", "เชียงใหม่": "chiangmai", "ตรัง": "trang", "ตราด": "trat koh chang",
+  "ตาก": "tak", "นครนายก": "nakhonnayok", "นครปฐม": "nakhonpathom", "นครพนม": "nakhonphanom",
+  "นครราชสีมา": "nakhonratchasima korat khao yai", "นครศรีธรรมราช": "nakhonsithammarat", "นครสวรรค์": "nakhonsawan",
+  "นนทบุรี": "nonthaburi", "นราธิวาส": "narathiwat", "น่าน": "nan", "บึงกาฬ": "buengkan",
+  "บุรีรัมย์": "buriram", "ปทุมธานี": "pathumthani", "ประจวบคีรีขันธ์": "prachuapkhirikhan hua hin huahin",
+  "ปราจีนบุรี": "prachinburi", "ปัตตานี": "pattani", "พระนครศรีอยุธยา": "ayutthaya phranakhonsiayutthaya",
+  "พะเยา": "phayao", "พังงา": "phangnga khao lak", "พัทลุง": "phatthalung", "พิจิตร": "phichit",
+  "พิษณุโลก": "phitsanulok", "เพชรบุรี": "phetchaburi chaam cha-am", "เพชรบูรณ์": "phetchabun khao kho", "แพร่": "phrae",
+  "ภูเก็ต": "phuket", "มหาสารคาม": "mahasarakham", "มุกดาหาร": "mukdahan", "แม่ฮ่องสอน": "maehongson pai",
+  "ยโสธร": "yasothon", "ยะลา": "yala betong", "ร้อยเอ็ด": "roiet", "ระนอง": "ranong",
+  "ระยอง": "rayong koh samet", "ราชบุรี": "ratchaburi", "ลพบุรี": "lopburi", "ลำปาง": "lampang",
+  "ลำพูน": "lamphun", "เลย": "loei chiang khan", "ศรีสะเกษ": "sisaket", "สกลนคร": "sakonnakhon",
+  "สงขลา": "songkhla hatyai hat yai", "สตูล": "satun koh lipe", "สมุทรปราการ": "samutprakan", "สมุทรสงคราม": "samutsongkhram",
+  "สมุทรสาคร": "samutsakhon", "สระแก้ว": "sakaeo", "สระบุรี": "saraburi", "สิงห์บุรี": "singburi",
+  "สุโขทัย": "sukhothai", "สุพรรณบุรี": "suphanburi", "สุราษฎร์ธานี": "suratthani samui koh phangan tao", "สุรินทร์": "surin",
+  "หนองคาย": "nongkhai", "หนองบัวลำภู": "nongbualamphu", "อ่างทอง": "angthong", "อำนาจเจริญ": "amnatcharoen",
+  "อุดรธานี": "udonthani", "อุตรดิตถ์": "uttaradit", "อุทัยธานี": "uthaithani", "อุบลราชธานี": "ubonratchathani"
+};
+
 export interface Tour {
   id: string;
   title: string;
@@ -120,6 +144,7 @@ const API_URL = `${API_BASE_URL}/api/tours`;
 interface Option {
   value: string | boolean;
   label: string;
+  searchTerms?: string; // เพิ่มฟิลด์เก็บคำค้นหาภาษาอังกฤษ
 }
 
 const CustomSelect = ({
@@ -152,8 +177,13 @@ const CustomSelect = ({
   const selectedOption = options.find((o) => String(o.value) === String(value)) || (value ? { label: value } : options[0]);
   const errorClasses = hasError ? "ring-2 ring-red-500 bg-red-50 border-red-500 text-red-700" : "";
 
-  // กรองข้อมูลตามที่พิมพ์ค้นหา
-  const filteredOptions = options.filter(opt => String(opt.label).toLowerCase().includes(search.toLowerCase()));
+  // กรองข้อมูลตามที่พิมพ์ค้นหา (ตรวจสอบทั้ง label ภาษาไทย และ searchTerms ภาษาอังกฤษ)
+  const filteredOptions = options.filter(opt => {
+    const s = search.toLowerCase();
+    const matchLabel = String(opt.label).toLowerCase().includes(s);
+    const matchEnglish = opt.searchTerms ? opt.searchTerms.toLowerCase().includes(s) : false;
+    return matchLabel || matchEnglish;
+  });
 
   return (
     <div className="relative flex-1 sm:flex-none w-full" ref={ref}>
@@ -174,7 +204,7 @@ const CustomSelect = ({
                 autoFocus
                 type="text"
                 className="w-full px-3 py-2 text-sm bg-[#F6F1E9]/50 text-[#4F200D] font-bold border-0 rounded-xl focus:bg-white focus:ring-2 focus:ring-[#FFD93D] outline-none transition-all"
-                placeholder="พิมพ์เพื่อค้นหา..."
+                placeholder="ค้นหา (ไทย/Eng)..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 onClick={(e) => e.stopPropagation()}
@@ -644,16 +674,18 @@ const TourManager = () => {
                   <CustomSelect className={selectTriggerClass} value={formData.region} onChange={(val) => setFormData({ ...formData, region: val })} options={tourRegions} />
                 </div>
 
-                {/* ✅ ช่องเลือกจังหวัดที่ถูกเปิดระบบ Search แล้ว */}
                 <div className="space-y-2">
                   <label className="text-xs sm:text-sm font-black text-[#4F200D] uppercase tracking-wider">จังหวัด *</label>
                   <CustomSelect
                     className={selectTriggerClass}
                     value={formData.province}
                     onChange={(val) => { setFormData({ ...formData, province: val }); if (errors.province) setErrors({ ...errors, province: false }); }}
-                    options={[{ value: "", label: "-- เลือกจังหวัด --" }, ...THAI_PROVINCES.map((p) => ({ value: p, label: p }))]}
+                    options={[
+                      { value: "", label: "-- เลือกจังหวัด --" },
+                      ...THAI_PROVINCES.map((p) => ({ value: p, label: p, searchTerms: PROVINCE_EN_MAPPING[p] || "" }))
+                    ]}
                     hasError={errors.province}
-                    enableSearch={true} // เปิดใช้งานช่องค้นหา
+                    enableSearch={true} // เปิดใช้งานช่องค้นหาและสามารถพิมพ์ภาษาอังกฤษหาได้
                   />
                 </div>
               </div>

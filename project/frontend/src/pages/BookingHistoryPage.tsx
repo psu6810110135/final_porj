@@ -243,6 +243,7 @@ export default function BookingHistoryPage() {
   const [ticketBooking, setTicketBooking] = useState<Booking | null>(null);
   const [actionLoadingId, setActionLoadingId] = useState<string | null>(null);
   const [renewLoadingId, setRenewLoadingId] = useState<string | null>(null);
+  const [renewAlert, setRenewAlert] = useState<{ title: string; message: string; isSuccess: boolean; bookingId?: string } | null>(null);
   const [cancelModalBooking, setCancelModalBooking] = useState<Booking | null>(
     null,
   );
@@ -339,6 +340,7 @@ export default function BookingHistoryPage() {
     void fetchBookings();
   }, [navigate]);
 
+  // 🌟 2. วางทับฟังก์ชันเดิมเลยครับ
   const handleRenewBooking = async (booking: Booking) => {
     setRenewLoadingId(booking.id);
     try {
@@ -347,16 +349,31 @@ export default function BookingHistoryPage() {
         method: "POST",
         headers: { Authorization: `Bearer ${token}` },
       });
+
       if (res.ok) {
-        alert("ต่อเวลาสำเร็จ! ระบบจะพาคุณไปชำระเงินอีกครั้ง");
         await fetchBookings();
-        navigate(`/payment/${booking.id}`);
+        // เปิด Popup สวยๆ แจ้งว่าสำเร็จ
+        setRenewAlert({
+          title: "ต่อเวลาสำเร็จ!",
+          message: "การสำรองที่นั่งรอบใหม่เสร็จสมบูรณ์ กรุณาชำระเงินภายในเวลาที่กำหนดเพื่อยืนยันการจองของท่าน",
+          isSuccess: true,
+          bookingId: booking.id
+        });
       } else {
         const err = await res.json();
-        alert(err.message || "ขออภัย ทัวร์นี้ที่นั่งเต็มแล้ว กรุณากดจองใหม่");
+        // เปิด Popup แจ้งเตือนผิดพลาด (เช่น ทัวร์เต็ม)
+        setRenewAlert({
+          title: "ไม่สามารถขอคิวอาร์โค้ดใหม่ได้",
+          message: err.message || "ขออภัย ทัวร์นี้ที่นั่งเต็มแล้ว กรุณากดจองทัวร์รอบใหม่อีกครั้ง",
+          isSuccess: false
+        });
       }
     } catch (error) {
-      alert("ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้");
+      setRenewAlert({
+        title: "เกิดข้อผิดพลาด",
+        message: "ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้ กรุณาลองใหม่อีกครั้ง",
+        isSuccess: false
+      });
     } finally {
       setRenewLoadingId(null);
     }
@@ -830,6 +847,27 @@ export default function BookingHistoryPage() {
           message={successMessage}
           buttonText="ตกลง"
           onClose={() => setSuccessMessage(null)}
+          
+        />
+      )}
+
+      {renewAlert && (
+        <InfoModal
+          title={renewAlert.title}
+          message={renewAlert.message}
+          buttonText={renewAlert.isSuccess ? "ไปหน้าชำระเงิน" : "ปิด"}
+          onClose={() => {
+            const isSuccess = renewAlert.isSuccess;
+            const bookingId = renewAlert.bookingId;
+            
+            // ปิด Popup
+            setRenewAlert(null); 
+
+            // ถ้าจองสำเร็จ พอกดปุ่มใน Popup ค่อยเด้งไปหน้า Payment สวยๆ
+            if (isSuccess && bookingId) {
+              navigate(`/payment/${bookingId}`);
+            }
+          }}
         />
       )}
     </div>

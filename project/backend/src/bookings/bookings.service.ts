@@ -218,7 +218,7 @@ export class BookingsService {
         specialRequests: createBookingDto.specialRequests,
         selectedOptions: createBookingDto.selectedOptions,
         status: BookingStatus.PENDING_PAY,
-        paymentDeadline: new Date(Date.now() + 15 * 60 * 1000),
+        paymentDeadline: new Date(Date.now() + 1 * 60 * 1000),
       });
 
       const savedBooking = await manager.save(booking);
@@ -375,7 +375,6 @@ export class BookingsService {
       const booking = await manager.findOne(Booking, {
         where: { id, userId },
         relations: ['tour', 'tourSchedule'],
-        lock: { mode: 'pessimistic_write' },
       });
 
       if (!booking) throw new NotFoundException('ไม่พบรายการจองนี้');
@@ -409,12 +408,11 @@ export class BookingsService {
         .createQueryBuilder('b')
         .select('COALESCE(SUM(b.pax), 0)', 'total')
         .where('b.tourScheduleId = :sid', { sid: schedule.id })
-        // ไม่นับตัวเอง (เพราะจะต่ออายุตัวเอง)
-        .andWhere('b.id != :bookingId', { bookingId: booking.id }) 
+        .andWhere('b.id != :bookingId', { bookingId: booking.id })
         .andWhere('b.status NOT IN (:...statuses)', {
           statuses: [BookingStatus.CANCELLED, BookingStatus.EXPIRED],
         })
-        .andWhere('(b.status != :pendingStatus OR b.payment_deadline > :now)', {
+        .andWhere('(b.status != :pendingStatus OR b.paymentDeadline > :now)', {
           pendingStatus: BookingStatus.PENDING_PAY,
           now: now,
         })

@@ -30,6 +30,7 @@ interface Booking {
   startDate?: string;
   endDate?: string;
   createdAt: string;
+  paymentDeadline?: string; // 🌟 เพิ่มฟิลด์เวลารอชำระเงิน
   contactInfo?: {
     name?: string;
     email?: string;
@@ -99,6 +100,22 @@ const formatDate = (dateStr?: string | null) => {
   }
 };
 
+// 🌟 ฟังก์ชันแปลงเวลาแบบใหม่สำหรับโชว์ HH:MM น.
+const formatDeadlineTime = (dateStr?: string | null) => {
+  if (!dateStr) return "";
+  try {
+    const date = new Date(dateStr);
+    return (
+      date.toLocaleTimeString("th-TH", {
+        hour: "2-digit",
+        minute: "2-digit",
+      }) + " น."
+    );
+  } catch {
+    return "";
+  }
+};
+
 const formatPrice = (price: number) =>
   new Intl.NumberFormat("th-TH").format(price);
 
@@ -130,6 +147,14 @@ const getTourTitle = (b: Booking) =>
   b.tour?.title ?? b.tour?.nameTh ?? `ทัวร์ #${b.tourId ?? "-"}`;
 
 const getBookingReference = (b: Booking) => b.bookingReference ?? b.id;
+
+const getEffectiveStatus = (b: Booking): BookingStatus => {
+  if (b.status === "pending_pay" && b.paymentDeadline) {
+    const isPastDeadline = new Date(b.paymentDeadline).getTime() < Date.now();
+    if (isPastDeadline) return "expired";
+  }
+  return b.status;
+};
 
 const PAGE_SIZE_OPTIONS = [6, 10, 14, 20];
 
@@ -217,6 +242,7 @@ export default function BookingHistoryPage() {
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
   const [ticketBooking, setTicketBooking] = useState<Booking | null>(null);
   const [actionLoadingId, setActionLoadingId] = useState<string | null>(null);
+  const [renewLoadingId, setRenewLoadingId] = useState<string | null>(null);
   const [cancelModalBooking, setCancelModalBooking] = useState<Booking | null>(
     null,
   );
@@ -283,6 +309,7 @@ export default function BookingHistoryPage() {
         startDate: item.startDate,
         endDate: item.endDate,
         createdAt: item.createdAt,
+        paymentDeadline: item.paymentDeadline, // 🌟 ดึงข้อมูลจาก API
         contactInfo: item.contactInfo,
         cancellationReason: item.cancellationReason,
         refundAmount:
@@ -311,6 +338,29 @@ export default function BookingHistoryPage() {
   useEffect(() => {
     void fetchBookings();
   }, [navigate]);
+
+  const handleRenewBooking = async (booking: Booking) => {
+    setRenewLoadingId(booking.id);
+    try {
+      const token = localStorage.getItem("jwt_token");
+      const res = await fetch(`${API_BASE_URL}/api/bookings/${booking.id}/renew`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) {
+        alert("ต่อเวลาสำเร็จ! ระบบจะพาคุณไปชำระเงินอีกครั้ง");
+        await fetchBookings();
+        navigate(`/payment/${booking.id}`);
+      } else {
+        const err = await res.json();
+        alert(err.message || "ขออภัย ทัวร์นี้ที่นั่งเต็มแล้ว กรุณากดจองใหม่");
+      }
+    } catch (error) {
+      alert("ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้");
+    } finally {
+      setRenewLoadingId(null);
+    }
+  };
 
   const requestCancelBooking = (booking: Booking) => {
     if (booking.status !== "pending_pay") return;
@@ -623,6 +673,8 @@ export default function BookingHistoryPage() {
                         canWriteReview={canWriteReview(booking)}
                         hasReviewed={reviewedBookingIds.has(booking.id)}
                         actionLoadingId={actionLoadingId}
+                        renewLoadingId={renewLoadingId} 
+                        onRenewBooking={handleRenewBooking}
                         onViewDetail={setSelectedBooking}
                         onViewTicket={setTicketBooking}
                         onCancelBooking={requestCancelBooking}
@@ -910,21 +962,26 @@ function MobileCard({
   canWriteReview,
   hasReviewed,
   actionLoadingId,
+  renewLoadingId,
   onViewDetail,
   onViewTicket,
   onCancelBooking,
   onWriteReview,
+  onRenewBooking,
 }: {
   booking: Booking;
   canWriteReview: boolean;
   hasReviewed: boolean;
   actionLoadingId: string | null;
+  renewLoadingId: string | null;
   onViewDetail: (booking: Booking) => void;
   onViewTicket: (booking: Booking) => void;
   onCancelBooking: (booking: Booking) => void;
   onWriteReview: (booking: Booking) => void;
+  onRenewBooking: (booking: Booking) => void;
 }) {
-  const cfg = statusConfig[booking.status];
+  const effectiveStatus = getEffectiveStatus(booking);
+  const cfg = statusConfig[effectiveStatus];
   const tourLink = booking.tourId ? `/tours/${booking.tourId}` : undefined;
   const travelDateStr = formatDate(getTravelDate(booking));
   const isCancelling = actionLoadingId === booking.id;
@@ -956,11 +1013,19 @@ function MobileCard({
           </p>
         </div>
 
-        <span
-          className={`text-[11px] font-semibold px-2.5 py-1 rounded-full whitespace-nowrap shrink-0 ${cfg.className}`}
-        >
-          {cfg.label}
-        </span>
+        {/* 🌟 ปรับปรุงส่วนแสดง Status เพื่อให้รองรับข้อความเวลา */}
+        <div className="flex flex-col items-end gap-1.5 shrink-0">
+          <span
+            className={`text-[11px] font-semibold px-2.5 py-1 rounded-full whitespace-nowrap ${cfg.className}`}
+          >
+            {cfg.label}
+          </span>
+          {booking.status === "pending_pay" && booking.paymentDeadline && (
+            <span className="text-[10px] text-red-500 font-medium">
+              *ภายใน {formatDeadlineTime(booking.paymentDeadline)}
+            </span>
+          )}
+        </div>
       </div>
 
       {/* Bottom row: details + price + action */}
@@ -1019,7 +1084,7 @@ function MobileCard({
           ดูรายละเอียด
         </button>
 
-        {booking.status === "pending_pay" && (
+        {effectiveStatus === "pending_pay" && (
           <>
             <Link
               to={`/payment/${booking.id}`}
@@ -1035,6 +1100,16 @@ function MobileCard({
               {isCancelling ? "กำลังยกเลิก..." : "ยกเลิก"}
             </button>
           </>
+        )}
+        
+        {effectiveStatus === "expired" && (
+          <button
+            disabled={renewLoadingId === booking.id} // 👈 ใช้งานตรงนี้: ปิดปุ่มตอนกำลังโหลด
+            onClick={() => onRenewBooking(booking)}  // 👈 ใช้งานตรงนี้: พอกดปุ๊บให้เรียกฟังก์ชัน
+            className="text-[11px] font-bold px-3 py-1.5 rounded-full bg-blue-50 text-blue-600 hover:bg-blue-100 transition-colors disabled:opacity-50"
+          >
+            {renewLoadingId === booking.id ? "กำลังเช็คที่นั่ง..." : "ขอคิวอาร์โค้ดใหม่"}
+          </button>
         )}
 
         {booking.status === "confirmed" && (
@@ -1131,11 +1206,19 @@ function DesktopRow({
         </span>
       </td>
       <td className="px-4 py-4 text-center">
-        <span
-          className={`text-xs font-semibold px-3 py-1.5 rounded-full ${cfg.className}`}
-        >
-          {cfg.label}
-        </span>
+        {/* 🌟 ปรับปรุงส่วนแสดง Status เพื่อให้รองรับข้อความเวลาใน Desktop */}
+        <div className="flex flex-col items-center gap-1">
+          <span
+            className={`text-xs font-semibold px-3 py-1.5 rounded-full ${cfg.className}`}
+          >
+            {cfg.label}
+          </span>
+          {booking.status === "pending_pay" && booking.paymentDeadline && (
+            <span className="text-[10px] text-red-500 font-medium whitespace-nowrap">
+              *ชำระภายใน {formatDeadlineTime(booking.paymentDeadline)}
+            </span>
+          )}
+        </div>
       </td>
       <td className="px-6 py-4 text-right font-bold text-[#4F200D]">
         ฿{formatPrice(booking.totalPrice)}
@@ -1249,11 +1332,19 @@ function BookingDetailModal({
           />
           <div className="flex justify-between items-center py-2 border-b border-[#F6F1E9]">
             <span className="text-[#4F200D]/55">สถานะ</span>
-            <span
-              className={`text-xs font-semibold px-3 py-1.5 rounded-full ${cfg.className}`}
-            >
-              {cfg.label}
-            </span>
+            {/* 🌟 ปรับปรุงส่วนแสดง Status ใน Modal ให้รองรับข้อความเวลา */}
+            <div className="text-right flex flex-col items-end gap-1">
+              <span
+                className={`text-xs font-semibold px-3 py-1.5 rounded-full ${cfg.className}`}
+              >
+                {cfg.label}
+              </span>
+              {booking.status === "pending_pay" && booking.paymentDeadline && (
+                <span className="text-[10px] text-red-500 font-medium">
+                  *ชำระภายใน {formatDeadlineTime(booking.paymentDeadline)}
+                </span>
+              )}
+            </div>
           </div>
 
           {booking.contactInfo && (

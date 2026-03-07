@@ -267,7 +267,6 @@ export default function PaymentPage() {
             {/* Overlay: หมดเวลา (เพิ่ม UI ปิดทับ QR ไปเลย) */}
             {paymentStatus === "expired" && (
               <div className="absolute inset-0 flex flex-col items-center justify-center bg-white/80 z-10 p-2">
-                <div className="text-5xl mb-2">⏳</div>
                 <p className="font-bold text-lg text-red-500 bg-red-50 px-3 py-1 rounded-lg">
                   หมดเวลาชำระเงิน
                 </p>
@@ -317,7 +316,7 @@ export default function PaymentPage() {
                 disabled={isRenewing}
                 className="w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 rounded-lg shadow-sm disabled:bg-blue-300"
               >
-                {isRenewing ? "กำลังตรวจสอบที่นั่ง..." : "ขอคิวอาร์โค้ดใหม่ (ต่อเวลา)"}
+                {isRenewing ? "กำลังตรวจสอบที่นั่ง..." : "ขอคิวอาร์โค้ดใหม่"}
               </button>
               
               <button

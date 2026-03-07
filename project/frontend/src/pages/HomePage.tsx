@@ -9,14 +9,13 @@ import Footer from "@/components/Footer";
 import {
   CATEGORY_OPTIONS,
   DURATION_OPTIONS,
+  THAI_PROVINCES,
   getCategoryLabel,
   getDurationLabel,
   getProvinceLabel,
 } from "@/utils/tourLabels";
 
-// ═══════════════════════════════════════════════════════════════════════════════
 // ─── Types ────────────────────────────────────────────────────────────────────
-// ═══════════════════════════════════════════════════════════════════════════════
 
 interface TourCardData {
   id: number | string;
@@ -36,9 +35,16 @@ interface TestimonialData {
   rating: number;
 }
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// ─── Scroll-reveal hook ───────────────────────────────────────────────────────
-// ═══════════════════════════════════════════════════════════════════════════════
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+const getImageUrl = (path?: string) => {
+  if (!path) return "";
+  if (path.startsWith("http") || path.startsWith("data:")) return path;
+  if (path.startsWith("/src/assets")) return path; 
+  return `${API_BASE_URL}/${path.replace(/^\//, "")}`;
+};
+
+// ─── Hooks ────────────────────────────────────────────────────────────────────
 
 function useRevealOnScroll(threshold = 0.15) {
   const ref = useRef<HTMLDivElement>(null);
@@ -53,7 +59,7 @@ function useRevealOnScroll(threshold = 0.15) {
           obs.disconnect();
         }
       },
-      { threshold },
+      { threshold }
     );
     obs.observe(el);
     return () => obs.disconnect();
@@ -69,7 +75,6 @@ function useInfiniteHorizontalLoop(itemCount: number) {
     if (!el || itemCount <= 1) return;
 
     let isAdjusting = false;
-
     const placeAtMiddle = () => {
       const segmentWidth = el.scrollWidth / 3;
       if (segmentWidth > 0) {
@@ -80,17 +85,12 @@ function useInfiniteHorizontalLoop(itemCount: number) {
 
     const onScroll = () => {
       if (isAdjusting) return;
-
       const segmentWidth = el.scrollWidth / 3;
       if (!segmentWidth) return;
 
       let nextScrollLeft = el.scrollLeft;
-
-      if (nextScrollLeft < segmentWidth) {
-        nextScrollLeft += segmentWidth;
-      } else if (nextScrollLeft >= segmentWidth * 2) {
-        nextScrollLeft -= segmentWidth;
-      }
+      if (nextScrollLeft < segmentWidth) nextScrollLeft += segmentWidth;
+      else if (nextScrollLeft >= segmentWidth * 2) nextScrollLeft -= segmentWidth;
 
       if (nextScrollLeft !== el.scrollLeft) {
         isAdjusting = true;
@@ -105,7 +105,6 @@ function useInfiniteHorizontalLoop(itemCount: number) {
     };
 
     const animationId = window.requestAnimationFrame(placeAtMiddle);
-
     el.addEventListener("scroll", onScroll, { passive: true });
     window.addEventListener("resize", placeAtMiddle);
 
@@ -119,154 +118,34 @@ function useInfiniteHorizontalLoop(itemCount: number) {
   return ref;
 }
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// ─── SVG Icon Components ──────────────────────────────────────────────────────
-// ═══════════════════════════════════════════════════════════════════════════════
+// ─── SVG Icons ────────────────────────────────────────────────────────────────
 
 const CurrencyIcon = ({ className = "" }: { className?: string }) => (
-  <svg
-    xmlns="http://www.w3.org/2000/svg"
-    width="24"
-    height="24"
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-    className={className}
-  >
-    <path stroke="none" d="M0 0h24v24H0z" fill="none" />
-    <path d="M8 6h5a3 3 0 0 1 3 3v.143a2.857 2.857 0 0 1 -2.857 2.857h-5.143" />
-    <path d="M8 12h5a3 3 0 0 1 3 3v.143a2.857 2.857 0 0 1 -2.857 2.857h-5.143" />
-    <path d="M8 6v12" />
-    <path d="M11 4v2" />
-    <path d="M11 18v2" />
-  </svg>
+  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path stroke="none" d="M0 0h24v24H0z" fill="none" /><path d="M8 6h5a3 3 0 0 1 3 3v.143a2.857 2.857 0 0 1 -2.857 2.857h-5.143" /><path d="M8 12h5a3 3 0 0 1 3 3v.143a2.857 2.857 0 0 1 -2.857 2.857h-5.143" /><path d="M8 6v12" /><path d="M11 4v2" /><path d="M11 18v2" /></svg>
 );
-
 const HeadphonesIcon = ({ className = "" }: { className?: string }) => (
-  <svg
-    xmlns="http://www.w3.org/2000/svg"
-    width="24"
-    height="24"
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-    className={className}
-  >
-    <path stroke="none" d="M0 0h24v24H0z" fill="none" />
-    <path d="M4 15a2 2 0 0 1 2 -2h1a2 2 0 0 1 2 2v3a2 2 0 0 1 -2 2h-1a2 2 0 0 1 -2 -2l0 -3" />
-    <path d="M15 15a2 2 0 0 1 2 -2h1a2 2 0 0 1 2 2v3a2 2 0 0 1 -2 2h-1a2 2 0 0 1 -2 -2l0 -3" />
-    <path d="M4 15v-3a8 8 0 0 1 16 0v3" />
-  </svg>
+  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path stroke="none" d="M0 0h24v24H0z" fill="none" /><path d="M4 15a2 2 0 0 1 2 -2h1a2 2 0 0 1 2 2v3a2 2 0 0 1 -2 2h-1a2 2 0 0 1 -2 -2l0 -3" /><path d="M15 15a2 2 0 0 1 2 -2h1a2 2 0 0 1 2 2v3a2 2 0 0 1 -2 2h-1a2 2 0 0 1 -2 -2l0 -3" /><path d="M4 15v-3a8 8 0 0 1 16 0v3" /></svg>
 );
-
 const HotelIcon = ({ className = "" }: { className?: string }) => (
-  <svg
-    xmlns="http://www.w3.org/2000/svg"
-    width="24"
-    height="24"
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-    className={className}
-  >
-    <path stroke="none" d="M0 0h24v24H0z" fill="none" />
-    <path d="M3 21l18 0" />
-    <path d="M5 21v-14l8 -4v18" />
-    <path d="M19 21v-10l-6 -4" />
-    <path d="M9 9l0 .01" />
-    <path d="M9 12l0 .01" />
-    <path d="M9 15l0 .01" />
-    <path d="M9 18l0 .01" />
-  </svg>
+  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path stroke="none" d="M0 0h24v24H0z" fill="none" /><path d="M3 21l18 0" /><path d="M5 21v-14l8 -4v18" /><path d="M19 21v-10l-6 -4" /><path d="M9 9l0 .01" /><path d="M9 12l0 .01" /><path d="M9 15l0 .01" /><path d="M9 18l0 .01" /></svg>
 );
-
 const MapIcon = ({ className = "" }: { className?: string }) => (
-  <svg
-    xmlns="http://www.w3.org/2000/svg"
-    width="24"
-    height="24"
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-    className={className}
-  >
-    <path stroke="none" d="M0 0h24v24H0z" fill="none" />
-    <path d="M12 18.5l-3 -1.5l-6 3v-13l6 -3l6 3v7.5" />
-    <path d="M9 4v13" />
-    <path d="M15 7v5.5" />
-    <path d="M21.121 20.121a3 3 0 1 0 -4.242 0c.418 .419 1.125 1.045 2.121 1.879c1.051 -.89 1.759 -1.516 2.121 -1.879" />
-    <path d="M19 18v.01" />
-  </svg>
+  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path stroke="none" d="M0 0h24v24H0z" fill="none" /><path d="M12 18.5l-3 -1.5l-6 3v-13l6 -3l6 3v7.5" /><path d="M9 4v13" /><path d="M15 7v5.5" /><path d="M21.121 20.121a3 3 0 1 0 -4.242 0c.418 .419 1.125 1.045 2.121 1.879c1.051 -.89 1.759 -1.516 2.121 -1.879" /><path d="M19 18v.01" /></svg>
 );
-
-const StarIcon = ({
-  filled = true,
-  size = 40,
-}: {
-  filled?: boolean;
-  size?: number;
-}) => (
-  <svg width={size} height={size} viewBox="0 0 48.5377 47.2556" fill="none">
-    <path
-      d="M24.2681 28.8333L17.3515 33C17.0459 33.1944 16.7265 33.2778 16.3931 33.25C16.0598 33.2222 15.7681 33.1111 15.5181 32.9167C15.2681 32.7222 15.0737 32.4794 14.9348 32.1883C14.7959 31.8972 14.7681 31.5706 14.8515 31.2083L16.6848 23.3333L10.5598 18.0417C10.282 17.7917 10.1087 17.5067 10.0398 17.1867C9.9709 16.8667 9.99146 16.5544 10.1015 16.25C10.2115 15.9456 10.3781 15.6956 10.6015 15.5C10.8248 15.3044 11.1303 15.1794 11.5181 15.125L19.6015 14.4167L22.7265 7C22.8653 6.66667 23.0809 6.41667 23.3731 6.25C23.6653 6.08333 23.9637 6 24.2681 6C24.5726 6 24.8709 6.08333 25.1631 6.25C25.4553 6.41667 25.6709 6.66667 25.8098 7L28.9348 14.4167L37.0181 15.125C37.407 15.1806 37.7126 15.3056 37.9348 15.5C38.157 15.6944 38.3237 15.9444 38.4348 16.25C38.5459 16.5556 38.567 16.8683 38.4981 17.1883C38.4292 17.5083 38.2553 17.7928 37.9765 18.0417L31.8515 23.3333L33.6848 31.2083C33.7681 31.5694 33.7403 31.8961 33.6015 32.1883C33.4626 32.4806 33.2681 32.7233 33.0181 32.9167C32.7681 33.11 32.4765 33.2211 32.1431 33.25C31.8098 33.2789 31.4903 33.1956 31.1848 33L24.2681 28.8333Z"
-      fill={filled ? "#FFD93D" : "none"}
-      stroke={filled ? "none" : "#4F200D"}
-      strokeWidth={filled ? "0" : "1.5"}
-    />
-  </svg>
+const StarIcon = ({ filled = true, size = 40 }: { filled?: boolean; size?: number }) => (
+  <svg width={size} height={size} viewBox="0 0 48.5377 47.2556" fill="none"><path d="M24.2681 28.8333L17.3515 33C17.0459 33.1944 16.7265 33.2778 16.3931 33.25C16.0598 33.2222 15.7681 33.1111 15.5181 32.9167C15.2681 32.7222 15.0737 32.4794 14.9348 32.1883C14.7959 31.8972 14.7681 31.5706 14.8515 31.2083L16.6848 23.3333L10.5598 18.0417C10.282 17.7917 10.1087 17.5067 10.0398 17.1867C9.9709 16.8667 9.99146 16.5544 10.1015 16.25C10.2115 15.9456 10.3781 15.6956 10.6015 15.5C10.8248 15.3044 11.1303 15.1794 11.5181 15.125L19.6015 14.4167L22.7265 7C22.8653 6.66667 23.0809 6.41667 23.3731 6.25C23.6653 6.08333 23.9637 6 24.2681 6C24.5726 6 24.8709 6.08333 25.1631 6.25C25.4553 6.41667 25.6709 6.66667 25.8098 7L28.9348 14.4167L37.0181 15.125C37.407 15.1806 37.7126 15.3056 37.9348 15.5C38.157 15.6944 38.3237 15.9444 38.4348 16.25C38.5459 16.5556 38.567 16.8683 38.4981 17.1883C38.4292 17.5083 38.2553 17.7928 37.9765 18.0417L31.8515 23.3333L33.6848 31.2083C33.7681 31.5694 33.7403 31.8961 33.6015 32.1883C33.4626 32.4806 33.2681 32.7233 33.0181 32.9167C32.7681 33.11 32.4765 33.2211 32.1431 33.25C31.8098 33.2789 31.4903 33.1956 31.1848 33L24.2681 28.8333Z" fill={filled ? "#FFD93D" : "none"} stroke={filled ? "none" : "#4F200D"} strokeWidth={filled ? "0" : "1.5"} /></svg>
 );
-
 const ChevronDownSmall = ({ open = false }: { open?: boolean }) => (
-  <svg
-    width="14"
-    height="14"
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="3"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-    className={`transition-transform duration-200 ${open ? "rotate-180" : ""}`}
-  >
-    <polyline points="6 9 12 15 18 9" />
-  </svg>
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className={`transition-transform duration-200 ${open ? "rotate-180" : ""}`}><polyline points="6 9 12 15 18 9" /></svg>
 );
-
 const QuoteIcon = ({ className = "" }: { className?: string }) => (
-  <svg className={className} viewBox="0 0 183 183" fill="none">
-    <path
-      d="M45.3145 43.5C53.7462 43.5156 61.8287 46.8717 67.791 52.834C73.7547 58.7977 77.1109 66.8825 77.125 75.3164C77.1245 88.8203 74.6675 100.44 67.9033 110.76C61.0818 121.19 50.3939 130.188 34.2764 140.441C28.8597 143.871 22.5073 137.666 25.8037 132.174C29.3717 126.235 31.3447 122.459 32.3584 118.942C33.387 115.374 33.3838 112.205 33.3555 107.733L33.3467 106.273L32.0693 105.563C26.6755 102.567 21.9525 100.204 19.2334 96.2646L19.2285 96.2559L18.8555 95.707C15.0773 89.9925 13.5011 83.0246 13.5 75.3203C13.5281 66.8897 16.8892 58.812 22.8506 52.8506C28.8106 46.8906 36.8859 43.5296 45.3145 43.5ZM136.814 43.5C145.246 43.5156 153.329 46.8717 159.291 52.834C165.255 58.7977 168.611 66.8825 168.625 75.3164C168.625 88.8203 166.167 100.44 159.403 110.76C152.582 121.19 141.894 130.188 125.776 140.441C120.36 143.871 114.009 137.667 117.304 132.176C120.877 126.236 122.851 122.46 123.863 118.941C124.89 115.372 124.884 112.203 124.855 107.733L124.847 106.273L123.569 105.563C118.176 102.567 113.453 100.204 110.733 96.2646L110.729 96.2559L110.355 95.707C106.577 89.9925 105.001 83.0246 105 75.3203C105.028 66.8897 108.389 58.812 114.351 52.8506C120.311 46.8906 128.386 43.5296 136.814 43.5Z"
-      fill="#FF8400"
-      stroke="white"
-      strokeWidth="5"
-    />
-  </svg>
+  <svg className={className} viewBox="0 0 183 183" fill="none"><path d="M45.3145 43.5C53.7462 43.5156 61.8287 46.8717 67.791 52.834C73.7547 58.7977 77.1109 66.8825 77.125 75.3164C77.1245 88.8203 74.6675 100.44 67.9033 110.76C61.0818 121.19 50.3939 130.188 34.2764 140.441C28.8597 143.871 22.5073 137.666 25.8037 132.174C29.3717 126.235 31.3447 122.459 32.3584 118.942C33.387 115.374 33.3838 112.205 33.3555 107.733L33.3467 106.273L32.0693 105.563C26.6755 102.567 21.9525 100.204 19.2334 96.2646L19.2285 96.2559L18.8555 95.707C15.0773 89.9925 13.5011 83.0246 13.5 75.3203C13.5281 66.8897 16.8892 58.812 22.8506 52.8506C28.8106 46.8906 36.8859 43.5296 45.3145 43.5ZM136.814 43.5C145.246 43.5156 153.329 46.8717 159.291 52.834C165.255 58.7977 168.611 66.8825 168.625 75.3164C168.625 88.8203 166.167 100.44 159.403 110.76C152.582 121.19 141.894 130.188 125.776 140.441C120.36 143.871 114.009 137.667 117.304 132.176C120.877 126.236 122.851 122.46 123.863 118.941C124.89 115.372 124.884 112.203 124.855 107.733L124.847 106.273L123.569 105.563C118.176 102.567 113.453 100.204 110.733 96.2646L110.729 96.2559L110.355 95.707C106.577 89.9925 105.001 83.0246 105 75.3203C105.028 66.8897 108.389 58.812 114.351 52.8506C120.311 46.8906 128.386 43.5296 136.814 43.5Z" fill="#FF8400" stroke="white" strokeWidth="5" /></svg>
 );
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// ─── Rich Dropdown Component ──────────────────────────────────────────────────
-// ═══════════════════════════════════════════════════════════════════════════════
+// ─── Dropdown Component with Search ──────────────────────────────────────────
 
 function RichDropdown({
-  label,
-  icon,
-  value,
-  options,
-  isOpen,
-  onToggle,
-  onSelect,
+  label, icon, value, options, isOpen, onToggle, onSelect, enableSearch = false
 }: {
   label: string;
   icon: React.ReactNode;
@@ -275,146 +154,93 @@ function RichDropdown({
   isOpen: boolean;
   onToggle: () => void;
   onSelect: (val: string) => void;
+  enableSearch?: boolean;
 }) {
-  // Normalise to {value, label} shape regardless of what was passed
-  const normalised: { value: string; label: string }[] = options.map((o) =>
-    typeof o === "string" ? { value: o, label: o } : o,
-  );
+  const [search, setSearch] = useState("");
 
-  // Resolve the selected display label
-  const displayLabel =
-    normalised.find((o) => o.value === value)?.label ?? value;
+  // รีเซ็ตคำค้นหาเมื่อปิด dropdown
+  useEffect(() => {
+    if (!isOpen) setSearch("");
+  }, [isOpen]);
+
+  const normalised = options.map((o) => (typeof o === "string" ? { value: o, label: o } : o));
+  const displayLabel = normalised.find((o) => o.value === value)?.label ?? value;
+  
+  // กรองตัวเลือกตามคำที่พิมพ์
+  const filtered = normalised.filter(o => o.label.toLowerCase().includes(search.toLowerCase()));
 
   return (
     <div className="flex-1 relative min-w-[0]">
-      <button
-        onClick={onToggle}
-        className={`w-full bg-white rounded-xl sm:rounded-full px-3 md:px-4 py-2.5 md:py-3 flex items-center gap-2 transition-all duration-200 ${
-          isOpen
-            ? "ring-2 ring-[#FF8400] shadow-md bg-white"
-            : "border border-[#4F200D]/15 hover:border-[#FF8400]/50 hover:shadow-sm"
-        }`}
-      >
-        <span
-          className={`flex-shrink-0 transition-colors ${isOpen ? "text-[#FF8400]" : "text-[#4F200D]/40"}`}
-        >
-          {icon}
-        </span>
-        <span
-          className={`text-xs md:text-sm text-left flex-1 truncate font-semibold ${value ? "text-[#4F200D]" : "text-[#4F200D]/45"}`}
-        >
-          {displayLabel || label}
-        </span>
+      <button onClick={onToggle} className={`w-full bg-white rounded-xl sm:rounded-full px-3 md:px-4 py-2.5 md:py-3 flex items-center gap-2 transition-all duration-200 ${isOpen ? "ring-2 ring-[#FF8400] shadow-md bg-white" : "border border-[#4F200D]/15 hover:border-[#FF8400]/50 hover:shadow-sm"}`}>
+        <span className={`flex-shrink-0 transition-colors ${isOpen ? "text-[#FF8400]" : "text-[#4F200D]/40"}`}>{icon}</span>
+        <span className={`text-xs md:text-sm text-left flex-1 truncate font-semibold ${value ? "text-[#4F200D]" : "text-[#4F200D]/45"}`}>{displayLabel || label}</span>
         <ChevronDownSmall open={isOpen} />
       </button>
 
-      {/* Dropdown panel */}
-      <div
-        className={`absolute top-full left-0 right-0 mt-1.5 bg-white rounded-2xl shadow-2xl border border-[#F0E8E0] overflow-hidden z-50 transition-all duration-200 origin-top ${
-          isOpen
-            ? "opacity-100 scale-y-100 translate-y-0"
-            : "opacity-0 scale-y-95 -translate-y-1 pointer-events-none"
-        }`}
-      >
-        {/* Connected arrow nub */}
+      <div className={`absolute top-full left-0 right-0 mt-1.5 bg-white rounded-2xl shadow-2xl border border-[#F0E8E0] overflow-hidden z-50 transition-all duration-200 origin-top ${isOpen ? "opacity-100 scale-y-100 translate-y-0" : "opacity-0 scale-y-95 -translate-y-1 pointer-events-none"}`}>
         <div className="absolute -top-1.5 left-1/2 -translate-x-1/2 w-3 h-3 bg-white border-l border-t border-[#F0E8E0] rotate-45" />
+        
+        {/* ช่องค้นหา */}
+        {enableSearch && (
+          <div className="p-2 border-b border-[#F0E8E0] bg-white">
+            <input
+              autoFocus
+              type="text"
+              className="w-full px-3 py-2 text-sm bg-[#F6F1E9]/50 text-[#4F200D] font-medium border-0 rounded-xl focus:ring-2 focus:ring-[#FF8400] outline-none transition-all"
+              placeholder="พิมพ์เพื่อค้นหา..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              onClick={(e) => e.stopPropagation()}
+            />
+          </div>
+        )}
 
-        <div className="max-h-56 overflow-y-auto py-1 relative">
-          <button
-            onClick={() => onSelect("")}
-            className={`w-full px-4 py-2.5 text-left text-sm flex items-center gap-2 transition-colors ${
-              !value
-                ? "bg-[#FF8400]/8 text-[#FF8400] font-bold"
-                : "text-[#4F200D]/60 hover:bg-[#F6F1E9]"
-            }`}
-          >
-            {!value && (
-              <span className="w-1.5 h-1.5 rounded-full bg-[#FF8400]" />
-            )}
-            ทั้งหมด
-          </button>
-          {normalised.map((opt) => (
-            <button
-              key={opt.value}
-              onClick={() => onSelect(opt.value)}
-              className={`w-full px-4 py-2.5 text-left text-sm flex items-center gap-2 transition-colors ${
-                value === opt.value
-                  ? "bg-[#FF8400]/8 text-[#FF8400] font-bold"
-                  : "text-[#4F200D] hover:bg-[#F6F1E9]"
-              }`}
-            >
-              {value === opt.value && (
-                <span className="w-1.5 h-1.5 rounded-full bg-[#FF8400]" />
-              )}
-              {opt.label}
+        <div className="max-h-56 overflow-y-auto py-1 relative custom-scrollbar">
+          {!search && (
+            <button onClick={() => onSelect("")} className={`w-full px-4 py-2.5 text-left text-sm flex items-center gap-2 transition-colors ${!value ? "bg-[#FF8400]/8 text-[#FF8400] font-bold" : "text-[#4F200D]/60 hover:bg-[#F6F1E9]"}`}>
+              {!value && <span className="w-1.5 h-1.5 rounded-full bg-[#FF8400]" />} ทั้งหมด
             </button>
-          ))}
+          )}
+          {filtered.length > 0 ? (
+            filtered.map((opt) => (
+              <button key={opt.value} onClick={() => onSelect(opt.value)} className={`w-full px-4 py-2.5 text-left text-sm flex items-center gap-2 transition-colors ${value === opt.value ? "bg-[#FF8400]/8 text-[#FF8400] font-bold" : "text-[#4F200D] hover:bg-[#F6F1E9]"}`}>
+                {value === opt.value && <span className="w-1.5 h-1.5 rounded-full bg-[#FF8400]" />} {opt.label}
+              </button>
+            ))
+          ) : (
+            <div className="px-4 py-4 text-sm text-[#4F200D]/50 text-center font-medium">ไม่พบข้อมูล "{search}"</div>
+          )}
         </div>
       </div>
     </div>
   );
 }
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// ─── Page ─────────────────────────────────────────────────────────────────────
-// ═══════════════════════════════════════════════════════════════════════════════
+// ─── Main Page Component ──────────────────────────────────────────────────────
 
 export default function HomePage() {
   const navigate = useNavigate();
 
-  // Filter states
   const [selectedProvince, setSelectedProvince] = useState<string>("");
   const [selectedCategory, setSelectedCategory] = useState<string>("");
   const [selectedDuration, setSelectedDuration] = useState<string>("");
-
-  // Dropdown open states
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
-
-  // Filter options — provinces come from the API (already in Thai), categories
-  // and durations use the fixed lists from tourLabels.ts
-  const [provinces, setProvinces] = useState<string[]>([]);
 
   const API_BASE = `${API_BASE_URL}/api`;
 
   const defaultDestinations: TourCardData[] = [
-    {
-      id: 1,
-      title: "หมู่เกาะสิมิลัน",
-      description: "ดำน้ำดูปะการังระดับโลก น้ำใสหาดทรายขาว",
-      image_cover: "/src/assets/หมู่เกาะสิมิลัน.jpeg",
-      duration: "ทริป 1 วัน",
-      price: 3500,
-    },
-    {
-      id: 2,
-      title: "เขาสก",
-      description: "นอนแพพักผ่อน ท่ามกลางป่าฝนอันอุดมสมบูรณ์",
-      image_cover: "/src/assets/เขาสก.jpeg",
-      duration: "3 วัน / 2 คืน",
-      price: 8900,
-    },
-    {
-      id: 3,
-      title: "ภูเก็ต",
-      description: "สัมผัสความโรแมนติกในแดนสวรรค์เขตร้อน",
-      image_cover: "/src/assets/ภูเก็ต.jpeg",
-      duration: "ทริป 1 วัน",
-      price: 2200,
-    },
+    { id: 1, title: "หมู่เกาะสิมิลัน", description: "ดำน้ำดูปะการังระดับโลก", image_cover: "/src/assets/หมู่เกาะสิมิลัน.jpeg", duration: "1 day", price: 3500 },
+    { id: 2, title: "เขาสก", description: "นอนแพพักผ่อน ท่ามกลางป่าฝน", image_cover: "/src/assets/เขาสก.jpeg", duration: "3 days 2 nights", price: 8900 },
+    { id: 3, title: "ภูเก็ต", description: "สัมผัสความโรแมนติกในแดนสวรรค์", image_cover: "/src/assets/ภูเก็ต.jpeg", duration: "1 day", price: 2200 },
   ];
 
   const [topTours, setTopTours] = useState<TourCardData[]>(defaultDestinations);
   const [testimonials, setTestimonials] = useState<TestimonialData[]>([]);
   const [testimonialsLoading, setTestimonialsLoading] = useState(true);
-
-  // ── Hero text animation ──
   const [heroReady, setHeroReady] = useState(false);
-  useEffect(() => {
-    const timer = setTimeout(() => setHeroReady(true), 150);
-    return () => clearTimeout(timer);
-  }, []);
 
-  // ── Scroll-reveal refs ──
+  useEffect(() => { const timer = setTimeout(() => setHeroReady(true), 150); return () => clearTimeout(timer); }, []);
+
   const servicesReveal = useRevealOnScroll(0.1);
   const planReveal = useRevealOnScroll(0.1);
   const destReveal = useRevealOnScroll(0.1);
@@ -424,142 +250,64 @@ export default function HomePage() {
   const toursCarouselRef = useInfiniteHorizontalLoop(topTours.length);
   const reviewsCarouselRef = useInfiniteHorizontalLoop(testimonials.length);
 
-  const loopedTopTours =
-    topTours.length > 1 ? [...topTours, ...topTours, ...topTours] : topTours;
-  const loopedTestimonials =
-    testimonials.length > 1
-      ? [...testimonials, ...testimonials, ...testimonials]
-      : testimonials;
+  const loopedTopTours = topTours.length > 1 ? [...topTours, ...topTours, ...topTours] : topTours;
+  const loopedTestimonials = testimonials.length > 1 ? [...testimonials, ...testimonials, ...testimonials] : testimonials;
 
-  // ── Fetch province list for dropdown ──
   useEffect(() => {
-    fetch(`${API_BASE}/tours`)
-      .then((res) => res.json())
-      .then((data: any[]) => {
-        setProvinces(
-          [...new Set(data.map((t) => t.province))].filter(Boolean) as string[],
-        );
-      })
-      .catch((err) => console.error("Error fetching provinces:", err));
-  }, []);
+    const processTours = (data: any[]) => data.map((tour) => ({
+      id: tour.id ?? tour.title,
+      title: tour.title ?? "",
+      description: tour.description ?? tour.province,
+      image_cover: tour.image_cover,
+      duration: tour.duration,
+      price: tour.price,
+      province: tour.province,
+      category: tour.category,
+    }));
 
-  // ── Fetch recommended tours (fallback to first 3 from all) ──
-  useEffect(() => {
     fetch(`${API_BASE}/tours/recommended`)
       .then((res) => res.json())
       .then((data: any[]) => {
-        if (Array.isArray(data) && data.length > 0) {
-          setTopTours(
-            data.map((tour) => ({
-              id: tour.id ?? tour.title,
-              title: tour.title ?? "",
-              description: tour.description ?? tour.province,
-              image_cover: tour.image_cover,
-              duration: tour.duration,
-              price: tour.price,
-              province: tour.province,
-              category: tour.category,
-            })),
-          );
-        } else {
-          // fallback: fetch all and use first 3
-          return fetch(`${API_BASE}/tours`)
-            .then((res) => res.json())
-            .then((all: any[]) => {
-              const first = all.slice(0, 3).map((tour) => ({
-                id: tour.id ?? tour.title,
-                title: tour.title ?? "",
-                description: tour.description ?? tour.province,
-                image_cover: tour.image_cover,
-                duration: tour.duration,
-                price: tour.price,
-                province: tour.province,
-                category: tour.category,
-              }));
-              if (first.length) setTopTours(first);
-            });
-        }
+        if (Array.isArray(data) && data.length > 0) setTopTours(processTours(data));
+        else fetch(`${API_BASE}/tours`).then(r => r.json()).then(all => {
+             if(Array.isArray(all) && all.length > 0) setTopTours(processTours(all.slice(0, 3)));
+          });
       })
-      .catch(() => {
-        fetch(`${API_BASE}/tours`)
-          .then((res) => res.json())
-          .then((all: any[]) => {
-            const first = all.slice(0, 3).map((tour) => ({
-              id: tour.id ?? tour.title,
-              title: tour.title ?? "",
-              description: tour.description ?? tour.province,
-              image_cover: tour.image_cover,
-              duration: tour.duration,
-              price: tour.price,
-              province: tour.province,
-              category: tour.category,
-            }));
-            if (first.length) setTopTours(first);
-          })
-          .catch(() => setTopTours(defaultDestinations));
-      });
+      .catch(() => setTopTours(defaultDestinations));
   }, []);
 
-  // ── Fetch recommended reviews for testimonial section ──
   useEffect(() => {
     setTestimonialsLoading(true);
-
-    fetch(`${API_BASE_URL}/api/reviews/recommended?limit=30`)
-      .then((res) => {
-        if (!res.ok) {
-          throw new Error("Failed to load recommended reviews");
-        }
-        return res.json();
-      })
+    fetch(`${API_BASE}/reviews/recommended?limit=30`)
+      .then((res) => res.ok ? res.json() : [])
       .then((data: any[]) => {
         if (!Array.isArray(data) || data.length === 0) return;
-
-        const mapped = data
-          .filter((review) => review?.is_recommended === true)
-          .map((review) => {
-            const reviewUser = review?.user || {};
-            const fullName =
-              reviewUser.full_name ||
-              [reviewUser.first_name, reviewUser.last_name]
-                .filter(Boolean)
-                .join(" ")
-                .trim();
-
+        const mapped = data.filter((r) => r?.is_recommended === true).map((review) => {
+            const u = review?.user || {};
+            const fullName = u.full_name || [u.first_name, u.last_name].filter(Boolean).join(" ").trim();
             return {
               id: String(review?.id ?? Math.random()),
-              name: fullName || reviewUser.username || "นักเดินทาง",
+              name: fullName || u.username || "นักเดินทาง",
               content: String(review?.comment ?? "").trim(),
               rating: Number(review?.rating ?? 5),
-            } as TestimonialData;
-          })
-          .filter((item) => item.content.length > 0);
-
+            };
+          }).filter((i) => i.content.length > 0);
         setTestimonials(mapped);
       })
-      .catch(() => {
-        setTestimonials([]);
-      })
-      .finally(() => {
-        setTestimonialsLoading(false);
-      });
+      .catch(() => setTestimonials([]))
+      .finally(() => setTestimonialsLoading(false));
   }, []);
 
-  // ── Close dropdown on outside click ──
   useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      const target = event.target as HTMLElement;
-      if (!target.closest(".search-bar-container")) {
-        setOpenDropdown(null);
-      }
+    const handleClickOutside = (e: MouseEvent) => {
+      const t = e.target as HTMLElement;
+      if (!t.closest(".search-bar-container")) setOpenDropdown(null);
     };
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const toggleDropdown = useCallback(
-    (name: string) => setOpenDropdown((prev) => (prev === name ? null : name)),
-    [],
-  );
+  const toggleDropdown = useCallback((name: string) => setOpenDropdown((prev) => (prev === name ? null : name)), []);
 
   const handleSearch = () => {
     const params = new URLSearchParams();
@@ -569,75 +317,34 @@ export default function HomePage() {
     navigate(`/tours?${params.toString()}`);
   };
 
-  const scrollCarouselByCard = useCallback(
-    (container: HTMLDivElement | null, direction: number) => {
-      if (!container) return;
+  const scrollCarouselByCard = useCallback((container: HTMLDivElement | null, direction: number) => {
+    if (!container) return;
+    const firstCard = container.querySelector<HTMLElement>("[data-carousel-card]");
+    const style = window.getComputedStyle(container);
+    const parsedGap = Number.parseFloat(style.gap !== "normal" ? style.gap : "20");
+    const gap = Number.isFinite(parsedGap) ? parsedGap : 20;
+    const cardWidth = firstCard?.offsetWidth ?? container.clientWidth * 0.85;
+    container.scrollBy({ left: (cardWidth + gap) * direction, behavior: "smooth" });
+  }, []);
 
-      const firstCard = container.querySelector<HTMLElement>(
-        "[data-carousel-card]",
-      );
-      const style = window.getComputedStyle(container);
-      const gapToken =
-        style.columnGap !== "normal"
-          ? style.columnGap
-          : style.gap !== "normal"
-            ? style.gap
-            : "20";
-      const parsedGap = Number.parseFloat(gapToken);
-      const gap = Number.isFinite(parsedGap) ? parsedGap : 20;
-      const cardWidth = firstCard?.offsetWidth ?? container.clientWidth * 0.85;
-
-      container.scrollBy({
-        left: (cardWidth + gap) * direction,
-        behavior: "smooth",
-      });
-    },
-    [],
-  );
-
-  // ── Data ──
   const features = [
-    {
-      id: 1,
-      title: "คุ้มค่าคุ้มราคา",
-      desc: "เที่ยวง่าย จ่ายเบาๆ",
-      icon: CurrencyIcon,
-    },
+    { id: 1, title: "คุ้มค่าคุ้มราคา", desc: "เที่ยวง่าย จ่ายเบาๆ", icon: CurrencyIcon },
     { id: 2, title: "ไกด์ส่วนตัว", desc: "เที่ยวตามสไตล์คุณ", icon: HotelIcon },
     { id: 3, title: "เดินทางปลอดภัย", desc: "อุ่นใจทุกเส้นทาง", icon: MapIcon },
-    {
-      id: 4,
-      title: "ดูแลตลอด 24 ชม.",
-      desc: "ติดต่อได้ทุกเมื่อ",
-      icon: HeadphonesIcon,
-    },
+    { id: 4, title: "ดูแลตลอด 24 ชม.", desc: "ติดต่อได้ทุกเมื่อ", icon: HeadphonesIcon },
   ];
 
   const steps = [
-    {
-      num: 1,
-      title: "เลือกจุดหมาย",
-      desc: "ค้นหารายชื่อสถานที่ท่องเที่ยวยอดนิยมที่เราคัดมาเพื่อคุณ",
-    },
-    {
-      num: 2,
-      title: "เช็ควันว่าง",
-      desc: "เลือกวันเดินทางที่เหมาะสมกับตารางเวลาของคุณ",
-    },
-    {
-      num: 3,
-      title: "ออกเดินทางกันเลย!",
-      desc: "รับแผนการเดินทาง แล้วเตรียมตัวเดินทางได้ทันที",
-    },
+    { num: 1, title: "เลือกจุดหมาย", desc: "ค้นหารายชื่อสถานที่ท่องเที่ยวยอดนิยมที่เราคัดมาเพื่อคุณ" },
+    { num: 2, title: "เช็ควันว่าง", desc: "เลือกวันเดินทางที่เหมาะสมกับตารางเวลาของคุณ" },
+    { num: 3, title: "ออกเดินทางกันเลย!", desc: "รับแผนการเดินทาง แล้วเตรียมตัวเดินทางได้ทันที" },
   ];
 
   return (
     <div className="min-h-screen bg-[#F6F1E9]">
       <Navbar activePage="home" />
 
-      {/* ════════════════════════════════════════════════════════════════════ */}
-      {/* Hero Section — animated entry + polished search bar               */}
-      {/* ════════════════════════════════════════════════════════════════════ */}
+      {/* Hero Section */}
       <section className="relative min-h-[320px] md:min-h-[400px] lg:min-h-[480px] overflow-visible">
         <div className="absolute inset-0">
           <img
@@ -646,146 +353,56 @@ export default function HomePage() {
             className="w-full h-full object-cover object-center"
             onError={(e) => {
               e.currentTarget.style.display = "none";
-              e.currentTarget.parentElement!.style.background =
-                "linear-gradient(135deg, #4F200D 0%, #8B4513 100%)";
+              e.currentTarget.parentElement!.style.background = "linear-gradient(135deg, #4F200D 0%, #8B4513 100%)";
             }}
           />
           <div className="absolute inset-0 bg-gradient-to-b from-black/25 via-black/40 to-black/60" />
         </div>
-
         <div className="relative z-10 flex flex-col items-center justify-center min-h-[320px] md:min-h-[400px] lg:min-h-[480px] px-4 py-8">
-          <h1
-            className={`text-3xl md:text-5xl lg:text-6xl xl:text-[64px] font-extrabold text-white mb-2 text-center drop-shadow-lg transition-all duration-700 ${
-              heroReady
-                ? "opacity-100 translate-y-0"
-                : "opacity-0 translate-y-4"
-            }`}
-          >
+          <h1 className={`text-3xl md:text-5xl lg:text-6xl xl:text-[64px] font-extrabold text-white mb-2 text-center drop-shadow-lg transition-all duration-700 ${heroReady ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}>
             ไม่ว่าจุดหมายคือที่ใด
           </h1>
-          <h2
-            className={`text-2xl md:text-4xl lg:text-5xl xl:text-[56px] font-extrabold text-[#FFD93D] mb-4 text-center drop-shadow-lg transition-all duration-700 delay-200 ${
-              heroReady
-                ? "opacity-100 translate-y-0"
-                : "opacity-0 translate-y-4"
-            }`}
-          >
+          <h2 className={`text-2xl md:text-4xl lg:text-5xl xl:text-[56px] font-extrabold text-[#FFD93D] mb-4 text-center drop-shadow-lg transition-all duration-700 delay-200 ${heroReady ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}>
             เราพร้อมพาคุณไปส่งถึงที่
           </h2>
-          <p
-            className={`text-sm md:text-base lg:text-lg text-white/70 font-light mb-6 md:mb-10 text-center max-w-xl transition-all duration-700 delay-300 ${
-              heroReady
-                ? "opacity-100 translate-y-0"
-                : "opacity-0 translate-y-4"
-            }`}
-          >
+          <p className={`text-sm md:text-base lg:text-lg text-white/70 font-light mb-6 md:mb-10 text-center max-w-xl transition-all duration-700 delay-300 ${heroReady ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}>
             ค้นหาทริปในฝัน จองง่าย ได้ทันที
           </p>
 
-          {/* ─── Rich Search Bar ─── */}
-          <div
-            className={`search-bar-container w-full max-w-full sm:max-w-2xl md:max-w-4xl xl:max-w-5xl px-2 sm:px-0 transition-all duration-700 delay-500 ${
-              heroReady
-                ? "opacity-100 translate-y-0"
-                : "opacity-0 translate-y-6"
-            }`}
-          >
+          <div className={`search-bar-container w-full max-w-full sm:max-w-2xl md:max-w-4xl xl:max-w-5xl px-2 sm:px-0 transition-all duration-700 delay-500 ${heroReady ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"}`}>
             <div className="bg-white/95 backdrop-blur-md rounded-2xl sm:rounded-full p-2 sm:p-2.5 flex flex-col sm:flex-row gap-2 items-stretch sm:items-center shadow-2xl border border-white/30">
               <RichDropdown
                 label="เลือกจังหวัด"
                 icon={<MapIcon className="w-4 h-4" />}
                 value={selectedProvince}
-                options={provinces}
+                options={THAI_PROVINCES}
                 isOpen={openDropdown === "province"}
                 onToggle={() => toggleDropdown("province")}
-                onSelect={(v) => {
-                  setSelectedProvince(v);
-                  setOpenDropdown(null);
-                }}
+                onSelect={(v) => { setSelectedProvince(v); setOpenDropdown(null); }}
+                enableSearch={true} // เปิดใช้งานช่องค้นหา
               />
-
-              {/* Vertical divider — desktop only */}
               <div className="hidden sm:block w-px h-8 bg-[#4F200D]/10 flex-shrink-0" />
-
               <RichDropdown
                 label="ประเภททัวร์"
-                icon={
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    width="16"
-                    height="16"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  >
-                    <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z" />
-                    <line x1="4" y1="22" x2="4" y2="15" />
-                  </svg>
-                }
+                icon={<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z" /><line x1="4" y1="22" x2="4" y2="15" /></svg>}
                 value={selectedCategory}
                 options={CATEGORY_OPTIONS}
                 isOpen={openDropdown === "category"}
                 onToggle={() => toggleDropdown("category")}
-                onSelect={(v) => {
-                  setSelectedCategory(v);
-                  setOpenDropdown(null);
-                }}
+                onSelect={(v) => { setSelectedCategory(v); setOpenDropdown(null); }}
               />
-
               <div className="hidden sm:block w-px h-8 bg-[#4F200D]/10 flex-shrink-0" />
-
               <RichDropdown
                 label="จำนวนวัน"
-                icon={
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    width="16"
-                    height="16"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  >
-                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
-                    <line x1="16" y1="2" x2="16" y2="6" />
-                    <line x1="8" y1="2" x2="8" y2="6" />
-                    <line x1="3" y1="10" x2="21" y2="10" />
-                  </svg>
-                }
+                icon={<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" /></svg>}
                 value={selectedDuration}
                 options={DURATION_OPTIONS}
                 isOpen={openDropdown === "duration"}
                 onToggle={() => toggleDropdown("duration")}
-                onSelect={(v) => {
-                  setSelectedDuration(v);
-                  setOpenDropdown(null);
-                }}
+                onSelect={(v) => { setSelectedDuration(v); setOpenDropdown(null); }}
               />
-
-              <Button
-                onClick={handleSearch}
-                className="bg-[#FF8400] text-white hover:bg-[#e67600] rounded-xl sm:rounded-full px-5 md:px-7 py-2.5 md:py-3 text-sm md:text-base font-bold shadow-lg hover:shadow-xl transition-all whitespace-nowrap active:scale-95"
-              >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="18"
-                  height="18"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2.5"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  className="mr-1.5"
-                >
-                  <circle cx="11" cy="11" r="8" />
-                  <line x1="21" y1="21" x2="16.65" y2="16.65" />
-                </svg>
+              <Button onClick={handleSearch} className="bg-[#FF8400] text-white hover:bg-[#e67600] rounded-xl sm:rounded-full px-5 md:px-7 py-2.5 md:py-3 text-sm md:text-base font-bold shadow-lg hover:shadow-xl transition-all whitespace-nowrap active:scale-95">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="mr-1.5"><circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" /></svg>
                 ค้นหา
               </Button>
             </div>
@@ -793,41 +410,20 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* ════════════════════════════════════════════════════════════════════ */}
-      {/* Best Services Section                                              */}
-      {/* ════════════════════════════════════════════════════════════════════ */}
+      {/* Services Section */}
       <section className="py-10 md:py-14 lg:py-20 bg-[#F6F1E9]">
-        <div
-          ref={servicesReveal.ref}
-          className={`max-w-[1920px] mx-auto px-4 md:px-8 transition-all duration-700 ${
-            servicesReveal.visible
-              ? "opacity-100 translate-y-0"
-              : "opacity-0 translate-y-8"
-          }`}
-        >
+        <div ref={servicesReveal.ref} className={`max-w-[1920px] mx-auto px-4 md:px-8 transition-all duration-700 ${servicesReveal.visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"}`}>
           <div className="text-center mb-9 md:mb-12">
-            <h2 className="text-2xl md:text-4xl lg:text-5xl font-bold text-[#4F200D] mb-3">
-              บริการที่เป็นเลิศเพื่อคุณ
-            </h2>
+            <h2 className="text-2xl md:text-4xl lg:text-5xl font-bold text-[#4F200D] mb-3">บริการที่เป็นเลิศเพื่อคุณ</h2>
             <div className="w-12 md:w-18 lg:w-24 h-1 md:h-1.5 bg-[#FF8400] mx-auto rounded-full" />
           </div>
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-6">
             {features.map((feature, idx) => (
-              <Card
-                key={feature.id}
-                className="border-0 shadow-lg rounded-2xl md:rounded-3xl bg-[#FFFDFA] overflow-hidden hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group"
-                style={{ transitionDelay: `${idx * 80}ms` }}
-              >
+              <Card key={feature.id} className="border-0 shadow-lg rounded-2xl md:rounded-3xl bg-[#FFFDFA] overflow-hidden hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group" style={{ transitionDelay: `${idx * 80}ms` }}>
                 <CardContent className="p-4 md:p-6 text-center">
-                  <div className="w-12 h-12 md:w-16 md:h-16 mx-auto mb-3 md:mb-4 bg-[#FFF3E0] rounded-xl md:rounded-2xl flex items-center justify-center text-[#FF8400] group-hover:bg-[#FF8400] group-hover:text-white transition-colors duration-300">
-                    <feature.icon className="w-6 h-6 md:w-8 md:h-8" />
-                  </div>
-                  <h3 className="text-sm md:text-lg lg:text-2xl font-bold text-[#4F200D] mb-1 md:mb-2">
-                    {feature.title}
-                  </h3>
-                  <p className="text-xs md:text-sm lg:text-lg text-[#4F200D]/80 font-extralight">
-                    {feature.desc}
-                  </p>
+                  <div className="w-12 h-12 md:w-16 md:h-16 mx-auto mb-3 md:mb-4 bg-[#FFF3E0] rounded-xl md:rounded-2xl flex items-center justify-center text-[#FF8400] group-hover:bg-[#FF8400] group-hover:text-white transition-colors duration-300"><feature.icon className="w-6 h-6 md:w-8 md:h-8" /></div>
+                  <h3 className="text-sm md:text-lg lg:text-2xl font-bold text-[#4F200D] mb-1 md:mb-2">{feature.title}</h3>
+                  <p className="text-xs md:text-sm lg:text-lg text-[#4F200D]/80 font-extralight">{feature.desc}</p>
                 </CardContent>
               </Card>
             ))}
@@ -835,92 +431,36 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* ════════════════════════════════════════════════════════════════════ */}
-      {/* Quote Section                                                      */}
-      {/* ════════════════════════════════════════════════════════════════════ */}
+      {/* Quote Section */}
       <section className="relative py-16 md:py-28 lg:py-40 overflow-hidden">
         <div className="absolute inset-0">
-          <img
-            src="/src/assets/bg1.jpeg"
-            alt="Travel Background"
-            className="w-full h-full object-cover"
-            onError={(e) => {
-              e.currentTarget.style.display = "none";
-              e.currentTarget.parentElement!.style.background =
-                "linear-gradient(135deg, #FF8400 0%, #FFD93D 100%)";
-            }}
-          />
+          <img src="/src/assets/bg1.jpeg" alt="Travel Background" className="w-full h-full object-cover" onError={(e) => { e.currentTarget.style.display = "none"; e.currentTarget.parentElement!.style.background = "linear-gradient(135deg, #FF8400 0%, #FFD93D 100%)"; }} />
           <div className="absolute inset-0 bg-black/45" />
         </div>
-        <div className="absolute top-4 md:top-8 left-4 md:left-10 opacity-20">
-          <div className="rotate-180">
-            <QuoteIcon className="w-14 h-14 md:w-28 md:h-28 lg:w-40 lg:h-40" />
-          </div>
-        </div>
-        <div className="absolute bottom-4 md:bottom-8 right-4 md:right-10 opacity-20">
-          <QuoteIcon className="w-14 h-14 md:w-28 md:h-28 lg:w-40 lg:h-40" />
-        </div>
-        <div className="relative z-10 max-w-[1920px] mx-auto px-4 md:px-8">
-          <div className="text-center">
-            <h2 className="text-xl md:text-3xl lg:text-5xl xl:text-7xl font-bold text-white leading-tight mb-6 md:mb-12 drop-shadow-lg px-4">
-              การเดินทาง คือการลงทุนเดียว
-              <br />
-              ที่ทำให้ชีวิตคุณมั่งคั่งขึ้น
-            </h2>
-            <Button
-              onClick={() => navigate("/tours")}
-              className="bg-[#FF8400] text-white hover:bg-[#e67600] rounded-full px-6 md:px-12 py-3 md:py-6 text-base md:text-xl lg:text-2xl font-bold shadow-xl hover:shadow-2xl transition-all active:scale-95"
-            >
-              เริ่มต้นการเดินทาง
-            </Button>
-          </div>
+        <div className="absolute top-4 md:top-8 left-4 md:left-10 opacity-20"><div className="rotate-180"><QuoteIcon className="w-14 h-14 md:w-28 md:h-28 lg:w-40 lg:h-40" /></div></div>
+        <div className="absolute bottom-4 md:bottom-8 right-4 md:right-10 opacity-20"><QuoteIcon className="w-14 h-14 md:w-28 md:h-28 lg:w-40 lg:h-40" /></div>
+        <div className="relative z-10 max-w-[1920px] mx-auto px-4 md:px-8 text-center">
+          <h2 className="text-xl md:text-3xl lg:text-5xl xl:text-7xl font-bold text-white leading-tight mb-6 md:mb-12 drop-shadow-lg px-4">การเดินทาง คือการลงทุนเดียว<br />ที่ทำให้ชีวิตคุณมั่งคั่งขึ้น</h2>
+          <Button onClick={() => navigate("/tours")} className="bg-[#FF8400] text-white hover:bg-[#e67600] rounded-full px-6 md:px-12 py-3 md:py-6 text-base md:text-xl lg:text-2xl font-bold shadow-xl hover:shadow-2xl transition-all active:scale-95">
+            เริ่มต้นการเดินทาง
+          </Button>
         </div>
       </section>
 
-      {/* ════════════════════════════════════════════════════════════════════ */}
-      {/* Trip Planning Section                                              */}
-      {/* ════════════════════════════════════════════════════════════════════ */}
+      {/* Trip Planning Section */}
       <section className="py-10 md:py-14 lg:py-20 bg-[#FFFDFA]">
-        <div
-          ref={planReveal.ref}
-          className={`max-w-[1920px] mx-auto px-4 md:px-8 transition-all duration-700 ${
-            planReveal.visible
-              ? "opacity-100 translate-y-0"
-              : "opacity-0 translate-y-8"
-          }`}
-        >
+        <div ref={planReveal.ref} className={`max-w-[1920px] mx-auto px-4 md:px-8 transition-all duration-700 ${planReveal.visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"}`}>
           <div className="grid lg:grid-cols-2 gap-6 md:gap-9 items-center">
             <div className="order-2 lg:order-1">
-              <h2 className="text-2xl md:text-4xl lg:text-5xl xl:text-[58px] font-bold text-[#4F200D] mb-3">
-                วางแผนทริปในฝันได้ง่าย ๆ
-              </h2>
-              <p className="text-sm md:text-lg lg:text-xl xl:text-[24px] font-extralight text-[#4F200D] mb-6 md:mb-9 max-w-2xl">
-                เราลดความยุ่งยากในการจอง
-                เพื่อให้คุณมีเวลาเตรียมจัดกระเป๋าได้เต็มที่
-              </p>
+              <h2 className="text-2xl md:text-4xl lg:text-5xl xl:text-[58px] font-bold text-[#4F200D] mb-3">วางแผนทริปในฝันได้ง่าย ๆ</h2>
+              <p className="text-sm md:text-lg lg:text-xl xl:text-[24px] font-extralight text-[#4F200D] mb-6 md:mb-9 max-w-2xl">เราลดความยุ่งยากในการจอง เพื่อให้คุณมีเวลาเตรียมจัดกระเป๋าได้เต็มที่</p>
               <div className="space-y-5 md:space-y-6">
                 {steps.map((step, idx) => (
-                  <div
-                    key={step.num}
-                    className={`flex items-start gap-3 md:gap-5 transition-all duration-500 ${
-                      planReveal.visible
-                        ? "opacity-100 translate-x-0"
-                        : "opacity-0 -translate-x-6"
-                    }`}
-                    style={{ transitionDelay: `${300 + idx * 150}ms` }}
-                  >
-                    <div className="w-12 h-12 md:w-16 md:h-16 flex-shrink-0 rounded-xl md:rounded-2xl bg-gradient-to-br from-[#FF8400] to-[#FFD93D] flex items-center justify-center shadow-md">
-                      <span className="text-lg md:text-2xl font-bold text-white">
-                        {step.num}
-                      </span>
-                    </div>
+                  <div key={step.num} className={`flex items-start gap-3 md:gap-5 transition-all duration-500 ${planReveal.visible ? "opacity-100 translate-x-0" : "opacity-0 -translate-x-6"}`} style={{ transitionDelay: `${300 + idx * 150}ms` }}>
+                    <div className="w-12 h-12 md:w-16 md:h-16 flex-shrink-0 rounded-xl md:rounded-2xl bg-gradient-to-br from-[#FF8400] to-[#FFD93D] flex items-center justify-center shadow-md"><span className="text-lg md:text-2xl font-bold text-white">{step.num}</span></div>
                     <div>
-                      <p className="text-base md:text-2xl xl:text-[36px] font-medium text-[#4F200D] mb-1 md:mb-2">
-                        {step.title}
-                      </p>
-                      <p className="text-xs md:text-sm xl:text-lg text-[#4F200D]/80 font-extralight max-w-md">
-                        {step.desc}
-                      </p>
+                      <p className="text-base md:text-2xl xl:text-[36px] font-medium text-[#4F200D] mb-1 md:mb-2">{step.title}</p>
+                      <p className="text-xs md:text-sm xl:text-lg text-[#4F200D]/80 font-extralight max-w-md">{step.desc}</p>
                     </div>
                   </div>
                 ))}
@@ -928,11 +468,7 @@ export default function HomePage() {
             </div>
             <div className="order-1 lg:order-2">
               <div className="relative rounded-2xl md:rounded-3xl overflow-hidden shadow-2xl group">
-                <img
-                  src="https://images.unsplash.com/photo-1501785888041-af3ef285b470?w=800&q=80"
-                  alt="Trip Planning"
-                  className="w-full h-52 md:h-72 lg:h-[400px] xl:h-[480px] object-cover group-hover:scale-105 transition-transform duration-700"
-                />
+                <img src="https://images.unsplash.com/photo-1501785888041-af3ef285b470?w=800&q=80" alt="Trip Planning" className="w-full h-52 md:h-72 lg:h-[400px] xl:h-[480px] object-cover group-hover:scale-105 transition-transform duration-700" />
                 <div className="absolute inset-0 bg-gradient-to-t from-[#4F200D]/20 to-transparent" />
               </div>
             </div>
@@ -940,158 +476,42 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* ════════════════════════════════════════════════════════════════════ */}
-      {/* Recommended Destinations Section                                   */}
-      {/* ════════════════════════════════════════════════════════════════════ */}
+      {/* Recommended Destinations Section */}
       <section className="py-10 md:py-14 lg:py-20 bg-[#FFFDFA]">
-        <div
-          ref={destReveal.ref}
-          className={`max-w-[1920px] mx-auto px-4 md:px-8 transition-all duration-700 ${
-            destReveal.visible
-              ? "opacity-100 translate-y-0"
-              : "opacity-0 translate-y-8"
-          }`}
-        >
+        <div ref={destReveal.ref} className={`max-w-[1920px] mx-auto px-4 md:px-8 transition-all duration-700 ${destReveal.visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"}`}>
           <div className="text-center mb-9 md:mb-12">
-            <span className="inline-block bg-[#FF8400]/10 text-[#FF8400] text-xs md:text-sm font-bold px-4 py-1.5 rounded-full mb-3">
-              แนะนำสำหรับคุณ
-            </span>
-            <h2 className="text-3xl md:text-5xl lg:text-6xl xl:text-[75px] font-bold text-[#4F200D] mb-3 leading-none">
-              พิกัดเที่ยวไทยที่ใครก็พูดถึง
-            </h2>
-            <p className="text-sm md:text-lg xl:text-2xl text-[#4F200D]/70">
-              คัดสรรแลนด์มาร์กสุดฮิต ถ่ายรูปสวย ทันกระแสก่อนใคร
-            </p>
+            <span className="inline-block bg-[#FF8400]/10 text-[#FF8400] text-xs md:text-sm font-bold px-4 py-1.5 rounded-full mb-3">แนะนำสำหรับคุณ</span>
+            <h2 className="text-3xl md:text-5xl lg:text-6xl xl:text-[75px] font-bold text-[#4F200D] mb-3 leading-none">พิกัดเที่ยวไทยที่ใครก็พูดถึง</h2>
+            <p className="text-sm md:text-lg xl:text-2xl text-[#4F200D]/70">คัดสรรแลนด์มาร์กสุดฮิต ถ่ายรูปสวย ทันกระแสก่อนใคร</p>
           </div>
           <div className="relative">
             <div className="flex items-center justify-between gap-3 mb-4">
-              <p className="text-xs md:text-sm text-[#4F200D]/60 font-medium">
-                เลื่อนซ้าย-ขวาเพื่อดูทัวร์แนะนำเพิ่มเติม
-              </p>
+              <p className="text-xs md:text-sm text-[#4F200D]/60 font-medium">เลื่อนซ้าย-ขวาเพื่อดูทัวร์แนะนำเพิ่มเติม</p>
               <div className="hidden sm:flex items-center gap-2">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() =>
-                    scrollCarouselByCard(toursCarouselRef.current, -1)
-                  }
-                  className="h-9 w-9 rounded-full border-[#D7C7B7] bg-white p-0 text-[#4F200D] hover:border-[#FF8400] hover:text-[#FF8400]"
-                  aria-label="เลื่อนไปทางซ้าย"
-                >
-                  <svg
-                    width="16"
-                    height="16"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2.5"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  >
-                    <polyline points="15 18 9 12 15 6" />
-                  </svg>
-                </Button>
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() =>
-                    scrollCarouselByCard(toursCarouselRef.current, 1)
-                  }
-                  className="h-9 w-9 rounded-full border-[#D7C7B7] bg-white p-0 text-[#4F200D] hover:border-[#FF8400] hover:text-[#FF8400]"
-                  aria-label="เลื่อนไปทางขวา"
-                >
-                  <svg
-                    width="16"
-                    height="16"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2.5"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  >
-                    <polyline points="9 18 15 12 9 6" />
-                  </svg>
-                </Button>
+                <Button variant="outline" onClick={() => scrollCarouselByCard(toursCarouselRef.current, -1)} className="h-9 w-9 rounded-full border-[#D7C7B7] bg-white p-0 text-[#4F200D] hover:border-[#FF8400] hover:text-[#FF8400]"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6" /></svg></Button>
+                <Button variant="outline" onClick={() => scrollCarouselByCard(toursCarouselRef.current, 1)} className="h-9 w-9 rounded-full border-[#D7C7B7] bg-white p-0 text-[#4F200D] hover:border-[#FF8400] hover:text-[#FF8400]"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6" /></svg></Button>
               </div>
             </div>
-
-            <div
-              ref={toursCarouselRef}
-              className="flex gap-5 md:gap-6 overflow-x-auto overscroll-x-contain scroll-smooth pb-2 px-1 md:px-2 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
-            >
+            <div ref={toursCarouselRef} className="flex gap-5 md:gap-6 overflow-x-auto overscroll-x-contain scroll-smooth pb-2 px-1 md:px-2 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
               {loopedTopTours.map((tour, idx) => (
-                <Card
-                  key={`${tour.id}-${idx}`}
-                  data-carousel-card
-                  className="min-w-[86%] sm:min-w-[72%] md:min-w-[48%] lg:min-w-[40%] xl:min-w-[31%] overflow-hidden border-0 shadow-xl rounded-2xl md:rounded-3xl bg-[#FFFDFA] group cursor-pointer hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 flex flex-col h-full"
-                  style={{
-                    transitionDelay: `${(idx % Math.max(topTours.length, 1)) * 80}ms`,
-                  }}
-                  onClick={() => navigate(`/tours/${tour.id}`)}
-                >
-                  <div className="relative h-44 md:h-56 lg:h-72 overflow-hidden">
-                    <img
-                      src={
-                        tour.image_cover ??
-                        "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=800&q=80"
-                      }
-                      alt={tour.title}
-                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-                      onError={(e) => {
-                        e.currentTarget.src =
-                          "https://images.unsplash.com/photo-1552465011-b4e21bf6e79a?w=600&q=80";
-                      }}
-                    />
+                <Card key={`${tour.id}-${idx}`} data-carousel-card className="min-w-[86%] sm:min-w-[72%] md:min-w-[48%] lg:min-w-[40%] xl:min-w-[31%] overflow-hidden border-0 shadow-xl rounded-2xl md:rounded-3xl bg-[#FFFDFA] group cursor-pointer hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 flex flex-col h-full" style={{ transitionDelay: `${(idx % Math.max(topTours.length, 1)) * 80}ms` }} onClick={() => navigate(`/tours/${tour.id}`)}>
+                  <div className="relative h-44 md:h-56 lg:h-72 overflow-hidden bg-gray-100">
+                    <img src={getImageUrl(tour.image_cover) || "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=800&q=80"} alt={tour.title} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" onError={(e) => { e.currentTarget.src = "https://images.unsplash.com/photo-1552465011-b4e21bf6e79a?w=600&q=80"; }} />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
-                    <div className="absolute top-3 right-3 bg-white/90 backdrop-blur-sm px-3 py-1 rounded-full text-xs font-bold text-[#FF8400] shadow-sm">
-                      {getCategoryLabel(tour.category || "") || "แนะนำ"}
-                    </div>
-                    {tour.province && (
-                      <div className="absolute bottom-3 left-3 flex items-center gap-1 bg-black/30 backdrop-blur-sm text-white text-xs font-medium px-2.5 py-1 rounded-full">
-                        <MapIcon className="w-3 h-3" />
-                        {getProvinceLabel(tour.province)}
-                      </div>
-                    )}
+                    <div className="absolute top-3 right-3 bg-white/90 backdrop-blur-sm px-3 py-1 rounded-full text-xs font-bold text-[#FF8400] shadow-sm">{getCategoryLabel(tour.category || "") || "แนะนำ"}</div>
+                    {tour.province && <div className="absolute bottom-3 left-3 flex items-center gap-1 bg-black/30 backdrop-blur-sm text-white text-xs font-medium px-2.5 py-1 rounded-full"><MapIcon className="w-3 h-3" />{getProvinceLabel(tour.province)}</div>}
                   </div>
                   <CardContent className="p-4 md:p-5 flex flex-col flex-1">
                     <div className="border-b border-[#E3DCD4] pb-3 mb-3">
-                      <h3 className="text-lg md:text-xl xl:text-2xl font-bold text-[#4F200D] mb-1 line-clamp-1">
-                        {tour.title}
-                      </h3>
-                      <p className="text-xs md:text-sm text-[#4F200D]/60 font-light line-clamp-2 h-[2.5rem] md:h-[2.75rem]">
-                        {tour.description || "เส้นทางยอดนิยม"}
-                      </p>
+                      <h3 className="text-lg md:text-xl xl:text-2xl font-bold text-[#4F200D] mb-1 line-clamp-1">{tour.title}</h3>
+                      <p className="text-xs md:text-sm text-[#4F200D]/60 font-light line-clamp-2 h-[2.5rem] md:h-[2.75rem]">{tour.description || "เส้นทางยอดนิยม"}</p>
                     </div>
                     <div className="flex items-center justify-between mt-auto">
                       <div>
-                        <p className="text-[11px] md:text-xs text-[#4F200D]/50 font-medium">
-                          {tour.duration
-                            ? getDurationLabel(tour.duration)
-                            : "กำลังจัดตาราง"}
-                        </p>
-                        <p className="text-lg md:text-xl font-extrabold text-[#FF8400]">
-                          {tour.price
-                            ? `฿${Number(tour.price).toLocaleString()}`
-                            : "สอบถามราคา"}
-                        </p>
+                        <p className="text-[11px] md:text-xs text-[#4F200D]/50 font-medium">{tour.duration ? getDurationLabel(tour.duration) : "กำลังจัดตาราง"}</p>
+                        <p className="text-lg md:text-xl font-extrabold text-[#FF8400]">{tour.price ? `฿${Number(tour.price).toLocaleString()}` : "สอบถามราคา"}</p>
                       </div>
-                      <div className="w-10 h-10 rounded-full bg-[#FF8400]/10 flex items-center justify-center group-hover:bg-[#FF8400] transition-colors duration-300">
-                        <svg
-                          width="18"
-                          height="18"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="2.5"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          className="text-[#FF8400] group-hover:text-white transition-colors -rotate-45"
-                        >
-                          <line x1="5" y1="12" x2="19" y2="12" />
-                          <polyline points="12 5 19 12 12 19" />
-                        </svg>
-                      </div>
+                      <div className="w-10 h-10 rounded-full bg-[#FF8400]/10 flex items-center justify-center group-hover:bg-[#FF8400] transition-colors duration-300"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-[#FF8400] group-hover:text-white transition-colors -rotate-45"><line x1="5" y1="12" x2="19" y2="12" /><polyline points="12 5 19 12 12 19" /></svg></div>
                     </div>
                   </CardContent>
                 </Card>
@@ -1099,160 +519,51 @@ export default function HomePage() {
             </div>
           </div>
           <div className="text-center mt-8 md:mt-10">
-            <Button
-              variant="outline"
-              onClick={() => navigate("/tours")}
-              className="rounded-full border-2 border-[#4F200D] text-[#4F200D] hover:bg-[#4F200D] hover:text-white px-8 py-3 font-bold transition-all active:scale-95"
-            >
-              ดูทัวร์ทั้งหมด
-            </Button>
+            <Button variant="outline" onClick={() => navigate("/tours")} className="rounded-full border-2 border-[#4F200D] text-[#4F200D] hover:bg-[#4F200D] hover:text-white px-8 py-3 font-bold transition-all active:scale-95">ดูทัวร์ทั้งหมด</Button>
           </div>
         </div>
       </section>
 
-      {/* ════════════════════════════════════════════════════════════════════ */}
-      {/* Testimonials Section                                               */}
-      {/* ════════════════════════════════════════════════════════════════════ */}
+      {/* Testimonials Section */}
       <section className="py-10 md:py-14 lg:py-20 bg-[#F6F1E9]">
-        <div
-          ref={testimonialReveal.ref}
-          className={`max-w-[1920px] mx-auto px-4 md:px-8 transition-all duration-700 ${
-            testimonialReveal.visible
-              ? "opacity-100 translate-y-0"
-              : "opacity-0 translate-y-8"
-          }`}
-        >
+        <div ref={testimonialReveal.ref} className={`max-w-[1920px] mx-auto px-4 md:px-8 transition-all duration-700 ${testimonialReveal.visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"}`}>
           <div className="text-center mb-9 md:mb-12">
-            <h2 className="text-2xl md:text-4xl lg:text-5xl font-bold text-[#FF8400] mb-2 md:mb-3">
-              เสียงความประทับใจ
-            </h2>
-            <p className="text-2xl md:text-4xl lg:text-5xl font-bold text-[#4F200D]">
-              จากนักเดินทาง
-            </p>
+            <h2 className="text-2xl md:text-4xl lg:text-5xl font-bold text-[#FF8400] mb-2 md:mb-3">เสียงความประทับใจ</h2>
+            <p className="text-2xl md:text-4xl lg:text-5xl font-bold text-[#4F200D]">จากนักเดินทาง</p>
           </div>
           {testimonialsLoading ? (
             <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-5 md:gap-6">
               {Array.from({ length: 3 }, (_, idx) => (
-                <Card
-                  key={`review-skeleton-${idx}`}
-                  className="border-0 shadow-lg rounded-xl md:rounded-2xl bg-[#FFFDFA]"
-                >
-                  <CardContent className="p-4 md:p-6 animate-pulse">
-                    <div className="h-5 w-1/2 bg-[#E8DFD5] rounded mb-3" />
-                    <div className="h-4 w-1/3 bg-[#EFE7DE] rounded mb-4" />
-                    <div className="space-y-2">
-                      <div className="h-3 bg-[#EFE7DE] rounded" />
-                      <div className="h-3 bg-[#EFE7DE] rounded" />
-                      <div className="h-3 w-4/5 bg-[#EFE7DE] rounded" />
-                    </div>
-                  </CardContent>
+                <Card key={`review-skeleton-${idx}`} className="border-0 shadow-lg rounded-xl md:rounded-2xl bg-[#FFFDFA]">
+                  <CardContent className="p-4 md:p-6 animate-pulse"><div className="h-5 w-1/2 bg-[#E8DFD5] rounded mb-3" /><div className="h-4 w-1/3 bg-[#EFE7DE] rounded mb-4" /><div className="space-y-2"><div className="h-3 bg-[#EFE7DE] rounded" /><div className="h-3 bg-[#EFE7DE] rounded" /><div className="h-3 w-4/5 bg-[#EFE7DE] rounded" /></div></CardContent>
                 </Card>
               ))}
             </div>
           ) : testimonials.length === 0 ? (
             <div className="max-w-2xl mx-auto bg-[#FFFDFA] rounded-2xl border border-[#E8DFD5] px-6 py-8 text-center shadow-sm">
-              <p className="text-sm md:text-base font-semibold text-[#4F200D]/70">
-                ยังไม่มีรีวิวที่พร้อมแสดงผลในขณะนี้
-              </p>
+              <p className="text-sm md:text-base font-semibold text-[#4F200D]/70">ยังไม่มีรีวิวที่พร้อมแสดงผลในขณะนี้</p>
             </div>
           ) : (
             <div className="relative">
               <div className="flex items-center justify-between gap-3 mb-4">
-                <p className="text-xs md:text-sm text-[#4F200D]/60 font-medium">
-                  ปัดซ้าย-ขวาเพื่อดูรีวิวแนะนำแบบต่อเนื่อง
-                </p>
+                <p className="text-xs md:text-sm text-[#4F200D]/60 font-medium">ปัดซ้าย-ขวาเพื่อดูรีวิวแนะนำแบบต่อเนื่อง</p>
                 <div className="hidden sm:flex items-center gap-2">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() =>
-                      scrollCarouselByCard(reviewsCarouselRef.current, -1)
-                    }
-                    className="h-9 w-9 rounded-full border-[#D7C7B7] bg-white p-0 text-[#4F200D] hover:border-[#FF8400] hover:text-[#FF8400]"
-                    aria-label="เลื่อนรีวิวไปทางซ้าย"
-                  >
-                    <svg
-                      width="16"
-                      height="16"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2.5"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    >
-                      <polyline points="15 18 9 12 15 6" />
-                    </svg>
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() =>
-                      scrollCarouselByCard(reviewsCarouselRef.current, 1)
-                    }
-                    className="h-9 w-9 rounded-full border-[#D7C7B7] bg-white p-0 text-[#4F200D] hover:border-[#FF8400] hover:text-[#FF8400]"
-                    aria-label="เลื่อนรีวิวไปทางขวา"
-                  >
-                    <svg
-                      width="16"
-                      height="16"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2.5"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    >
-                      <polyline points="9 18 15 12 9 6" />
-                    </svg>
-                  </Button>
+                  <Button variant="outline" onClick={() => scrollCarouselByCard(reviewsCarouselRef.current, -1)} className="h-9 w-9 rounded-full border-[#D7C7B7] bg-white p-0 text-[#4F200D] hover:border-[#FF8400] hover:text-[#FF8400]"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6" /></svg></Button>
+                  <Button variant="outline" onClick={() => scrollCarouselByCard(reviewsCarouselRef.current, 1)} className="h-9 w-9 rounded-full border-[#D7C7B7] bg-white p-0 text-[#4F200D] hover:border-[#FF8400] hover:text-[#FF8400]"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6" /></svg></Button>
                 </div>
               </div>
-
-              <div
-                ref={reviewsCarouselRef}
-                className="flex gap-5 md:gap-6 overflow-x-auto overscroll-x-contain scroll-smooth pb-2 px-1 md:px-2 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
-              >
+              <div ref={reviewsCarouselRef} className="flex gap-5 md:gap-6 overflow-x-auto overscroll-x-contain scroll-smooth pb-2 px-1 md:px-2 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
                 {loopedTestimonials.map((testimonial, idx) => (
-                  <Card
-                    key={`${testimonial.id}-${idx}`}
-                    data-carousel-card
-                    className="min-w-[86%] sm:min-w-[72%] md:min-w-[48%] xl:min-w-[31%] border-0 shadow-lg rounded-xl md:rounded-2xl bg-[#FFFDFA] hover:shadow-xl transition-all duration-300"
-                    style={{
-                      transitionDelay: `${(idx % Math.max(testimonials.length, 1)) * 80}ms`,
-                    }}
-                  >
+                  <Card key={`${testimonial.id}-${idx}`} data-carousel-card className="min-w-[86%] sm:min-w-[72%] md:min-w-[48%] xl:min-w-[31%] border-0 shadow-lg rounded-xl md:rounded-2xl bg-[#FFFDFA] hover:shadow-xl transition-all duration-300" style={{ transitionDelay: `${(idx % Math.max(testimonials.length, 1)) * 80}ms` }}>
                     <CardContent className="p-4 md:p-6">
                       <div className="flex items-center gap-3 mb-3 md:mb-4">
-                        <div className="w-12 h-12 md:w-14 md:h-14 rounded-full bg-gradient-to-br from-[#FF8400] to-[#FFD93D] flex items-center justify-center flex-shrink-0 shadow-sm">
-                          <span className="text-lg md:text-xl font-bold text-white">
-                            {testimonial.name.charAt(0)}
-                          </span>
-                        </div>
+                        <div className="w-12 h-12 md:w-14 md:h-14 rounded-full bg-gradient-to-br from-[#FF8400] to-[#FFD93D] flex items-center justify-center flex-shrink-0 shadow-sm"><span className="text-lg md:text-xl font-bold text-white">{testimonial.name.charAt(0)}</span></div>
                         <div>
-                          <p className="font-semibold text-sm md:text-base text-[#4F200D]">
-                            {testimonial.name}
-                          </p>
-                          <div className="flex gap-0.5 mt-0.5">
-                            {[...Array(5)].map((_, i) => (
-                              <StarIcon
-                                key={i}
-                                size={14}
-                                filled={
-                                  i <
-                                  Math.max(
-                                    1,
-                                    Math.min(5, Math.round(testimonial.rating)),
-                                  )
-                                }
-                              />
-                            ))}
-                          </div>
+                          <p className="font-semibold text-sm md:text-base text-[#4F200D]">{testimonial.name}</p>
+                          <div className="flex gap-0.5 mt-0.5">{[...Array(5)].map((_, i) => <StarIcon key={i} size={14} filled={i < Math.max(1, Math.min(5, Math.round(testimonial.rating)))} />)}</div>
                         </div>
                       </div>
-                      <p className="text-xs md:text-sm xl:text-base text-[#4F200D]/80 font-light leading-relaxed italic">
-                        "{testimonial.content}"
-                      </p>
+                      <p className="text-xs md:text-sm xl:text-base text-[#4F200D]/80 font-light leading-relaxed italic">"{testimonial.content}"</p>
                     </CardContent>
                   </Card>
                 ))}
@@ -1262,34 +573,16 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* ════════════════════════════════════════════════════════════════════ */}
-      {/* Newsletter Section                                                 */}
-      {/* ════════════════════════════════════════════════════════════════════ */}
+      {/* Newsletter Section */}
       <section className="py-10 md:py-14 lg:py-20 bg-[#FFFDFA]">
-        <div
-          ref={newsletterReveal.ref}
-          className={`max-w-[1920px] mx-auto px-4 md:px-8 transition-all duration-700 ${
-            newsletterReveal.visible
-              ? "opacity-100 translate-y-0"
-              : "opacity-0 translate-y-8"
-          }`}
-        >
+        <div ref={newsletterReveal.ref} className={`max-w-[1920px] mx-auto px-4 md:px-8 transition-all duration-700 ${newsletterReveal.visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"}`}>
           <div className="relative bg-gradient-to-r from-[#4F200D] to-[#7A3B15] rounded-3xl p-8 md:p-14 lg:p-20 overflow-hidden">
-            {/* Decorative circles */}
             <div className="absolute -top-16 -right-16 w-48 h-48 bg-[#FF8400]/15 rounded-full" />
             <div className="absolute -bottom-10 -left-10 w-32 h-32 bg-[#FFD93D]/10 rounded-full" />
-
             <div className="relative text-center">
-              <h2 className="text-2xl md:text-4xl lg:text-5xl font-bold text-white mb-3 md:mb-5">
-                พร้อมเริ่มต้นการเดินทางหรือยัง?
-              </h2>
-              <p className="text-sm md:text-lg text-white/60 font-light mb-6 md:mb-8 max-w-lg mx-auto">
-                สำรวจทัวร์ยอดนิยมของเรา และค้นหาประสบการณ์ใหม่ ๆ
-              </p>
-              <Button
-                onClick={() => navigate("/tours")}
-                className="h-11 md:h-13 rounded-full bg-[#FF8400] text-white hover:bg-[#e67600] px-8 md:px-10 text-sm md:text-base font-bold whitespace-nowrap shadow-lg hover:shadow-xl transition-all active:scale-95"
-              >
+              <h2 className="text-2xl md:text-4xl lg:text-5xl font-bold text-white mb-3 md:mb-5">พร้อมเริ่มต้นการเดินทางหรือยัง?</h2>
+              <p className="text-sm md:text-lg text-white/60 font-light mb-6 md:mb-8 max-w-lg mx-auto">สำรวจทัวร์ยอดนิยมของเรา และค้นหาประสบการณ์ใหม่ ๆ</p>
+              <Button onClick={() => navigate("/tours")} className="h-11 md:h-13 rounded-full bg-[#FF8400] text-white hover:bg-[#e67600] px-8 md:px-10 text-sm md:text-base font-bold whitespace-nowrap shadow-lg hover:shadow-xl transition-all active:scale-95">
                 สำรวจทัวร์ยอดนิยม
               </Button>
             </div>

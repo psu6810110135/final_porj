@@ -55,6 +55,11 @@ export default function ProfilePage() {
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [phone, setPhone] = useState("");
+  const [pendingAvatarFile, setPendingAvatarFile] = useState<File | null>(null);
+  const [pendingAvatarPreview, setPendingAvatarPreview] = useState<
+    string | null
+  >(null);
+  const [isAvatarConfirmOpen, setIsAvatarConfirmOpen] = useState(false);
 
   const normalizedPhone = phone.trim();
   const isPhoneValid =
@@ -64,6 +69,19 @@ export default function ProfilePage() {
     (firstName !== (profile.firstName ?? "") ||
       lastName !== (profile.lastName ?? "") ||
       phone !== (profile.phone ?? ""));
+
+  const clearPendingAvatar = () => {
+    setPendingAvatarFile(null);
+    setPendingAvatarPreview((prev) => {
+      if (prev) URL.revokeObjectURL(prev);
+      return null;
+    });
+  };
+
+  const closeAvatarConfirmModal = () => {
+    setIsAvatarConfirmOpen(false);
+    clearPendingAvatar();
+  };
 
   useEffect(() => {
     const token = localStorage.getItem("jwt_token");
@@ -97,11 +115,16 @@ export default function ProfilePage() {
     fetchProfile();
   }, [navigate]);
 
-  const handleUploadAvatar = async (event: ChangeEvent<HTMLInputElement>) => {
-    const token = localStorage.getItem("jwt_token");
+  useEffect(() => {
+    return () => {
+      if (pendingAvatarPreview) URL.revokeObjectURL(pendingAvatarPreview);
+    };
+  }, [pendingAvatarPreview]);
+
+  const handleUploadAvatar = (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
 
-    if (!token || !file) return;
+    if (!file) return;
 
     const allowedTypes = [
       "image/png",
@@ -111,21 +134,42 @@ export default function ProfilePage() {
     ];
     if (!allowedTypes.includes(file.type)) {
       setUploadError("รองรับเฉพาะไฟล์ PNG หรือ JPG เท่านั้น");
+      event.target.value = "";
       return;
     }
 
     if (file.size > 2 * 1024 * 1024) {
       setUploadError("ขนาดรูปต้องไม่เกิน 2MB");
+      event.target.value = "";
       return;
     }
 
     setUploadError(null);
     setUploadSuccess(null);
+
+    const previewUrl = URL.createObjectURL(file);
+    setPendingAvatarFile(file);
+    setPendingAvatarPreview((prev) => {
+      if (prev) URL.revokeObjectURL(prev);
+      return previewUrl;
+    });
+    setIsAvatarConfirmOpen(true);
+    event.target.value = "";
+  };
+
+  const confirmUploadAvatar = async () => {
+    const token = localStorage.getItem("jwt_token");
+    if (!token || !pendingAvatarFile) {
+      setUploadError("ไม่พบไฟล์รูปหรือเซสชันหมดอายุ กรุณาเลือกใหม่อีกครั้ง");
+      closeAvatarConfirmModal();
+      return;
+    }
+
     setUploading(true);
 
     try {
       const formData = new FormData();
-      formData.append("avatar", file);
+      formData.append("avatar", pendingAvatarFile);
 
       const res = await fetch(`${API_BASE_URL}/api/users/me/avatar`, {
         method: "POST",
@@ -149,6 +193,7 @@ export default function ProfilePage() {
       setLastName(updatedProfile.lastName ?? "");
       setPhone(updatedProfile.phone ?? "");
       setUploadSuccess("อัปโหลดรูปโปรไฟล์สำเร็จ");
+      closeAvatarConfirmModal();
     } catch (err) {
       setUploadError(
         err instanceof Error
@@ -157,7 +202,6 @@ export default function ProfilePage() {
       );
     } finally {
       setUploading(false);
-      event.target.value = "";
     }
   };
 
@@ -439,6 +483,54 @@ export default function ProfilePage() {
                 </svg>
               </Link>
             </div>
+
+            {isAvatarConfirmOpen && (
+              <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4">
+                <div className="w-full max-w-md bg-white rounded-2xl border border-[#F0E8E0] shadow-lg overflow-hidden">
+                  <div className="h-1.5 w-full bg-gradient-to-r from-[#FF8400] to-[#FF6B00]" />
+
+                  <div className="p-6">
+                    <h4 className="font-bold text-[#4F200D] text-lg mb-1">
+                      ยืนยันการอัปโหลดรูปโปรไฟล์
+                    </h4>
+                    <p className="text-sm text-[#4F200D]/60 mb-4">
+                      กรุณาตรวจสอบรูปก่อนบันทึก
+                    </p>
+
+                    <div className="w-40 h-40 mx-auto rounded-full border-4 border-[#FFF3E0] shadow-sm overflow-hidden bg-[#F6F1E9] flex items-center justify-center">
+                      {pendingAvatarPreview ? (
+                        <img
+                          src={pendingAvatarPreview}
+                          alt="ตัวอย่างรูปโปรไฟล์"
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <span className="text-sm text-[#4F200D]/50">
+                          ไม่พบรูปตัวอย่าง
+                        </span>
+                      )}
+                    </div>
+
+                    <div className="mt-6 grid grid-cols-2 gap-3">
+                      <button
+                        onClick={closeAvatarConfirmModal}
+                        disabled={uploading}
+                        className="py-2.5 rounded-xl border border-[#E8DED3] text-[#4F200D] font-semibold text-sm hover:bg-[#F6F1E9] transition-colors disabled:opacity-60"
+                      >
+                        ยกเลิก
+                      </button>
+                      <button
+                        onClick={confirmUploadAvatar}
+                        disabled={uploading}
+                        className="py-2.5 rounded-xl bg-[#FF8400] text-white font-semibold text-sm hover:bg-[#E67600] transition-colors disabled:opacity-70"
+                      >
+                        {uploading ? "กำลังอัปโหลด..." : "ยืนยันอัปโหลด"}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
 
             {isEditModalOpen && (
               <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4">

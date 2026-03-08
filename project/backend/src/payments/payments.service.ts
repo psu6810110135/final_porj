@@ -34,7 +34,8 @@ export class PaymentsService {
       payload, 
       amount,
       tourTitle: booking.tour.title,
-      customerName: booking.user?.username || 'Customer'
+      customerName: booking.user?.username || 'Customer',
+      paymentDeadline: booking.paymentDeadline
     };
   }
 

@@ -137,6 +137,7 @@ export class ReviewsService {
         'user.full_name',
         'user.first_name',
         'user.last_name',
+        'user.avatar_url',
         'tour.id',
         'tour.title',
       ])

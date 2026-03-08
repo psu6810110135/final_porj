@@ -68,7 +68,7 @@ export default function Footer() {
           </div>
 
           <div className="flex flex-wrap gap-x-2.5 gap-y-1">
-            {compactLinks.map(({ label, to, href }) =>
+            {compactLinks.map(({ label, to, href }: any) =>
               to ? (
                 <Link
                   key={label}
@@ -137,7 +137,7 @@ export default function Footer() {
           <div>
             <h3 className="text-xl font-bold mb-2">Support</h3>
             <ul className="space-y-1 md:space-y-1.5">
-              {supportLinks.map(({ label, href, to }) => (
+              {supportLinks.map(({ label, href, to }: any) => (
                 <li key={label}>
                   {to ? (
                     <Link to={to} className={linkClass}>
@@ -180,6 +180,7 @@ export default function Footer() {
             © {year} Thai Tours Service. All rights reserved.
           </p>
         </div>
+
       </div>
     </footer>
   );

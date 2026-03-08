@@ -54,6 +54,9 @@ export class User {
   @Column({ default: true })
   is_active!: boolean;
 
+  @Column({ default: 'local' })
+  provider!: string; // 'local' | 'google'
+
   @Column({ nullable: true })
   resetPasswordOtp!: string; // ไว้เก็บเลข 6 หลัก
 

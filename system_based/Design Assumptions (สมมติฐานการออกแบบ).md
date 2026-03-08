@@ -1,16 +1,6 @@
-# Design Assumptions - Simplified (Thai Tour Website)
+# Design Assumptions (สมมติฐานการออกแบบ) — Thai Tour Website
 
-> เอกสารนี้แสดงสมมติฐานการออกแบบแบบ **Simplified** ที่เหมาะสำหรับนักศึกษาปี 1
-
----
-
-## Overview
-
-**Simplifications:**
-- ❌ Winston Logger → console.log()
-- ❌ Redis Caching → Database query only
-- ❌ Email Queue → console.log()
-- ❌ Row Level Security → NestJS Guards
+> เอกสารนี้แสดงสมมติฐานการออกแบบที่ใช้ในระบบจองทัวร์ออนไลน์ สอดคล้องกับโค้ดปัจจุบัน
 
 ---
 
@@ -23,88 +13,100 @@
 
 ### 1.2 Basic Knowledge
 **Customers:**
-- Familiar with e-commerce websites (Shopee, Lazada)
-- Can use mobile banking apps
-- Can upload files via browser
+- คุ้นเคยกับการใช้งานเว็บไซต์ e-commerce (Shopee, Lazada)
+- ใช้แอป Mobile Banking ได้ (สำหรับสแกน PromptPay QR)
+- อัปโหลดไฟล์ผ่านเบราว์เซอร์ได้
 
 **Admins:**
-- Can verify payment slips
-- Understand basic dashboard
+- ตรวจสอบสลิปการชำระเงินได้
+- จัดการข้อมูลทัวร์ ตารางเดินทาง ผู้ใช้ รีวิว และ Ticket ได้
 
 ---
 
 ## 2. System & Infrastructure Assumptions
 
-### 2.1 Internet Connection
+### 2.1 Development Infrastructure
+
+| Service | Technology | Port | Notes |
+|---|---|---|---|
+| Frontend | React + Vite | 5173 | Dev server with HMR |
+| Backend | NestJS | 3000 | `npm run start:dev` |
+| Database | PostgreSQL 16 | 5433 | Docker container |
+
+- การพัฒนาใช้ Docker Compose สำหรับ PostgreSQL เท่านั้น (Backend/Frontend run locally)
+- ใช้ `synchronize: true` ใน TypeORM — Auto-schema migration สำหรับ development
+
+### 2.2 Internet Connection
 - Always-on connectivity required
 - Minimum bandwidth: 3 Mbps
 - No offline capability
 
-### 2.2 Cloud Service Availability
-
-| Service | Provider | Uptime | Notes |
-|---|---|---|---|
-| Frontend | Vercel | 99.99% | Cloudflare CDN |
-| Backend | Render (Starter) | 99.9% | Cold Start ~30s |
-| Database | PostgreSQL (Render/Railway) | 99.9% | Connection Pool: 60 |
-
-**Mitigation for Render Cold Start:**
-- Cron job ping `/api/health` every 10 minutes
-
 ### 2.3 File Storage
-- Storage: Render Disk / Railway Volume / Cloud Storage
-- Max File Size: 5 MB (system limit)
-- Slip size average: 500 KB
 
-**Auto-cleanup:**
-- Delete confirmed booking slips after 90 days
-- Delete cancelled booking slips after 7 days
+| ประเภท | Path | Size Limit |
+|---|---|---|
+| Payment Slips | `./uploads/slips/` | 5 MB |
+| Avatars | `./uploads/avatars/` | 2 MB |
+| Tour Images | `./uploads/tour-images/` | multipart |
 
-### 2.4 Security Assumptions
+- ไฟล์เก็บใน local disk (`./uploads/`) — ไม่ใช้ Cloud Storage
+- Backend serve static files ผ่าน `ServeStaticModule`
+- รองรับ MIME types: `image/jpeg`, `image/png`, `image/gif`, `image/webp`
+
+### 2.4 External Services
+
+| Service | Usage | Note |
+|---|---|---|
+| Google OAuth 2.0 | Social Login | via `@nestjs/passport` + `passport-google-oauth20` |
+| Gmail SMTP | OTP Password Reset Email | Nodemailer + App Password |
+| PromptPay QR | Payment QR Code Generation | `promptpay-qr` package |
+
+- Google OAuth: ผู้ใช้เลือกล็อกอินผ่าน Google ได้ — ระบบสร้าง User ใหม่อัตโนมัติ
+- Email: ใช้สำหรับส่ง OTP เท่านั้น (forgot password) — Notification อื่นๆ ใช้ `console.log()`
+- PromptPay: เข้ารหัส phone number เป็น QR Code string ฝั่ง Backend
+
+### 2.5 Security Assumptions
 
 | Layer | Protection | Note |
 |---|---|---|
-| Network | Cloudflare DDoS | Basic protection |
-| Authentication | JWT + bcrypt | No 2FA in v1.0 |
-| Database | NestJS Guards | No RLS |
-| File Upload | Mime-type + Size | No virus scanning |
-| API | Basic rate limiting | Optional |
-
-**Security Gaps (Accepted for v1.0):**
-- No malware scanning
-- No CAPTCHA
-- No WAF
+| Authentication | JWT + bcrypt + Google OAuth | AuthGuard('jwt') per-route |
+| Authorization | RolesGuard + @Roles() decorator | Infrastructure exists, not applied universally |
+| File Upload | Multer FileFilter + Size limit | PNG/JPG/GIF/WEBP only |
+| Password Reset | 6-digit OTP + 10 min expiry | via Email |
+| CORS | Enabled for localhost:5173 | dev config |
 
 ---
 
 ## 3. Data & Operational Assumptions
 
 ### 3.1 Data Accuracy
-- Admin verifies all tour data before entry
-- No email verification in v1.0
-- Phone format: String (no validation)
+- Admin ยืนยันข้อมูลทัวร์ก่อนบันทึก
+- ไม่มี Email Verification สำหรับ Registration
+- Phone format: String (ไม่มี validation format)
+- Username ต้องไม่ซ้ำ (unique constraint)
 
 ### 3.2 Currency & Geography
 - Currency: THB only
-- Region: Thailand only
+- Region: Thailand only (ภาค: เหนือ, กลาง, อีสาน, ตะวันออก, ใต้)
 - Time Zone: Asia/Bangkok (UTC+7)
 
 ### 3.3 Payment Assumptions
 
 **Manual Verification Only:**
-1. System generates QR Code
-2. Customer scans and pays
-3. Customer uploads slip screenshot
-4. Admin verifies manually
+1. ระบบสร้าง PromptPay QR Code
+2. ลูกค้าสแกน QR และชำระเงิน
+3. ลูกค้าอัปโหลดสลิป (ภายใน 15 นาที)
+4. Admin ตรวจสอบสลิปและ Approve/Reject
 
-**Latency:**
-- Payment deadline: 24 hours
-- Verification SLA: ~12 hours (no auto-enforcement)
+**Timing:**
+- Payment deadline: **15 นาที** — Cron job `@Cron('*/1 * * * *')` ตรวจทุก 1 นาที
+- Booking ที่เกิน 15 นาทีโดยไม่อัปโหลดสลิป → status `expired` + คืนที่นั่งอัตโนมัติ
+- Verification SLA: ขึ้นอยู่กับ Admin (ไม่มี auto-enforcement)
 
 ### 3.4 Concurrency & Race Conditions
 - Peak concurrency: ≤ 50 users
-- Database pool: 60 connections
-- Transaction + FOR UPDATE lock for race condition prevention
+- `DataSource.transaction()` + `pessimistic_write` lock ป้องกัน race condition
+- ตรวจ `remaining_seats` ภายใน transaction ก่อนสร้าง booking
 
 ---
 
@@ -130,84 +132,99 @@
 
 ### 5.1 Testing Scope
 
-**Will do:**
-- ✅ Manual Testing (complete user journey)
-- ✅ Basic security testing (SQL injection, XSS)
-- ✅ Concurrent booking test (3-5 users)
+**มี:**
+- ✅ Manual Testing (user journey ทั้งหมด)
+- ✅ Unit Tests (Jest — NestJS services/controllers)
+- ✅ E2E Tests (Jest + supertest — backend API)
+- ✅ Playwright E2E Tests (browser automation — root level)
+- ✅ Concurrent booking test
 
-**Will NOT do:**
-- ❌ Load testing
+**ไม่มี:**
+- ❌ Load testing / Stress testing
 - ❌ Penetration testing
-- ❌ Automated E2E testing
+- ❌ Security scanning automation
 
-### 5.2 Test Data
-- Mock data for development
-- Admin: `admin@test.com` / `TestPass123!`
-- Customer: `customer@test.com` / `TestPass123!`
+### 5.2 Test Data (Seed)
+- Admin account seeded on startup: `admin` / `admin1234`
+- Role: `ADMIN`
+- Customer accounts: ลงทะเบียนผ่านหน้า `/register`
 
 ---
 
 ## 6. Maintenance Assumptions
 
-### 6.1 Backup & Recovery
-- PostgreSQL automated backups (Render/Railway)
-- Retention: 7 days (Free tier)
+### 6.1 Database
+- PostgreSQL 16 via Docker — data persists in Docker volume
+- `synchronize: true` — TypeORM auto-migrate (dev only, ไม่ใช้ใน production)
+- Connection: `postgresql://thai_tours:thai_tours_password@localhost:5433/thai_tours`
 
 ### 6.2 Monitoring
-- Console logging only
-- No real-time alerts
-- Manual log checking
+- Console logging only (`console.log`)
+- ไม่มี real-time alerts
+- ไม่มี structured logging (Winston/Pino)
 
 ---
 
 ## 7. Business Logic Assumptions
 
 ### 7.1 Cancellation Rules
-- Can cancel if status = `pending_pay`
-- No refund if status = `confirmed`
-- No modification after confirmation
+- ยกเลิกได้เมื่อ status = `pending_pay` เท่านั้น
+- ไม่มี refund ถ้า status = `confirmed`
+- ยกเลิกแล้วคืนที่นั่งอัตโนมัติ
 
 ### 7.2 Pricing Logic
 ```
-totalPrice = basePricePerPerson × numberOfPeople
+basePrice = tour.price × adults
+childTotal = tour.childPrice × children
+discount = 5% ถ้า group ≥ 5 คน
+totalPrice = (basePrice + childTotal) - discount
 ```
-- No seasonal pricing in v1.0
+- ไม่มี seasonal pricing
+- ราคาแยก ผู้ใหญ่ / เด็ก
 
-### 7.3 Inventory Management
-- Immediate deduction on booking
-- Stock release on cancel/expire
-- Transaction + SELECT FOR UPDATE for prevention
+### 7.3 Booking Constraints
+- ที่นั่งตัดทันทีเมื่อสร้าง booking (lock + deduct)
+- คืนที่นั่งเมื่อ cancel/expire
+- จำกัด active bookings ต่อ user: สูงสุด 5 รายการ (configurable ใน `booking.config.ts`)
+
+### 7.4 Tour Schedules
+- แต่ละทัวร์มีหลาย `TourSchedule` — วันที่เปิดให้จอง
+- Composite unique index: `[tour_id, available_date]`
+- Admin enable/disable แต่ละวันที่ได้
 
 ---
 
-## 8. Summary of Simplifications
+## 8. Summary
 
-| Original | Simplified |
+| หัวข้อ | สถานะปัจจุบัน |
 |---|---|
-| Winston Logger | console.log() |
-| Redis Cache | None (DB query) |
-| Email Queue | console.log() |
-| Row Level Security | NestJS Guards |
-| Advanced Monitoring | Console logs |
-| Virus Scanning | None |
-| 2FA | None |
+| Logger | console.log() |
+| Cache | ไม่มี (query DB โดยตรง) |
+| Email | Nodemailer สำหรับ OTP เท่านั้น |
+| Auth | JWT + Google OAuth + OTP Reset |
+| File Storage | Local disk (`./uploads/`) |
+| Database | PostgreSQL 16 (Docker, port 5433) |
+| Payment | PromptPay QR + Manual verify |
+| Payment Deadline | 15 นาที (Cron auto-expire) |
+| Booking Lock | Transaction + pessimistic_write |
 
 ---
 
 ## 9. Validation Checklist
 
-Before deploy:
 ```
-✅ Test concurrent booking (3-5 users)
-✅ Test duplicate slip detection
-✅ Test auto-expire (24h)
+✅ Test concurrent booking (pessimistic lock)
+✅ Test auto-expire (15 นาที cron)
 ✅ Test payment reject → re-upload
-✅ Test file upload
-✅ Test QR code scanning
+✅ Test file upload (slip 5MB, avatar 2MB)
+✅ Test QR code generation (PromptPay)
+✅ Test Google OAuth login
+✅ Test OTP password reset
 ✅ Test responsive (mobile)
+✅ Test admin tour/schedule CRUD
 ```
 
 ---
 
-**Last Updated:** 2026-02-10
-**Status:** Simplified for Year 1 Students 🚀
+**Last Updated:** 2026-03-06
+**Status:** สอดคล้องกับโค้ดปัจจุบัน

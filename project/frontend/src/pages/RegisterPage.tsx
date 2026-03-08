@@ -306,12 +306,11 @@ const RegisterPage: React.FC = () => {
 
   const validateStep1 = (): boolean => {
     const e: Partial<FormData> = {};
-    if (!formData.firstName.trim()) e.firstName = "กรุณากรอกชื่อ";
-    if (!formData.lastName.trim()) e.lastName = "กรุณากรอกนามสกุล";
-    if (!formData.username.trim()) e.username = "กรุณากรอกชื่อผู้ใช้";
-    if (!formData.email.trim()) e.email = "กรุณากรอกอีเมล";
-    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email))
-      e.email = "รูปแบบอีเมลไม่ถูกต้อง";
+    if (!formData.firstName.trim()) e.firstName = 'กรุณากรอกชื่อ';
+    if (!formData.lastName.trim()) e.lastName = 'กรุณากรอกนามสกุล';
+    if (!formData.username.trim()) e.username = 'กรุณากรอกชื่อผู้ใช้';
+    if (!formData.email.trim()) e.email = 'กรุณากรอกอีเมล';
+    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) e.email = 'รูปแบบอีเมลไม่ถูกต้อง';
     setErrors(e);
     return Object.keys(e).length === 0;
   };
@@ -579,36 +578,9 @@ const RegisterPage: React.FC = () => {
                       error={errors.lastName}
                     />
                   </div>
-                  <Field
-                    label="ชื่อผู้ใช้"
-                    name="username"
-                    placeholder="เช่น chaichai99"
-                    icon="🪪"
-                    required
-                    value={formData.username}
-                    onChange={handleChange}
-                    error={errors.username}
-                  />
-                  <Field
-                    label="อีเมล"
-                    name="email"
-                    type="email"
-                    placeholder="email@example.com"
-                    icon="✉️"
-                    required
-                    value={formData.email}
-                    onChange={handleChange}
-                    error={errors.email}
-                  />
-                  <Field
-                    label="เบอร์โทรศัพท์"
-                    name="phoneNumber"
-                    type="tel"
-                    placeholder="08X-XXX-XXXX (ไม่จำเป็น)"
-                    icon="📱"
-                    value={formData.phoneNumber}
-                    onChange={handleChange}
-                  />
+                  <Field label="ชื่อผู้ใช้" name="username" placeholder="เช่น chaichai99" icon="🪪" required value={formData.username} onChange={handleChange} error={errors.username} />
+                  <Field label="อีเมล" name="email" type="email" placeholder="email@example.com" icon="✉️" required value={formData.email} onChange={handleChange} error={errors.email} />
+                  <Field label="เบอร์โทรศัพท์" name="phoneNumber" type="tel" placeholder="08X-XXX-XXXX (ไม่จำเป็น)" icon="📱" value={formData.phoneNumber} onChange={handleChange} />
 
                   <button
                     type="button"
@@ -746,8 +718,8 @@ const RegisterPage: React.FC = () => {
                     borderColor={confirmBorderColor}
                     successMsg={
                       !errors.confirmPassword &&
-                      formData.confirmPassword &&
-                      formData.confirmPassword === formData.password
+                        formData.confirmPassword &&
+                        formData.confirmPassword === formData.password
                         ? "✓ รหัสผ่านตรงกัน"
                         : undefined
                     }

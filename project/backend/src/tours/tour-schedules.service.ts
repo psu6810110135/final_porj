@@ -43,20 +43,29 @@ export class TourSchedulesService {
       schedules.map(async (schedule) => {
         const maxCapacity = schedule.max_capacity_override ?? defaultCapacity;
 
+        const now = new Date();
+        
         // Count booked seats for this schedule
         const result = await this.bookingRepository
-          .createQueryBuilder('booking')
-          .select('COALESCE(SUM(booking.pax), 0)', 'total')
-          .where('booking.tourScheduleId = :scheduleId', {
-            scheduleId: schedule.id,
-          })
-          .andWhere('booking.status NOT IN (:...statuses)', {
-            statuses: [BookingStatus.CANCELLED, BookingStatus.EXPIRED],
-          })
-          .getRawOne<{ total: string }>();
+            .createQueryBuilder('booking')
+            .select('COALESCE(SUM(booking.pax), 0)', 'total')
+            .where('booking.tourScheduleId = :scheduleId', {
+              scheduleId: schedule.id,
+            })
+            .andWhere('booking.status NOT IN (:...statuses)', {
+              statuses: [BookingStatus.CANCELLED, BookingStatus.EXPIRED],
+            })
+            .andWhere(
+              '(booking.status != :pendingStatus OR booking.paymentDeadline > :now)', 
+              { 
+                pendingStatus: BookingStatus.PENDING_PAY,
+                now: now 
+              }
+            )
+            .getRawOne<{ total: string }>();
 
-        const bookedSeats = Number(result?.total || 0);
-        const availableSeats = maxCapacity - bookedSeats;
+          const bookedSeats = Number(result?.total || 0);
+          const availableSeats = maxCapacity - bookedSeats;
 
         return {
           ...schedule,

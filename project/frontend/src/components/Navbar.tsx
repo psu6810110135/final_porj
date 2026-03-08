@@ -265,8 +265,7 @@ export default function Navbar({ activePage = "home" }: NavbarProps) {
 
   // Mobile top icon button style
   const mobileIconBtn = (active = false) =>
-    `flex flex-col items-center justify-center gap-1 px-2 sm:px-3 py-1 rounded-xl transition-all duration-200 ${
-      active ? "text-[#FF8400]" : "text-[#6B4226] hover:text-[#FF8400]"
+    `flex flex-col items-center justify-center gap-1 px-2 sm:px-3 py-1 rounded-xl transition-all duration-200 ${active ? "text-[#FF8400]" : "text-[#6B4226] hover:text-[#FF8400]"
     }`;
 
   const iconBtnBase =
@@ -313,9 +312,8 @@ export default function Navbar({ activePage = "home" }: NavbarProps) {
       `}</style>
 
       <nav
-        className={`fixed top-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-nav transition-transform duration-300 ease-in-out ${
-          visible ? "translate-y-0" : "-translate-y-full"
-        } ${atTop ? "" : "nav-shadow"}`}
+        className={`fixed top-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-nav transition-transform duration-300 ease-in-out ${visible ? "translate-y-0" : "-translate-y-full"
+          } ${atTop ? "" : "nav-shadow"}`}
       >
         <div className="max-w-[1920px] mx-auto px-3 sm:px-4 md:px-4 lg:px-8">
           <div className="flex items-center h-16 sm:h-[72px] md:h-20 lg:h-24">

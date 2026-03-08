@@ -1,97 +1,126 @@
-# System Component Design - Simplified (Thai Tour Website)
+# System Component Design — Thai Tour Website
 
-> เอกสารนี้แสดงการออกแบบส่วนประกอบระบบแบบ **Simplified** ที่เหมาะสำหรับนักศึกษาปี 1
-
----
-
-## Overview
-
-**Removed from original design:**
-- ❌ CacheService (Redis) → In-memory cache or none
-- ❌ LoggerService (Winston) → console.log()
-- ❌ NotificationService (Email Queue) → console.log()
-- ❌ Session management → JWT only (stateless)
+> เอกสารนี้แสดงการออกแบบส่วนประกอบระบบตามโค้ดจริงในโปรเจกปัจจุบัน
 
 ---
 
-## 1. Module Decomposition (Simplified)
+## 1. Module Decomposition
 
 ```mermaid
 classDiagram
-    note "System Module Decomposition - Simplified Version"
+    note "NestJS Backend Module Structure"
 
     %% ========== Frontend Layer ==========
     class Frontend_Application {
-        <<Vercel Host>>
-        +environment: production
+        <<Vite Dev Server : 5173>>
+        +environment: development
     }
 
     class CustomerPortal {
-        +searchTours(criteria: Object): Promise~Tour[]~
+        +searchTours(filters): Promise~Tour[]~
         +viewTourDetail(id: UUID): Promise~Tour~
-        +viewOneDayTours(): Promise~Tour[]~
-        +viewMultiDayTours(): Promise~Tour[]~
-        +bookOneDayTour(tourId: UUID, date: Date, pax: Int): Promise~Booking~
-        +bookMultiDayTour(tourId: UUID, startDate: Date, endDate: Date, pax: Int): Promise~Booking~
-        +planCustomTrip(people: Int, dates: Date[]): Promise~Plan~
-        +uploadPaymentSlip(image: File): Promise~UploadResult~
+        +viewRecommendedTours(): Promise~Tour[]~
+        +bookTour(tourId, scheduleId, pax, contact): Promise~Booking~
+        +calculatePrice(tourId, adults, children): Promise~PriceResult~
+        +uploadPaymentSlip(bookingId, file): Promise~Result~
         +viewBookingHistory(): Promise~Booking[]~
-        +cancelBooking(bookingId: UUID): Promise~Boolean~
-        +downloadETicket(bookingId: UUID): Promise~PDF~
+        +cancelBooking(bookingId): Promise~Boolean~
+        +writeReview(bookingId, rating, comment): Promise~Review~
+        +submitContactTicket(data): Promise~Ticket~
+        +viewProfile(): Promise~User~
+        +updateProfile(data): Promise~User~
+        +uploadAvatar(file): Promise~Result~
     }
 
     class AdminDashboard {
-        +viewFinancialStats(period: String): Promise~Stats~
-        +approveBooking(bookingId: UUID): Promise~Boolean~
-        +rejectBooking(bookingId: UUID, reason: String): Promise~Boolean~
-        +manageTours(action: CRUD, data: Tour): Promise~Tour~
-        +verifySlip(imageUrl: String): Promise~Verification~
+        +viewDashboardStats(): Promise~Stats~
+        +manageBookings(action, bookingId): Promise~Boolean~
+        +verifyPayment(paymentId, status): Promise~Boolean~
+        +manageTours(action: CRUD, data): Promise~Tour~
+        +manageTourSchedules(tourId, action): Promise~Schedule~
+        +manageUsers(action: CRUD): Promise~User~
+        +manageReviews(action: CRUD): Promise~Review~
+        +manageTickets(id, status): Promise~Ticket~
     }
 
     %% ========== Backend Layer ==========
     class Backend_API {
-        <<Render Host>>
-        +port: 8080
-        +healthCheck(): Status
+        <<NestJS : 3000>>
+        +port: 3000
     }
 
     class AuthService {
-        +login(email: String, password: String): Promise~Token~
-        +register(userData: Object): Promise~User~
-        -hashPassword(plain: String): String
-        -comparePassword(plain: String, hash: String): Boolean
-        -generateJWT(userId: UUID, role: String): JWT
+        +signUp(username, password, email?): Promise~User~
+        +signIn(username, password): Promise~Token~
+        +googleLogin(profile): Promise~Token~
+        +forgotPassword(email): Promise~void~
+        +verifyOtp(email, otp): Promise~Token~
+        +resetPasswordWithToken(token, newPassword): Promise~void~
     }
 
-    class TourService {
-        +getAllTours(filters: Object): Promise~Tour[]~
-        +getTourById(id: UUID): Promise~Tour~
-        +createTour(data: Object): Promise~Tour~
-        +updateTour(id: UUID, data: Object): Promise~Tour~
-        +deleteTour(id: UUID): Promise~Boolean~
-        +checkAvailability(tourId: UUID, date: Date): Promise~Int~
-        +getOneDayTours(): Promise~Tour[]~
-        +getMultiDayTours(): Promise~Tour[]~
+    class UsersService {
+        +findOne(username): Promise~User~
+        +findAll(): Promise~User[]~
+        +updateCurrentUserProfile(id, data): Promise~User~
+        +updateAvatar(id, file): Promise~User~
+        +create(data): Promise~User~
+        +remove(id): Promise~void~
     }
 
-    class BookingEngine {
-        +calculatePrice(basePrice: Float, pax: Int, options: Object): Float
-        +checkAvailability(tourId: UUID, date: Date, pax: Int): Promise~Boolean~
-        +createBookingOrder(userId: UUID, tourId: UUID, data: Object): Promise~Booking~
-        +generateQRCode(amount: Float, refId: String): Promise~String~
+    class ToursService {
+        +getTours(filters): Promise~Tour[]~
+        +getRecommendedTours(): Promise~Tour[]~
+        +getTourById(id): Promise~Tour~
+        +create(data, images): Promise~Tour~
+        +update(id, data, images): Promise~Tour~
+        +remove(id): Promise~void~
     }
 
-    class PaymentService {
-        +uploadSlipImage(file: File, bookingId: UUID): Promise~UploadResult~
-        +verifyTransaction(slipId: UUID, adminId: UUID): Promise~Boolean~
-        +detectDuplicateSlip(fileHash: String): Promise~Boolean~
-        -calculateSHA256(file: Buffer): String
+    class TourSchedulesService {
+        +findAll(tourId): Promise~Schedule[]~
+        +findAvailableByTour(tourId): Promise~Schedule[]~
+        +create(tourId, data): Promise~Schedule~
+        +update(id, data): Promise~Schedule~
+        +remove(id): Promise~void~
     }
 
-    class EmailService {
-        +sendBookingConfirmation(userId: UUID, bookingId: UUID): void
-        +sendPaymentApproved(bookingId: UUID): void
-        +sendPaymentRejected(bookingId: UUID, reason: String): void
+    class BookingsService {
+        +create(userId, dto): Promise~Booking~
+        +calculatePrice(dto): Promise~PriceResult~
+        +findAllByUser(userId): Promise~Booking[]~
+        +findOneById(id): Promise~Booking~
+        +cancelBooking(id, userId): Promise~Booking~
+        +uploadPaymentSlip(id, file): Promise~Booking~
+        +expirePayments(): void — Cron
+    }
+
+    class PaymentsService {
+        +generateQrCode(bookingId): Promise~QR~
+        +findPending(): Promise~Payment[]~
+        +verifyPayment(id, status): Promise~Payment~
+        +checkStatus(id): Promise~Payment~
+    }
+
+    class ReviewsService {
+        +create(userId, dto): Promise~Review~
+        +findByTour(tourId, page): Promise~Review[]~
+        +findRecommended(limit): Promise~Review[]~
+        +findForAdmin(filters): Promise~Review[]~
+        +updateByAdmin(id, dto): Promise~Review~
+        +refreshTourRating(tourId): Promise~void~
+    }
+
+    class TicketsService {
+        +createTicket(dto): Promise~Ticket~
+        +findAll(): Promise~Ticket[]~
+        +updateStatus(id, status): Promise~Ticket~
+    }
+
+    class AdminService {
+        +getDashboardStats(): Promise~Stats~
+        +getAllBookings(): Promise~Booking[]~
+        +deleteBooking(id): Promise~void~
+        +updateBookingStatus(id, status): Promise~Booking~
     }
 
     %% ========== Relationships ==========
@@ -99,227 +128,242 @@ classDiagram
     Frontend_Application *-- AdminDashboard
 
     Backend_API *-- AuthService
-    Backend_API *-- TourService
-    Backend_API *-- BookingEngine
-    Backend_API *-- PaymentService
-    Backend_API *-- EmailService
+    Backend_API *-- UsersService
+    Backend_API *-- ToursService
+    Backend_API *-- TourSchedulesService
+    Backend_API *-- BookingsService
+    Backend_API *-- PaymentsService
+    Backend_API *-- ReviewsService
+    Backend_API *-- TicketsService
+    Backend_API *-- AdminService
 
-    CustomerPortal ..> TourService : "GET /api/tours"
-    CustomerPortal ..> BookingEngine : "POST /api/v1/bookings"
-    CustomerPortal ..> PaymentService : "POST /api/v1/payments"
+    CustomerPortal ..> ToursService : "GET /api/tours"
+    CustomerPortal ..> BookingsService : "POST /api/bookings"
+    CustomerPortal ..> PaymentsService : "GET /api/payments/qr/:id"
+    CustomerPortal ..> ReviewsService : "POST /api/reviews"
+    CustomerPortal ..> TicketsService : "POST /api/tickets"
+    CustomerPortal ..> UsersService : "GET /api/users/me"
 
-    AdminDashboard ..> PaymentService : "PATCH /api/v1/payments/verify"
-    AdminDashboard ..> TourService : "CRUD Operations"
+    AdminDashboard ..> AdminService : "GET /api/admin/stats"
+    AdminDashboard ..> PaymentsService : "PATCH /api/payments/:id/verify"
+    AdminDashboard ..> ToursService : "CRUD /api/tours"
+    AdminDashboard ..> TourSchedulesService : "CRUD /api/tours/:id/schedules"
+    AdminDashboard ..> UsersService : "GET /api/users"
+    AdminDashboard ..> ReviewsService : "GET /api/reviews/admin"
+    AdminDashboard ..> TicketsService : "PATCH /api/tickets/:id"
 
-    BookingEngine ..> TourService : "Check Stock"
-    BookingEngine ..> EmailService : "Send Confirmation"
-    PaymentService ..> EmailService : "Email Status Updates"
+    BookingsService ..> ToursService : "Check availability"
+    BookingsService ..> PaymentsService : "Create payment"
+    ReviewsService ..> ToursService : "Refresh rating"
 ```
 
 ---
 
 ## 2. API Endpoint Specification
 
-### 2.1 Authentication Endpoints
+### 2.1 Authentication Endpoints (`api/auth`)
 
-| Method | Endpoint | Description | Auth Required |
+| Method | Endpoint | Description | Auth |
 |---|---|---|---|
-| POST | `/api/v1/auth/register` | Create new user account | ❌ |
-| POST | `/api/v1/auth/login` | Login with email/password | ❌ |
+| POST | `/api/auth/signup` | สมัครสมาชิก (username + password) | - |
+| POST | `/api/auth/signin` | เข้าสู่ระบบ → JWT token | - |
+| GET | `/api/auth/google` | เข้าสู่ระบบผ่าน Google OAuth | - |
+| GET | `/api/auth/google/callback` | Google OAuth callback → redirect พร้อม token | - |
+| GET | `/api/auth/profile` | ดูโปรไฟล์ (จาก JWT) | JWT |
+| POST | `/api/auth/forgot-password` | ส่ง OTP ไปอีเมล | - |
+| POST | `/api/auth/verify-otp` | ตรวจสอบ OTP → ได้ reset token | - |
+| POST | `/api/auth/reset-password` | รีเซ็ตรหัสผ่านด้วย token | - |
 
-**Request Example:**
+**Sign In — Request / Response:**
 
 ```json
-POST /api/v1/auth/login
+POST /api/auth/signin
 {
-  "email": "customer@example.com",
+  "username": "customer1",
   "password": "SecurePass123!"
 }
-```
-
-**Response:**
-
-```json
-{
-  "success": true,
-  "data": {
-    "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-    "user": {
-      "id": "uuid-1234",
-      "email": "customer@example.com",
-      "role": "customer"
-    }
-  }
+→ {
+  "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
 }
 ```
 
 ---
 
-### 2.2 Tour Management Endpoints
+### 2.2 User Endpoints (`api/users`)
 
-| Method | Endpoint | Description | Auth Required |
+| Method | Endpoint | Description | Auth |
 |---|---|---|---|
-| GET | `/api/tours` | List all tours (with filters) | ❌ |
-| GET | `/api/tours/one-day` | List one-day trips only | ❌ |
-| GET | `/api/tours/multi-day` | List multi-day packages only | ❌ |
-| GET | `/api/tours/:id` | Get tour details | ❌ |
-| POST | `/api/tours` | Create new tour | ✅ Admin |
-| PATCH | `/api/tours/:id` | Update tour | ✅ Admin |
-| DELETE | `/api/tours/:id` | Soft delete tour | ✅ Admin |
-
-**Query Parameters Example:**
-
-```
-GET /api/tours?region=south&category=adventure&minPrice=1000&maxPrice=5000&tour_type=multi_day
-```
+| GET | `/api/users/me` | ดูโปรไฟล์ตัวเอง | JWT |
+| PATCH | `/api/users/me` | แก้ไขโปรไฟล์ | JWT |
+| POST | `/api/users/me/avatar` | อัปโหลดรูปโปรไฟล์ (2MB, PNG/JPG) | JWT |
+| POST | `/api/users` | สร้าง user ใหม่ (admin) | JWT + Admin |
+| GET | `/api/users` | ดูรายชื่อ user ทั้งหมด | JWT + Admin |
+| GET | `/api/users/:id` | ดูข้อมูล user | JWT + Admin |
+| PATCH | `/api/users/:id` | แก้ไข user | JWT + Admin |
+| DELETE | `/api/users/:id` | ลบ user | JWT + Admin |
 
 ---
 
-### 2.3 Booking Endpoints
+### 2.3 Tour Endpoints (`api/tours`)
 
-| Method | Endpoint | Description | Auth Required |
+| Method | Endpoint | Description | Auth |
 |---|---|---|---|
-| POST | `/api/v1/bookings` | Create new booking | ✅ Customer |
-| GET | `/api/v1/bookings/:id` | Get booking details | ✅ Owner/Admin |
-| GET | `/api/v1/bookings/my-bookings` | List user's bookings | ✅ Customer |
-| PATCH | `/api/v1/bookings/:id/cancel` | Cancel booking | ✅ Owner |
-| POST | `/api/v1/bookings/calculate` | Calculate trip price | ✅ Customer |
+| GET | `/api/tours` | ค้นหาทัวร์ (search, region, category, price, duration, sort) | - |
+| GET | `/api/tours/recommended` | ทัวร์แนะนำ (6 รายการ) | - |
+| GET | `/api/tours/:id` | รายละเอียดทัวร์ | - |
+| POST | `/api/tours` | สร้างทัวร์ใหม่ (พร้อมรูป) | JWT + Admin |
+| PATCH | `/api/tours/:id` | แก้ไขทัวร์ | JWT + Admin |
+| DELETE | `/api/tours/:id` | ลบทัวร์ | JWT + Admin |
+| POST | `/api/tours/seed` | Seed ข้อมูลทดสอบ | - |
 
----
+**Tour Schedules (nested under tour):**
 
-### 2.4 Payment Endpoints
-
-| Method | Endpoint | Description | Auth Required |
+| Method | Endpoint | Description | Auth |
 |---|---|---|---|
-| POST | `/api/v1/payments/:bookingId/upload` | Upload payment slip | ✅ Customer |
-| PATCH | `/api/v1/payments/:id/verify` | Verify payment (approve/reject) | ✅ Admin |
-| GET | `/api/v1/payments/pending` | List pending verifications | ✅ Admin |
+| GET | `/api/tours/:tourId/schedules` | ดู schedule ทั้งหมด | - |
+| GET | `/api/tours/:tourId/schedules/available` | ดู schedule ที่ว่าง | - |
+| GET | `/api/tours/:tourId/schedules/:id` | รายละเอียด schedule | - |
+| POST | `/api/tours/:tourId/schedules` | สร้าง schedule | JWT + Admin |
+| PATCH | `/api/tours/:tourId/schedules/:id` | แก้ไข schedule | JWT + Admin |
+| DELETE | `/api/tours/:tourId/schedules/:id` | ลบ schedule | JWT + Admin |
 
 ---
 
-## 3. Email Service (Simplified)
+### 2.4 Booking Endpoints (`api/bookings`)
 
-```typescript
-@Injectable()
-export class EmailService {
-  // Simplified: Just use console.log() instead of real email
-  sendBookingConfirmation(userId: string, bookingId: string) {
-    console.log('=================================');
-    console.log('📧 EMAIL: Booking Confirmation');
-    console.log(`To: User ID: ${userId}`);
-    console.log(`Booking ID: ${bookingId}`);
-    console.log('Message: Your booking has been confirmed. Please pay within 24 hours.');
-    console.log('=================================');
-  }
-
-  sendPaymentApproved(bookingId: string) {
-    console.log('=================================');
-    console.log('📧 EMAIL: Payment Approved');
-    console.log(`Booking ID: ${bookingId}`);
-    console.log('Message: Your payment has been approved. E-Ticket is ready.');
-    console.log('=================================');
-  }
-
-  sendPaymentRejected(bookingId: string, reason: string) {
-    console.log('=================================');
-    console.log('📧 EMAIL: Payment Rejected');
-    console.log(`Booking ID: ${bookingId}`);
-    console.log(`Reason: ${reason}`);
-    console.log('Message: Please re-upload your payment slip.');
-    console.log('=================================');
-  }
-}
-```
+| Method | Endpoint | Description | Auth |
+|---|---|---|---|
+| POST | `/api/bookings/calculate` | คำนวณราคา (adults, children, discount) | - |
+| POST | `/api/bookings` | สร้าง booking (transaction + lock) | JWT |
+| GET | `/api/bookings/my-bookings` | Booking ของ user | JWT |
+| GET | `/api/bookings/:id` | รายละเอียด booking | JWT |
+| PATCH | `/api/bookings/:id/cancel` | ยกเลิก booking | JWT |
+| POST | `/api/bookings/:id/upload-slip` | อัปโหลดสลิป (5MB) | JWT |
 
 ---
 
-## 4. Payment Verification Flow (Simplified)
+### 2.5 Payment Endpoints (`api/payments`)
+
+| Method | Endpoint | Description | Auth |
+|---|---|---|---|
+| GET | `/api/payments/qr/:id` | สร้าง PromptPay QR Code | JWT |
+| GET | `/api/payments/pending` | รายการรอตรวจสอบ | JWT + Admin |
+| PATCH | `/api/payments/:id/verify` | ยืนยัน/ปฏิเสธการชำระ | JWT + Admin |
+| POST | `/api/payments/webhook` | Webhook รับแจ้งจากธนาคาร | - |
+| GET | `/api/payments/:id/status` | ตรวจสอบสถานะ | JWT |
+
+---
+
+### 2.6 Review Endpoints (`api/reviews`)
+
+| Method | Endpoint | Description | Auth |
+|---|---|---|---|
+| POST | `/api/reviews` | เขียนรีวิว (ต้องมี confirmed booking) | JWT |
+| GET | `/api/reviews/recommended` | รีวิวแนะนำ | - |
+| GET | `/api/reviews/tour/:tourId` | รีวิวของทัวร์ (pagination) | - |
+| GET | `/api/reviews/admin` | รีวิวทั้งหมด (admin, search, filter) | JWT + Admin |
+| PATCH | `/api/reviews/admin/:id` | แก้ไขรีวิว (admin) | JWT + Admin |
+
+---
+
+### 2.7 Ticket Endpoints (`api/tickets`)
+
+| Method | Endpoint | Description | Auth |
+|---|---|---|---|
+| POST | `/api/tickets` | ส่งข้อความติดต่อ | - |
+| GET | `/api/tickets` | ดูรายการทั้งหมด | - |
+| PATCH | `/api/tickets/:id` | อัปเดตสถานะ | - |
+
+---
+
+### 2.8 Admin Endpoints (`api/admin`)
+
+| Method | Endpoint | Description | Auth |
+|---|---|---|---|
+| GET | `/api/admin/stats` | สถิติ Dashboard | JWT + Admin |
+| GET | `/api/admin/bookings` | Booking ทั้งหมด (with relations) | JWT + Admin |
+| DELETE | `/api/admin/bookings/:id` | ลบ booking | JWT + Admin |
+| PATCH | `/api/admin/bookings/:id/status` | เปลี่ยนสถานะ booking | JWT + Admin |
+
+---
+
+## 3. Payment Verification Flow
 
 ```mermaid
 sequenceDiagram
     participant Customer
     participant UI as Customer Portal
-    participant API as Payment Service
-    participant DB as Database
+    participant API as Backend API
+    participant DB as PostgreSQL
     participant Admin
     participant Dashboard as Admin Dashboard
 
     Note over Customer, Dashboard: Payment Upload & Verification
 
-    %% Phase 1: Customer Upload
-    Customer->>UI: Upload Slip Image
-    UI->>API: POST /api/v1/payments/:bookingId/upload
+    Customer->>UI: Upload Payment Slip
+    UI->>API: POST /api/bookings/:id/upload-slip
 
-    API->>API: Calculate SHA-256 Hash
-    API->>DB: Check duplicate slip
+    API->>DB: Save slip URL + Update status → pending_verify
+    API-->>UI: Success
 
-    alt Duplicate Slip
-        API-->>UI: ERROR "This slip was already used"
-    else New Slip
-        API->>DB: Save slip, Update status to 'pending_verify'
-        API-->>UI: Success
-
-        API->>API: console.log("Notify Admin: New payment")
-    end
-
-    %% Phase 2: Admin Verification
     Admin->>Dashboard: View Pending Payments
-    Dashboard->>API: GET /api/v1/payments/pending
+    Dashboard->>API: GET /api/payments/pending
     API->>DB: Query pending payments
     API-->>Dashboard: Show list
 
-    Admin->>Dashboard: Click "Approve" or "Reject"
-    Dashboard->>API: PATCH /api/v1/payments/:id/verify
+    Admin->>Dashboard: Click Approve / Reject
+    Dashboard->>API: PATCH /api/payments/:id/verify
 
     API->>DB: Update payment status
-    API->>DB: Update booking status
-    API->>API: console.log("Email: Payment verified")
-
+    API->>DB: Update booking status → confirmed
     API-->>Dashboard: Success
 ```
 
 ---
 
+## 4. Frontend Page Structure
+
+### Public Pages
+| Route | Component | Description |
+|---|---|---|
+| `/` | HomePage | หน้าแรก + ทัวร์แนะนำ + รีวิว |
+| `/tours` | ToursPage | ค้นหา/กรองทัวร์ |
+| `/tours/:id` | TourDetailPage | รายละเอียด + จอง |
+| `/login` | loginpage | เข้าสู่ระบบ |
+| `/login/success` | LoginSuccess | Google OAuth callback |
+| `/register` | RegisterPage | สมัครสมาชิก |
+| `/payment/:id` | PaymentPage | QR Code + อัปโหลดสลิป |
+| `/booking-history` | BookingHistoryPage | ประวัติการจอง |
+| `/profile` | ProfilePage | โปรไฟล์ + แก้ไข |
+| `/contact` | ContactPage | ฟอร์มติดต่อ |
+| `/about` | AboutUsPage | เกี่ยวกับเรา |
+
+### Admin Pages (ผ่าน AdminGuard)
+| Route | Component | Description |
+|---|---|---|
+| `/admin` | AdminDashboard | สถิติภาพรวม |
+| `/admin/tours` | TourManager | จัดการทัวร์ CRUD |
+| `/admin/schedules` | TourScheduleManager | จัดการตารางทัวร์ |
+| `/admin/users` | UserManager | จัดการผู้ใช้ |
+| `/admin/bookings` | BookingHistory | จัดการการจอง |
+| `/admin/tickets` | TicketManager | ข้อความติดต่อ |
+| `/admin/reviews` | ReviewManager | จัดการรีวิว |
+
+---
+
 ## 5. Error Handling
 
-### Standard Response Format
+NestJS built-in HTTP exceptions:
 
-**Success Response:**
-
-```json
-{
-  "success": true,
-  "data": { ... },
-  "message": "Operation completed successfully"
-}
-```
-
-**Error Response:**
-
-```json
-{
-  "success": false,
-  "error": {
-    "code": "BOOKING_STOCK_INSUFFICIENT",
-    "message": "This tour is fully booked"
-  }
-}
-```
-
----
-
-## 6. Summary of Simplifications
-
-| Original (Complex) | Simplified |
+| Exception | When |
 |---|---|
-| 8 Services | 5 Services |
-| CacheService (Redis) | In-memory or none |
-| LoggerService (Winston) | console.log() |
-| NotificationService (Email Queue) | console.log() |
-| Session table | JWT only (stateless) |
-| RateLimiter (Advanced) | @nestjs/throttler or none |
+| `NotFoundException` | ไม่พบ resource (tour, booking, user) |
+| `BadRequestException` | Input ไม่ถูกต้อง, ที่นั่งไม่พอ |
+| `UnauthorizedException` | Token หมดอายุ / ไม่มี token |
+| `ForbiddenException` | ไม่มี permission (ไม่ใช่ admin) |
+| `ConflictException` | Duplicate (เช่น username ซ้ำ) |
 
 ---
 
-**Last Updated:** 2026-02-10
-**Status:** Simplified for Year 1 Students 🚀
+**Last Updated:** 2026-03-06
+**Status:** สอดคล้องกับโค้ดปัจจุบัน

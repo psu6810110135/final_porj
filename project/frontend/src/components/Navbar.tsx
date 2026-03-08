@@ -1,6 +1,7 @@
 import { Link, useNavigate } from "react-router-dom";
 import logoIconImage from "../assets/logo_without_text-removebg-preview.png";
 import { useState, useEffect, useRef } from "react";
+import { API_BASE_URL } from "../config/api";
 
 // ─── Icons ───────────────────────────────────────────────────────────────────
 
@@ -184,6 +185,22 @@ interface NavbarProps {
   activePage?: "home" | "tours" | "about" | "contact";
 }
 
+interface NavbarProfileResponse {
+  avatarUrl?: string | null;
+}
+
+const resolveAvatarUrl = (avatarUrl?: string | null) => {
+  if (!avatarUrl) return null;
+  if (avatarUrl.startsWith("http") || avatarUrl.startsWith("data:")) {
+    return avatarUrl;
+  }
+
+  const normalizedPath = avatarUrl.startsWith("/")
+    ? avatarUrl
+    : `/${avatarUrl}`;
+  return `${API_BASE_URL}${normalizedPath}`;
+};
+
 export default function Navbar({ activePage = "home" }: NavbarProps) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [visible, setVisible] = useState(true);
@@ -191,8 +208,12 @@ export default function Navbar({ activePage = "home" }: NavbarProps) {
   const lastScrollY = useRef(0);
   const [showLogoutModal, setShowLogoutModal] = useState(false);
   const [showUserDropdown, setShowUserDropdown] = useState(false);
+  const [avatarSrc, setAvatarSrc] = useState<string | null>(null);
+  const [avatarLoadFailed, setAvatarLoadFailed] = useState(false);
   const userDropdownRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
+  const token = localStorage.getItem("jwt_token");
+  const isLoggedIn = !!token;
 
   useEffect(() => {
     const handleScroll = () => {
@@ -233,8 +254,41 @@ export default function Navbar({ activePage = "home" }: NavbarProps) {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const token = localStorage.getItem("jwt_token");
-  const isLoggedIn = !!token;
+  useEffect(() => {
+    if (!token) {
+      setAvatarSrc(null);
+      setAvatarLoadFailed(false);
+      return;
+    }
+
+    let isCancelled = false;
+
+    const fetchProfileAvatar = async () => {
+      try {
+        const res = await fetch(`${API_BASE_URL}/api/users/me`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (!res.ok) throw new Error("Cannot fetch profile");
+
+        const data = (await res.json()) as NavbarProfileResponse;
+        if (isCancelled) return;
+
+        setAvatarSrc(resolveAvatarUrl(data.avatarUrl));
+        setAvatarLoadFailed(false);
+      } catch {
+        if (!isCancelled) {
+          setAvatarSrc(null);
+          setAvatarLoadFailed(false);
+        }
+      }
+    };
+
+    void fetchProfileAvatar();
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [token]);
 
   let isAdmin = false;
   if (token) {
@@ -253,6 +307,8 @@ export default function Navbar({ activePage = "home" }: NavbarProps) {
 
   const confirmLogout = () => {
     localStorage.removeItem("jwt_token");
+    setAvatarSrc(null);
+    setAvatarLoadFailed(false);
     setShowLogoutModal(false);
     navigate("/login");
   };
@@ -265,7 +321,8 @@ export default function Navbar({ activePage = "home" }: NavbarProps) {
 
   // Mobile top icon button style
   const mobileIconBtn = (active = false) =>
-    `flex flex-col items-center justify-center gap-1 px-2 sm:px-3 py-1 rounded-xl transition-all duration-200 ${active ? "text-[#FF8400]" : "text-[#6B4226] hover:text-[#FF8400]"
+    `flex flex-col items-center justify-center gap-1 px-2 sm:px-3 py-1 rounded-xl transition-all duration-200 ${
+      active ? "text-[#FF8400]" : "text-[#6B4226] hover:text-[#FF8400]"
     }`;
 
   const iconBtnBase =
@@ -312,8 +369,9 @@ export default function Navbar({ activePage = "home" }: NavbarProps) {
       `}</style>
 
       <nav
-        className={`fixed top-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-nav transition-transform duration-300 ease-in-out ${visible ? "translate-y-0" : "-translate-y-full"
-          } ${atTop ? "" : "nav-shadow"}`}
+        className={`fixed top-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-nav transition-transform duration-300 ease-in-out ${
+          visible ? "translate-y-0" : "-translate-y-full"
+        } ${atTop ? "" : "nav-shadow"}`}
       >
         <div className="max-w-[1920px] mx-auto px-3 sm:px-4 md:px-4 lg:px-8">
           <div className="flex items-center h-16 sm:h-[72px] md:h-20 lg:h-24">
@@ -426,7 +484,16 @@ export default function Navbar({ activePage = "home" }: NavbarProps) {
                     aria-haspopup="menu"
                     aria-label="เปิดเมนูผู้ใช้"
                   >
-                    <UserIcon className="relative z-10 w-5 h-5 lg:w-6 lg:h-6 text-[#4F200D]" />
+                    {avatarSrc && !avatarLoadFailed ? (
+                      <img
+                        src={avatarSrc}
+                        alt="รูปโปรไฟล์ผู้ใช้"
+                        className="relative z-10 w-full h-full object-cover"
+                        onError={() => setAvatarLoadFailed(true)}
+                      />
+                    ) : (
+                      <UserIcon className="relative z-10 w-5 h-5 lg:w-6 lg:h-6 text-[#4F200D]" />
+                    )}
                     <ChevronDownIcon
                       className={`absolute z-20 right-1 bottom-1 w-2.5 h-2.5 p-[1px] rounded-full bg-white/95 text-[#4F200D] transition-transform duration-200 ${showUserDropdown ? "rotate-180" : ""}`}
                     />

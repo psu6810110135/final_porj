@@ -7,10 +7,10 @@ import {
   Eye,
   Loader2,
   MessageSquare,
-  Pencil,
   Search,
   Sparkles,
   Star,
+  Trash2,
   X,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -328,11 +328,7 @@ export default function ReviewManager() {
   const [totalPages, setTotalPages] = useState(1);
 
   const [selectedReview, setSelectedReview] = useState<ReviewItem | null>(null);
-  const [editingReview, setEditingReview] = useState<ReviewItem | null>(null);
-
-  const [editRating, setEditRating] = useState("5");
-  const [editRecommended, setEditRecommended] = useState("false");
-  const [editComment, setEditComment] = useState("");
+  const [deletingReview, setDeletingReview] = useState<ReviewItem | null>(null);
 
   const [isSaving, setIsSaving] = useState(false);
   const [feedback, setFeedback] = useState<FeedbackState | null>(null);
@@ -410,29 +406,29 @@ export default function ReviewManager() {
     [reviews],
   );
 
-  const openEditModal = (review: ReviewItem) => {
-    setEditingReview(review);
-    setEditRating(String(review.rating || 5));
-    setEditRecommended(review.is_recommended ? "true" : "false");
-    setEditComment(review.comment || "");
+  const refreshReviewsAfterMutation = async () => {
+    const nextPage = reviews.length === 1 && currentPage > 1 ? currentPage - 1 : currentPage;
+    if (nextPage !== currentPage) {
+      setCurrentPage(nextPage);
+      return;
+    }
+    await fetchReviews(currentPage);
   };
 
-  const saveReviewEdit = async () => {
-    if (!editingReview) return;
+  const toggleRecommend = async (review: ReviewItem) => {
+    const nextRecommended = !review.is_recommended;
 
     try {
       setIsSaving(true);
 
-      const response = await fetch(`${API_URL}/${editingReview.id}`, {
+      const response = await fetch(`${API_URL}/${review.id}`, {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
           ...getAuthHeader(),
         },
         body: JSON.stringify({
-          rating: Number(editRating),
-          comment: editComment,
-          is_recommended: editRecommended === "true",
+          is_recommended: nextRecommended,
         }),
       });
 
@@ -445,17 +441,70 @@ export default function ReviewManager() {
         throw new Error(message);
       }
 
-      setEditingReview(null);
       setFeedback({
         title: "บันทึกสำเร็จ",
-        message: "อัปเดตรีวิวเรียบร้อยแล้ว",
+        message: nextRecommended
+          ? "ตั้งค่ารีวิวเป็นแนะนำแล้ว"
+          : "ยกเลิกรีวิวแนะนำแล้ว",
         variant: "success",
       });
 
-      await fetchReviews(currentPage);
+      if (selectedReview?.id === review.id) {
+        setSelectedReview({
+          ...selectedReview,
+          is_recommended: nextRecommended,
+        });
+      }
+
+      await refreshReviewsAfterMutation();
     } catch (error: any) {
       setFeedback({
         title: "บันทึกไม่สำเร็จ",
+        message: error?.message || "กรุณาลองใหม่อีกครั้ง",
+        variant: "error",
+      });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const deleteReviewByAdmin = async () => {
+    if (!deletingReview) return;
+
+    try {
+      setIsSaving(true);
+
+      const response = await fetch(`${API_URL}/${deletingReview.id}`, {
+        method: "DELETE",
+        headers: {
+          ...getAuthHeader(),
+        },
+      });
+
+      if (!response.ok) {
+        const err = await response.json().catch(() => null);
+        const message =
+          (Array.isArray(err?.message)
+            ? err.message.join("\n")
+            : err?.message) || "ลบรีวิวไม่สำเร็จ";
+        throw new Error(message);
+      }
+
+      if (selectedReview?.id === deletingReview.id) {
+        setSelectedReview(null);
+      }
+
+      setFeedback({
+        title: "ลบรีวิวสำเร็จ",
+        message: "รีวิวถูกซ่อนออกจากหน้าทัวร์แล้ว",
+        variant: "success",
+      });
+      setDeletingReview(null);
+
+      await refreshReviewsAfterMutation();
+    } catch (error: any) {
+      setFeedback({
+        title: "ลบรีวิวไม่สำเร็จ",
         message: error?.message || "กรุณาลองใหม่อีกครั้ง",
         variant: "error",
       });
@@ -500,7 +549,7 @@ export default function ReviewManager() {
             จัดการรีวิว
           </h1>
           <p className="text-xs sm:text-sm font-medium text-[#4F200D]/60 mt-1">
-            ดูรายละเอียด แก้ไขคะแนน และเลือกรีวิวแนะนำสำหรับหน้าแรก
+            ดูรายละเอียด เลือกรีวิวแนะนำ และซ่อนรีวิวจากหน้าทัวร์
           </p>
         </div>
       </div>
@@ -636,7 +685,7 @@ export default function ReviewManager() {
                   review.bookingId.slice(0, 8)}
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-2">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-2">
                 <Button
                   variant="ghost"
                   className="w-full justify-center rounded-xl text-[#4F200D]/70 hover:text-[#FF8400] hover:bg-[#FFD93D]/20 text-sm"
@@ -646,10 +695,24 @@ export default function ReviewManager() {
                 </Button>
                 <Button
                   variant="ghost"
-                  className="w-full justify-center rounded-xl text-[#4F200D]/70 hover:text-[#FF8400] hover:bg-[#FFD93D]/20 text-sm"
-                  onClick={() => openEditModal(review)}
+                  className={`w-full justify-center rounded-xl text-sm ${
+                    review.is_recommended
+                      ? "text-[#FF8400] hover:text-[#E67600] hover:bg-[#FF8400]/10"
+                      : "text-[#4F200D]/70 hover:text-[#FF8400] hover:bg-[#FFD93D]/20"
+                  }`}
+                  onClick={() => void toggleRecommend(review)}
+                  disabled={isSaving}
                 >
-                  <Pencil className="w-4 h-4 mr-2" /> แก้ไข
+                  <Sparkles className="w-4 h-4 mr-2" />
+                  {review.is_recommended ? "ยกเลิกแนะนำ" : "แนะนำหน้าแรก"}
+                </Button>
+                <Button
+                  variant="ghost"
+                  className="w-full justify-center rounded-xl text-sm text-red-500 hover:text-red-600 hover:bg-red-50"
+                  onClick={() => setDeletingReview(review)}
+                  disabled={isSaving}
+                >
+                  <Trash2 className="w-4 h-4 mr-2" /> ซ่อนรีวิว
                 </Button>
               </div>
             </div>
@@ -744,10 +807,24 @@ export default function ReviewManager() {
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="h-9 w-9 text-[#4F200D]/40 hover:text-[#FF8400] hover:bg-[#FF8400]/10 rounded-xl"
-                          onClick={() => openEditModal(review)}
+                          className={`h-9 w-9 rounded-xl ${
+                            review.is_recommended
+                              ? "text-[#FF8400] hover:text-[#E67600] hover:bg-[#FF8400]/10"
+                              : "text-[#4F200D]/40 hover:text-[#FF8400] hover:bg-[#FF8400]/10"
+                          }`}
+                          onClick={() => void toggleRecommend(review)}
+                          disabled={isSaving}
                         >
-                          <Pencil className="w-4 h-4" />
+                          <Sparkles className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-9 w-9 text-red-400 hover:text-red-500 hover:bg-red-50 rounded-xl"
+                          onClick={() => setDeletingReview(review)}
+                          disabled={isSaving}
+                        >
+                          <Trash2 className="w-4 h-4" />
                         </Button>
                       </div>
                     </td>
@@ -934,110 +1011,65 @@ export default function ReviewManager() {
                 ปิด
               </Button>
               <Button
-                onClick={() => {
-                  openEditModal(selectedReview);
-                  setSelectedReview(null);
-                }}
-                className="rounded-xl bg-[#FF8400] hover:bg-[#e67600] text-white"
+                onClick={() => void toggleRecommend(selectedReview)}
+                disabled={isSaving}
+                className={`rounded-xl text-white ${
+                  selectedReview.is_recommended
+                    ? "bg-[#4F200D] hover:bg-[#3A1608]"
+                    : "bg-[#FF8400] hover:bg-[#e67600]"
+                }`}
               >
-                <Pencil className="w-4 h-4 mr-2" /> แก้ไขรีวิว
+                <Sparkles className="w-4 h-4 mr-2" />
+                {selectedReview.is_recommended ? "ยกเลิกแนะนำ" : "แนะนำหน้าแรก"}
+              </Button>
+              <Button
+                onClick={() => setDeletingReview(selectedReview)}
+                disabled={isSaving}
+                className="rounded-xl bg-red-500 hover:bg-red-600 text-white"
+              >
+                <Trash2 className="w-4 h-4 mr-2" /> ซ่อนรีวิว
               </Button>
             </div>
           </div>
         </div>
       )}
 
-      {editingReview && (
+      {deletingReview && (
         <div className="fixed inset-0 z-[110] flex items-center justify-center bg-[#4F200D]/60 backdrop-blur-sm p-4">
-          <div className="w-full max-w-xl bg-white rounded-3xl shadow-2xl overflow-hidden border border-[#F6F1E9]">
-            <div className="flex justify-between items-center p-5 sm:p-6 border-b-2 border-[#F6F1E9] bg-white">
-              <h2 className="text-xl sm:text-2xl font-black text-[#4F200D]">
-                แก้ไขรีวิว
+          <div className="w-full max-w-md bg-white rounded-3xl shadow-2xl overflow-hidden border border-[#F6F1E9]">
+            <div className="p-5 sm:p-6 border-b border-[#F6F1E9]">
+              <h2 className="text-lg sm:text-xl font-black text-[#4F200D]">
+                ยืนยันการซ่อนรีวิว
               </h2>
-              <button
-                onClick={() => setEditingReview(null)}
-                className="text-[#4F200D]/40 hover:text-red-500 p-2 rounded-xl hover:bg-red-50 transition-colors"
-              >
-                <X className="w-6 h-6" />
-              </button>
+              <p className="text-sm text-[#4F200D]/70 mt-2 leading-relaxed">
+                รีวิวของ <span className="font-bold">{getDisplayName(deletingReview.user)}</span> จะถูกลบออกจากระบบและไม่แสดงในหน้าทัวร์อีกต่อไป
+              </p>
             </div>
 
-            <div className="p-5 sm:p-6 space-y-4 max-h-[70vh] overflow-y-auto custom-scrollbar">
-              <div className="space-y-2">
-                <label className="text-xs sm:text-sm font-black text-[#4F200D] uppercase tracking-wider">
-                  ผู้รีวิว
-                </label>
-                <div className="rounded-2xl bg-[#F6F1E9]/45 px-4 py-3 text-sm font-bold text-[#4F200D]">
-                  {getDisplayName(editingReview.user)}
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <label className="text-xs sm:text-sm font-black text-[#4F200D] uppercase tracking-wider">
-                    คะแนน
-                  </label>
-                  <CustomSelect
-                    value={editRating}
-                    onChange={setEditRating}
-                    options={["5", "4", "3", "2", "1"].map((value) => ({
-                      value,
-                      label: `${value} ดาว`,
-                    }))}
-                    className={selectTriggerClass}
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <label className="text-xs sm:text-sm font-black text-[#4F200D] uppercase tracking-wider">
-                    แสดงหน้าแรก
-                  </label>
-                  <CustomSelect
-                    value={editRecommended}
-                    onChange={setEditRecommended}
-                    options={[
-                      { value: "true", label: "⭐ แนะนำ" },
-                      { value: "false", label: "ไม่แนะนำ" },
-                    ]}
-                    className={selectTriggerClass}
-                  />
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <label className="text-xs sm:text-sm font-black text-[#4F200D] uppercase tracking-wider">
-                  ข้อความรีวิว
-                </label>
-                <textarea
-                  className="w-full min-h-[150px] rounded-2xl border-0 bg-[#F6F1E9]/50 px-4 py-3 text-sm font-medium text-[#4F200D] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#FFD93D]"
-                  value={editComment}
-                  onChange={(event) => setEditComment(event.target.value)}
-                  placeholder="กรอกข้อความรีวิว"
-                />
-              </div>
-            </div>
-
-            <div className="p-5 sm:p-6 border-t-2 border-[#F6F1E9] flex flex-col sm:flex-row gap-3 justify-end">
+            <div className="p-5 sm:p-6 flex flex-col sm:flex-row gap-3 justify-end">
               <Button
                 variant="ghost"
-                onClick={() => setEditingReview(null)}
+                onClick={() => setDeletingReview(null)}
                 disabled={isSaving}
                 className="rounded-xl text-[#4F200D]/70 hover:text-[#4F200D] hover:bg-[#F6F1E9]"
               >
                 ยกเลิก
               </Button>
               <Button
-                onClick={() => void saveReviewEdit()}
+                onClick={() => void deleteReviewByAdmin()}
                 disabled={isSaving}
-                className="rounded-xl bg-[#FF8400] hover:bg-[#e67600] text-white"
+                className="rounded-xl bg-red-500 hover:bg-red-600 text-white"
               >
                 {isSaving ? (
                   <>
                     <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    กำลังบันทึก...
+                    กำลังลบ...
                   </>
                 ) : (
-                  <>บันทึกการเปลี่ยนแปลง</>
+                  <>
+                    <Trash2 className="w-4 h-4 mr-2" />
+                    ยืนยันซ่อนรีวิว
+                  </>
                 )}
               </Button>
             </div>

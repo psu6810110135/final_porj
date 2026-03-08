@@ -137,6 +137,7 @@ export class ReviewsService {
         'user.full_name',
         'user.first_name',
         'user.last_name',
+        'user.avatar_url',
         'tour.id',
         'tour.title',
       ])
@@ -253,13 +254,16 @@ export class ReviewsService {
       throw new ForbiddenException('Only admin can update reviews');
     }
 
-    const hasUpdateField =
-      dto.rating !== undefined ||
-      dto.comment !== undefined ||
-      dto.is_recommended !== undefined;
+    if (dto.is_recommended === undefined) {
+      throw new BadRequestException(
+        'Admin can only update recommended status',
+      );
+    }
 
-    if (!hasUpdateField) {
-      throw new BadRequestException('No editable fields were provided');
+    if (dto.rating !== undefined || dto.comment !== undefined) {
+      throw new BadRequestException(
+        'Admin cannot edit customer rating or comment',
+      );
     }
 
     const review = await this.reviewRepository.findOne({ where: { id } });
@@ -267,28 +271,26 @@ export class ReviewsService {
       throw new NotFoundException('Review not found');
     }
 
-    return this.dataSource.transaction(async (manager) => {
-      if (dto.rating !== undefined) {
-        review.rating = dto.rating;
-      }
+    review.is_recommended = dto.is_recommended;
+    return this.reviewRepository.save(review);
+  }
 
-      if (dto.comment !== undefined) {
-        const trimmed = dto.comment.trim();
-        review.comment = trimmed || null;
-      }
+  async removeByAdmin(id: string, requestUser?: { role?: string }) {
+    if (requestUser?.role !== UserRole.ADMIN) {
+      throw new ForbiddenException('Only admin can delete reviews');
+    }
 
-      if (dto.is_recommended !== undefined) {
-        review.is_recommended = dto.is_recommended;
-      }
+    const review = await this.reviewRepository.findOne({ where: { id } });
+    if (!review) {
+      throw new NotFoundException('Review not found');
+    }
 
-      const savedReview = await manager.save(Review, review);
-
-      if (dto.rating !== undefined) {
-        await this.refreshTourRating(manager, review.tourId);
-      }
-
-      return savedReview;
+    await this.dataSource.transaction(async (manager) => {
+      await manager.remove(Review, review);
+      await this.refreshTourRating(manager, review.tourId);
     });
+
+    return { success: true, message: 'Review deleted successfully' };
   }
 
   private async refreshTourRating(manager: EntityManager, tourId: string) {

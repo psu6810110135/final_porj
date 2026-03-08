@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   Param,
   Patch,
@@ -70,6 +71,15 @@ export class ReviewsController {
     @Body() dto: UpdateReviewByAdminDto,
   ) {
     return this.reviewsService.updateByAdmin(id, dto, req.user);
+  }
+
+  @Delete('admin/:id')
+  @UseGuards(AuthGuard('jwt'))
+  removeByAdmin(
+    @Request() req: any,
+    @Param('id', ParseUUIDPipe) id: string,
+  ) {
+    return this.reviewsService.removeByAdmin(id, req.user);
   }
 
   @Get('tour/:tourId')

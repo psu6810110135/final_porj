@@ -35,24 +35,27 @@ const ContactPage = () => {
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [isPhoneDropdownOpen, setIsPhoneDropdownOpen] = useState(false);
 
-  // Search & Topic State
+  // Search State
   const [searchTopic, setSearchTopic] = useState("");
-  const [activeTopic, setActiveTopic] = useState<string | null>(null);
 
   const messageInputRef = useRef<HTMLTextAreaElement>(null);
 
   const filteredTopics = TOPICS.filter((topic) =>
-    topic.toLowerCase().includes(searchTopic.toLowerCase())
+    topic.title.toLowerCase().includes(searchTopic.toLowerCase())
   );
 
-  const handleTopicClick = (topic: string) => {
-    setActiveTopic(topic);
+  const handleTopicClick = (title: string) => {
     setFormData((prev) => {
-      const prefix = `สอบถามเรื่อง: ${topic}\n\nรายละเอียด: `;
-      const newMessage = prev.message.includes("สอบถามเรื่อง:")
-        ? prefix
-        : (prev.message ? `${prev.message}\n\n${prefix}` : prefix);
-      return { ...prev, message: newMessage };
+      const prefix = `สอบถามเรื่อง: ${title}\n\nรายละเอียด: `;
+      let details = "";
+
+      if (prev.message.includes("รายละเอียด: ")) {
+        details = prev.message.substring(prev.message.indexOf("รายละเอียด: ") + "รายละเอียด: ".length);
+      } else if (!prev.message.includes("สอบถามเรื่อง:")) {
+        details = prev.message;
+      }
+
+      return { ...prev, message: `${prefix}${details}` };
     });
     if (messageInputRef.current) messageInputRef.current.focus();
   };
@@ -103,7 +106,6 @@ const ContactPage = () => {
         setFormData({
           firstName: "", lastName: "", email: "", phoneCode: "+66", phoneNumber: "", message: ""
         });
-        setActiveTopic(null);
       } else {
         setSubmitStatus("error");
         setStatusMessage("เกิดข้อผิดพลาดในการส่งข้อความ กรุณาลองใหม่อีกครั้ง");
@@ -144,10 +146,9 @@ const ContactPage = () => {
                 </button>
               </div>
 
-              <h2 className="text-xl md:text-2xl font-extrabold text-[#5C3D2E] mb-4 md:mb-6">เรียกดูตามหัวข้อ</h2>
+              <h2 className="text-xl md:text-2xl font-extrabold text-[#5C3D2E] mb-4 md:mb-6">คำถามยอดฮิต</h2>
               <TopicList
                 topics={filteredTopics}
-                activeTopic={activeTopic}
                 handleTopicClick={handleTopicClick}
               />
             </div>
@@ -185,3 +186,5 @@ const ContactPage = () => {
 };
 
 export default ContactPage;
+
+//test แยก branch

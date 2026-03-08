@@ -8,7 +8,7 @@ import { TourCard } from "@/components/tours/TourCard";
 import { FilterContent } from "@/components/tours/Filters";
 
 // Icons
-import { Search, Filter, X, ChevronLeft, Loader2, MapPin, ChevronDown } from "lucide-react";
+import { Search, Filter, X, ChevronLeft, MapPin, ChevronDown } from "lucide-react";
 
 // Utils
 import { translateDuration, translateLocation, getImageUrl } from "@/utils/tourUtils";
@@ -344,8 +344,8 @@ function RichDropdown({
       <button
         onClick={onToggle}
         className={`w-full bg-white rounded-xl sm:rounded-full px-3 md:px-4 py-2.5 md:py-3 flex items-center gap-2 transition-all duration-200 ${isOpen
-            ? "ring-2 ring-[#FF8400] shadow-md bg-white"
-            : "border border-[#4F200D]/15 hover:border-[#FF8400]/50 hover:shadow-sm"
+          ? "ring-2 ring-[#FF8400] shadow-md bg-white"
+          : "border border-[#4F200D]/15 hover:border-[#FF8400]/50 hover:shadow-sm"
           }`}
       >
         <span
@@ -366,8 +366,8 @@ function RichDropdown({
 
       <div
         className={`absolute top-full left-0 right-0 mt-1.5 bg-white rounded-2xl shadow-2xl border border-[#F0E8E0] overflow-hidden z-[120] transition-all duration-200 origin-top ${isOpen
-            ? "opacity-100 scale-y-100 translate-y-0"
-            : "opacity-0 scale-y-95 -translate-y-1 pointer-events-none"
+          ? "opacity-100 scale-y-100 translate-y-0"
+          : "opacity-0 scale-y-95 -translate-y-1 pointer-events-none"
           }`}
       >
         <div className="absolute -top-1.5 left-1/2 -translate-x-1/2 w-3 h-3 bg-white border-l border-t border-[#F0E8E0] rotate-45" />
@@ -376,8 +376,8 @@ function RichDropdown({
           <button
             onClick={() => onSelect("")}
             className={`w-full px-4 py-2.5 text-left text-sm flex items-center gap-2 transition-colors ${!value
-                ? "bg-[#FF8400]/8 text-[#FF8400] font-bold"
-                : "text-[#4F200D]/60 hover:bg-[#F6F1E9]"
+              ? "bg-[#FF8400]/8 text-[#FF8400] font-bold"
+              : "text-[#4F200D]/60 hover:bg-[#F6F1E9]"
               }`}
           >
             {!value && (
@@ -391,8 +391,8 @@ function RichDropdown({
               key={opt.value}
               onClick={() => onSelect(opt.value)}
               className={`w-full px-4 py-2.5 text-left text-sm flex items-center gap-2 transition-colors ${value === opt.value
-                  ? "bg-[#FF8400]/8 text-[#FF8400] font-bold"
-                  : "text-[#4F200D] hover:bg-[#F6F1E9]"
+                ? "bg-[#FF8400]/8 text-[#FF8400] font-bold"
+                : "text-[#4F200D] hover:bg-[#F6F1E9]"
                 }`}
             >
               {value === opt.value && (
@@ -406,3 +406,5 @@ function RichDropdown({
     </div>
   );
 }
+
+//เพิ่มวัน

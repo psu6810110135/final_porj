@@ -34,7 +34,7 @@ BEGIN;
 -- ===== CLEAN SLATE =====
 TRUNCATE TABLE
   reviews, payments, bookings, tour_schedules,
-  tickets, tours, user_profiles, users
+  tickets, tours, users
 RESTART IDENTITY CASCADE;
 
 
@@ -174,18 +174,7 @@ INSERT INTO users (
 
 
 -- ======================================================================
--- 2. USER_PROFILES  (legacy table — 5 rows)
--- ======================================================================
-INSERT INTO user_profiles (id, "firstName", "lastName", "phoneNumber") VALUES
-('aabb1122-3344-4556-9788-99aabbccddee', 'ผู้ดูแล',  'ระบบ',       '0891234567'),
-('bbcc2233-4455-4667-a899-aabbccddeeff', 'สมชาย',   'วงศ์สุวรรณ',  '0812345678'),
-('ccdd3344-5566-4778-b9aa-bbccddeeff00', 'พิมพ์ชนก', 'ศรีสมบัติ',   '0923456789'),
-('ddee4455-6677-4889-8abb-ccddeeff0011', 'ณัฐพงศ์',  'จันทร์เจริญ', '0634567890'),
-('eeff5566-7788-499a-9bcc-ddeeff001122', 'กรรณิการ์', 'ธนะวัฒน์',   '0895678901');
-
-
--- ======================================================================
--- 3. TOURS  (10 ทัวร์ — ข้อมูลภาษาไทย)
+-- 2. TOURS  (10 ทัวร์ — ข้อมูลภาษาไทย)
 -- ======================================================================
 INSERT INTO tours (
   id, title, description, price, child_price, province, region, duration,
@@ -396,7 +385,7 @@ INSERT INTO tours (
 
 
 -- ======================================================================
--- 4. TOUR_SCHEDULES  (20 รอบ — 2 ต่อทัวร์)
+-- 3. TOUR_SCHEDULES  (20 รอบ — 2 ต่อทัวร์)
 -- ======================================================================
 INSERT INTO tour_schedules (
   id, tour_id, available_date, max_capacity_override, is_available, created_at
@@ -434,7 +423,7 @@ INSERT INTO tour_schedules (
 
 
 -- ======================================================================
--- 5. BOOKINGS  (13 รายการ — ครบทุกสถานะ)
+-- 4. BOOKINGS  (13 รายการ — ครบทุกสถานะ)
 -- ======================================================================
 INSERT INTO bookings (
   id, booking_reference, start_date, end_date, base_price, discount, total_price,
@@ -712,7 +701,7 @@ INSERT INTO bookings (
 
 
 -- ======================================================================
--- 6. PAYMENTS  (10 รายการ — approved / pending_verify / rejected)
+-- 5. PAYMENTS  (10 รายการ — approved / pending_verify / rejected)
 -- ======================================================================
 INSERT INTO payments (
   id, amount, slip_url, status, "verifiedAt", "uploadedAt", "bookingId"
@@ -740,7 +729,7 @@ INSERT INTO payments (
 
 
 -- ======================================================================
--- 7. REVIEWS  (6 รีวิว — เฉพาะ confirmed booking ที่เดินทางแล้ว)
+-- 6. REVIEWS  (6 รีวิว — เฉพาะ confirmed booking ที่เดินทางแล้ว)
 -- ======================================================================
 INSERT INTO reviews (
   id, user_id, tour_id, booking_id, rating, comment,
@@ -815,7 +804,7 @@ INSERT INTO reviews (
 
 
 -- ======================================================================
--- 8. TICKETS  (5 ข้อความ — pending / resolved / cancelled)
+-- 7. TICKETS  (5 ข้อความ — pending / resolved / cancelled)
 -- ======================================================================
 INSERT INTO tickets (
   id, first_name, last_name, email, phone, message, status, created_at
@@ -863,7 +852,7 @@ INSERT INTO tickets (
 
 
 -- ======================================================================
--- 9. RECALCULATE tour rating & review_count จากข้อมูลรีวิวจริง
+-- 8. RECALCULATE tour rating & review_count จากข้อมูลรีวิวจริง
 -- ======================================================================
 WITH review_stats AS (
   SELECT
@@ -890,7 +879,6 @@ COMMIT;
 
 -- ===== SUMMARY =====
 SELECT 'users' AS "ตาราง", COUNT(*) AS "จำนวน" FROM users
-UNION ALL SELECT 'user_profiles', COUNT(*) FROM user_profiles
 UNION ALL SELECT 'tours', COUNT(*) FROM tours
 UNION ALL SELECT 'tour_schedules', COUNT(*) FROM tour_schedules
 UNION ALL SELECT 'bookings', COUNT(*) FROM bookings

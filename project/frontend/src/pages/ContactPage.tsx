@@ -25,12 +25,14 @@ const ContactPage = () => {
     email: "",
     phoneCode: "+66",
     phoneNumber: "",
-    message: ""
+    message: "",
   });
 
   // UI & Submit State
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [submitStatus, setSubmitStatus] = useState<"idle" | "success" | "error">("idle");
+  const [submitStatus, setSubmitStatus] = useState<
+    "idle" | "success" | "error"
+  >("idle");
   const [statusMessage, setStatusMessage] = useState("");
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [isPhoneDropdownOpen, setIsPhoneDropdownOpen] = useState(false);
@@ -41,7 +43,7 @@ const ContactPage = () => {
   const messageInputRef = useRef<HTMLTextAreaElement>(null);
 
   const filteredTopics = TOPICS.filter((topic) =>
-    topic.title.toLowerCase().includes(searchTopic.toLowerCase())
+    topic.title.toLowerCase().includes(searchTopic.toLowerCase()),
   );
 
   const handleTopicClick = (title: string) => {
@@ -50,7 +52,9 @@ const ContactPage = () => {
       let details = "";
 
       if (prev.message.includes("รายละเอียด: ")) {
-        details = prev.message.substring(prev.message.indexOf("รายละเอียด: ") + "รายละเอียด: ".length);
+        details = prev.message.substring(
+          prev.message.indexOf("รายละเอียด: ") + "รายละเอียด: ".length,
+        );
       } else if (!prev.message.includes("สอบถามเรื่อง:")) {
         details = prev.message;
       }
@@ -70,7 +74,11 @@ const ContactPage = () => {
     }
   }, [submitStatus]);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+  const handleChange = (
+    e: React.ChangeEvent<
+      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
+    >,
+  ) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
@@ -91,10 +99,10 @@ const ContactPage = () => {
         last_name: formData.lastName,
         email: formData.email,
         phone: `${formData.phoneCode}${formData.phoneNumber}`,
-        message: formData.message
+        message: formData.message,
       };
 
-      const response = await fetch(`${API_BASE_URL}/api/v1/tickets`, {
+      const response = await fetch(`${API_BASE_URL}/api/tickets`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(formattedData),
@@ -104,7 +112,12 @@ const ContactPage = () => {
         setSubmitStatus("success");
         setStatusMessage("ส่งข้อความสำเร็จ! ทีมงานจะติดต่อกลับโดยเร็วที่สุด");
         setFormData({
-          firstName: "", lastName: "", email: "", phoneCode: "+66", phoneNumber: "", message: ""
+          firstName: "",
+          lastName: "",
+          email: "",
+          phoneCode: "+66",
+          phoneNumber: "",
+          message: "",
         });
       } else {
         setSubmitStatus("error");
@@ -113,7 +126,9 @@ const ContactPage = () => {
     } catch (error) {
       console.error("Error submitting form:", error);
       setSubmitStatus("error");
-      setStatusMessage("ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้ กรุณาตรวจสอบว่าเปิด Backend แล้วหรือยัง");
+      setStatusMessage(
+        "ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้ กรุณาตรวจสอบว่าเปิด Backend แล้วหรือยัง",
+      );
     } finally {
       setIsSubmitting(false);
     }
@@ -130,7 +145,6 @@ const ContactPage = () => {
           </h1>
 
           <div className="flex flex-col lg:flex-row gap-8 lg:gap-12">
-
             {/* ซ้าย: หัวข้อ */}
             <div className="flex-1 order-2 lg:order-1">
               <div className="relative mb-6 md:mb-8">
@@ -146,7 +160,9 @@ const ContactPage = () => {
                 </button>
               </div>
 
-              <h2 className="text-xl md:text-2xl font-extrabold text-[#5C3D2E] mb-4 md:mb-6">คำถามยอดฮิต</h2>
+              <h2 className="text-xl md:text-2xl font-extrabold text-[#5C3D2E] mb-4 md:mb-6">
+                คำถามยอดฮิต
+              </h2>
               <TopicList
                 topics={filteredTopics}
                 handleTopicClick={handleTopicClick}
@@ -169,7 +185,6 @@ const ContactPage = () => {
                 phoneCodes={PHONE_CODES}
               />
             </div>
-
           </div>
         </div>
       </main>

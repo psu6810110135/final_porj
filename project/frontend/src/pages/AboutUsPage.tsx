@@ -11,7 +11,7 @@ import Footer from "../components/Footer";
 function useRevealOnScroll(threshold = 0.15) {
   const ref = useRef<HTMLDivElement>(null);
   const [visible, setVisible] = useState(false);
-  
+
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
@@ -27,7 +27,7 @@ function useRevealOnScroll(threshold = 0.15) {
     obs.observe(el);
     return () => obs.disconnect();
   }, [threshold]);
-  
+
   return { ref, visible };
 }
 
@@ -53,10 +53,9 @@ export default function AboutPage() {
       <main className="flex-grow flex flex-col items-center pt-12 md:pt-20 pb-16 relative z-10 w-full">
 
         {/* Hero Text */}
-        <div 
-          className={`text-center max-w-3xl mb-10 px-4 transition-all duration-1000 ${
-            heroReady ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
-          }`}
+        <div
+          className={`text-center max-w-3xl mb-10 px-4 transition-all duration-1000 ${heroReady ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
+            }`}
         >
           <h1 className="text-3xl md:text-5xl font-black text-[#4F200D] mb-4 md:mb-6 leading-tight">
             สัมผัสเมืองไทย ในแบบที่คุณต้องการ
@@ -67,11 +66,10 @@ export default function AboutPage() {
         </div>
 
         {/* Hero Image with badge */}
-        <div 
+        <div
           ref={heroImgReveal.ref}
-          className={`relative w-full mb-28 shadow-sm transition-all duration-1000 delay-200 ${
-            heroImgReveal.visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-12"
-          }`}
+          className={`relative w-full mb-28 shadow-sm transition-all duration-1000 delay-200 ${heroImgReveal.visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-12"
+            }`}
         >
           <img
             src="https://img.tastelife.tv/assets/uploads/2021/12/Thailand_Relaxation_Film_16x9.jpg"
@@ -88,11 +86,10 @@ export default function AboutPage() {
         <div className="w-full max-w-5xl space-y-20 md:space-y-28 mb-24 px-4 sm:px-6 lg:px-8">
 
           {/* Section 1: Text Left, Image Right */}
-          <div 
+          <div
             ref={sec1Reveal.ref}
-            className={`flex flex-col md:flex-row items-center gap-8 md:gap-16 transition-all duration-1000 ${
-              sec1Reveal.visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-16"
-            }`}
+            className={`flex flex-col md:flex-row items-center gap-8 md:gap-16 transition-all duration-1000 ${sec1Reveal.visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-16"
+              }`}
           >
             <div className="flex-1 text-left order-2 md:order-1">
               <h2 className="text-2xl md:text-4xl font-extrabold text-[#4F200D] leading-snug">
@@ -112,11 +109,10 @@ export default function AboutPage() {
           </div>
 
           {/* Section 2: Image Left, Text Right */}
-          <div 
+          <div
             ref={sec2Reveal.ref}
-            className={`flex flex-col md:flex-row items-center gap-8 md:gap-16 transition-all duration-1000 delay-100 ${
-              sec2Reveal.visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-16"
-            }`}
+            className={`flex flex-col md:flex-row items-center gap-8 md:gap-16 transition-all duration-1000 delay-100 ${sec2Reveal.visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-16"
+              }`}
           >
             <div className="flex-1 w-full order-2 md:order-1 relative">
               <div className="bg-[#f0e8dc] absolute -inset-4 rounded-[2rem] -z-10 -rotate-3"></div>
@@ -135,11 +131,10 @@ export default function AboutPage() {
           </div>
 
           {/* Section 3: Text Left, Image Right */}
-          <div 
+          <div
             ref={sec3Reveal.ref}
-            className={`flex flex-col md:flex-row items-center gap-8 md:gap-16 transition-all duration-1000 delay-100 ${
-              sec3Reveal.visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-16"
-            }`}
+            className={`flex flex-col md:flex-row items-center gap-8 md:gap-16 transition-all duration-1000 delay-100 ${sec3Reveal.visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-16"
+              }`}
           >
             <div className="flex-1 text-left order-2 md:order-1">
               <h2 className="text-2xl md:text-4xl font-extrabold text-[#4F200D] leading-snug">
@@ -161,11 +156,10 @@ export default function AboutPage() {
         </div>
 
         {/* CTA - Fixed centered styling */}
-        <div 
+        <div
           ref={ctaReveal.ref}
-          className={`text-center w-full max-w-2xl mt-8 px-4 mx-auto transition-all duration-1000 ${
-            ctaReveal.visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-10"
-          }`}
+          className={`text-center w-full max-w-2xl mt-8 px-4 mx-auto transition-all duration-1000 ${ctaReveal.visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-10"
+            }`}
         >
           <h2 className="text-2xl md:text-3xl font-black text-[#4F200D] mb-8">
             พร้อมจะไป <span className="text-[#FF8A00]">เปิดโลกใหม่</span> กับเราหรือยัง?

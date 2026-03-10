@@ -1,17 +1,24 @@
-import { useState, useEffect } from "react";
-import {
-  Search,
-  ChevronRight,
-  Loader2,
-  CheckCircle2,
-  XCircle,
-} from "lucide-react"; // 👈 เพิ่ม Icon แจ้งเตือน
+import { useState, useEffect, useRef } from "react";
 
+// Icons
+import { Search } from "lucide-react";
+
+// Components
 import Navbar from "../components/Navbar";
 import Footer from "@/components/Footer";
+import { TopicList } from "@/components/contact/TopicList";
+import { ContactForm } from "@/components/contact/ContactForm";
+import { ConfirmationModal } from "@/components/contact/ConfirmationModal";
+
+// Config
 import { API_BASE_URL } from "@/config/api";
 
+// Constants
+import { TOPICS, PHONE_CODES } from "@/utils/contactData";
+
+// --- Main Component ---
 const ContactPage = () => {
+  // Form State
   const [formData, setFormData] = useState({
     firstName: "",
     lastName: "",
@@ -21,26 +28,42 @@ const ContactPage = () => {
     message: "",
   });
 
+  // UI & Submit State
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitStatus, setSubmitStatus] = useState<
     "idle" | "success" | "error"
   >("idle");
-  const [statusMessage, setStatusMessage] = useState(""); // State สำหรับเก็บข้อความแจ้งเตือน
+  const [statusMessage, setStatusMessage] = useState("");
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [isPhoneDropdownOpen, setIsPhoneDropdownOpen] = useState(false);
 
-  const topics = [
-    "วางแผน ค้นหา และจอง",
-    "ข้อมูลกิจกรรม",
-    "การยืนยันการจอง บัตรกำนัล...",
-    "จุดนัดพบและการรับส่ง",
-    "ในวันทำกิจกรรม",
-    "การจัดการการจอง",
-    "การยกเลิก",
-    "การชำระเงินและการคืนเงิน",
-    "ข้อมูลและความเป็นส่วนตัว",
-    "เกี่ยวกับ การรับคำแนะนำของคุณ",
-  ];
+  // Search State
+  const [searchTopic, setSearchTopic] = useState("");
 
-  // เคลียร์ข้อความสำเร็จอัตโนมัติเมื่อผ่านไป 5 วินาที
+  const messageInputRef = useRef<HTMLTextAreaElement>(null);
+
+  const filteredTopics = TOPICS.filter((topic) =>
+    topic.title.toLowerCase().includes(searchTopic.toLowerCase()),
+  );
+
+  const handleTopicClick = (title: string) => {
+    setFormData((prev) => {
+      const prefix = `สอบถามเรื่อง: ${title}\n\nรายละเอียด: `;
+      let details = "";
+
+      if (prev.message.includes("รายละเอียด: ")) {
+        details = prev.message.substring(
+          prev.message.indexOf("รายละเอียด: ") + "รายละเอียด: ".length,
+        );
+      } else if (!prev.message.includes("สอบถามเรื่อง:")) {
+        details = prev.message;
+      }
+
+      return { ...prev, message: `${prefix}${details}` };
+    });
+    if (messageInputRef.current) messageInputRef.current.focus();
+  };
+
   useEffect(() => {
     if (submitStatus === "success") {
       const timer = setTimeout(() => {
@@ -56,14 +79,16 @@ const ContactPage = () => {
       HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
     >,
   ) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value,
-    });
+    setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    setShowConfirmModal(true);
+  };
+
+  const confirmAndSubmit = async () => {
+    setShowConfirmModal(false);
     setIsSubmitting(true);
     setSubmitStatus("idle");
     setStatusMessage("");
@@ -79,9 +104,7 @@ const ContactPage = () => {
 
       const response = await fetch(`${API_BASE_URL}/api/tickets`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(formattedData),
       });
 
@@ -112,7 +135,7 @@ const ContactPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#F5F1E9] flex flex-col">
+    <div className="min-h-screen bg-[#F5F1E9] flex flex-col relative">
       <Navbar activePage="contact" />
 
       <main className="flex-grow py-8 md:py-12 px-4 sm:px-6 lg:px-8">
@@ -128,6 +151,8 @@ const ContactPage = () => {
                 <input
                   type="text"
                   placeholder="ค้นหาหัวข้อ"
+                  value={searchTopic}
+                  onChange={(e) => setSearchTopic(e.target.value)}
                   className="w-full p-3 pl-6 pr-16 rounded-full border border-gray-200 bg-white focus:outline-none focus:ring-2 focus:ring-[#FF8A00] shadow-sm text-sm md:text-base"
                 />
                 <button className="absolute right-0 top-0 h-full w-14 bg-gray-200 rounded-r-full flex items-center justify-center text-gray-500 hover:bg-[#FF8A00] hover:text-white transition-colors duration-300">
@@ -136,143 +161,45 @@ const ContactPage = () => {
               </div>
 
               <h2 className="text-xl md:text-2xl font-extrabold text-[#5C3D2E] mb-4 md:mb-6">
-                เรียกดูตามหัวข้อ
+                คำถามยอดฮิต
               </h2>
-              <div className="space-y-1">
-                {topics.map((topic, index) => (
-                  <button
-                    key={index}
-                    className="w-full flex items-center justify-between p-4 border-b border-[#E0D8C8] hover:bg-white/60 transition text-left text-[#5C3D2E] font-bold text-base md:text-lg group"
-                  >
-                    <span className="pr-4">{topic}</span>
-                    <ChevronRight
-                      size={20}
-                      className="text-gray-400 group-hover:text-[#FF8A00] transition-colors shrink-0"
-                    />
-                  </button>
-                ))}
-              </div>
+              <TopicList
+                topics={filteredTopics}
+                handleTopicClick={handleTopicClick}
+              />
             </div>
 
             {/* ขวา: ฟอร์มติดต่อ */}
             <div className="w-full lg:w-[450px] shrink-0 order-1 lg:order-2">
-              <div className="bg-white p-6 md:p-8 rounded-[1.5rem] md:rounded-[2rem] shadow-xl border border-gray-50 lg:sticky lg:top-28">
-                <h2 className="text-2xl md:text-3xl font-extrabold text-[#5C3D2E] mb-6">
-                  สนใจติดต่อ
-                </h2>
-
-                <form
-                  className="space-y-4 md:space-y-5"
-                  onSubmit={handleSubmit}
-                >
-                  <div className="flex flex-col sm:flex-row gap-3 md:gap-4">
-                    <input
-                      type="text"
-                      name="firstName"
-                      value={formData.firstName}
-                      onChange={handleChange}
-                      placeholder="ชื่อจริง"
-                      required
-                      className="flex-1 min-w-0 p-3.5 rounded-2xl md:rounded-full border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#FF8A00] text-sm bg-gray-50/50"
-                    />
-                    <input
-                      type="text"
-                      name="lastName"
-                      value={formData.lastName}
-                      onChange={handleChange}
-                      placeholder="นามสกุล"
-                      required
-                      className="flex-1 min-w-0 p-3.5 rounded-2xl md:rounded-full border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#FF8A00] text-sm bg-gray-50/50"
-                    />
-                  </div>
-
-                  <div className="relative">
-                    <input
-                      type="email"
-                      name="email"
-                      value={formData.email}
-                      onChange={handleChange}
-                      placeholder="อีเมลของคุณ"
-                      required
-                      className="w-full p-3.5 pl-12 rounded-2xl md:rounded-full border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#FF8A00] text-sm bg-gray-50/50"
-                    />
-                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400">
-                      ✉️
-                    </span>
-                  </div>
-
-                  <div className="flex border border-gray-200 rounded-2xl md:rounded-full overflow-hidden focus-within:ring-2 focus-within:ring-[#FF8A00] bg-gray-50/50">
-                    <select
-                      name="phoneCode"
-                      value={formData.phoneCode}
-                      onChange={handleChange}
-                      className="bg-transparent p-3.5 text-sm border-r border-gray-200 outline-none text-gray-600 font-medium cursor-pointer"
-                    >
-                      <option value="+66">+66</option>
-                    </select>
-                    <input
-                      type="tel"
-                      name="phoneNumber"
-                      value={formData.phoneNumber}
-                      onChange={handleChange}
-                      placeholder="หมายเลขโทรศัพท์"
-                      required
-                      className="flex-1 p-3.5 text-sm outline-none bg-transparent"
-                    />
-                  </div>
-
-                  <textarea
-                    name="message"
-                    value={formData.message}
-                    onChange={handleChange}
-                    placeholder="เราจะช่วยคุณได้อย่างไร?"
-                    rows={5}
-                    required
-                    className="w-full p-4 rounded-[1.2rem] md:rounded-[1.5rem] border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#FF8A00] text-sm resize-none bg-gray-50/50"
-                  ></textarea>
-
-                  {/* ส่วนกล่องข้อความแจ้งเตือน (ซ่อนถ้าไม่มีสถานะ) */}
-                  {submitStatus !== "idle" && (
-                    <div
-                      className={`p-4 rounded-xl flex items-start gap-3 text-sm font-medium ${
-                        submitStatus === "success"
-                          ? "bg-green-50 text-green-700 border border-green-200"
-                          : "bg-red-50 text-red-700 border border-red-200"
-                      }`}
-                    >
-                      {submitStatus === "success" ? (
-                        <CheckCircle2 className="shrink-0 mt-0.5" size={18} />
-                      ) : (
-                        <XCircle className="shrink-0 mt-0.5" size={18} />
-                      )}
-                      <p>{statusMessage}</p>
-                    </div>
-                  )}
-
-                  <button
-                    type="submit"
-                    disabled={isSubmitting}
-                    className="w-full mt-2 bg-[#FF8A00] hover:bg-[#e67c00] text-white font-bold py-3.5 md:py-4 rounded-full transition-all text-lg shadow-md hover:shadow-lg active:scale-95 flex justify-center items-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
-                  >
-                    {isSubmitting ? (
-                      <>
-                        <Loader2 className="animate-spin" size={20} />
-                        กำลังส่ง...
-                      </>
-                    ) : (
-                      "ส่งข้อความ"
-                    )}
-                  </button>
-                </form>
-              </div>
+              <ContactForm
+                formData={formData}
+                handleChange={handleChange}
+                handleSubmit={handleSubmit}
+                isSubmitting={isSubmitting}
+                submitStatus={submitStatus}
+                statusMessage={statusMessage}
+                isPhoneDropdownOpen={isPhoneDropdownOpen}
+                setIsPhoneDropdownOpen={setIsPhoneDropdownOpen}
+                setFormData={setFormData}
+                messageInputRef={messageInputRef}
+                phoneCodes={PHONE_CODES}
+              />
             </div>
           </div>
         </div>
       </main>
 
       <Footer />
+
+      <ConfirmationModal
+        show={showConfirmModal}
+        onCancel={() => setShowConfirmModal(false)}
+        onConfirm={confirmAndSubmit}
+      />
     </div>
   );
 };
 
 export default ContactPage;
+
+//test แยก branch

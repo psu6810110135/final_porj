@@ -1,29 +1,22 @@
 import { useState, useEffect, type ReactNode } from "react";
 import { Link, useSearchParams } from "react-router-dom";
-import { Card, CardContent } from "@/components/ui/card";
+
+// Components
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
-import {
-  Search,
-  Filter,
-  X,
-  ChevronLeft,
-  Plus,
-  Star,
-  Clock,
-  MapPin,
-  ChevronDown,
-} from "lucide-react";
-import {
-  CATEGORY_OPTIONS,
-  REGION_OPTIONS,
-  DURATION_OPTIONS,
-  getDurationLabel,
-  getProvinceLabel,
-} from "@/utils/tourLabels";
+import { TourCard } from "@/components/tours/TourCard";
+import { FilterContent } from "@/components/tours/Filters";
+
+// Icons
+import { Search, Filter, X, ChevronLeft, MapPin, ChevronDown } from "lucide-react";
+
+// Utils
+import { translateDuration, translateLocation, getImageUrl } from "@/utils/tourUtils";
+import { getProvinceLabel } from "@/utils/tourLabels";
 import { API_BASE_URL } from "@/config/api";
 
-interface Tour {
+// --- Types ---
+export interface Tour {
   id: number | string;
   title: string;
   image_cover?: string;
@@ -35,38 +28,30 @@ interface Tour {
   region?: string;
 }
 
+// --- Main Component ---
 export default function ToursPage() {
   const [tours, setTours] = useState<Tour[]>([]);
   const [searchParams, setSearchParams] = useSearchParams();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isMobileFilterOpen, setIsMobileFilterOpen] = useState(false);
+
   const [provinceOptions, setProvinceOptions] = useState<string[]>([]);
   const [isProvinceDropdownOpen, setIsProvinceDropdownOpen] = useState(false);
 
-  // สถานะสำหรับเปิด/ปิด Filter ในมือถือ
-  const [isMobileFilterOpen, setIsMobileFilterOpen] = useState(false);
-
+  // ดึงค่าจาก URL
   const searchFilter = searchParams.get("search") || "";
+  const regionFilter = searchParams.get("region") || "";
+  const categoryFilter = searchParams.get("category") || "";
+  const durationFilter = searchParams.get("duration") || "";
+  const provinceFilter = searchParams.get("province") || "";
+
+  // สถานะสำหรับ Input (แยกจาก URL เพื่อให้พิมพ์ได้ลื่นไหล)
   const [searchInput, setSearchInput] = useState(searchFilter);
 
   const apiBase = `${API_BASE_URL}/api`;
 
-  const provinceFilter = searchParams.get("province") || "";
-  const regionFilter = searchParams.get("region") || "";
-  const categoryFilter = searchParams.get("category") || "";
-  const durationFilter = searchParams.get("duration") || "";
-
-  // Helper สำหรับแปลง URL รูปภาพ
-  const getImageUrl = (path?: string) => {
-    if (!path) return "https://via.placeholder.com/400x300?text=No+Img";
-    if (path.startsWith("http")) return path;
-    return `${API_BASE_URL}/${path.replace(/^\//, "")}`;
-  };
-
-  useEffect(() => {
-    setSearchInput(searchFilter);
-  }, [searchFilter]);
-
+  // 1. Fetch Provinces for Dropdown
   useEffect(() => {
     fetch(`${apiBase}/tours`)
       .then((res) => res.json())
@@ -86,9 +71,24 @@ export default function ToursPage() {
       });
   }, [apiBase]);
 
+  // 2. Real-time Search Logic (Debounce)
+  useEffect(() => {
+    const delayDebounceFn = setTimeout(() => {
+      const newParams = new URLSearchParams(searchParams);
+      if (searchInput.trim()) {
+        newParams.set("search", searchInput.trim());
+      } else {
+        newParams.delete("search");
+      }
+      setSearchParams(newParams);
+    }, 500);
+
+    return () => clearTimeout(delayDebounceFn);
+  }, [searchInput, searchParams, setSearchParams]);
+
+  // 3. Fetch Data Logic
   useEffect(() => {
     setLoading(true);
-    setError(null);
     const params = new URLSearchParams();
 
     if (provinceFilter) params.append("province", provinceFilter);
@@ -111,14 +111,7 @@ export default function ToursPage() {
         setTours([]);
       })
       .finally(() => setLoading(false));
-  }, [
-    apiBase,
-    provinceFilter,
-    regionFilter,
-    categoryFilter,
-    durationFilter,
-    searchFilter,
-  ]);
+  }, [apiBase, provinceFilter, regionFilter, categoryFilter, durationFilter, searchFilter]);
 
   const handleFilterChange = (key: string, value: string) => {
     const newParams = new URLSearchParams(searchParams);
@@ -173,13 +166,11 @@ export default function ToursPage() {
 
       <main className="flex-grow p-4 md:p-10">
         <div className="max-w-[1400px] mx-auto">
+
           {/* Header Section */}
           <div className="relative z-40 flex flex-col items-center mb-8 md:mb-12">
             <div className="w-full mb-4">
-              <Link
-                to="/"
-                className="inline-flex items-center gap-2 text-sm font-bold text-gray-500 hover:text-[#FF8400] transition-colors"
-              >
+              <Link to="/" className="inline-flex items-center gap-2 text-sm font-bold text-gray-500 hover:text-[#FF8400] transition-colors">
                 <ChevronLeft size={18} /> กลับหน้าหลัก
               </Link>
             </div>
@@ -241,7 +232,7 @@ export default function ToursPage() {
           </div>
 
           <div className="flex flex-col lg:flex-row gap-8">
-            {/* Sidebar Filters - Desktop */}
+            {/* Sidebar Filters (Desktop) */}
             <aside className="hidden lg:block w-[280px] shrink-0">
               <div className="bg-white p-8 rounded-[2rem] shadow-sm sticky top-28 border border-gray-100 space-y-8">
                 <FilterContent
@@ -256,19 +247,11 @@ export default function ToursPage() {
             {/* Mobile Filter Drawer */}
             {isMobileFilterOpen && (
               <div className="fixed inset-0 z-[100] lg:hidden">
-                <div
-                  className="absolute inset-0 bg-black/50 backdrop-blur-sm"
-                  onClick={() => setIsMobileFilterOpen(false)}
-                />
+                <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setIsMobileFilterOpen(false)} />
                 <div className="absolute right-0 top-0 h-full w-[85%] max-w-[320px] bg-white p-6 shadow-2xl overflow-y-auto transition-transform">
                   <div className="flex justify-between items-center mb-8">
-                    <h2 className="text-xl font-black text-[#4F200D]">
-                      ตัวกรอง
-                    </h2>
-                    <button
-                      onClick={() => setIsMobileFilterOpen(false)}
-                      className="p-2 hover:bg-gray-100 rounded-full"
-                    >
+                    <h2 className="text-xl font-black text-[#4F200D]">ตัวกรอง</h2>
+                    <button onClick={() => setIsMobileFilterOpen(false)} className="p-2 hover:bg-gray-100 rounded-full">
                       <X size={24} />
                     </button>
                   </div>
@@ -280,10 +263,7 @@ export default function ToursPage() {
                       handleFilterChange={handleFilterChange}
                     />
                   </div>
-                  <button
-                    onClick={() => setIsMobileFilterOpen(false)}
-                    className="w-full mt-10 py-4 bg-[#FF8400] text-white font-bold rounded-2xl shadow-lg"
-                  >
+                  <button onClick={() => setIsMobileFilterOpen(false)} className="w-full mt-10 py-4 bg-[#FF8400] text-white font-bold rounded-2xl shadow-lg">
                     แสดงผลทัวร์
                   </button>
                 </div>
@@ -304,99 +284,32 @@ export default function ToursPage() {
                 </div>
               )}
 
-              {!loading && !error && tours.length === 0 && (
+              {!loading && tours.length === 0 && !error && (
                 <div className="flex items-center justify-center h-64 border-2 border-dashed border-gray-200 bg-white rounded-[2.5rem]">
                   <div className="text-center p-4">
-                    <p className="text-lg text-gray-400 font-bold mb-2">
-                      ไม่พบทัวร์ที่ตรงเงื่อนไข
-                    </p>
-                    <button
-                      onClick={() => setSearchParams({})}
-                      className="text-[#FF8400] underline text-sm"
-                    >
-                      ล้างตัวกรองทั้งหมด
+                    <p className="text-lg text-gray-400 font-bold mb-2">ไม่พบทัวร์ที่ตรงเงื่อนไข</p>
+                    <button onClick={() => { setSearchInput(""); setSearchParams({}); }} className="text-[#FF8400] underline text-sm">
+                      ล้างตัวกรองและค้นหาใหม่
                     </button>
                   </div>
                 </div>
               )}
 
-              {!loading && !error && tours.length > 0 && (
-                <div className="grid grid-cols-2 md:grid-cols-2 xl:grid-cols-3 gap-3 md:gap-6">
-                  {tours.map((tour) => (
-                    <Link
-                      to={`/tours/${tour.id}`}
-                      key={tour.id}
-                      className="block h-full group"
-                    >
-                      <Card className="rounded-[1.2rem] md:rounded-[2rem] overflow-hidden border border-gray-100 shadow-sm hover:shadow-xl transition-all duration-300 bg-white h-full flex flex-col">
-                        {/* Image Section */}
-                        <div className="relative h-32 sm:h-48 md:h-56 shrink-0 overflow-hidden bg-gray-100 p-1.5 md:p-2">
-                          <img
-                            src={getImageUrl(tour.image_cover)}
-                            className="w-full h-full object-cover rounded-[1rem] md:rounded-[1.5rem] group-hover:scale-105 transition-transform duration-500"
-                            alt={tour.title}
-                          />
-
-                          {/* Rating */}
-                          <div className="absolute top-2 right-2 md:top-4 md:right-4 bg-white/90 px-1.5 py-0.5 md:px-3 md:py-1.5 rounded-full text-[10px] md:text-xs font-black text-[#FF8400] shadow-sm flex items-center gap-0.5">
-                            <Star
-                              size={10}
-                              fill="#FF8400"
-                              stroke="#FF8400"
-                              className="md:w-[12px]"
-                            />{" "}
-                            {tour.rating || "ใหม่"}
-                          </div>
-
-                          {/* Duration */}
-                          {tour.duration && (
-                            <div className="absolute top-2 left-2 md:top-4 md:left-4 bg-white/90 px-1.5 py-0.5 md:px-3 md:py-1.5 rounded-full text-[9px] md:text-[10px] font-bold text-[#4F200D] shadow-sm flex items-center gap-0.5">
-                              <Clock size={10} className="md:w-[12px]" />{" "}
-                              {getDurationLabel(tour.duration)}
-                            </div>
-                          )}
-                        </div>
-
-                        {/* Card Content */}
-                        <CardContent className="p-3 md:p-6 flex flex-col flex-grow">
-                          <h3 className="text-sm md:text-xl font-black mb-1 leading-tight text-[#2D3748] group-hover:text-[#FF8400] transition-colors line-clamp-2">
-                            {tour.title}
-                          </h3>
-                          <p className="text-[10px] md:text-sm text-gray-400 mb-2 md:mb-6 line-clamp-1">
-                            {tour.province
-                              ? getProvinceLabel(tour.province)
-                              : "ไทย"}
-                          </p>
-
-                          <div className="mt-auto pt-2 md:pt-4 border-t border-gray-100 flex justify-between items-end">
-                            <div>
-                              <span className="text-[8px] md:text-[10px] text-gray-400 font-bold uppercase tracking-wider block">
-                                เริ่ม
-                              </span>
-                              <div className="text-sm md:text-2xl font-black text-[#FF8400]">
-                                ฿{Number(tour.price).toLocaleString()}
-                              </div>
-                            </div>
-
-                            <div className="w-6 h-6 md:w-10 md:h-10 flex items-center justify-center rounded-full bg-[#FF8400] text-white shadow-md">
-                              <Plus
-                                size={14}
-                                strokeWidth={3}
-                                className="md:w-[20px]"
-                              />
-                            </div>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    </Link>
-                  ))}
-                </div>
-              )}
+              <div className={`grid grid-cols-2 md:grid-cols-2 xl:grid-cols-3 gap-3 md:gap-6 transition-opacity duration-300 ${loading ? 'opacity-50' : 'opacity-100'}`}>
+                {tours.map((tour) => (
+                  <TourCard
+                    key={tour.id}
+                    tour={tour}
+                    getImageUrl={getImageUrl}
+                    translateDuration={translateDuration}
+                    translateLocation={translateLocation}
+                  />
+                ))}
+              </div>
             </div>
           </div>
         </div>
       </main>
-
       <Footer />
     </div>
   );
@@ -430,11 +343,10 @@ function RichDropdown({
     <div className={`flex-1 relative min-w-[0] ${className}`}>
       <button
         onClick={onToggle}
-        className={`w-full bg-white rounded-xl sm:rounded-full px-3 md:px-4 py-2.5 md:py-3 flex items-center gap-2 transition-all duration-200 ${
-          isOpen
-            ? "ring-2 ring-[#FF8400] shadow-md bg-white"
-            : "border border-[#4F200D]/15 hover:border-[#FF8400]/50 hover:shadow-sm"
-        }`}
+        className={`w-full bg-white rounded-xl sm:rounded-full px-3 md:px-4 py-2.5 md:py-3 flex items-center gap-2 transition-all duration-200 ${isOpen
+          ? "ring-2 ring-[#FF8400] shadow-md bg-white"
+          : "border border-[#4F200D]/15 hover:border-[#FF8400]/50 hover:shadow-sm"
+          }`}
       >
         <span
           className={`flex-shrink-0 transition-colors ${isOpen ? "text-[#FF8400]" : "text-[#4F200D]/40"}`}
@@ -453,22 +365,20 @@ function RichDropdown({
       </button>
 
       <div
-        className={`absolute top-full left-0 right-0 mt-1.5 bg-white rounded-2xl shadow-2xl border border-[#F0E8E0] overflow-hidden z-[120] transition-all duration-200 origin-top ${
-          isOpen
-            ? "opacity-100 scale-y-100 translate-y-0"
-            : "opacity-0 scale-y-95 -translate-y-1 pointer-events-none"
-        }`}
+        className={`absolute top-full left-0 right-0 mt-1.5 bg-white rounded-2xl shadow-2xl border border-[#F0E8E0] overflow-hidden z-[120] transition-all duration-200 origin-top ${isOpen
+          ? "opacity-100 scale-y-100 translate-y-0"
+          : "opacity-0 scale-y-95 -translate-y-1 pointer-events-none"
+          }`}
       >
         <div className="absolute -top-1.5 left-1/2 -translate-x-1/2 w-3 h-3 bg-white border-l border-t border-[#F0E8E0] rotate-45" />
 
         <div className="max-h-56 overflow-y-auto py-1 relative">
           <button
             onClick={() => onSelect("")}
-            className={`w-full px-4 py-2.5 text-left text-sm flex items-center gap-2 transition-colors ${
-              !value
-                ? "bg-[#FF8400]/8 text-[#FF8400] font-bold"
-                : "text-[#4F200D]/60 hover:bg-[#F6F1E9]"
-            }`}
+            className={`w-full px-4 py-2.5 text-left text-sm flex items-center gap-2 transition-colors ${!value
+              ? "bg-[#FF8400]/8 text-[#FF8400] font-bold"
+              : "text-[#4F200D]/60 hover:bg-[#F6F1E9]"
+              }`}
           >
             {!value && (
               <span className="w-1.5 h-1.5 rounded-full bg-[#FF8400]" />
@@ -480,11 +390,10 @@ function RichDropdown({
             <button
               key={opt.value}
               onClick={() => onSelect(opt.value)}
-              className={`w-full px-4 py-2.5 text-left text-sm flex items-center gap-2 transition-colors ${
-                value === opt.value
-                  ? "bg-[#FF8400]/8 text-[#FF8400] font-bold"
-                  : "text-[#4F200D] hover:bg-[#F6F1E9]"
-              }`}
+              className={`w-full px-4 py-2.5 text-left text-sm flex items-center gap-2 transition-colors ${value === opt.value
+                ? "bg-[#FF8400]/8 text-[#FF8400] font-bold"
+                : "text-[#4F200D] hover:bg-[#F6F1E9]"
+                }`}
             >
               {value === opt.value && (
                 <span className="w-1.5 h-1.5 rounded-full bg-[#FF8400]" />
@@ -498,73 +407,4 @@ function RichDropdown({
   );
 }
 
-function FilterContent({
-  durationFilter,
-  regionFilter,
-  categoryFilter,
-  handleFilterChange,
-}: any) {
-  return (
-    <>
-      <div>
-        <h3 className="font-extrabold text-lg mb-4 text-[#4F200D]">ระยะเวลา</h3>
-        <div className="space-y-3">
-          {DURATION_OPTIONS.map((opt) => (
-            <FilterItem
-              key={opt.value}
-              label={opt.label}
-              isChecked={durationFilter === opt.value}
-              onChange={() => handleFilterChange("duration", opt.value)}
-            />
-          ))}
-        </div>
-      </div>
-      <div className="pt-6 border-t border-gray-100">
-        <h3 className="font-extrabold text-lg mb-4 text-[#4F200D]">ภูมิภาค</h3>
-        <div className="space-y-3">
-          {REGION_OPTIONS.map((zone) => (
-            <FilterItem
-              key={zone.value}
-              label={zone.label}
-              isChecked={regionFilter === zone.value}
-              onChange={() => handleFilterChange("region", zone.value)}
-            />
-          ))}
-        </div>
-      </div>
-      <div className="pt-6 border-t border-gray-100">
-        <h3 className="font-extrabold text-lg mb-4 text-[#4F200D]">
-          ประเภททัวร์
-        </h3>
-        <div className="space-y-3">
-          {CATEGORY_OPTIONS.map((cat) => (
-            <FilterItem
-              key={cat.value}
-              label={cat.label}
-              isChecked={categoryFilter === cat.value}
-              onChange={() => handleFilterChange("category", cat.value)}
-            />
-          ))}
-        </div>
-      </div>
-    </>
-  );
-}
-
-function FilterItem({ label, isChecked, onChange }: any) {
-  return (
-    <label className="flex items-center gap-3 cursor-pointer group">
-      <input
-        type="checkbox"
-        checked={isChecked}
-        onChange={onChange}
-        className="w-5 h-5 accent-[#FF8400] rounded-md cursor-pointer"
-      />
-      <span
-        className={`text-sm group-hover:text-[#FF8400] transition-colors ${isChecked ? "font-bold text-[#FF8400]" : "font-medium text-gray-700"}`}
-      >
-        {label}
-      </span>
-    </label>
-  );
-}
+//เพิ่มวัน

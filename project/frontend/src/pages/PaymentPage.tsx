@@ -130,6 +130,24 @@ export default function PaymentPage() {
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
       const selectedFile = e.target.files[0];
+
+      // 🌟 1. ดักขนาดไฟล์ตรงนี้เลย! (5 * 1024 * 1024 = 5MB)
+      if (selectedFile.size > 5 * 1024 * 1024) {
+        // เด้ง Popup แจ้งเตือนสวยๆ ที่เราทำไว้
+        setUploadAlert({
+          title: "ไฟล์ขนาดใหญ่เกินไป",
+          message: "สลิปโอนเงินต้องมีขนาดไม่เกิน 5MB กรุณาย่อรูปหรือเลือกไฟล์ใหม่",
+          isSuccess: false
+        });
+        
+        // ล้างค่า input ทิ้ง เพื่อให้ลูกค้ากดเลือกไฟล์ใหม่ได้
+        e.target.value = ""; 
+        setFile(null); // เคลียร์รูปเก่าที่อาจจะค้างอยู่
+        setPreviewUrl(""); // เคลียร์พรีวิวเก่าทิ้งด้วย (ถ้า State คุณใช้เป็น null ก็เปลี่ยนเป็น null ได้เลยครับ)
+        return; // สั่งหยุดการทำงานตรงนี้เลย ไม่ไปทำคำสั่งข้างล่างต่อ
+      }
+
+      // 🌟 2. ถ้าไฟล์ขนาดโอเค (< 5MB) ก็เซฟลง State ตามปกติของคุณเลยครับ
       setFile(selectedFile);
       setPreviewUrl(URL.createObjectURL(selectedFile));
     }
@@ -365,7 +383,7 @@ export default function PaymentPage() {
             </p>
             <input
               type="file"
-              accept="image/*"
+              accept="image/jpeg, image/jpg, image/png"
               onChange={handleFileChange}
               className="block w-full text-sm text-gray-500
                 file:mr-4 file:py-2 file:px-4

@@ -27,6 +27,7 @@ export default function PaymentPage() {
   const [isRenewing, setIsRenewing] = useState(false); // ✨ โหลดตอนกดต่อเวลา
   const [uploadAlert, setUploadAlert] = useState<{ title: string; message: string; isSuccess: boolean } | null>(null);
   const [renewAlert, setRenewAlert] = useState<{ title: string; message: string; isSuccess: boolean } | null>(null);
+  const [isDownloaded, setIsDownloaded] = useState(false);
 
   const getAuthHeader = (): Record<string, string> => {
     const token = localStorage.getItem("jwt_token");
@@ -217,7 +218,7 @@ export default function PaymentPage() {
     }
   };
 
-  const downloadQRCode = () => {
+ const downloadQRCode = () => {
     const canvas = document.getElementById("qr-gen") as HTMLCanvasElement;
     if (canvas) {
       const url = canvas.toDataURL("image/png");
@@ -225,6 +226,11 @@ export default function PaymentPage() {
       link.download = `PromptPay-${amount}.png`;
       link.href = url;
       link.click();
+
+      setIsDownloaded(true);
+      setTimeout(() => {
+        setIsDownloaded(false);
+      }, 2000); // 3 วินาทีกลับเป็นเหมือนเดิม
     }
   };
 
@@ -320,9 +326,13 @@ export default function PaymentPage() {
           {paymentStatus === "pending" && (
             <button
               onClick={downloadQRCode}
-              className="flex items-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-sm font-medium transition-colors"
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                isDownloaded
+                  ? "bg-green-500 hover:bg-green-600 text-white" 
+                  : "bg-gray-100 hover:bg-gray-200 text-gray-700"
+              }`}
             >
-              บันทึกรูป QR Code
+              {isDownloaded ? "บันทึกสำเร็จ" : "บันทึกรูป QR Code"}
             </button>
           )}
 

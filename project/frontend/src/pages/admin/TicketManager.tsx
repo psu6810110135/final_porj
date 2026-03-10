@@ -1,6 +1,7 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import axios from "axios";
 import {
+  AlertCircle,
   Search,
   Mail,
   Phone,
@@ -11,6 +12,7 @@ import {
   X,
   Check,
   ChevronDown,
+  Trash2,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -27,6 +29,12 @@ interface TicketData {
   created_at: string;
 }
 
+interface FeedbackState {
+  title: string;
+  message: string;
+  variant: "success" | "error";
+}
+
 const getAuthHeader = (): Record<string, string> => {
   const token = localStorage.getItem("jwt_token");
   return token ? { Authorization: `Bearer ${token}` } : {};
@@ -38,6 +46,17 @@ interface Option {
   label: string;
 }
 
+const statusFilterOptions: Option[] = [
+  { value: "all", label: "ทุกสถานะ" },
+  { value: "pending", label: "รอดำเนินการ" },
+  { value: "resolved", label: "แก้แล้ว" },
+];
+
+const sortByTimeOptions: Option[] = [
+  { value: "newest", label: "เวลา: ใหม่ล่าสุด" },
+  { value: "oldest", label: "เวลา: เก่าสุด" },
+];
+
 const CustomSelect = ({
   value,
   onChange,
@@ -47,7 +66,7 @@ const CustomSelect = ({
   menuPlacement = "bottom",
 }: {
   value: string | number;
-  onChange: (val: any) => void;
+  onChange: (val: string | number) => void;
   options: Option[];
   className?: string;
   containerClassName?: string;
@@ -102,21 +121,26 @@ const CustomSelect = ({
     options.find((o) => String(o.value) === String(value)) || options[0];
 
   return (
-    <div className={containerClassName ?? "relative flex-1 w-full"} ref={ref}>
+    <div
+      className={
+        containerClassName ?? "relative flex-1 sm:flex-none w-full sm:w-auto"
+      }
+      ref={ref}
+    >
       <div
         className={`flex items-center justify-between ${className}`}
         onClick={() => setIsOpen(!isOpen)}
       >
         <span className="truncate">{selectedOption?.label}</span>
         <ChevronDown
-          className={`w-3.5 h-3.5 ml-1.5 transition-transform duration-200 shrink-0 opacity-70 ${
+          className={`w-4 h-4 ml-2 transition-transform duration-200 text-[#4F200D]/50 shrink-0 ${
             isOpen ? "rotate-180" : ""
           }`}
         />
       </div>
       {isOpen && (
         <div
-          className={`absolute z-[80] w-full min-w-[130px] bg-white border-2 border-[#F6F1E9] rounded-3xl shadow-xl overflow-hidden animate-in fade-in zoom-in-95 duration-200 right-0 ${
+          className={`absolute z-[90] w-full min-w-[150px] bg-white border-2 border-[#F6F1E9] rounded-2xl shadow-xl overflow-hidden animate-in fade-in zoom-in-95 duration-200 ${
             resolvedPlacement === "top" ? "bottom-full mb-2" : "top-full mt-2"
           }`}
         >
@@ -127,7 +151,7 @@ const CustomSelect = ({
             {options.map((opt) => (
               <div
                 key={String(opt.value)}
-                className={`px-4 py-2.5 text-xs font-bold cursor-pointer transition-colors ${
+                className={`px-4 py-3 text-sm font-bold cursor-pointer transition-colors ${
                   String(value) === String(opt.value)
                     ? "bg-[#FFD93D]/30 text-[#FF8400]"
                     : "text-[#4F200D] hover:bg-[#F6F1E9]"
@@ -147,13 +171,83 @@ const CustomSelect = ({
   );
 };
 
+const FeedbackModal = ({
+  feedback,
+  onClose,
+}: {
+  feedback: FeedbackState;
+  onClose: () => void;
+}) => {
+  const isSuccess = feedback.variant === "success";
+
+  return (
+    <div className="fixed inset-0 z-[120] flex items-center justify-center bg-[#4F200D]/50 backdrop-blur-sm px-4">
+      <div className="w-full max-w-md bg-white rounded-3xl shadow-2xl border border-[#F6F1E9] overflow-hidden">
+        <div className="px-6 pt-6 pb-4 flex items-start gap-3">
+          <div
+            className={`w-11 h-11 rounded-2xl flex items-center justify-center shrink-0 ${
+              isSuccess
+                ? "bg-emerald-100 text-emerald-600"
+                : "bg-red-100 text-red-500"
+            }`}
+          >
+            <AlertCircle className="w-5 h-5" />
+          </div>
+          <div className="min-w-0">
+            <h3 className="text-lg font-black text-[#4F200D]">
+              {feedback.title}
+            </h3>
+            <p className="text-sm text-[#4F200D]/70 mt-1 leading-relaxed">
+              {feedback.message}
+            </p>
+          </div>
+        </div>
+
+        <div className="px-6 pb-6 pt-2">
+          <Button
+            onClick={onClose}
+            className={`w-full rounded-xl text-white font-bold ${
+              isSuccess
+                ? "bg-emerald-600 hover:bg-emerald-700"
+                : "bg-[#FF8400] hover:bg-[#e67600]"
+            }`}
+          >
+            รับทราบ
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 export default function TicketManager() {
   const [tickets, setTickets] = useState<TicketData[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [sortByTime, setSortByTime] = useState("newest");
 
   const [editingTicket, setEditingTicket] = useState<TicketData | null>(null);
   const [draftStatus, setDraftStatus] = useState<string>("");
+  const [deletingTicket, setDeletingTicket] = useState<TicketData | null>(null);
+
+  const [isSavingStatus, setIsSavingStatus] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [feedback, setFeedback] = useState<FeedbackState | null>(null);
+
+  const selectTriggerClass =
+    "text-sm border-0 bg-[#F6F1E9]/50 px-4 py-3 rounded-2xl focus:ring-2 focus:ring-[#FFD93D] text-[#4F200D] font-bold cursor-pointer outline-none transition-all w-full h-12";
+
+  const getErrorMessage = (error: unknown, fallback: string) => {
+    const apiMessage = (error as any)?.response?.data?.message;
+    if (Array.isArray(apiMessage)) {
+      return apiMessage.join("\n");
+    }
+    if (typeof apiMessage === "string") {
+      return apiMessage;
+    }
+    return fallback;
+  };
 
   const fetchTickets = async () => {
     setLoading(true);
@@ -165,6 +259,12 @@ export default function TicketManager() {
       setTickets(data);
     } catch (error) {
       console.error("Failed to fetch tickets:", error);
+      setFeedback({
+        title: "โหลดข้อมูลไม่สำเร็จ",
+        message:
+          "ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้ จึงแสดงข้อมูลตัวอย่างชั่วคราว",
+        variant: "error",
+      });
       setTickets([
         {
           id: "tk1",
@@ -207,11 +307,12 @@ export default function TicketManager() {
     const id = editingTicket.id;
     const newStatus = draftStatus;
 
-    setEditingTicket(null);
-
     if (newStatus === editingTicket.status) return;
 
     const originalTickets = [...tickets];
+    setEditingTicket(null);
+    setIsSavingStatus(true);
+
     setTickets(
       tickets.map((t) =>
         t.id === id ? { ...t, status: newStatus as any } : t,
@@ -225,8 +326,46 @@ export default function TicketManager() {
         { headers: getAuthHeader() },
       );
     } catch (error) {
-      alert("อัปเดตสถานะล้มเหลว");
       setTickets(originalTickets);
+      setFeedback({
+        title: "อัปเดตสถานะไม่สำเร็จ",
+        message: getErrorMessage(error, "กรุณาลองใหม่อีกครั้ง"),
+        variant: "error",
+      });
+    } finally {
+      setIsSavingStatus(false);
+    }
+  };
+
+  const handleDeleteTicket = async () => {
+    if (!deletingTicket) return;
+
+    setIsDeleting(true);
+    try {
+      await axios.delete(`${API_BASE_URL}/api/tickets/${deletingTicket.id}`, {
+        headers: getAuthHeader(),
+      });
+
+      setTickets((prev) =>
+        prev.filter((ticket) => ticket.id !== deletingTicket.id),
+      );
+      setFeedback({
+        title: "ลบ Ticket สำเร็จ",
+        message: `Ticket #${deletingTicket.id.substring(0, 8)} ถูกลบเรียบร้อยแล้ว`,
+        variant: "success",
+      });
+      setDeletingTicket(null);
+    } catch (error) {
+      setFeedback({
+        title: "ลบ Ticket ไม่สำเร็จ",
+        message: getErrorMessage(
+          error,
+          "สามารถลบได้เฉพาะ Ticket ที่แก้ไขแล้วเท่านั้น",
+        ),
+        variant: "error",
+      });
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -242,14 +381,33 @@ export default function TicketManager() {
     window.open(gmailUrl, "_blank");
   };
 
-  const filteredTickets = tickets.filter((t) => {
-    const searchLower = searchQuery.toLowerCase();
-    return (
-      t.first_name.toLowerCase().includes(searchLower) ||
-      t.email.toLowerCase().includes(searchLower) ||
-      t.message.toLowerCase().includes(searchLower)
-    );
-  });
+  const filteredTickets = useMemo(() => {
+    const searchLower = searchQuery.trim().toLowerCase();
+
+    const matched = tickets.filter((t) => {
+      const passSearch =
+        !searchLower ||
+        t.first_name.toLowerCase().includes(searchLower) ||
+        t.last_name.toLowerCase().includes(searchLower) ||
+        t.email.toLowerCase().includes(searchLower) ||
+        t.message.toLowerCase().includes(searchLower);
+
+      const passStatus =
+        statusFilter === "pending"
+          ? t.status === "pending"
+          : statusFilter === "resolved"
+            ? t.status === "resolved"
+            : true;
+
+      return passSearch && passStatus;
+    });
+
+    return matched.sort((a, b) => {
+      const aTime = new Date(a.created_at).getTime();
+      const bTime = new Date(b.created_at).getTime();
+      return sortByTime === "newest" ? bTime - aTime : aTime - bTime;
+    });
+  }, [tickets, searchQuery, statusFilter, sortByTime]);
 
   const getStatusColorClass = (status: string) => {
     switch (status) {
@@ -302,6 +460,11 @@ export default function TicketManager() {
     }
   };
 
+  const unresolvedCount = useMemo(
+    () => tickets.filter((ticket) => ticket.status !== "resolved").length,
+    [tickets],
+  );
+
   return (
     <div className="w-full space-y-6 animate-in fade-in duration-500 relative">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 sm:mb-8">
@@ -315,19 +478,57 @@ export default function TicketManager() {
         </div>
       </div>
 
-      <div className="bg-white p-4 sm:p-5 rounded-3xl border-0 shadow-sm flex flex-col sm:flex-row gap-4 items-center justify-between mb-6">
-        <div className="relative w-full sm:w-96">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-[#4F200D]/40 w-5 h-5" />
-          <Input
-            placeholder="ค้นหาชื่อ อีเมล หรือเนื้อหาข้อความ..."
-            className="pl-12 py-5 sm:py-6 bg-[#F6F1E9]/50 border-0 rounded-2xl font-bold text-[#4F200D] placeholder:font-medium focus:bg-white focus:ring-2 focus:ring-[#FFD93D] transition-all"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-          />
+      <div className="bg-white p-4 sm:p-5 rounded-3xl border-0 shadow-sm mb-6">
+        <div className="flex flex-col xl:flex-row gap-3 xl:items-center w-full">
+          <div className="relative w-full xl:flex-1 xl:max-w-xl">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-[#4F200D]/40 w-5 h-5" />
+            <Input
+              placeholder="ค้นหาชื่อ อีเมล หรือเนื้อหาข้อความ..."
+              className="pl-12 h-12 bg-[#F6F1E9]/60 border-0 rounded-2xl font-semibold text-[#4F200D] placeholder:font-medium focus:bg-white focus:ring-2 focus:ring-[#FFD93D] transition-all"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 w-full xl:w-auto xl:min-w-[360px]">
+            <CustomSelect
+              className={selectTriggerClass}
+              value={statusFilter}
+              onChange={(value) => setStatusFilter(String(value))}
+              options={statusFilterOptions}
+              menuPlacement="auto"
+            />
+            <CustomSelect
+              className={selectTriggerClass}
+              value={sortByTime}
+              onChange={(value) => setSortByTime(String(value))}
+              options={sortByTimeOptions}
+              menuPlacement="auto"
+            />
+          </div>
+
+          <Button
+            variant="ghost"
+            onClick={() => {
+              setSearchQuery("");
+              setStatusFilter("all");
+              setSortByTime("newest");
+            }}
+            className="w-full md:w-auto xl:ml-auto h-12 px-5 text-[#4F200D]/70 hover:text-[#FF8400] hover:bg-[#FFD93D]/20 font-bold rounded-xl"
+          >
+            ล้างตัวกรอง
+          </Button>
         </div>
-        <div className="w-full sm:w-auto text-center px-6 py-3 bg-[#F6F1E9]/50 rounded-xl text-sm font-bold text-[#4F200D]">
-          ข้อความทั้งหมด:{" "}
-          <span className="text-[#FF8400]">{filteredTickets.length}</span>
+
+        <div className="mt-4 flex flex-col sm:flex-row gap-3 sm:items-center">
+          <div className="w-full sm:w-auto text-center px-6 py-3 bg-[#F6F1E9]/50 rounded-xl text-sm font-bold text-[#4F200D]">
+            ข้อความตามตัวกรอง:{" "}
+            <span className="text-[#FF8400]">{filteredTickets.length}</span>
+          </div>
+          <div className="w-full sm:w-auto text-center px-6 py-3 bg-[#F6F1E9]/40 rounded-xl text-sm font-bold text-[#4F200D]">
+            ยังไม่ได้แก้:{" "}
+            <span className="text-[#FF8400]">{unresolvedCount}</span>
+          </div>
         </div>
       </div>
 
@@ -412,7 +613,7 @@ export default function TicketManager() {
                       </div>
                     </td>
                     <td className="px-6 py-5 align-top text-right">
-                      <div className="flex flex-col gap-2 items-end w-full max-w-[140px] ml-auto">
+                      <div className="flex flex-col gap-2 items-end w-full max-w-[150px] ml-auto">
                         <button
                           onClick={() => openStatusModal(ticket)}
                           className={`w-full flex items-center justify-between px-4 py-2 rounded-full border-0 font-bold text-[11px] sm:text-xs cursor-pointer transition-colors shadow-sm ${getStatusColorClass(ticket.status)}`}
@@ -432,6 +633,15 @@ export default function TicketManager() {
                         >
                           <Mail size={14} /> ตอบด้วย Gmail
                         </Button>
+
+                        {ticket.status === "resolved" && (
+                          <Button
+                            onClick={() => setDeletingTicket(ticket)}
+                            className="w-full flex items-center justify-center gap-1.5 bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 text-[11px] sm:text-xs h-8 px-2 rounded-full font-bold transition-all shadow-sm"
+                          >
+                            <Trash2 size={14} /> ลบทิ้ง
+                          </Button>
+                        )}
                       </div>
                     </td>
                   </tr>
@@ -503,13 +713,70 @@ export default function TicketManager() {
               <Button
                 className="flex-1 bg-[#FF8400] hover:bg-[#e67600] text-white font-bold rounded-xl py-5 shadow-lg shadow-[#FF8400]/20 text-sm transition-all"
                 onClick={handleSaveStatus}
-                disabled={draftStatus === editingTicket.status}
+                disabled={
+                  draftStatus === editingTicket.status || isSavingStatus
+                }
               >
-                บันทึก
+                {isSavingStatus ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    กำลังบันทึก...
+                  </>
+                ) : (
+                  "บันทึก"
+                )}
               </Button>
             </div>
           </div>
         </div>
+      )}
+
+      {deletingTicket && (
+        <div className="fixed inset-0 z-[110] flex items-center justify-center bg-[#4F200D]/60 backdrop-blur-sm p-4">
+          <div className="w-full max-w-md bg-white rounded-3xl shadow-2xl overflow-hidden border border-[#F6F1E9]">
+            <div className="p-5 sm:p-6 border-b border-[#F6F1E9]">
+              <h2 className="text-lg sm:text-xl font-black text-[#4F200D]">
+                ยืนยันการลบ Ticket
+              </h2>
+              <p className="text-sm text-[#4F200D]/70 mt-2 leading-relaxed">
+                Ticket #{deletingTicket.id.substring(0, 8)}{" "}
+                จะถูกลบออกจากระบบถาวร
+              </p>
+            </div>
+
+            <div className="p-5 sm:p-6 flex flex-col sm:flex-row gap-3 justify-end">
+              <Button
+                variant="ghost"
+                onClick={() => setDeletingTicket(null)}
+                disabled={isDeleting}
+                className="rounded-xl text-[#4F200D]/70 hover:text-[#4F200D] hover:bg-[#F6F1E9]"
+              >
+                ยกเลิก
+              </Button>
+              <Button
+                onClick={() => void handleDeleteTicket()}
+                disabled={isDeleting}
+                className="rounded-xl bg-red-500 hover:bg-red-600 text-white"
+              >
+                {isDeleting ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    กำลังลบ...
+                  </>
+                ) : (
+                  <>
+                    <Trash2 className="w-4 h-4 mr-2" />
+                    ยืนยันลบ
+                  </>
+                )}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {feedback && (
+        <FeedbackModal feedback={feedback} onClose={() => setFeedback(null)} />
       )}
     </div>
   );

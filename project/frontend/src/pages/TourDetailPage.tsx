@@ -122,6 +122,117 @@ function useToast() {
   return { toast, showToast, closeToast };
 }
 
+/* ─── Lightbox ────────────────────────── */
+
+function Lightbox({
+  images,
+  initialIndex,
+  onClose,
+}: {
+  images: string[];
+  initialIndex: number;
+  onClose: () => void;
+}) {
+  const [currentIndex, setCurrentIndex] = useState(initialIndex);
+
+  const handlePrev = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setCurrentIndex((prev) => (prev === 0 ? images.length - 1 : prev - 1));
+  };
+
+  const handleNext = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setCurrentIndex((prev) => (prev === images.length - 1 ? 0 : prev + 1));
+  };
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+      if (e.key === "ArrowLeft")
+        setCurrentIndex((prev) => (prev === 0 ? images.length - 1 : prev - 1));
+      if (e.key === "ArrowRight")
+        setCurrentIndex((prev) => (prev === images.length - 1 ? 0 : prev + 1));
+    };
+
+    const handleWheel = (e: WheelEvent) => {
+      if (e.deltaY > 0) {
+        // Scroll down -> Next
+        setCurrentIndex((prev) => (prev === images.length - 1 ? 0 : prev + 1));
+      } else if (e.deltaY < 0) {
+        // Scroll up -> Prev
+        setCurrentIndex((prev) => (prev === 0 ? images.length - 1 : prev - 1));
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    window.addEventListener("wheel", handleWheel);
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+      window.removeEventListener("wheel", handleWheel);
+    };
+  }, [onClose, images.length]);
+
+  return (
+    <div
+      className="fixed inset-0 z-[500] bg-black/75 backdrop-blur-md flex flex-col items-center justify-center"
+      onClick={onClose}
+      style={{ animation: "fadeIn 0.2s ease" }}
+    >
+      {/* Close Button */}
+      <button
+        onClick={onClose}
+        className="absolute top-6 right-6 w-12 h-12 rounded-full bg-white/10 flex items-center justify-center text-white hover:bg-white/20 transition-all z-20 border border-white/10"
+      >
+        <XIcon />
+      </button>
+
+      {/* Navigation */}
+      {images.length > 1 && (
+        <>
+          <button
+            onClick={handlePrev}
+            className="absolute left-4 md:left-8 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-white/5 flex items-center justify-center text-white hover:bg-white/20 transition-all z-10"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6" /></svg>
+          </button>
+          <button
+            onClick={handleNext}
+            className="absolute right-4 md:right-8 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-white/5 flex items-center justify-center text-white hover:bg-white/20 transition-all z-10"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="m9 18 6-6-6-6" /></svg>
+          </button>
+        </>
+      )}
+
+      {/* Image Container */}
+      <div
+        className="relative w-full h-full flex items-center justify-center p-6 md:p-12 cursor-zoom-out"
+      >
+        <img
+          src={getImageUrl(images[currentIndex])}
+          alt={`ภาพที่ ${currentIndex + 1}`}
+          className="w-full h-full max-w-full max-h-full object-contain select-none shadow-2xl"
+          style={{ animation: "popIn 0.3s cubic-bezier(0.32,0.72,0,1)" }}
+        />
+
+        {/* Info Overlay */}
+        {images.length > 1 && (
+          <div
+            className="absolute bottom-10 left-1/2 -translate-x-1/2 bg-white/10 backdrop-blur-md px-6 py-2 rounded-full border border-white/10"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <p className="text-white text-xs font-black tracking-[0.2em] uppercase">
+              {currentIndex + 1} / {images.length}
+            </p>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+
+
 /* ─── Login Required Modal ───────────────────────── */
 
 function LoginRequiredModal({
@@ -185,6 +296,7 @@ function LoginRequiredModal({
     </div>
   );
 }
+
 
 /* ─── Helpers ───────────────────────── */
 
@@ -883,7 +995,10 @@ export default function TourDetailPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
   const [sheetOpen, setSheetOpen] = useState(false);
+  const [activeImageIndex, setActiveImageIndex] = useState<number | null>(null);
   const { toast, showToast, closeToast } = useToast();
+
+  const allImages = tour ? [tour.image_cover, ...(tour.images || [])] : [];
 
   const preparation = tour ? parsePreparation(tour.preparation) : [];
   const highlights = tour ? parseTextList(tour.highlights) : [];
@@ -917,11 +1032,11 @@ export default function TourDetailPage() {
   }, [id]);
 
   useEffect(() => {
-    document.body.style.overflow = sheetOpen ? "hidden" : "";
+    document.body.style.overflow = (sheetOpen || activeImageIndex !== null) ? "hidden" : "";
     return () => {
       document.body.style.overflow = "";
     };
-  }, [sheetOpen]);
+  }, [sheetOpen, activeImageIndex]);
 
   return (
     <>
@@ -971,7 +1086,8 @@ export default function TourDetailPage() {
               <img
                 src={getImageUrl(tour.image_cover)}
                 alt={tour.title}
-                className="w-full h-full object-cover"
+                className="w-full h-full object-cover cursor-zoom-in"
+                onClick={() => setActiveImageIndex(0)}
               />
               <div className="hero-gradient absolute inset-0" />
               <Link
@@ -1251,7 +1367,8 @@ export default function TourDetailPage() {
                         {tour.images.map((img, i) => (
                           <div
                             key={i}
-                            className="aspect-square rounded-xl overflow-hidden bg-gray-100"
+                            className="aspect-square rounded-xl overflow-hidden bg-gray-100 cursor-zoom-in"
+                            onClick={() => setActiveImageIndex(i + 1)}
                           >
                             <img
                               src={getImageUrl(img)}
@@ -1317,6 +1434,14 @@ export default function TourDetailPage() {
               </div>
             )}
           </>
+        )}
+
+        {activeImageIndex !== null && (
+          <Lightbox
+            images={allImages}
+            initialIndex={activeImageIndex}
+            onClose={() => setActiveImageIndex(null)}
+          />
         )}
 
         <Footer />

@@ -12,6 +12,40 @@ DB_PORT="${DB_PORT:-5433}"
 DB_USERNAME="${DB_USERNAME:-thai_tours}"
 DB_PASSWORD="${DB_PASSWORD:-thai_tours_password}"
 DB_DATABASE="${DB_DATABASE:-thai_tours}"
+SKIP_CONFIRMATION=0
+
+if [[ "${1:-}" == "--yes" ]]; then
+  SKIP_CONFIRMATION=1
+  shift
+fi
+
+if [[ $# -gt 0 ]]; then
+  echo "Usage: $0 [--yes]"
+  exit 1
+fi
+
+confirm_destructive_seed() {
+  if [[ "$SKIP_CONFIRMATION" -eq 1 ]]; then
+    return
+  fi
+
+  if [[ ! -t 0 ]]; then
+    echo "Error: this script will delete all current data in '$DB_DATABASE'."
+    echo "Run it interactively to confirm, or pass --yes to skip the prompt."
+    exit 1
+  fi
+
+  echo "⚠️  Warning: this script will permanently delete all current data in '$DB_DATABASE'."
+  echo "   รวมถึงข้อมูล default/seed เดิมในตาราง users, tours, tour_schedules, bookings, payments, reviews, tickets"
+  echo "   แล้วจะแทนที่ด้วยข้อมูล seed ชุดใหม่ทันที"
+  echo ""
+  read -r -p "Type DELETE to continue: " confirmation
+
+  if [[ "$confirmation" != "DELETE" ]]; then
+    echo "Seed cancelled."
+    exit 1
+  fi
+}
 
 if ! command -v docker >/dev/null 2>&1; then
   echo "Error: docker command not found."
@@ -23,6 +57,8 @@ if ! docker ps --format '{{.Names}}' | grep -qx "$DB_CONTAINER"; then
   echo "Start it first: docker-compose up -d postgres"
   exit 1
 fi
+
+confirm_destructive_seed
 
 echo "🌱 Seeding database '$DB_DATABASE' in container '$DB_CONTAINER' ..."
 echo "   Target: ${DB_USERNAME}@${DB_HOST}:${DB_PORT}/${DB_DATABASE}"

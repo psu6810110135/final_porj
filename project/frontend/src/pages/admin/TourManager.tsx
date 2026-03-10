@@ -191,7 +191,7 @@ const CustomSelect = ({
         className={`flex items-center justify-between ${className} ${errorClasses}`}
         onClick={() => setIsOpen(!isOpen)}
       >
-        <span className="truncate">{selectedOption?.label}</span>
+        <span className="truncate flex-1 text-center">{selectedOption?.label}</span>
         <ChevronDown className={`w-4 h-4 ml-2 transition-transform duration-200 shrink-0 ${hasError ? "text-red-500" : "text-[#4F200D]/50"} ${isOpen ? "rotate-180" : ""}`} />
       </div>
       {isOpen && (
@@ -471,6 +471,36 @@ const TourManager = () => {
     }
   };
 
+  // ─── เปลี่ยนสถานะเปิด-ปิดแบบ Inline ในตาราง ────────────────────────────────
+  const handleInlineStatusChange = async (tour: Tour, newStatus: string) => {
+    const isActive = newStatus === "active";
+    if (tour.is_active === isActive) return;
+
+    const originalTours = [...tours];
+    // เปลี่ยนแปลง UI ทันที
+    setTours(tours.map((t) => (t.id === tour.id ? { ...t, is_active: isActive } : t)));
+
+    try {
+      const response = await fetch(`${API_URL}/${tour.id}`, {
+        method: "PATCH",
+        headers: {
+          ...getAuthHeader(),
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ is_active: isActive }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to update status");
+      }
+    } catch (error) {
+      console.error("Failed to update status:", error);
+      // คืนค่าเดิมถ้าอัปเดตไม่สำเร็จ
+      setTours(originalTours);
+      alert("อัปเดตสถานะไม่สำเร็จ กรุณาลองใหม่อีกครั้ง");
+    }
+  };
+
   const updateItinerary = (index: number, field: "time" | "detail", value: string) => {
     const updated = getSafeItinerary().map((item: any, i: number) => i === index ? { ...item, [field]: value } : item);
     setFormData({ ...formData, itinerary_data: updated });
@@ -552,9 +582,9 @@ const TourManager = () => {
         </div>
       </div>
 
-      <div className="bg-white rounded-3xl border-0 shadow-sm overflow-hidden w-full">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm min-w-[800px]">
+      <div className="bg-white rounded-3xl border-0 shadow-sm overflow-visible w-full">
+        <div className="overflow-x-auto overflow-y-visible min-h-[300px]">
+          <table className="w-full text-left text-sm min-w-[900px]">
             <thead className="bg-[#F6F1E9]/80 border-b-2 border-[#F6F1E9]">
               <tr>
                 <th className="px-6 py-5 font-black text-[#4F200D] uppercase tracking-wider text-xs">ชื่อทัวร์</th>
@@ -594,10 +624,23 @@ const TourManager = () => {
                       <td className="px-6 py-5 font-bold text-[#4F200D]/70">{displayRegion}</td>
                       <td className="px-6 py-5 font-bold text-[#4F200D]/70">{displayDuration}</td>
                       <td className="px-6 py-5 font-bold text-[#4F200D]/70 capitalize">{displayCategory}</td>
-                      <td className="px-6 py-5">
-                        <div className="flex flex-col gap-1 items-start">
-                          <Badge className={`border-0 shadow-none px-3 py-1 font-bold ${tour.is_active ? "bg-[#FFD93D]/30 text-[#4F200D]" : "bg-gray-100 text-gray-500"}`}>{tour.is_active ? "เปิดใช้งาน" : "ปิดใช้งาน"}</Badge>
-                          {tour.is_recommended && <Badge className="border-0 shadow-none px-3 py-1 font-bold bg-[#FF8400]/15 text-[#FF8400]">⭐ แนะนำ</Badge>}
+                      <td className="px-6 py-5 relative">
+                        <div className="flex flex-col gap-2 items-start w-[130px]">
+                          <CustomSelect
+                            value={tour.is_active ? "active" : "inactive"}
+                            onChange={(val) => handleInlineStatusChange(tour, String(val))}
+                            options={[
+                              { value: "active", label: "เปิดใช้งาน" },
+                              { value: "inactive", label: "ปิดใช้งาน" },
+                            ]}
+                            className={`w-full px-3 py-1.5 rounded-full border-2 font-bold text-[11px] sm:text-xs cursor-pointer focus:outline-none focus:ring-1 focus:ring-[#FFD93D] transition-colors shadow-sm ${
+                              tour.is_active
+                                ? "bg-emerald-50 text-emerald-600 border-emerald-100 hover:bg-emerald-100"
+                                : "bg-gray-50 text-gray-500 border-gray-100 hover:bg-gray-100"
+                            }`}
+                            menuPlacement="auto"
+                          />
+                          {tour.is_recommended && <Badge className="border-0 shadow-none px-3 py-1 font-bold bg-[#FF8400]/15 text-[#FF8400] w-full justify-center rounded-xl">⭐ แนะนำ</Badge>}
                         </div>
                       </td>
                       <td className="px-6 py-5 text-right">
@@ -685,7 +728,7 @@ const TourManager = () => {
                       ...THAI_PROVINCES.map((p) => ({ value: p, label: p, searchTerms: PROVINCE_EN_MAPPING[p] || "" }))
                     ]}
                     hasError={errors.province}
-                    enableSearch={true} // เปิดใช้งานช่องค้นหาและสามารถพิมพ์ภาษาอังกฤษหาได้
+                    enableSearch={true}
                   />
                 </div>
               </div>

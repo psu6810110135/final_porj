@@ -26,6 +26,8 @@ export default function PaymentPage() {
   const [isUploading, setIsUploading] = useState(false);
   const [isRenewing, setIsRenewing] = useState(false); // ✨ โหลดตอนกดต่อเวลา
   const [uploadAlert, setUploadAlert] = useState<{ title: string; message: string; isSuccess: boolean } | null>(null);
+  const [renewAlert, setRenewAlert] = useState<{ title: string; message: string; isSuccess: boolean } | null>(null);
+  const [isDownloaded, setIsDownloaded] = useState(false);
 
   const getAuthHeader = (): Record<string, string> => {
     const token = localStorage.getItem("jwt_token");
@@ -128,6 +130,24 @@ export default function PaymentPage() {
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
       const selectedFile = e.target.files[0];
+
+      // 🌟 1. ดักขนาดไฟล์ตรงนี้เลย! (5 * 1024 * 1024 = 5MB)
+      if (selectedFile.size > 5 * 1024 * 1024) {
+        // เด้ง Popup แจ้งเตือนสวยๆ ที่เราทำไว้
+        setUploadAlert({
+          title: "ไฟล์ขนาดใหญ่เกินไป",
+          message: "สลิปโอนเงินต้องมีขนาดไม่เกิน 5MB กรุณาย่อรูปหรือเลือกไฟล์ใหม่",
+          isSuccess: false
+        });
+        
+        // ล้างค่า input ทิ้ง เพื่อให้ลูกค้ากดเลือกไฟล์ใหม่ได้
+        e.target.value = ""; 
+        setFile(null); // เคลียร์รูปเก่าที่อาจจะค้างอยู่
+        setPreviewUrl(""); // เคลียร์พรีวิวเก่าทิ้งด้วย (ถ้า State คุณใช้เป็น null ก็เปลี่ยนเป็น null ได้เลยครับ)
+        return; // สั่งหยุดการทำงานตรงนี้เลย ไม่ไปทำคำสั่งข้างล่างต่อ
+      }
+
+      // 🌟 2. ถ้าไฟล์ขนาดโอเค (< 5MB) ก็เซฟลง State ตามปกติของคุณเลยครับ
       setFile(selectedFile);
       setPreviewUrl(URL.createObjectURL(selectedFile));
     }
@@ -185,29 +205,38 @@ export default function PaymentPage() {
   const handleRenewBooking = async () => {
     setIsRenewing(true);
     try {
-      const headers = getAuthHeader();
+      const token = localStorage.getItem("jwt_token");
       const res = await fetch(`${API_BASE_URL}/api/bookings/${id}/renew`, {
         method: "POST",
-        headers,
+        headers: { Authorization: `Bearer ${token}` },
       });
 
       if (res.ok) {
-        alert("ต่อเวลาสำเร็จ! ระบบได้ยืดเวลาชำระเงินให้คุณอีก 15 นาที");
-        setPaymentStatus("pending");
-        fetchQrCode(); // โหลด QR Code และเวลาใหม่
+        setRenewAlert({
+          title: "ขอคิวอาร์โค้ดใหม่สำเร็จ",
+          message: "ระบบสร้างคิวอาร์โค้ดใหม่ให้ท่านเรียบร้อยแล้ว กรุณาชำระเงินภายในเวลาที่กำหนด",
+          isSuccess: true
+        });
       } else {
         const err = await res.json();
-        alert(err.message || "ขออภัย ทัวร์นี้ที่นั่งเต็มแล้ว กรุณากดจองใหม่");
-        navigate("/"); // ถ้าที่นั่งโดนแย่งไปแล้ว ให้เด้งกลับหน้าแรก
+        setRenewAlert({
+          title: "ไม่สามารถขอคิวอาร์โค้ดใหม่ได้",
+          message: err.message || "ขออภัยในความไม่สะดวก ที่นั่งในรอบดังกล่าวเต็มแล้ว กรุณาเลือกวันหรือเวลาเดินทางอื่น",
+          isSuccess: false
+        });
       }
     } catch (error) {
-      alert("ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้");
+      setRenewAlert({
+        title: "เกิดข้อผิดพลาด",
+        message: "ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้ กรุณาลองใหม่อีกครั้ง",
+        isSuccess: false
+      });
     } finally {
       setIsRenewing(false);
     }
   };
 
-  const downloadQRCode = () => {
+ const downloadQRCode = () => {
     const canvas = document.getElementById("qr-gen") as HTMLCanvasElement;
     if (canvas) {
       const url = canvas.toDataURL("image/png");
@@ -215,6 +244,11 @@ export default function PaymentPage() {
       link.download = `PromptPay-${amount}.png`;
       link.href = url;
       link.click();
+
+      setIsDownloaded(true);
+      setTimeout(() => {
+        setIsDownloaded(false);
+      }, 2000); // 3 วินาทีกลับเป็นเหมือนเดิม
     }
   };
 
@@ -310,9 +344,13 @@ export default function PaymentPage() {
           {paymentStatus === "pending" && (
             <button
               onClick={downloadQRCode}
-              className="flex items-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-sm font-medium transition-colors"
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                isDownloaded
+                  ? "bg-green-500 hover:bg-green-600 text-white" 
+                  : "bg-gray-100 hover:bg-gray-200 text-gray-700"
+              }`}
             >
-              บันทึกรูป QR Code
+              {isDownloaded ? "บันทึกสำเร็จ" : "บันทึกรูป QR Code"}
             </button>
           )}
 
@@ -345,7 +383,7 @@ export default function PaymentPage() {
             </p>
             <input
               type="file"
-              accept="image/*"
+              accept="image/jpeg, image/jpg, image/png"
               onChange={handleFileChange}
               className="block w-full text-sm text-gray-500
                 file:mr-4 file:py-2 file:px-4
@@ -398,6 +436,34 @@ export default function PaymentPage() {
                       navigate("/booking-history");
                     } else {
                       setUploadAlert(null);
+                    }
+                  }}
+                  className="text-sm font-bold px-6 py-2.5 rounded-full bg-orange-500 text-white hover:bg-orange-600 transition-colors"
+                >
+                  ตกลง
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {renewAlert && (
+        <div className="fixed inset-0 z-[100] bg-black/40 flex items-center justify-center p-4">
+          <div className="w-full max-w-sm bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden flex flex-col animate-in fade-in zoom-in">
+            <div className="px-5 py-4 border-b border-gray-100">
+              <h3 className="text-gray-800 font-bold text-lg">
+                {renewAlert.title}
+              </h3>
+            </div>
+            <div className="px-5 py-5 text-left">
+              <p className="text-sm text-gray-600 mb-6">{renewAlert.message}</p>
+              <div className="flex justify-end">
+                <button
+                  onClick={() => {
+                    setRenewAlert(null); // ปิด Popup ก่อน
+                    if (renewAlert.isSuccess) {
+                      window.location.reload(); // รีเฟรชหน้าเว็บเพื่อเริ่มนับเวลาใหม่
                     }
                   }}
                   className="text-sm font-bold px-6 py-2.5 rounded-full bg-orange-500 text-white hover:bg-orange-600 transition-colors"

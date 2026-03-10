@@ -221,8 +221,6 @@ export default function BookingHistory() {
   const [bookingToDelete, setBookingToDelete] = useState<Booking | null>(null);
   const [deleting, setDeleting] = useState(false);
 
-
-
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [dateFrom, setDateFrom] = useState("");
@@ -295,48 +293,46 @@ export default function BookingHistory() {
     return { start: "-", end: "-" };
   };
 
-
-
   const getStatusBadge = (status: string) => {
     switch (status) {
       case "confirmed":
         return (
-          <Badge className="bg-emerald-100 text-emerald-700 border-0 px-3 py-1 font-bold shadow-none text-xs rounded-full flex items-center gap-1.5">
+          <Badge className="bg-emerald-100 text-emerald-700 border-0 px-3 py-1 font-bold shadow-none text-xs rounded-full flex items-center gap-1.5 w-fit">
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>{" "}
             ยืนยันแล้ว
           </Badge>
         );
       case "pending_verify":
         return (
-          <Badge className="bg-amber-100 text-amber-700 border-0 px-3 py-1 font-bold shadow-none text-xs rounded-full flex items-center gap-1.5">
+          <Badge className="bg-amber-100 text-amber-700 border-0 px-3 py-1 font-bold shadow-none text-xs rounded-full flex items-center gap-1.5 w-fit">
             <span className="w-1.5 h-1.5 rounded-full bg-amber-500"></span>{" "}
             รอตรวจสอบ
           </Badge>
         );
       case "pending_pay":
         return (
-          <Badge className="bg-blue-100 text-blue-700 border-0 px-3 py-1 font-bold shadow-none text-xs rounded-full flex items-center gap-1.5">
+          <Badge className="bg-blue-100 text-blue-700 border-0 px-3 py-1 font-bold shadow-none text-xs rounded-full flex items-center gap-1.5 w-fit">
             <span className="w-1.5 h-1.5 rounded-full bg-blue-500"></span>{" "}
             รอชำระเงิน
           </Badge>
         );
       case "cancelled":
         return (
-          <Badge className="bg-red-100 text-red-700 border-0 px-3 py-1 font-bold shadow-none text-xs rounded-full flex items-center gap-1.5">
+          <Badge className="bg-red-100 text-red-700 border-0 px-3 py-1 font-bold shadow-none text-xs rounded-full flex items-center gap-1.5 w-fit">
             <span className="w-1.5 h-1.5 rounded-full bg-red-500"></span>{" "}
             ยกเลิกแล้ว
           </Badge>
         );
       case "expired":
         return (
-          <Badge className="bg-gray-200 text-gray-600 border-0 px-3 py-1 font-bold shadow-none text-xs rounded-full flex items-center gap-1.5">
+          <Badge className="bg-gray-200 text-gray-600 border-0 px-3 py-1 font-bold shadow-none text-xs rounded-full flex items-center gap-1.5 w-fit">
             <span className="w-1.5 h-1.5 rounded-full bg-gray-500"></span>{" "}
             หมดอายุ
           </Badge>
         );
       default:
         return (
-          <Badge className="bg-gray-100 text-gray-600 border-0 px-3 py-1 font-bold shadow-none text-xs rounded-full flex items-center gap-1.5">
+          <Badge className="bg-gray-100 text-gray-600 border-0 px-3 py-1 font-bold shadow-none text-xs rounded-full flex items-center gap-1.5 w-fit">
             <span className="w-1.5 h-1.5 rounded-full bg-gray-400"></span>{" "}
             {status}
           </Badge>
@@ -382,7 +378,6 @@ export default function BookingHistory() {
       setDeleting(false);
     }
   };
-
 
   const handleInlineStatusChange = async (booking: Booking, nextStatus: string) => {
     if (nextStatus === booking.status) return;
@@ -641,7 +636,7 @@ export default function BookingHistory() {
 
       {!loading && !error && (
         <div className="bg-white rounded-3xl border-0 shadow-sm overflow-visible w-full">
-          <div className="overflow-x-auto overflow-y-visible w-full">
+          <div className="overflow-x-auto overflow-y-visible w-full min-h-[300px]">
             <table className="w-full text-left text-sm min-w-[900px]">
               <thead className="bg-[#F6F1E9]/80 border-b-2 border-[#F6F1E9]">
                 <tr>
@@ -780,20 +775,21 @@ export default function BookingHistory() {
                             </span>
                           )}
                         </td>
-                        <td className="px-4 py-3 sm:px-5 sm:py-4 whitespace-nowrap">
+                        <td className="px-4 py-3 sm:px-5 sm:py-4 whitespace-nowrap relative">
                           <div className="min-w-[140px] flex flex-col items-start gap-2">
                             {getStatusBadge(b.status)}
-                            <select
+
+                            {/* ─── อัปเดต Dropdown ให้เป็น Custom แบบมน ─── */}
+                            <CustomSelect
                               value={b.status}
-                              onChange={(e) => handleInlineStatusChange(b, e.target.value)}
-                              className="h-8 px-2 rounded-full text-[11px] font-bold text-[#4F200D] bg-white border border-[#F6F1E9] focus:outline-none focus:ring-1 focus:ring-[#FF8400]/30 transition-colors cursor-pointer"
-                            >
-                              {STATUS_OPTIONS.map((opt) => (
-                                <option key={opt.value} value={opt.value}>
-                                  {opt.label}
-                                </option>
-                              ))}
-                            </select>
+                              onChange={(val) => handleInlineStatusChange(b, String(val))}
+                              options={STATUS_OPTIONS.map((opt) => ({
+                                value: opt.value,
+                                label: opt.label,
+                              }))}
+                              className="h-8 px-3 rounded-full text-[11px] font-bold text-[#4F200D] bg-white border border-[#F6F1E9] focus:outline-none focus:ring-1 focus:ring-[#FF8400]/30 transition-colors cursor-pointer w-full"
+                              menuPlacement="auto"
+                            />
                           </div>
                         </td>
                         <td className="px-4 py-3 sm:px-5 sm:py-4 whitespace-nowrap">
@@ -929,8 +925,6 @@ export default function BookingHistory() {
           onViewSlip={setViewSlipUrl}
         />
       )}
-
-      {/* Removed Mini Pop-up เปลี่ยนสถานะ Booking */}
 
       {/* ===== Delete Confirm Modal ===== */}
       {bookingToDelete && (

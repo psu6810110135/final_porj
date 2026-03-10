@@ -128,7 +128,7 @@ const CustomSelect = ({
         className={`flex items-center justify-between ${className}`}
         onClick={() => setIsOpen(!isOpen)}
       >
-        <span className="truncate">{selectedOption?.label}</span>
+        <span className="truncate flex-1 text-center">{selectedOption?.label}</span>
         <ChevronDown
           className={`w-4 h-4 ml-2 transition-transform duration-200 text-[#4F200D]/50 shrink-0 ${
             isOpen ? "rotate-180" : ""
@@ -394,14 +394,13 @@ export default function TicketManager() {
   const getStatusColorClass = (status: string) => {
     switch (status) {
       case "resolved":
-        return "bg-green-100 text-green-700 hover:bg-green-200";
+        return "bg-green-100 text-green-700 hover:bg-green-200 border-green-200";
       case "cancelled":
-        return "bg-red-100 text-red-700 hover:bg-red-200";
+        return "bg-red-100 text-red-700 hover:bg-red-200 border-red-200";
       default:
-        return "bg-[#FFD93D]/30 text-[#FF8400] hover:bg-[#FFD93D]/50";
+        return "bg-[#FFD93D]/30 text-[#FF8400] hover:bg-[#FFD93D]/50 border-[#FFD93D]";
     }
   };
-
 
   const unresolvedCount = useMemo(
     () => tickets.filter((ticket) => ticket.status !== "resolved").length,
@@ -475,8 +474,8 @@ export default function TicketManager() {
         </div>
       </div>
 
-      <div className="bg-white rounded-3xl border-0 shadow-sm overflow-hidden w-full relative z-10">
-        <div className="overflow-x-auto">
+      <div className="bg-white rounded-3xl border-0 shadow-sm overflow-visible w-full relative z-10">
+        <div className="overflow-x-auto overflow-y-visible min-h-[300px]">
           <table className="w-full text-left text-sm whitespace-nowrap min-w-[800px]">
             <thead className="bg-[#F6F1E9]/80 border-b-2 border-[#F6F1E9]">
               <tr>
@@ -557,16 +556,19 @@ export default function TicketManager() {
                     </td>
                     <td className="px-6 py-5 align-top text-right">
                       <div className="flex flex-col gap-2 items-end w-full max-w-[150px] ml-auto">
-                        <select
+                        
+                        {/* ─── อัปเดต Dropdown ให้เป็น Custom แบบมน ─── */}
+                        <CustomSelect
                           value={ticket.status}
-                          onChange={(e) => handleSaveStatusInline(ticket, e.target.value)}
-                          className={`w-full appearance-none px-4 py-2 rounded-full border border-[#F6F1E9] font-bold text-[11px] sm:text-xs cursor-pointer focus:outline-none focus:ring-1 focus:ring-[#FFD93D] transition-colors shadow-sm ${getStatusColorClass(ticket.status)}`}
-                          style={{ backgroundImage: 'none', textAlign: 'center' }}
-                        >
-                          <option value="pending" className="bg-white text-amber-700">รอดำเนินการ</option>
-                          <option value="resolved" className="bg-white text-green-700">แก้ไขแล้ว</option>
-                          <option value="cancelled" className="bg-white text-red-700">ยกเลิก</option>
-                        </select>
+                          onChange={(val) => handleSaveStatusInline(ticket, String(val))}
+                          options={[
+                            { value: "pending", label: "รอดำเนินการ" },
+                            { value: "resolved", label: "แก้ไขแล้ว" },
+                            { value: "cancelled", label: "ยกเลิก" },
+                          ]}
+                          className={`w-full px-3 py-1.5 rounded-full border font-bold text-[11px] sm:text-xs cursor-pointer focus:outline-none focus:ring-1 focus:ring-[#FFD93D] transition-colors shadow-sm ${getStatusColorClass(ticket.status)}`}
+                          menuPlacement="auto"
+                        />
 
                         <Button
                           onClick={() => handleReplyGmail(ticket)}
@@ -592,8 +594,6 @@ export default function TicketManager() {
           </table>
         </div>
       </div>
-
-      {/* Removed Mini Pop-up เปลี่ยนสถานะ */}
 
       {deletingTicket && (
         <div className="fixed inset-0 z-[110] flex items-center justify-center bg-[#4F200D]/60 backdrop-blur-sm p-4">

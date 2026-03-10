@@ -21,7 +21,6 @@ import {
   Clock,
   Receipt,
   MessageSquare,
-  Ban,
   Banknote,
   Hash,
   CalendarDays,
@@ -30,8 +29,6 @@ import {
   Percent,
   TriangleAlert,
   ChevronDown,
-  Pencil,
-  Check,
   Image as ImageIcon,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -224,11 +221,7 @@ export default function BookingHistory() {
   const [bookingToDelete, setBookingToDelete] = useState<Booking | null>(null);
   const [deleting, setDeleting] = useState(false);
 
-  // States สำหรับ Mini Pop-up เปลี่ยนสถานะ
-  const [editingStatusBooking, setEditingStatusBooking] =
-    useState<Booking | null>(null);
-  const [draftStatus, setDraftStatus] = useState<string>("");
-  const [updatingStatus, setUpdatingStatus] = useState(false);
+
 
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
@@ -259,6 +252,30 @@ export default function BookingHistory() {
       .finally(() => setLoading(false));
   }, []);
 
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setBookings((prevBookings) => {
+        let changed = false;
+        const newBookings = prevBookings.map((b) => {
+          if (
+            b.status === "pending_pay" &&
+            b.paymentDeadline &&
+            new Date(b.paymentDeadline).getTime() < Date.now()
+          ) {
+            changed = true;
+            return {
+              ...b,
+              status: "expired",
+            };
+          }
+          return b;
+        });
+        return changed ? newBookings : prevBookings;
+      });
+    }, 1000);
+    return () => clearInterval(interval);
+  }, []);
+
   const formatDate = (dateStr: string | null) => {
     if (!dateStr) return "-";
     return new Date(dateStr).toLocaleDateString("th-TH", {
@@ -278,42 +295,7 @@ export default function BookingHistory() {
     return { start: "-", end: "-" };
   };
 
-  // สีสำหรับ Pop-up
-  const getPopupOptionStyle = (val: string, isSelected: boolean) => {
-    if (!isSelected)
-      return "border-[#F6F1E9] bg-white text-[#4F200D]/60 hover:border-gray-200 hover:bg-gray-50";
-    switch (val) {
-      case "confirmed":
-        return "border-emerald-400 bg-emerald-50 text-emerald-700";
-      case "pending_verify":
-        return "border-amber-400 bg-amber-50 text-amber-700";
-      case "pending_pay":
-        return "border-blue-400 bg-blue-50 text-blue-700";
-      case "cancelled":
-        return "border-red-400 bg-red-50 text-red-700";
-      case "expired":
-        return "border-gray-400 bg-gray-100 text-gray-700";
-      default:
-        return "border-[#FF8400] bg-[#FF8400]/10 text-[#FF8400]";
-    }
-  };
 
-  const getDotColor = (val: string) => {
-    switch (val) {
-      case "confirmed":
-        return "bg-emerald-500";
-      case "pending_verify":
-        return "bg-amber-500";
-      case "pending_pay":
-        return "bg-blue-500";
-      case "cancelled":
-        return "bg-red-500";
-      case "expired":
-        return "bg-gray-500";
-      default:
-        return "bg-gray-400";
-    }
-  };
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -401,57 +383,42 @@ export default function BookingHistory() {
     }
   };
 
-  const beginStatusEdit = (booking: Booking) => {
-    setEditingStatusBooking(booking);
-    setDraftStatus(booking.status);
-  };
 
-  const handleSaveStatus = async () => {
-    if (!editingStatusBooking) return;
-    const bookingId = editingStatusBooking.id;
-    const nextStatus = draftStatus;
+  const handleInlineStatusChange = async (booking: Booking, nextStatus: string) => {
+    if (nextStatus === booking.status) return;
 
-    if (nextStatus === editingStatusBooking.status) {
-      setEditingStatusBooking(null);
-      return;
-    }
-
-    setUpdatingStatus(true);
-    try {
-      const token = localStorage.getItem("jwt_token");
-      await axios.patch(
-        `${API_BASE_URL}/api/admin/bookings/${bookingId}/status`,
-        { status: nextStatus },
-        { headers: token ? { Authorization: `Bearer ${token}` } : {} },
-      );
-
-      setBookings((prev) =>
-        prev.map((b) =>
-          b.id === bookingId
-            ? {
-                ...b,
-                status: nextStatus,
-                updatedAt: new Date().toISOString(),
-              }
-            : b,
-        ),
-      );
-
-      setSelectedBooking((prev) =>
-        prev && prev.id === bookingId
+    setBookings((prev) =>
+      prev.map((b) =>
+        b.id === booking.id
           ? {
-              ...prev,
+              ...b,
               status: nextStatus,
               updatedAt: new Date().toISOString(),
             }
-          : prev,
+          : b,
+      ),
+    );
+
+    setSelectedBooking((prev) =>
+      prev && prev.id === booking.id
+        ? {
+            ...prev,
+            status: nextStatus,
+            updatedAt: new Date().toISOString(),
+          }
+        : prev,
+    );
+
+    try {
+      const token = localStorage.getItem("jwt_token");
+      await axios.patch(
+        `${API_BASE_URL}/api/admin/bookings/${booking.id}/status`,
+        { status: nextStatus },
+        { headers: token ? { Authorization: `Bearer ${token}` } : {} },
       );
     } catch (err) {
       console.error("Failed to update booking status:", err);
       alert("อัปเดตสถานะไม่สำเร็จ กรุณาลองใหม่อีกครั้ง");
-    } finally {
-      setUpdatingStatus(false);
-      setEditingStatusBooking(null);
     }
   };
 
@@ -816,13 +783,17 @@ export default function BookingHistory() {
                         <td className="px-4 py-3 sm:px-5 sm:py-4 whitespace-nowrap">
                           <div className="min-w-[140px] flex flex-col items-start gap-2">
                             {getStatusBadge(b.status)}
-                            <Button
-                              variant="ghost"
-                              className="h-7 px-3 rounded-full text-[11px] font-bold text-[#4F200D]/55 hover:text-[#FF8400] hover:bg-[#FF8400]/10 border border-[#F6F1E9] transition-colors"
-                              onClick={() => beginStatusEdit(b)}
+                            <select
+                              value={b.status}
+                              onChange={(e) => handleInlineStatusChange(b, e.target.value)}
+                              className="h-8 px-2 rounded-full text-[11px] font-bold text-[#4F200D] bg-white border border-[#F6F1E9] focus:outline-none focus:ring-1 focus:ring-[#FF8400]/30 transition-colors cursor-pointer"
                             >
-                              <Pencil className="w-3 h-3 mr-1.5" /> เปลี่ยนสถานะ
-                            </Button>
+                              {STATUS_OPTIONS.map((opt) => (
+                                <option key={opt.value} value={opt.value}>
+                                  {opt.label}
+                                </option>
+                              ))}
+                            </select>
                           </div>
                         </td>
                         <td className="px-4 py-3 sm:px-5 sm:py-4 whitespace-nowrap">
@@ -959,82 +930,7 @@ export default function BookingHistory() {
         />
       )}
 
-      {/* ===== Mini Pop-up เปลี่ยนสถานะ Booking ===== */}
-      {editingStatusBooking && (
-        <div
-          className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in duration-200"
-          onClick={() => !updatingStatus && setEditingStatusBooking(null)}
-        >
-          <div
-            className="bg-white rounded-3xl p-6 w-full max-w-sm shadow-2xl animate-in zoom-in-95 duration-200"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="flex items-center justify-between mb-5">
-              <div>
-                <h3 className="text-xl font-extrabold text-[#4F200D]">
-                  เปลี่ยนสถานะการจอง
-                </h3>
-                <p className="text-xs font-semibold text-[#4F200D]/50 mt-1">
-                  รหัส:{" "}
-                  {editingStatusBooking.bookingReference ||
-                    editingStatusBooking.id.slice(0, 8)}
-                </p>
-              </div>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8 text-[#4F200D]/40 hover:text-red-500 hover:bg-red-50 rounded-xl"
-                onClick={() => setEditingStatusBooking(null)}
-                disabled={updatingStatus}
-              >
-                <X className="w-5 h-5" />
-              </Button>
-            </div>
-
-            <div className="space-y-2.5">
-              {STATUS_OPTIONS.map((opt) => (
-                <button
-                  key={opt.value}
-                  onClick={() => setDraftStatus(opt.value)}
-                  disabled={updatingStatus}
-                  className={`w-full flex items-center justify-between p-3.5 rounded-2xl border-2 transition-all font-bold text-sm ${getPopupOptionStyle(opt.value, draftStatus === opt.value)}`}
-                >
-                  <div className="flex items-center gap-2.5">
-                    <span
-                      className={`w-3 h-3 rounded-full shadow-sm ${getDotColor(opt.value)}`}
-                    ></span>
-                    {opt.label}
-                  </div>
-                  {draftStatus === opt.value && <Check className="w-5 h-5" />}
-                </button>
-              ))}
-            </div>
-
-            <div className="mt-6 flex gap-3">
-              <Button
-                className="flex-1 bg-[#F6F1E9] hover:bg-[#EFE6DA] text-[#4F200D] font-bold rounded-xl py-5 shadow-none text-sm transition-colors"
-                onClick={() => setEditingStatusBooking(null)}
-                disabled={updatingStatus}
-              >
-                ยกเลิก
-              </Button>
-              <Button
-                className="flex-1 bg-[#FF8400] hover:bg-[#e67600] text-white font-bold rounded-xl py-5 shadow-lg shadow-[#FF8400]/20 text-sm transition-all"
-                onClick={handleSaveStatus}
-                disabled={
-                  updatingStatus || draftStatus === editingStatusBooking.status
-                }
-              >
-                {updatingStatus ? (
-                  <Loader2 className="w-5 h-5 animate-spin mx-auto" />
-                ) : (
-                  "บันทึกสถานะ"
-                )}
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Removed Mini Pop-up เปลี่ยนสถานะ Booking */}
 
       {/* ===== Delete Confirm Modal ===== */}
       {bookingToDelete && (
@@ -1126,12 +1022,11 @@ export default function BookingHistory() {
             onClick={(e) => e.stopPropagation()}
           >
             <Button
-              variant="ghost"
-              size="icon"
-              className="absolute -top-12 right-0 sm:-right-12 text-white/70 hover:text-white hover:bg-white/20 rounded-full h-10 w-10 transition-colors"
+              variant="default"
+              className="absolute -top-16 right-0 sm:-right-12 bg-red-600 hover:bg-red-700 text-white border-[3px] border-white rounded-full h-12 w-12 sm:h-14 sm:w-14 shadow-2xl transition-transform hover:scale-105"
               onClick={() => setViewSlipUrl(null)}
             >
-              <X className="w-6 h-6" />
+              <X className="w-6 h-6 sm:w-8 sm:h-8" />
             </Button>
             <img
               src={viewSlipUrl}

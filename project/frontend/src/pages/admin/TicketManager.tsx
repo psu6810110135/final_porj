@@ -8,9 +8,6 @@ import {
   Calendar,
   Loader2,
   Hash,
-  Pencil,
-  X,
-  Check,
   ChevronDown,
   Trash2,
 } from "lucide-react";
@@ -227,11 +224,8 @@ export default function TicketManager() {
   const [statusFilter, setStatusFilter] = useState("all");
   const [sortByTime, setSortByTime] = useState("newest");
 
-  const [editingTicket, setEditingTicket] = useState<TicketData | null>(null);
-  const [draftStatus, setDraftStatus] = useState<string>("");
   const [deletingTicket, setDeletingTicket] = useState<TicketData | null>(null);
 
-  const [isSavingStatus, setIsSavingStatus] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [feedback, setFeedback] = useState<FeedbackState | null>(null);
 
@@ -297,31 +291,21 @@ export default function TicketManager() {
     fetchTickets();
   }, []);
 
-  const openStatusModal = (ticket: TicketData) => {
-    setEditingTicket(ticket);
-    setDraftStatus(ticket.status);
-  };
 
-  const handleSaveStatus = async () => {
-    if (!editingTicket) return;
-    const id = editingTicket.id;
-    const newStatus = draftStatus;
-
-    if (newStatus === editingTicket.status) return;
+  const handleSaveStatusInline = async (ticket: TicketData, newStatus: string) => {
+    if (newStatus === ticket.status) return;
 
     const originalTickets = [...tickets];
-    setEditingTicket(null);
-    setIsSavingStatus(true);
 
     setTickets(
       tickets.map((t) =>
-        t.id === id ? { ...t, status: newStatus as any } : t,
+        t.id === ticket.id ? { ...t, status: newStatus as any } : t,
       ),
     );
 
     try {
       await axios.patch(
-        `${API_BASE_URL}/api/tickets/${id}`,
+        `${API_BASE_URL}/api/tickets/${ticket.id}`,
         { status: newStatus },
         { headers: getAuthHeader() },
       );
@@ -332,8 +316,6 @@ export default function TicketManager() {
         message: getErrorMessage(error, "กรุณาลองใหม่อีกครั้ง"),
         variant: "error",
       });
-    } finally {
-      setIsSavingStatus(false);
     }
   };
 
@@ -420,45 +402,6 @@ export default function TicketManager() {
     }
   };
 
-  const getStatusLabel = (status: string) => {
-    switch (status) {
-      case "resolved":
-        return "แก้ไขแล้ว";
-      case "cancelled":
-        return "ยกเลิก";
-      default:
-        return "รอดำเนินการ";
-    }
-  };
-
-  // สีสำหรับ Pop-up
-  const getPopupOptionStyle = (val: string, isSelected: boolean) => {
-    if (!isSelected)
-      return "border-[#F6F1E9] bg-white text-[#4F200D]/60 hover:border-gray-200 hover:bg-gray-50";
-    switch (val) {
-      case "resolved":
-        return "border-green-400 bg-green-50 text-green-700";
-      case "cancelled":
-        return "border-red-400 bg-red-50 text-red-700";
-      case "pending":
-        return "border-amber-400 bg-amber-50 text-amber-700";
-      default:
-        return "border-[#FF8400] bg-[#FF8400]/10 text-[#FF8400]";
-    }
-  };
-
-  const getDotColor = (val: string) => {
-    switch (val) {
-      case "resolved":
-        return "bg-green-500";
-      case "cancelled":
-        return "bg-red-500";
-      case "pending":
-        return "bg-amber-500";
-      default:
-        return "bg-gray-400";
-    }
-  };
 
   const unresolvedCount = useMemo(
     () => tickets.filter((ticket) => ticket.status !== "resolved").length,
@@ -614,18 +557,16 @@ export default function TicketManager() {
                     </td>
                     <td className="px-6 py-5 align-top text-right">
                       <div className="flex flex-col gap-2 items-end w-full max-w-[150px] ml-auto">
-                        <button
-                          onClick={() => openStatusModal(ticket)}
-                          className={`w-full flex items-center justify-between px-4 py-2 rounded-full border-0 font-bold text-[11px] sm:text-xs cursor-pointer transition-colors shadow-sm ${getStatusColorClass(ticket.status)}`}
+                        <select
+                          value={ticket.status}
+                          onChange={(e) => handleSaveStatusInline(ticket, e.target.value)}
+                          className={`w-full appearance-none px-4 py-2 rounded-full border border-[#F6F1E9] font-bold text-[11px] sm:text-xs cursor-pointer focus:outline-none focus:ring-1 focus:ring-[#FFD93D] transition-colors shadow-sm ${getStatusColorClass(ticket.status)}`}
+                          style={{ backgroundImage: 'none', textAlign: 'center' }}
                         >
-                          <div className="flex items-center gap-1.5">
-                            <span
-                              className={`w-2 h-2 rounded-full ${getDotColor(ticket.status)}`}
-                            ></span>
-                            <span>{getStatusLabel(ticket.status)}</span>
-                          </div>
-                          <Pencil className="w-3 h-3 opacity-60 shrink-0" />
-                        </button>
+                          <option value="pending" className="bg-white text-amber-700">รอดำเนินการ</option>
+                          <option value="resolved" className="bg-white text-green-700">แก้ไขแล้ว</option>
+                          <option value="cancelled" className="bg-white text-red-700">ยกเลิก</option>
+                        </select>
 
                         <Button
                           onClick={() => handleReplyGmail(ticket)}
@@ -652,84 +593,7 @@ export default function TicketManager() {
         </div>
       </div>
 
-      {/* ===== Mini Pop-up เปลี่ยนสถานะ ===== */}
-      {editingTicket && (
-        <div
-          className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in duration-200"
-          onClick={() => setEditingTicket(null)}
-        >
-          <div
-            className="bg-white rounded-3xl p-6 w-full max-w-xs shadow-2xl animate-in zoom-in-95 duration-200"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="flex items-center justify-between mb-5">
-              <div>
-                <h3 className="text-lg font-extrabold text-[#4F200D]">
-                  เปลี่ยนสถานะ
-                </h3>
-                <p className="text-xs font-semibold text-[#4F200D]/50 mt-1">
-                  Ticket #{editingTicket.id.substring(0, 8)}
-                </p>
-              </div>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8 text-[#4F200D]/40 hover:text-red-500 hover:bg-red-50 rounded-xl"
-                onClick={() => setEditingTicket(null)}
-              >
-                <X className="w-5 h-5" />
-              </Button>
-            </div>
-
-            <div className="space-y-2.5">
-              {[
-                { value: "pending", label: "รอดำเนินการ" },
-                { value: "resolved", label: "แก้ไขแล้ว" },
-                { value: "cancelled", label: "ยกเลิก" },
-              ].map((opt) => (
-                <button
-                  key={opt.value}
-                  onClick={() => setDraftStatus(opt.value)}
-                  className={`w-full flex items-center justify-between p-3.5 rounded-2xl border-2 transition-all font-bold text-sm ${getPopupOptionStyle(opt.value, draftStatus === opt.value)}`}
-                >
-                  <div className="flex items-center gap-2.5">
-                    <span
-                      className={`w-3 h-3 rounded-full shadow-sm ${getDotColor(opt.value)}`}
-                    ></span>
-                    {opt.label}
-                  </div>
-                  {draftStatus === opt.value && <Check className="w-5 h-5" />}
-                </button>
-              ))}
-            </div>
-
-            <div className="mt-6 flex gap-3">
-              <Button
-                className="flex-1 bg-[#F6F1E9] hover:bg-[#EFE6DA] text-[#4F200D] font-bold rounded-xl py-5 shadow-none text-sm transition-colors"
-                onClick={() => setEditingTicket(null)}
-              >
-                ยกเลิก
-              </Button>
-              <Button
-                className="flex-1 bg-[#FF8400] hover:bg-[#e67600] text-white font-bold rounded-xl py-5 shadow-lg shadow-[#FF8400]/20 text-sm transition-all"
-                onClick={handleSaveStatus}
-                disabled={
-                  draftStatus === editingTicket.status || isSavingStatus
-                }
-              >
-                {isSavingStatus ? (
-                  <>
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    กำลังบันทึก...
-                  </>
-                ) : (
-                  "บันทึก"
-                )}
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Removed Mini Pop-up เปลี่ยนสถานะ */}
 
       {deletingTicket && (
         <div className="fixed inset-0 z-[110] flex items-center justify-center bg-[#4F200D]/60 backdrop-blur-sm p-4">

@@ -26,6 +26,7 @@ export default function PaymentPage() {
   const [isUploading, setIsUploading] = useState(false);
   const [isRenewing, setIsRenewing] = useState(false); // ✨ โหลดตอนกดต่อเวลา
   const [uploadAlert, setUploadAlert] = useState<{ title: string; message: string; isSuccess: boolean } | null>(null);
+  const [renewAlert, setRenewAlert] = useState<{ title: string; message: string; isSuccess: boolean } | null>(null);
 
   const getAuthHeader = (): Record<string, string> => {
     const token = localStorage.getItem("jwt_token");
@@ -185,23 +186,32 @@ export default function PaymentPage() {
   const handleRenewBooking = async () => {
     setIsRenewing(true);
     try {
-      const headers = getAuthHeader();
+      const token = localStorage.getItem("jwt_token");
       const res = await fetch(`${API_BASE_URL}/api/bookings/${id}/renew`, {
         method: "POST",
-        headers,
+        headers: { Authorization: `Bearer ${token}` },
       });
 
       if (res.ok) {
-        alert("ต่อเวลาสำเร็จ! ระบบได้ยืดเวลาชำระเงินให้คุณอีก 15 นาที");
-        setPaymentStatus("pending");
-        fetchQrCode(); // โหลด QR Code และเวลาใหม่
+        setRenewAlert({
+          title: "ขอคิวอาร์โค้ดใหม่สำเร็จ",
+          message: "ระบบสร้างคิวอาร์โค้ดใหม่ให้ท่านเรียบร้อยแล้ว กรุณาชำระเงินภายในเวลาที่กำหนด",
+          isSuccess: true
+        });
       } else {
         const err = await res.json();
-        alert(err.message || "ขออภัย ทัวร์นี้ที่นั่งเต็มแล้ว กรุณากดจองใหม่");
-        navigate("/"); // ถ้าที่นั่งโดนแย่งไปแล้ว ให้เด้งกลับหน้าแรก
+        setRenewAlert({
+          title: "ไม่สามารถขอคิวอาร์โค้ดใหม่ได้",
+          message: err.message || "ขออภัยในความไม่สะดวก ที่นั่งในรอบดังกล่าวเต็มแล้ว กรุณาเลือกวันหรือเวลาเดินทางอื่น",
+          isSuccess: false
+        });
       }
     } catch (error) {
-      alert("ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้");
+      setRenewAlert({
+        title: "เกิดข้อผิดพลาด",
+        message: "ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้ กรุณาลองใหม่อีกครั้ง",
+        isSuccess: false
+      });
     } finally {
       setIsRenewing(false);
     }
@@ -398,6 +408,34 @@ export default function PaymentPage() {
                       navigate("/booking-history");
                     } else {
                       setUploadAlert(null);
+                    }
+                  }}
+                  className="text-sm font-bold px-6 py-2.5 rounded-full bg-orange-500 text-white hover:bg-orange-600 transition-colors"
+                >
+                  ตกลง
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {renewAlert && (
+        <div className="fixed inset-0 z-[100] bg-black/40 flex items-center justify-center p-4">
+          <div className="w-full max-w-sm bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden flex flex-col animate-in fade-in zoom-in">
+            <div className="px-5 py-4 border-b border-gray-100">
+              <h3 className="text-gray-800 font-bold text-lg">
+                {renewAlert.title}
+              </h3>
+            </div>
+            <div className="px-5 py-5 text-left">
+              <p className="text-sm text-gray-600 mb-6">{renewAlert.message}</p>
+              <div className="flex justify-end">
+                <button
+                  onClick={() => {
+                    setRenewAlert(null); // ปิด Popup ก่อน
+                    if (renewAlert.isSuccess) {
+                      window.location.reload(); // รีเฟรชหน้าเว็บเพื่อเริ่มนับเวลาใหม่
                     }
                   }}
                   className="text-sm font-bold px-6 py-2.5 rounded-full bg-orange-500 text-white hover:bg-orange-600 transition-colors"

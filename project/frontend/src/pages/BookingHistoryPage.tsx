@@ -354,8 +354,8 @@ export default function BookingHistoryPage() {
         await fetchBookings();
         // เปิด Popup สวยๆ แจ้งว่าสำเร็จ
         setRenewAlert({
-          title: "ต่อเวลาสำเร็จ!",
-          message: "การสำรองที่นั่งรอบใหม่เสร็จสมบูรณ์ กรุณาชำระเงินภายในเวลาที่กำหนดเพื่อยืนยันการจองของท่าน",
+          title: "ขอคิวอาร์โค้ดใหม่สำเร็จ",
+          message: "ระบบสร้างคิวอาร์โค้ดใหม่ให้ท่านเรียบร้อยแล้ว กรุณาชำระเงินภายในเวลาที่กำหนด",
           isSuccess: true,
           bookingId: booking.id
         });
@@ -364,7 +364,7 @@ export default function BookingHistoryPage() {
         // เปิด Popup แจ้งเตือนผิดพลาด (เช่น ทัวร์เต็ม)
         setRenewAlert({
           title: "ไม่สามารถขอคิวอาร์โค้ดใหม่ได้",
-          message: err.message || "ขออภัย ทัวร์นี้ที่นั่งเต็มแล้ว กรุณากดจองทัวร์รอบใหม่อีกครั้ง",
+          message: err.message || "ขออภัยในความไม่สะดวก ที่นั่งในรอบดังกล่าวเต็มแล้ว กรุณาเลือกวันหรือเวลาเดินทางอื่น",
           isSuccess: false
         });
       }

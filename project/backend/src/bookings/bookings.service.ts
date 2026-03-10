@@ -428,7 +428,7 @@ export class BookingsService {
 
       // 5) ถ้าที่นั่งพอ ให้ต่อเวลาไปอีก 15 นาที!
       booking.status = BookingStatus.PENDING_PAY;
-      booking.paymentDeadline = new Date(now.getTime() + 15 * 60 * 1000); // เริ่มนับใหม่
+      booking.paymentDeadline = new Date(now.getTime() + 1 * 60 * 1000); // เริ่มนับใหม่
       
       return await manager.save(booking);
     });

@@ -25,6 +25,7 @@ export default function PaymentPage() {
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [isRenewing, setIsRenewing] = useState(false); // ✨ โหลดตอนกดต่อเวลา
+  const [uploadAlert, setUploadAlert] = useState<{ title: string; message: string; isSuccess: boolean } | null>(null);
 
   const getAuthHeader = (): Record<string, string> => {
     const token = localStorage.getItem("jwt_token");
@@ -138,7 +139,7 @@ export default function PaymentPage() {
 
     const token = localStorage.getItem("jwt_token");
     if (!token) {
-      alert("ไม่พบ Token! กรุณาล็อกอินใหม่");
+      setUploadAlert({ title: "เซสชันหมดอายุ", message: "ไม่พบ Token! กรุณาล็อกอินใหม่", isSuccess: false });
       setIsUploading(false);
       return;
     }
@@ -147,27 +148,34 @@ export default function PaymentPage() {
     formData.append("file", file);
 
     try {
-      const res = await fetch(
-        `${API_BASE_URL}/api/bookings/${id}/upload-slip`,
-        {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-          body: formData,
-        }
-      );
+      const res = await fetch(`${API_BASE_URL}/api/bookings/${id}/upload-slip`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+        body: formData,
+      });
 
       if (res.ok) {
         setPaymentStatus("pending_verify");
-        alert("ส่งสลิปสำเร็จ! ระบบกำลังรอการตรวจสอบจากแอดมิน");
-        setTimeout(() => navigate("/booking-history"), 2000);
+        // แสดง Popup สวยๆ แทน alert แบบเดิม
+        setUploadAlert({
+          title: "ส่งสลิปการโอนเงินสำเร็จ",
+          message: "ระบบกำลังรอการตรวจสอบจากแอดมิน กรุณารอการยืนยันสถานะในหน้าประวัติการจอง",
+          isSuccess: true
+        });
       } else {
         const err = await res.json();
-        alert(`เกิดข้อผิดพลาด: ${err.message || "ไม่สามารถอัปโหลดได้"}`);
+        setUploadAlert({
+          title: "ไม่สามารถอัปโหลดได้",
+          message: err.message || "เกิดข้อผิดพลาดในการส่งข้อมูล กรุณาลองใหม่อีกครั้ง",
+          isSuccess: false
+        });
       }
     } catch (error) {
-      alert("ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้");
+      setUploadAlert({
+        title: "เกิดข้อผิดพลาด",
+        message: "ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้ กรุณาตรวจสอบอินเทอร์เน็ตของคุณ",
+        isSuccess: false
+      });
     } finally {
       setIsUploading(false);
     }
@@ -372,6 +380,35 @@ export default function PaymentPage() {
           </div>
         )}
       </div>
+
+      {uploadAlert && (
+        <div className="fixed inset-0 z-[60] bg-black/40 flex items-center justify-center p-4">
+          <div className="w-full max-w-sm bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden flex flex-col animate-in fade-in zoom-in">
+            <div className="px-5 py-4 border-b border-gray-100">
+              <h3 className="text-gray-800 font-bold text-lg">
+                {uploadAlert.title}
+              </h3>
+            </div>
+            <div className="px-5 py-5 text-left">
+              <p className="text-sm text-gray-600 mb-6">{uploadAlert.message}</p>
+              <div className="flex justify-end">
+                <button
+                  onClick={() => {
+                    if (uploadAlert.isSuccess) {
+                      navigate("/booking-history");
+                    } else {
+                      setUploadAlert(null);
+                    }
+                  }}
+                  className="text-sm font-bold px-6 py-2.5 rounded-full bg-orange-500 text-white hover:bg-orange-600 transition-colors"
+                >
+                  ตกลง
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -1,49 +1,30 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from "@playwright/test";
 
-test('test', async ({ page }) => {
-  await page.goto('http://localhost:5173/');
-  await page.getByRole('button').nth(1).click();
-  await page.getByRole('link', { name: 'ทัวร์' }).click();
-  await page.getByRole('link', { name: 'ดอยอินทนนท์ 0.0 1 Day' }).click();
-  await page.getByRole('button', { name: 'อ. 3 มีนาคม 2569 เหลือ 10 ที่' }).click();
-  await page.getByRole('button', { name: '+' }).first().click();
-  await page.getByRole('button', { name: '+' }).nth(1).click();
-  await page.getByRole('textbox', { name: 'ชื่อ-นามสกุล' }).click();
-  await page.getByRole('textbox', { name: 'ชื่อ-นามสกุล' }).fill('dsadad');
-  await page.getByRole('textbox', { name: 'อีเมล' }).click();
-  await page.getByRole('textbox', { name: 'อีเมล' }).fill('sadsadsadadsa');
-  await page.getByRole('textbox', { name: 'เบอร์โทรศัพท์' }).dblclick();
-  await page.getByRole('textbox', { name: 'เบอร์โทรศัพท์' }).fill('dsadsad');
-  await page.getByRole('button', { name: 'จองทัวร์เลย →' }).click();
-  await page.getByRole('button', { name: 'เข้าสู่ระบบ →' }).click();
-  await page.getByRole('textbox', { name: 'Username' }).click();
-  await page.getByRole('textbox', { name: 'Username' }).fill('sdadsadas');
-  await page.getByRole('textbox', { name: 'Password' }).click();
-  await page.getByRole('textbox', { name: 'Username' }).fill('sdadsadasa');
-  await page.getByRole('textbox', { name: 'Password' }).fill('d');
-  await page.getByRole('textbox', { name: 'Username' }).dblclick();
-  await page.getByRole('textbox', { name: 'Username' }).fill('admin1');
-  await page.getByRole('textbox', { name: 'Username' }).press('Tab');
-  await page.getByRole('textbox', { name: 'Username' }).dblclick();
-  await page.getByRole('textbox', { name: 'Username' }).fill('admin');
-  await page.getByRole('textbox', { name: 'Username' }).press('Tab');
-  await page.getByRole('textbox', { name: 'Password' }).fill('admin123');
-  await page.getByRole('textbox', { name: 'Password' }).press('Enter');
-  await page.getByRole('textbox', { name: 'Password' }).fill('admin1234');
-  await page.getByRole('textbox', { name: 'Password' }).press('Enter');
-  await page.getByRole('button', { name: 'เข้าสู่ระบบ' }).click();
-  await page.getByRole('link', { name: 'ทัวร์' }).click();
-  await page.getByRole('link', { name: 'ดอยอินทนนท์ 0.0 1 Day' }).click();
-  await page.getByRole('button', { name: 'อ. 3 มีนาคม 2569 เหลือ 10 ที่' }).click();
-  await page.getByRole('button', { name: '+' }).first().click();
-  await page.getByRole('button', { name: '+' }).nth(1).click();
-  await page.getByRole('textbox', { name: 'อีเมล' }).click();
-  await page.getByRole('textbox', { name: 'อีเมล' }).fill('admin@gmial');
-  await page.getByRole('textbox', { name: 'อีเมล' }).press('Tab');
-  await page.getByRole('textbox', { name: 'เบอร์โทรศัพท์' }).fill('1234567');
-  await page.getByRole('button', { name: 'จองทัวร์เลย →' }).click();
-  await page.getByRole('textbox', { name: 'อีเมล' }).dblclick();
-  await page.getByRole('textbox', { name: 'อีเมล' }).click();
-  await page.getByRole('textbox', { name: 'อีเมล' }).fill('admin@gmail.com');
-  await page.getByRole('button', { name: 'จองทัวร์เลย →' }).click();
+test("test", async ({ page }) => {
+  await page.goto("http://localhost:5173/tours");
+  await page.waitForSelector('a[href*="/tours/"]');
+  await page
+    .getByRole("link")
+    .filter({ hasText: /ดอยอินทนนท์/ })
+    .first()
+    .click();
+  await page
+    .getByRole("button", { name: /เหลือ\s+\d+\s+ที่/ })
+    .first()
+    .click();
+  await page
+    .getByRole("textbox", { name: "ชื่อ-นามสกุล" })
+    .fill("Somchai Wisetchai");
+  await page
+    .getByRole("textbox", { name: "อีเมล" })
+    .fill("somchai@example.com");
+  await page
+    .getByRole("textbox", { name: "เบอร์โทรศัพท์ (10 หลัก)" })
+    .fill("0812345678");
+  await page.getByRole("button", { name: "จองทัวร์เลย →" }).click();
+  await expect(
+    page.getByRole("heading", { name: "กรุณาเข้าสู่ระบบก่อน" }),
+  ).toBeVisible();
+  await page.getByRole("button", { name: "เข้าสู่ระบบ →" }).click();
+  await page.waitForURL("**/login");
 });

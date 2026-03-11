@@ -14,6 +14,7 @@ import AboutUsPage from "./pages/AboutUsPage";
 import LoginPage from "./pages/loginpage";
 import RegisterPage from "./pages/RegisterPage";
 import LoginSuccess from "./pages/LoginSuccess";
+import EmailConflictPage from "./pages/EmailConflictPage";
 
 // --- ระบบ Admin ---
 import AdminLayout from "./pages/admin/AdminLayout";
@@ -36,6 +37,7 @@ export default function App() {
         <Route path="/tours" element={<ToursPage />} />
         <Route path="/tours/:id" element={<TourDetailPage />} />
         <Route path="/login/success" element={<LoginSuccess />} />
+        <Route path="/email-conflict" element={<EmailConflictPage />} />
 
         {/* --- 🚪 ป้องกัน user ที่ login แล้ว เข้าหน้า login/register ไม่ได้ --- */}
         <Route element={<GuestGuard />}>

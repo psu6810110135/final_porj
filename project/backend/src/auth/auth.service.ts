@@ -45,8 +45,13 @@ export class AuthService {
     }
     // provider === 'google' → login ปกติ ไม่ต้องทำอะไรเพิ่ม
 
-    const payload = { username: user.username, role: user.role, sub: user.id };
-    const accessToken = await this.jwtService.sign(payload);
+    const payload = {
+      sub: user.id,
+      username: user.username,
+      email: user.email || user.username,
+      role: user.role,
+    };
+    const accessToken = this.jwtService.sign(payload);
     return { accessToken };
   }
 
@@ -85,11 +90,12 @@ export class AuthService {
 
     if (await bcrypt.compare(password, user.password)) {
       const payload = {
-        username: user.username,
-        role: user.role,
         sub: user.id,
+        username: user.username,
+        email: user.email || user.username,
+        role: user.role,
       };
-      const accessToken = await this.jwtService.sign(payload);
+      const accessToken = this.jwtService.sign(payload);
       return { accessToken };
     } else {
       throw new UnauthorizedException('Please check your login credentials');

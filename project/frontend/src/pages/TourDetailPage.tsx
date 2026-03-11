@@ -582,45 +582,18 @@ function BookingSheet({
     (s) => (s.available_seats ?? 0) > 0 && s.is_available !== false,
   );
 
-  const Counter = ({
-    label,
-    value,
-    onDec,
-    onInc,
-    sub,
-  }: {
-    label: string;
-    value: number;
-    onDec: () => void;
-    onInc: () => void;
-    sub?: string;
-  }) => (
-    <div className="flex items-center justify-between py-3">
-      <div>
-        <p className="text-sm font-semibold text-[#2C1A0E]">{label}</p>
-        {sub && <p className="text-xs text-gray-400 mt-0.5">{sub}</p>}
-      </div>
-      <div className="flex items-center gap-3">
-        <button
-          onClick={onDec}
-          className="w-8 h-8 rounded-full border-2 border-gray-200 text-gray-500 font-bold flex items-center justify-center hover:border-[#FF8400] hover:text-[#FF8400] transition-colors active:scale-95"
-        >
-          −
-        </button>
-        <span className="w-6 text-center text-base font-bold text-[#2C1A0E]">
-          {value}
-        </span>
-        <button
-          onClick={onInc}
-          className="w-8 h-8 rounded-full bg-[#FF8400] text-white font-bold flex items-center justify-center hover:bg-[#e07300] transition-colors active:scale-95"
-        >
-          +
-        </button>
-      </div>
-    </div>
-  );
 
   const handleBook = async () => {
+    const token =
+      localStorage.getItem("jwt_token") ||
+      localStorage.getItem("token") ||
+      localStorage.getItem("accessToken");
+
+    if (!token) {
+      setShowLoginModal(true);
+      return;
+    }
+
     if (!selectedSchedule) {
       showToast("กรุณาเลือกวันที่เดินทาง", "warning");
       return;
@@ -642,15 +615,6 @@ function BookingSheet({
     }
     if (!/^\d{10}$/.test(contactPhone)) {
       showToast("เบอร์โทรศัพท์ต้องเป็นตัวเลข 10 หลัก", "warning");
-      return;
-    }
-
-    const token =
-      localStorage.getItem("jwt_token") ||
-      localStorage.getItem("token") ||
-      localStorage.getItem("accessToken");
-    if (!token) {
-      setShowLoginModal(true);
       return;
     }
 
@@ -706,70 +670,51 @@ function BookingSheet({
         />
       )}
 
-      <div className="bg-white h-full overflow-y-auto">
-        <div className="bg-gradient-to-r from-[#FF8400] to-[#FF6B00] px-5 py-4 flex items-center justify-between">
+      <div className="bg-[#FBCB97] h-full overflow-y-auto px-6 py-6 pb-20 relative">
+        {onClose && (
+          <button
+            onClick={onClose}
+            className="absolute top-4 right-4 w-8 h-8 rounded-full bg-black/5 flex items-center justify-center text-[#5C341E] hover:bg-black/10 z-10"
+          >
+            <XIcon />
+          </button>
+        )}
+        <div className="space-y-4">
+          {/* Header */}
           <div>
-            <p className="text-white/80 text-xs font-medium uppercase tracking-wider">
-              ราคาเริ่มต้น
-            </p>
-            <p className="text-white text-2xl font-black">
+            <p className="text-[#6D4229] text-[13px] font-bold tracking-wide">เริ่มต้น</p>
+            <p className="text-[#5C341E] text-[38px] font-black mt-[-4px]">
               ฿{tour.price.toLocaleString()}
-              <span className="text-sm font-normal ml-1">/ คน</span>
             </p>
           </div>
-          {onClose && (
-            <button
-              onClick={onClose}
-              className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center text-white hover:bg-white/30 transition-colors"
-            >
-              <XIcon />
-            </button>
-          )}
-        </div>
 
-        <div className="p-5 space-y-4">
-          {/* Schedule */}
-          <div>
-            <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider block mb-2">
-              เลือกวันที่เดินทาง
-            </label>
+          <div className="h-[2px] bg-[#D6A97D] w-full" />
+
+          {/* Schedule Select */}
+          <div className="space-y-2">
+            <h3 className="text-[#6D4229] text-[15px] font-bold tracking-wide mb-3">เลือกวันที่เดินทาง</h3>
             {loadingSchedules ? (
-              <div className="text-center py-8">
+              <div className="bg-white rounded-xl border border-gray-100 p-8 text-center shadow-sm">
                 <div className="w-8 h-8 border-3 border-[#FF8400] border-t-transparent rounded-full animate-spin mx-auto" />
-                <p className="text-xs text-gray-500 mt-2">
-                  กำลังโหลดวันที่ว่าง...
-                </p>
+                <p className="text-xs text-gray-500 mt-2">กำลังโหลดวันที่ว่าง...</p>
               </div>
             ) : schedules.length === 0 ? (
-              <div className="text-center py-8 bg-gray-50 rounded-lg border border-gray-200">
-                <p className="text-sm text-gray-500">
-                  ไม่มีวันที่เปิดให้จองในขณะนี้
-                </p>
-                <p className="text-xs text-gray-400 mt-1">
-                  กรุณาติดต่อเราเพื่อสอบถามเพิ่มเติม
-                </p>
+              <div className="bg-white rounded-xl border border-gray-100 p-8 text-center shadow-sm">
+                <p className="text-[#6D4229] font-bold text-[14.5px]">ไม่มีวันที่เปิดให้จองในขณะนี้</p>
+                <p className="text-[#8c6b5d] text-[12px] mt-1.5">กรุณาติดต่อเราเพื่อสอบถามเพิ่มเติม</p>
               </div>
             ) : visibleSchedules.length === 0 ? (
-              <div className="text-center py-8 bg-gray-50 rounded-lg border border-gray-200">
-                <p className="text-sm text-gray-500">รอบนี้เต็มหมดแล้ว</p>
-                <p className="text-xs text-gray-400 mt-1">
-                  กรุณาเลือกทัวร์หรือวันที่อื่น
-                </p>
+              <div className="bg-white rounded-xl border border-gray-100 p-8 text-center shadow-sm">
+                <p className="text-[#6D4229] font-bold text-[14.5px]">รอบนี้เต็มหมดแล้ว</p>
+                <p className="text-[#8c6b5d] text-[12px] mt-1.5">กรุณาเลือกทัวร์หรือวันที่อื่น</p>
               </div>
             ) : (
               <div className="space-y-2 max-h-64 overflow-y-auto">
                 {visibleSchedules.map((schedule) => {
                   const isSelected = selectedSchedule?.id === schedule.id;
-                  const isFull =
-                    (schedule.available_seats ?? 0) <= 0 ||
-                    !schedule.is_available;
-                  const dateStr = new Date(
-                    schedule.available_date,
-                  ).toLocaleDateString("th-TH", {
-                    year: "numeric",
-                    month: "long",
-                    day: "numeric",
-                    weekday: "short",
+                  const isFull = (schedule.available_seats ?? 0) <= 0 || !schedule.is_available;
+                  const dateStr = new Date(schedule.available_date).toLocaleDateString("th-TH", {
+                    year: "numeric", month: "long", day: "numeric", weekday: "short",
                   });
                   return (
                     <button
@@ -777,46 +722,22 @@ function BookingSheet({
                       type="button"
                       onClick={() => !isFull && setSelectedSchedule(schedule)}
                       disabled={isFull}
-                      className={`w-full text-left border-2 rounded-lg p-3 transition-all ${isSelected ? "border-[#FF8400] bg-orange-50" : isFull ? "border-gray-200 bg-gray-50 opacity-60 cursor-not-allowed" : "border-gray-200 hover:border-[#FF8400] hover:bg-orange-50/30"}`}
+                      className={`w-full text-left border rounded-[14px] p-3.5 transition-all ${isSelected ? "border-[#FF8400] bg-white ring-2 ring-[#FF8400]/20 shadow-sm" : isFull ? "border-gray-200 bg-white/50 opacity-60 cursor-not-allowed" : "border-transparent bg-white shadow-sm hover:border-[#FF8400]/50"}`}
                     >
                       <div className="flex justify-between items-start">
                         <div className="flex-1">
-                          <p
-                            className={`text-sm font-semibold ${isSelected ? "text-[#FF8400]" : "text-[#2C1A0E]"}`}
-                          >
-                            {dateStr}
-                          </p>
+                          <p className={`text-[14.5px] font-bold ${isSelected ? "text-[#FF8400]" : "text-[#5C341E]"}`}>{dateStr}</p>
                           <div className="flex items-center gap-2 mt-1">
                             {isFull ? (
-                              <span className="text-xs font-medium text-red-500 bg-red-50 px-2 py-0.5 rounded">
-                                เต็มแล้ว
-                              </span>
+                              <span className="text-[11px] font-bold text-red-500 bg-red-50 px-2 py-0.5 rounded">เต็มแล้ว</span>
                             ) : (
-                              <span className="text-xs text-gray-600">
-                                เหลือ{" "}
-                                <span className="font-semibold text-[#FF8400]">
-                                  {schedule.available_seats}
-                                </span>{" "}
-                                ที่
-                              </span>
+                              <span className="text-[11px] text-[#8c6b5d] font-medium">เหลือ <span className="text-[#FF8400] font-bold">{schedule.available_seats}</span> ที่</span>
                             )}
                           </div>
                         </div>
                         {isSelected && (
-                          <div className="w-5 h-5 bg-[#FF8400] rounded-full flex items-center justify-center">
-                            <svg
-                              className="w-3 h-3 text-white"
-                              fill="none"
-                              viewBox="0 0 24 24"
-                              stroke="currentColor"
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={3}
-                                d="M5 13l4 4L19 7"
-                              />
-                            </svg>
+                          <div className="w-[18px] h-[18px] bg-[#FF8400] rounded-full flex items-center justify-center mt-1">
+                            <svg className="w-2.5 h-2.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3.5} d="M5 13l4 4L19 7" /></svg>
                           </div>
                         )}
                       </div>
@@ -825,184 +746,122 @@ function BookingSheet({
                 })}
               </div>
             )}
-            {selectedSchedule && (
-              <div className="mt-3 p-3 bg-green-50 border border-green-200 rounded-lg">
-                <p className="text-xs font-semibold text-green-800">
-                  ✓ เลือกวันที่แล้ว
-                </p>
-                <p className="text-xs text-green-700 mt-0.5">
-                  {new Date(selectedSchedule.available_date).toLocaleDateString(
-                    "th-TH",
-                    { year: "numeric", month: "long", day: "numeric" },
-                  )}
-                </p>
-                <div className="flex items-center justify-between mt-2 pt-2 border-t border-green-200">
-                  <span className="text-xs text-green-700">ที่นั่งว่าง:</span>
-                  <span className="text-sm font-bold text-green-800">
-                    {selectedSchedule.available_seats} ที่
-                  </span>
-                </div>
+          </div>
+
+          {/* Pax Section Card */}
+          <div className="bg-white rounded-[16px] border border-gray-100 p-4 pb-2 shadow-sm mt-4">
+            {/* Adult */}
+            <div className="flex items-center justify-between pb-3 border-b border-gray-100">
+              <div className="flex flex-col">
+                <span className="text-[#5C341E] font-black text-[15px]">ผู้ใหญ่</span>
+                <span className="text-gray-400 font-medium text-[12px]">฿{tour.price.toLocaleString()} / คน</span>
               </div>
-            )}
-          </div>
-
-          {/* Capacity Warning */}
-          {selectedSchedule && pax > 0 && (
-            <div
-              className={`p-3 rounded-lg border ${remainingCapacity < 0 ? "bg-red-50 border-red-200" : remainingCapacity <= 3 ? "bg-yellow-50 border-yellow-200" : "bg-blue-50 border-blue-200"}`}
-            >
-              {remainingCapacity < 0 ? (
-                <>
-                  <p className="text-xs font-semibold text-red-800">
-                    ⚠️ เกินจำนวนที่นั่งว่าง!
-                  </p>
-                  <p className="text-xs text-red-700 mt-0.5">
-                    คุณเลือก {pax} คน แต่เหลือเพียง {availableSeats} ที่เท่านั้น
-                  </p>
-                </>
-              ) : remainingCapacity <= 3 ? (
-                <>
-                  <p className="text-xs font-semibold text-yellow-800">
-                    ⚠️ ที่นั่งใกล้เต็ม!
-                  </p>
-                  <p className="text-xs text-yellow-700 mt-0.5">
-                    หลังจองจะเหลือเพียง {remainingCapacity} ที่
-                  </p>
-                </>
-              ) : (
-                <>
-                  <p className="text-xs font-semibold text-blue-800">
-                    ✓ ที่นั่งเพียงพอ
-                  </p>
-                  <p className="text-xs text-blue-700 mt-0.5">
-                    หลังจองจะเหลือ {remainingCapacity} ที่
-                  </p>
-                </>
-              )}
+              <div className="flex items-center gap-4">
+                <button onClick={() => setAdults(n => Math.max(1, n - 1))} className="w-9 h-9 rounded-full border-[1.5px] border-gray-200 text-gray-500 flex items-center justify-center hover:border-gray-300 transition-colors active:scale-95">
+                  <span className="w-[11px] h-[2.5px] bg-gray-400 rounded-full"></span>
+                </button>
+                <span className="w-5 text-center font-black text-[17px] text-[#2C1A0E]">{adults}</span>
+                <button onClick={() => setAdults(n => remaining > 0 ? n + 1 : n)} className="w-9 h-9 rounded-full bg-[#FF8400] text-white flex items-center justify-center hover:bg-[#e07300] transition-colors active:scale-95 shadow-sm shadow-orange-200">
+                  <span className="relative flex items-center justify-center">
+                    <span className="absolute w-[12px] h-[2.5px] bg-white rounded-full"></span>
+                    <span className="absolute h-[12px] w-[2.5px] bg-white rounded-full"></span>
+                  </span>
+                </button>
+              </div>
             </div>
-          )}
 
-          {/* Counters */}
-          <div className="border-2 border-gray-100 rounded-xl px-4 divide-y divide-gray-100">
-            <Counter
-              label="ผู้ใหญ่"
-              sub={`฿${tour.price.toLocaleString()} / คน`}
-              value={adults}
-              onDec={() => setAdults((n) => Math.max(1, n - 1))}
-              onInc={() => setAdults((n) => (remaining > 0 ? n + 1 : n))}
-            />
-            <Counter
-              label="เด็ก"
-              sub={`฿${childPrice.toLocaleString()} / คน`}
-              value={children}
-              onDec={() => setChildren((n) => Math.max(0, n - 1))}
-              onInc={() => setChildren((n) => (remaining > 0 ? n + 1 : n))}
-            />
+            {/* Child */}
+            <div className="flex items-center justify-between pt-3 pb-2">
+              <div className="flex flex-col">
+                <span className="text-[#5C341E] font-black text-[15px]">เด็ก</span>
+                <span className="text-gray-400 font-medium text-[12px]">฿{childPrice.toLocaleString()} / คน</span>
+              </div>
+              <div className="flex items-center gap-4">
+                <button onClick={() => setChildren(n => Math.max(0, n - 1))} className="w-9 h-9 rounded-full border-[1.5px] border-gray-200 text-gray-500 flex items-center justify-center hover:border-gray-300 transition-colors active:scale-95">
+                  <span className="w-[11px] h-[2.5px] bg-gray-400 rounded-full"></span>
+                </button>
+                <span className="w-5 text-center font-black text-[17px] text-[#2C1A0E]">{children}</span>
+                <button onClick={() => setChildren(n => remaining > 0 ? n + 1 : n)} className="w-9 h-9 rounded-full bg-[#FF8400] text-white flex items-center justify-center hover:bg-[#e07300] transition-colors active:scale-95 shadow-sm shadow-orange-200">
+                  <span className="relative flex items-center justify-center">
+                    <span className="absolute w-[12px] h-[2.5px] bg-white rounded-full"></span>
+                    <span className="absolute h-[12px] w-[2.5px] bg-white rounded-full"></span>
+                  </span>
+                </button>
+              </div>
+            </div>
           </div>
+
+          <div className="h-[2px] bg-[#D6A97D] w-full mt-2" />
 
           {/* Price Summary */}
-          <div className="bg-gradient-to-br from-amber-50 to-orange-50 rounded-xl p-4 border border-amber-100 space-y-2">
-            {adults > 0 && (
-              <div className="flex justify-between text-sm">
-                <span className="text-gray-500">ผู้ใหญ่ {adults} คน</span>
-                <span className="font-semibold">
-                  ฿{(tour.price * adults).toLocaleString()}
-                </span>
-              </div>
-            )}
-            {children > 0 && (
-              <div className="flex justify-between text-sm">
-                <span className="text-gray-500">เด็ก {children} คน</span>
-                <span className="font-semibold">
-                  ฿{(childPrice * children).toLocaleString()}
-                </span>
-              </div>
-            )}
-            <div className="flex justify-between text-[11px] text-gray-500">
-              <span>ผู้เดินทางรวม</span>
-              <span>
-                {pax} คน
-                {selectedSchedule && (
-                  <span
-                    className={
-                      remainingCapacity < 0 ? "text-red-500 font-semibold" : ""
-                    }
-                  >
-                    {" "}
-                    (จาก {availableSeats} ที่)
-                  </span>
-                )}
-              </span>
+          <div className="bg-[#F8E1CA] rounded-[18px] p-[22px] space-y-3.5">
+            <div className="flex justify-between font-bold text-[#5C341E] text-[15px]">
+              <span>ผู้ใหญ่</span>
+              <span>{adults > 0 ? `${(tour.price * adults).toLocaleString()} ฿` : "-"}</span>
             </div>
-            <div className="border-t border-amber-200 pt-2 flex justify-between items-center font-black text-[#2C1A0E]">
-              <span>รวมทั้งหมด</span>
-              <span className="text-[#FF8400] text-lg">
-                ฿{total.toLocaleString()}
-              </span>
+            <div className="flex justify-between font-bold text-[#5C341E] text-[15px]">
+              <span>เด็ก</span>
+              <span>{children > 0 ? `${(childPrice * children).toLocaleString()} ฿` : "-"}</span>
+            </div>
+            <div className="h-px bg-[#E2BE9C] w-full" />
+            <div className="flex justify-between font-black text-[#5C341E] text-[17px]">
+              <span>รวม</span>
+              <span>{total.toLocaleString()} ฿</span>
             </div>
           </div>
 
-          {/* Contact */}
-          <div className="space-y-2.5">
-            <label className="text-xs font-bold text-gray-400 uppercase tracking-wider block">
-              ข้อมูลติดต่อ
+          <button
+            onClick={handleBook}
+            disabled={submitting}
+            className="w-full bg-[#FF8100] hover:bg-[#E67400] text-white font-black py-3.5 rounded-xl text-2xl shadow-sm transition-all active:scale-[0.98] disabled:opacity-70 mt-2"
+          >
+            {submitting ? "กำลังดำเนินการ..." : "จอง"}
+          </button>
+
+          <div className="h-[2px] bg-[#D6A97D] w-full mt-4 mb-2" />
+
+          {/* Free Cancel */}
+          <div className="pt-2">
+            <p className="text-[#5C341E] font-black text-xl mb-3">ยกเลิกฟรี</p>
+            <div className="flex items-start gap-3">
+              <div className="mt-0.5 shrink-0">
+                <svg className="w-6 h-6 text-[#5C341E]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                  <line x1="16" y1="2" x2="16" y2="6"></line>
+                  <line x1="8" y1="2" x2="8" y2="6"></line>
+                  <line x1="3" y1="10" x2="21" y2="10"></line>
+                  <path d="M9 16l2 2 4-4"></path>
+                </svg>
+              </div>
+              <p className="text-[#5C341E] font-bold text-[14.5px] leading-[1.4]">
+                ยกเลิกได้ล่วงหน้าสูงสุด 24 ชั่วโมงเพื่อ<br className="hidden sm:block" />รับเงินคืนเต็มจำนวน
+              </p>
+            </div>
+          </div>
+
+          {/* Contact Details (Minimal/Hidden visually to match design, but required for API) */}
+          <div className="pt-8 space-y-2 opacity-50 hover:opacity-100 transition-opacity focus-within:opacity-100">
+            <label className="text-[11px] font-bold text-[#8c6b5d] uppercase tracking-wider block">
+              -- ข้อมูลติดต่อสำหรับการสั่งจอง --
             </label>
             {[
-              {
-                type: "text",
-                placeholder: "ชื่อ-นามสกุล",
-                value: contactName,
-                onChange: setContactName,
-              },
-              {
-                type: "email",
-                placeholder: "อีเมล",
-                value: contactEmail,
-                onChange: setContactEmail,
-              },
-              {
-                type: "tel",
-                placeholder: "เบอร์โทรศัพท์ (10 หลัก)",
-                value: contactPhone,
-                onChange: setContactPhone,
-                maxLength: 10,
-              },
+              { type: "text", placeholder: "ชื่อ-นามสกุล", value: contactName, onChange: setContactName },
+              { type: "email", placeholder: "อีเมล", value: contactEmail, onChange: setContactEmail },
+              { type: "tel", placeholder: "เบอร์โทรศัพท์ (10 หลัก)", value: contactPhone, onChange: setContactPhone, maxLength: 10 },
             ].map((f, i) => (
               <input
                 key={i}
                 type={f.type}
                 placeholder={f.placeholder}
                 value={f.value}
-                onChange={(e) => {
-                  if (f.type === "tel") {
-                    f.onChange(normalizePhone(e.target.value));
-                    return;
-                  }
-                  f.onChange(e.target.value);
-                }}
+                onChange={(e) => f.onChange(f.type === "tel" ? normalizePhone(e.target.value) : e.target.value)}
                 inputMode={f.type === "tel" ? "numeric" : undefined}
                 maxLength={f.maxLength}
-                className="w-full border-2 border-gray-100 rounded-xl px-4 py-3 text-sm text-gray-700 focus:outline-none focus:border-[#FF8400] bg-gray-50 transition-colors placeholder:text-gray-300"
+                className="w-full bg-white/60 border border-[#E9C39B] rounded-lg px-3 py-2 text-sm text-[#5C341E] focus:outline-none focus:bg-white placeholder:text-[#ab9083]"
               />
             ))}
-            {contactPhone && !/^\d{10}$/.test(contactPhone) && (
-              <p className="text-xs text-red-500 font-medium">
-                กรุณากรอกเบอร์โทรศัพท์ให้ครบ 10 หลัก
-              </p>
-            )}
           </div>
 
-          <button
-            onClick={handleBook}
-            disabled={submitting}
-            className="w-full bg-gradient-to-r from-[#FF8400] to-[#FF6B00] text-white font-black py-4 rounded-xl transition-all text-base shadow-lg shadow-orange-200 disabled:opacity-60 disabled:cursor-not-allowed active:scale-[0.98] hover:shadow-xl"
-          >
-            {submitting ? "กำลังจอง..." : "จองทัวร์เลย →"}
-          </button>
-
-          <p className="text-center text-xs text-gray-400 pb-2">
-            มีคำถาม? ติดต่อเราได้เลย ☎️
-          </p>
         </div>
       </div>
     </>

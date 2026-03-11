@@ -22,9 +22,9 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     });
   }
 
-  async validate(payload: { username: string }) {
-    const { username } = payload;
-    const user = await this.usersService.findOne(username);
+  async validate(payload: { sub: string; username: string; email?: string; role?: string }) {
+    // ใช้ sub (user id) เป็นหลักในการค้นหา user — ไม่ใช้ username เพราะอาจเป็น email ที่ user กรอกตอน login
+    const user = await this.usersService.findByIdLite(payload.sub);
 
     if (!user) {
       throw new UnauthorizedException();

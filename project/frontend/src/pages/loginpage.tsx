@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import axios from 'axios';
-import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams, useLocation } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 import { API_BASE_URL } from '@/config/api';
 
@@ -124,6 +124,7 @@ const STRENGTH_COLOR = ["", "#ef4444", "#f97316", "#eab308", "#22c55e"];
 const LoginPage: React.FC = () => {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
+  const location = useLocation();
   const [view, setView] = useState<View>("login");
 
   /* Google Conflict Modal state */
@@ -165,6 +166,19 @@ const LoginPage: React.FC = () => {
     }
   }, [searchParams, setSearchParams]);
 
+  /* รับ state จากหน้า EmailConflict → เปิด forgot password พร้อม email ที่กรอกไว้ */
+  useEffect(() => {
+    const state = location.state as { openForgot?: boolean; email?: string } | null;
+    if (state?.openForgot) {
+      setView('forgot');
+      if (state.email) {
+        setForgotEmail(state.email);
+      }
+      // ล้าง state ออกเพื่อกัน re-trigger
+      window.history.replaceState({}, '');
+    }
+  }, [location.state]);
+
   /* Countdown timer */
   useEffect(() => {
     if (countdown <= 0) return;
@@ -183,12 +197,23 @@ const LoginPage: React.FC = () => {
     try {
       const res = await axios.post(`${API_BASE_URL}/api/auth/signin`, loginForm);
       localStorage.setItem('jwt_token', res.data.accessToken);
-      navigate('/');
+      const redirectUrl = localStorage.getItem('redirect_after_login');
+      if (redirectUrl) {
+        localStorage.removeItem('redirect_after_login');
+        navigate(redirectUrl);
+      } else {
+        navigate('/');
+      }
     } catch (err: any) {
+      const status = err.response?.status;
       const msg = err.response?.data?.message;
+
       if (msg === 'GOOGLE_ACCOUNT') {
         setIsGoogleAccountError(true);
         setLoginError('บัญชีนี้ผูกกับ Google กรุณากดปุ่ม "เข้าสู่ระบบด้วย Google" ด้านล่าง');
+      } else if (status === 400) {
+        // จัดการ Error Validation จาก Backend (400 Bad Request)
+        setLoginError(Array.isArray(msg) ? msg[0] : (typeof msg === 'string' ? msg : 'ข้อมูลไม่ถูกต้อง'));
       } else {
         setLoginError('ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง กรุณาลองใหม่อีกครั้ง');
       }

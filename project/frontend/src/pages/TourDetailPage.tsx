@@ -45,6 +45,7 @@ interface Tour {
   conditions?: string[] | string;
   rating?: number;
   review_count?: number;
+  is_active?: boolean;
 }
 
 interface ReviewUser {
@@ -317,6 +318,54 @@ function LoginRequiredModal({
   );
 }
 
+function TourUnavailableModal({ onClose }: { onClose: () => void }) {
+  return (
+    <div className="fixed inset-0 z-[320] flex items-center justify-center px-4">
+      <div
+        className="absolute inset-0 bg-black/55 backdrop-blur-sm"
+        onClick={onClose}
+        style={{ animation: "fadeIn 0.2s ease" }}
+      />
+      <div
+        className="relative bg-white rounded-3xl shadow-2xl p-6 w-full max-w-md text-center"
+        style={{ animation: "popIn 0.3s cubic-bezier(0.32,0.72,0,1)" }}
+      >
+        <div className="w-16 h-16 rounded-full bg-red-50 flex items-center justify-center mx-auto mb-4">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="32"
+            height="32"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="#DC2626"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <circle cx="12" cy="12" r="9" />
+            <line x1="12" y1="8" x2="12" y2="12" />
+            <line x1="12" y1="16" x2="12.01" y2="16" />
+          </svg>
+        </div>
+        <h3 className="text-lg font-black text-[#2C1A0E] mb-2">
+          ทัวร์นี้ยังไม่พร้อมให้บริการ
+        </h3>
+        <p className="text-sm text-gray-500 mb-6 leading-relaxed">
+          ขณะนี้ทัวร์อยู่ในช่วงปิดให้บริการชั่วคราว
+          <br />
+          กรุณาติดต่อแอดมินเพื่อขอข้อมูลเพิ่มเติม
+        </p>
+        <button
+          onClick={onClose}
+          className="w-full bg-gradient-to-r from-[#FF8400] to-[#FF6B00] text-white font-black py-3.5 rounded-xl text-sm shadow-lg shadow-orange-200 hover:shadow-xl transition-all active:scale-[0.98]"
+        >
+          กลับไปหน้าทัวร์
+        </button>
+      </div>
+    </div>
+  );
+}
+
 /* ─── Helpers ───────────────────────── */
 
 const getImageUrl = (path?: string) => {
@@ -394,6 +443,7 @@ function normalizeTourPayload(raw: any): Tour {
     conditions: raw?.conditions,
     rating: raw?.rating ? Number(raw.rating) : 0,
     review_count: raw?.review_count ? Number(raw.review_count) : 0,
+    is_active: raw?.is_active ?? raw?.isActive ?? true,
   };
 }
 
@@ -484,6 +534,7 @@ function BookingSheet({
 }) {
   const api = axios.create({ baseURL: API_BASE_URL });
   const navigate = useNavigate();
+  const isTourInactive = tour.is_active === false;
 
   const [adults, setAdults] = useState(1);
   const [children, setChildren] = useState(0);
@@ -502,6 +553,13 @@ function BookingSheet({
     value.replace(/\D/g, "").slice(0, 10);
 
   useEffect(() => {
+    if (isTourInactive) {
+      setSchedules([]);
+      setSelectedSchedule(null);
+      setLoadingSchedules(false);
+      return;
+    }
+
     api
       .get(`/api/tours/${tour.id}/schedules`)
       .then((res) => {
@@ -522,7 +580,7 @@ function BookingSheet({
       })
       .catch(() => setSchedules([]))
       .finally(() => setLoadingSchedules(false));
-  }, [tour.id]);
+  }, [api, isTourInactive, tour.id]);
 
   useEffect(() => {
     const token =
@@ -582,8 +640,12 @@ function BookingSheet({
     (s) => (s.available_seats ?? 0) > 0 && s.is_available !== false,
   );
 
-
   const handleBook = async () => {
+    if (isTourInactive) {
+      showToast("ทัวร์นี้ยังไม่พร้อมให้บริการ กรุณาติดต่อแอดมิน", "warning");
+      return;
+    }
+
     const token =
       localStorage.getItem("jwt_token") ||
       localStorage.getItem("token") ||
@@ -682,7 +744,9 @@ function BookingSheet({
         <div className="space-y-4">
           {/* Header */}
           <div>
-            <p className="text-[#6D4229] text-[13px] font-bold tracking-wide">เริ่มต้น</p>
+            <p className="text-[#6D4229] text-[13px] font-bold tracking-wide">
+              เริ่มต้น
+            </p>
             <p className="text-[#5C341E] text-[38px] font-black mt-[-4px]">
               ฿{tour.price.toLocaleString()}
             </p>
@@ -692,29 +756,48 @@ function BookingSheet({
 
           {/* Schedule Select */}
           <div className="space-y-2">
-            <h3 className="text-[#6D4229] text-[15px] font-bold tracking-wide mb-3">เลือกวันที่เดินทาง</h3>
+            <h3 className="text-[#6D4229] text-[15px] font-bold tracking-wide mb-3">
+              เลือกวันที่เดินทาง
+            </h3>
             {loadingSchedules ? (
               <div className="bg-white rounded-xl border border-gray-100 p-8 text-center shadow-sm">
                 <div className="w-8 h-8 border-3 border-[#FF8400] border-t-transparent rounded-full animate-spin mx-auto" />
-                <p className="text-xs text-gray-500 mt-2">กำลังโหลดวันที่ว่าง...</p>
+                <p className="text-xs text-gray-500 mt-2">
+                  กำลังโหลดวันที่ว่าง...
+                </p>
               </div>
             ) : schedules.length === 0 ? (
               <div className="bg-white rounded-xl border border-gray-100 p-8 text-center shadow-sm">
-                <p className="text-[#6D4229] font-bold text-[14.5px]">ไม่มีวันที่เปิดให้จองในขณะนี้</p>
-                <p className="text-[#8c6b5d] text-[12px] mt-1.5">กรุณาติดต่อเราเพื่อสอบถามเพิ่มเติม</p>
+                <p className="text-[#6D4229] font-bold text-[14.5px]">
+                  ไม่มีวันที่เปิดให้จองในขณะนี้
+                </p>
+                <p className="text-[#8c6b5d] text-[12px] mt-1.5">
+                  กรุณาติดต่อเราเพื่อสอบถามเพิ่มเติม
+                </p>
               </div>
             ) : visibleSchedules.length === 0 ? (
               <div className="bg-white rounded-xl border border-gray-100 p-8 text-center shadow-sm">
-                <p className="text-[#6D4229] font-bold text-[14.5px]">รอบนี้เต็มหมดแล้ว</p>
-                <p className="text-[#8c6b5d] text-[12px] mt-1.5">กรุณาเลือกทัวร์หรือวันที่อื่น</p>
+                <p className="text-[#6D4229] font-bold text-[14.5px]">
+                  รอบนี้เต็มหมดแล้ว
+                </p>
+                <p className="text-[#8c6b5d] text-[12px] mt-1.5">
+                  กรุณาเลือกทัวร์หรือวันที่อื่น
+                </p>
               </div>
             ) : (
               <div className="space-y-2 max-h-64 overflow-y-auto">
                 {visibleSchedules.map((schedule) => {
                   const isSelected = selectedSchedule?.id === schedule.id;
-                  const isFull = (schedule.available_seats ?? 0) <= 0 || !schedule.is_available;
-                  const dateStr = new Date(schedule.available_date).toLocaleDateString("th-TH", {
-                    year: "numeric", month: "long", day: "numeric", weekday: "short",
+                  const isFull =
+                    (schedule.available_seats ?? 0) <= 0 ||
+                    !schedule.is_available;
+                  const dateStr = new Date(
+                    schedule.available_date,
+                  ).toLocaleDateString("th-TH", {
+                    year: "numeric",
+                    month: "long",
+                    day: "numeric",
+                    weekday: "short",
                   });
                   return (
                     <button
@@ -726,18 +809,42 @@ function BookingSheet({
                     >
                       <div className="flex justify-between items-start">
                         <div className="flex-1">
-                          <p className={`text-[14.5px] font-bold ${isSelected ? "text-[#FF8400]" : "text-[#5C341E]"}`}>{dateStr}</p>
+                          <p
+                            className={`text-[14.5px] font-bold ${isSelected ? "text-[#FF8400]" : "text-[#5C341E]"}`}
+                          >
+                            {dateStr}
+                          </p>
                           <div className="flex items-center gap-2 mt-1">
                             {isFull ? (
-                              <span className="text-[11px] font-bold text-red-500 bg-red-50 px-2 py-0.5 rounded">เต็มแล้ว</span>
+                              <span className="text-[11px] font-bold text-red-500 bg-red-50 px-2 py-0.5 rounded">
+                                เต็มแล้ว
+                              </span>
                             ) : (
-                              <span className="text-[11px] text-[#8c6b5d] font-medium">เหลือ <span className="text-[#FF8400] font-bold">{schedule.available_seats}</span> ที่</span>
+                              <span className="text-[11px] text-[#8c6b5d] font-medium">
+                                เหลือ{" "}
+                                <span className="text-[#FF8400] font-bold">
+                                  {schedule.available_seats}
+                                </span>{" "}
+                                ที่
+                              </span>
                             )}
                           </div>
                         </div>
                         {isSelected && (
                           <div className="w-[18px] h-[18px] bg-[#FF8400] rounded-full flex items-center justify-center mt-1">
-                            <svg className="w-2.5 h-2.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3.5} d="M5 13l4 4L19 7" /></svg>
+                            <svg
+                              className="w-2.5 h-2.5 text-white"
+                              fill="none"
+                              viewBox="0 0 24 24"
+                              stroke="currentColor"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={3.5}
+                                d="M5 13l4 4L19 7"
+                              />
+                            </svg>
                           </div>
                         )}
                       </div>
@@ -753,15 +860,27 @@ function BookingSheet({
             {/* Adult */}
             <div className="flex items-center justify-between pb-3 border-b border-gray-100">
               <div className="flex flex-col">
-                <span className="text-[#5C341E] font-black text-[15px]">ผู้ใหญ่</span>
-                <span className="text-gray-400 font-medium text-[12px]">฿{tour.price.toLocaleString()} / คน</span>
+                <span className="text-[#5C341E] font-black text-[15px]">
+                  ผู้ใหญ่
+                </span>
+                <span className="text-gray-400 font-medium text-[12px]">
+                  ฿{tour.price.toLocaleString()} / คน
+                </span>
               </div>
               <div className="flex items-center gap-4">
-                <button onClick={() => setAdults(n => Math.max(1, n - 1))} className="w-9 h-9 rounded-full border-[1.5px] border-gray-200 text-gray-500 flex items-center justify-center hover:border-gray-300 transition-colors active:scale-95">
+                <button
+                  onClick={() => setAdults((n) => Math.max(1, n - 1))}
+                  className="w-9 h-9 rounded-full border-[1.5px] border-gray-200 text-gray-500 flex items-center justify-center hover:border-gray-300 transition-colors active:scale-95"
+                >
                   <span className="w-[11px] h-[2.5px] bg-gray-400 rounded-full"></span>
                 </button>
-                <span className="w-5 text-center font-black text-[17px] text-[#2C1A0E]">{adults}</span>
-                <button onClick={() => setAdults(n => remaining > 0 ? n + 1 : n)} className="w-9 h-9 rounded-full bg-[#FF8400] text-white flex items-center justify-center hover:bg-[#e07300] transition-colors active:scale-95 shadow-sm shadow-orange-200">
+                <span className="w-5 text-center font-black text-[17px] text-[#2C1A0E]">
+                  {adults}
+                </span>
+                <button
+                  onClick={() => setAdults((n) => (remaining > 0 ? n + 1 : n))}
+                  className="w-9 h-9 rounded-full bg-[#FF8400] text-white flex items-center justify-center hover:bg-[#e07300] transition-colors active:scale-95 shadow-sm shadow-orange-200"
+                >
                   <span className="relative flex items-center justify-center">
                     <span className="absolute w-[12px] h-[2.5px] bg-white rounded-full"></span>
                     <span className="absolute h-[12px] w-[2.5px] bg-white rounded-full"></span>
@@ -773,15 +892,29 @@ function BookingSheet({
             {/* Child */}
             <div className="flex items-center justify-between pt-3 pb-2">
               <div className="flex flex-col">
-                <span className="text-[#5C341E] font-black text-[15px]">เด็ก</span>
-                <span className="text-gray-400 font-medium text-[12px]">฿{childPrice.toLocaleString()} / คน</span>
+                <span className="text-[#5C341E] font-black text-[15px]">
+                  เด็ก
+                </span>
+                <span className="text-gray-400 font-medium text-[12px]">
+                  ฿{childPrice.toLocaleString()} / คน
+                </span>
               </div>
               <div className="flex items-center gap-4">
-                <button onClick={() => setChildren(n => Math.max(0, n - 1))} className="w-9 h-9 rounded-full border-[1.5px] border-gray-200 text-gray-500 flex items-center justify-center hover:border-gray-300 transition-colors active:scale-95">
+                <button
+                  onClick={() => setChildren((n) => Math.max(0, n - 1))}
+                  className="w-9 h-9 rounded-full border-[1.5px] border-gray-200 text-gray-500 flex items-center justify-center hover:border-gray-300 transition-colors active:scale-95"
+                >
                   <span className="w-[11px] h-[2.5px] bg-gray-400 rounded-full"></span>
                 </button>
-                <span className="w-5 text-center font-black text-[17px] text-[#2C1A0E]">{children}</span>
-                <button onClick={() => setChildren(n => remaining > 0 ? n + 1 : n)} className="w-9 h-9 rounded-full bg-[#FF8400] text-white flex items-center justify-center hover:bg-[#e07300] transition-colors active:scale-95 shadow-sm shadow-orange-200">
+                <span className="w-5 text-center font-black text-[17px] text-[#2C1A0E]">
+                  {children}
+                </span>
+                <button
+                  onClick={() =>
+                    setChildren((n) => (remaining > 0 ? n + 1 : n))
+                  }
+                  className="w-9 h-9 rounded-full bg-[#FF8400] text-white flex items-center justify-center hover:bg-[#e07300] transition-colors active:scale-95 shadow-sm shadow-orange-200"
+                >
                   <span className="relative flex items-center justify-center">
                     <span className="absolute w-[12px] h-[2.5px] bg-white rounded-full"></span>
                     <span className="absolute h-[12px] w-[2.5px] bg-white rounded-full"></span>
@@ -797,11 +930,19 @@ function BookingSheet({
           <div className="bg-[#F8E1CA] rounded-[18px] p-[22px] space-y-3.5">
             <div className="flex justify-between font-bold text-[#5C341E] text-[15px]">
               <span>ผู้ใหญ่</span>
-              <span>{adults > 0 ? `${(tour.price * adults).toLocaleString()} ฿` : "-"}</span>
+              <span>
+                {adults > 0
+                  ? `${(tour.price * adults).toLocaleString()} ฿`
+                  : "-"}
+              </span>
             </div>
             <div className="flex justify-between font-bold text-[#5C341E] text-[15px]">
               <span>เด็ก</span>
-              <span>{children > 0 ? `${(childPrice * children).toLocaleString()} ฿` : "-"}</span>
+              <span>
+                {children > 0
+                  ? `${(childPrice * children).toLocaleString()} ฿`
+                  : "-"}
+              </span>
             </div>
             <div className="h-px bg-[#E2BE9C] w-full" />
             <div className="flex justify-between font-black text-[#5C341E] text-[17px]">
@@ -825,7 +966,15 @@ function BookingSheet({
             <p className="text-[#5C341E] font-black text-xl mb-3">ยกเลิกฟรี</p>
             <div className="flex items-start gap-3">
               <div className="mt-0.5 shrink-0">
-                <svg className="w-6 h-6 text-[#5C341E]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <svg
+                  className="w-6 h-6 text-[#5C341E]"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
                   <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
                   <line x1="16" y1="2" x2="16" y2="6"></line>
                   <line x1="8" y1="2" x2="8" y2="6"></line>
@@ -834,7 +983,9 @@ function BookingSheet({
                 </svg>
               </div>
               <p className="text-[#5C341E] font-bold text-[14.5px] leading-[1.4]">
-                ยกเลิกได้ล่วงหน้าสูงสุด 24 ชั่วโมงเพื่อ<br className="hidden sm:block" />รับเงินคืนเต็มจำนวน
+                ยกเลิกได้ล่วงหน้าสูงสุด 24 ชั่วโมงเพื่อ
+                <br className="hidden sm:block" />
+                รับเงินคืนเต็มจำนวน
               </p>
             </div>
           </div>
@@ -845,23 +996,44 @@ function BookingSheet({
               -- ข้อมูลติดต่อสำหรับการสั่งจอง --
             </label>
             {[
-              { type: "text", placeholder: "ชื่อ-นามสกุล", value: contactName, onChange: setContactName },
-              { type: "email", placeholder: "อีเมล", value: contactEmail, onChange: setContactEmail },
-              { type: "tel", placeholder: "เบอร์โทรศัพท์ (10 หลัก)", value: contactPhone, onChange: setContactPhone, maxLength: 10 },
+              {
+                type: "text",
+                placeholder: "ชื่อ-นามสกุล",
+                value: contactName,
+                onChange: setContactName,
+              },
+              {
+                type: "email",
+                placeholder: "อีเมล",
+                value: contactEmail,
+                onChange: setContactEmail,
+              },
+              {
+                type: "tel",
+                placeholder: "เบอร์โทรศัพท์ (10 หลัก)",
+                value: contactPhone,
+                onChange: setContactPhone,
+                maxLength: 10,
+              },
             ].map((f, i) => (
               <input
                 key={i}
                 type={f.type}
                 placeholder={f.placeholder}
                 value={f.value}
-                onChange={(e) => f.onChange(f.type === "tel" ? normalizePhone(e.target.value) : e.target.value)}
+                onChange={(e) =>
+                  f.onChange(
+                    f.type === "tel"
+                      ? normalizePhone(e.target.value)
+                      : e.target.value,
+                  )
+                }
                 inputMode={f.type === "tel" ? "numeric" : undefined}
                 maxLength={f.maxLength}
                 className="w-full bg-white/60 border border-[#E9C39B] rounded-lg px-3 py-2 text-sm text-[#5C341E] focus:outline-none focus:bg-white placeholder:text-[#ab9083]"
               />
             ))}
           </div>
-
         </div>
       </div>
     </>
@@ -872,6 +1044,7 @@ function BookingSheet({
 
 export default function TourDetailPage() {
   const { id } = useParams();
+  const navigate = useNavigate();
   const [tour, setTour] = useState<Tour | null>(null);
   const [reviews, setReviews] = useState<ReviewItem[]>([]);
   const [reviewsLoading, setReviewsLoading] = useState(false);
@@ -879,6 +1052,7 @@ export default function TourDetailPage() {
   const [error, setError] = useState(false);
   const [sheetOpen, setSheetOpen] = useState(false);
   const [activeImageIndex, setActiveImageIndex] = useState<number | null>(null);
+  const [showUnavailableModal, setShowUnavailableModal] = useState(false);
   const { toast, showToast, closeToast } = useToast();
 
   const allImages = tour ? [tour.image_cover, ...(tour.images || [])] : [];
@@ -889,14 +1063,19 @@ export default function TourDetailPage() {
   const excludedItems = tour ? parseTextList(tour.excluded) : [];
   const conditionItems = tour ? parseTextList(tour.conditions) : [];
   const itinerary = parseItinerary(tour?.itinerary_data, tour?.itinerary);
+  const isTourInactive = tour?.is_active === false;
 
   useEffect(() => {
     if (!id) return;
     axios
       .get(`${API_BASE_URL}/api/tours/${id}`)
-      .then((res) =>
-        setTour(normalizeTourPayload(res?.data?.data ?? res?.data)),
-      )
+      .then((res) => {
+        const normalizedTour = normalizeTourPayload(
+          res?.data?.data ?? res?.data,
+        );
+        setTour(normalizedTour);
+        setShowUnavailableModal(normalizedTour.is_active === false);
+      })
       .catch(() => setError(true))
       .finally(() => setLoading(false));
   }, [id]);
@@ -922,6 +1101,16 @@ export default function TourDetailPage() {
     };
   }, [sheetOpen, activeImageIndex]);
 
+  useEffect(() => {
+    if (!isTourInactive) return;
+    setSheetOpen(false);
+  }, [isTourInactive]);
+
+  const closeUnavailableModal = () => {
+    setShowUnavailableModal(false);
+    navigate("/tours", { replace: true });
+  };
+
   return (
     <>
       <style>{`
@@ -939,6 +1128,10 @@ export default function TourDetailPage() {
 
       {toast && (
         <Toast message={toast.message} type={toast.type} onClose={closeToast} />
+      )}
+
+      {showUnavailableModal && (
+        <TourUnavailableModal onClose={closeUnavailableModal} />
       )}
 
       <div className="tour-detail min-h-screen bg-[#F5F0EB]">
@@ -1268,36 +1461,49 @@ export default function TourDetailPage() {
 
                 {/* Right: Desktop Booking */}
                 <div className="hidden lg:block lg:col-span-1">
-                  <div className="sticky top-20 rounded-2xl overflow-hidden shadow-xl border border-gray-100">
-                    <BookingSheet tour={tour} showToast={showToast} />
-                  </div>
+                  {isTourInactive ? (
+                    <div className="sticky top-20 rounded-2xl overflow-hidden shadow-xl border border-red-100 bg-white p-6">
+                      <p className="text-sm font-black text-[#2C1A0E]">
+                        ทัวร์นี้ยังไม่พร้อมให้บริการ
+                      </p>
+                      <p className="text-sm text-[#4F200D]/60 mt-2 leading-relaxed">
+                        กรุณาติดต่อแอดมินเพื่อสอบถามรายละเอียดเพิ่มเติม
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="sticky top-20 rounded-2xl overflow-hidden shadow-xl border border-gray-100">
+                      <BookingSheet tour={tour} showToast={showToast} />
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
 
             {/* Mobile sticky CTA */}
-            <div className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-gray-100 px-4 py-3 shadow-2xl shadow-black/10">
-              <div className="flex items-center justify-between gap-3">
-                <div>
-                  <p className="text-xs text-gray-400">ราคาเริ่มต้น</p>
-                  <p className="text-xl font-black text-[#FF8400]">
-                    ฿{tour.price.toLocaleString()}
-                    <span className="text-xs font-normal text-gray-400 ml-1">
-                      / คน
-                    </span>
-                  </p>
+            {!isTourInactive && (
+              <div className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-gray-100 px-4 py-3 shadow-2xl shadow-black/10">
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <p className="text-xs text-gray-400">ราคาเริ่มต้น</p>
+                    <p className="text-xl font-black text-[#FF8400]">
+                      ฿{tour.price.toLocaleString()}
+                      <span className="text-xs font-normal text-gray-400 ml-1">
+                        / คน
+                      </span>
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => setSheetOpen(true)}
+                    className="flex-1 max-w-[180px] bg-gradient-to-r from-[#FF8400] to-[#FF6B00] text-white font-black py-3.5 rounded-xl text-sm shadow-lg shadow-orange-200 active:scale-[0.97] transition-all"
+                  >
+                    จองทัวร์เลย →
+                  </button>
                 </div>
-                <button
-                  onClick={() => setSheetOpen(true)}
-                  className="flex-1 max-w-[180px] bg-gradient-to-r from-[#FF8400] to-[#FF6B00] text-white font-black py-3.5 rounded-xl text-sm shadow-lg shadow-orange-200 active:scale-[0.97] transition-all"
-                >
-                  จองทัวร์เลย →
-                </button>
               </div>
-            </div>
+            )}
 
             {/* Mobile Bottom Sheet */}
-            {sheetOpen && (
+            {sheetOpen && !isTourInactive && (
               <div className="lg:hidden fixed inset-0 z-50 flex flex-col justify-end">
                 <div
                   className="sheet-overlay absolute inset-0 bg-black/50 backdrop-blur-sm"

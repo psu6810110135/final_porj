@@ -11,6 +11,7 @@ interface Tour {
   title?: string;
   nameTh?: string;
   nameEn?: string;
+  isActive?: boolean;
 }
 
 interface Booking {
@@ -148,6 +149,8 @@ const getTourTitle = (b: Booking) =>
 
 const getBookingReference = (b: Booking) => b.bookingReference ?? b.id;
 
+const isTourUnavailable = (b: Booking) => b.tour?.isActive === false;
+
 const getEffectiveStatus = (b: Booking): BookingStatus => {
   if (b.status === "pending_pay" && b.paymentDeadline) {
     const isPastDeadline = new Date(b.paymentDeadline).getTime() < Date.now();
@@ -243,7 +246,12 @@ export default function BookingHistoryPage() {
   const [ticketBooking, setTicketBooking] = useState<Booking | null>(null);
   const [actionLoadingId, setActionLoadingId] = useState<string | null>(null);
   const [renewLoadingId, setRenewLoadingId] = useState<string | null>(null);
-  const [renewAlert, setRenewAlert] = useState<{ title: string; message: string; isSuccess: boolean; bookingId?: string } | null>(null);
+  const [renewAlert, setRenewAlert] = useState<{
+    title: string;
+    message: string;
+    isSuccess: boolean;
+    bookingId?: string;
+  } | null>(null);
   const [cancelModalBooking, setCancelModalBooking] = useState<Booking | null>(
     null,
   );
@@ -252,6 +260,8 @@ export default function BookingHistoryPage() {
   const [cancelReasonDetail, setCancelReasonDetail] = useState("");
   const [cancelError, setCancelError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [unavailableTourBooking, setUnavailableTourBooking] =
+    useState<Booking | null>(null);
   const [reviewModalBooking, setReviewModalBooking] = useState<Booking | null>(
     null,
   );
@@ -324,6 +334,7 @@ export default function BookingHistoryPage() {
               title: item.tour.title,
               nameTh: item.tour.nameTh ?? item.tour.title ?? "",
               nameEn: item.tour.nameEn ?? "",
+              isActive: item.tour.is_active ?? item.tour.isActive ?? true,
             }
           : undefined,
       }));
@@ -345,34 +356,40 @@ export default function BookingHistoryPage() {
     setRenewLoadingId(booking.id);
     try {
       const token = localStorage.getItem("jwt_token");
-      const res = await fetch(`${API_BASE_URL}/api/bookings/${booking.id}/renew`, {
-        method: "POST",
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const res = await fetch(
+        `${API_BASE_URL}/api/bookings/${booking.id}/renew`,
+        {
+          method: "POST",
+          headers: { Authorization: `Bearer ${token}` },
+        },
+      );
 
       if (res.ok) {
         await fetchBookings();
         // เปิด Popup สวยๆ แจ้งว่าสำเร็จ
         setRenewAlert({
           title: "ขอคิวอาร์โค้ดใหม่สำเร็จ",
-          message: "ระบบสร้างคิวอาร์โค้ดใหม่ให้ท่านเรียบร้อยแล้ว กรุณาชำระเงินภายในเวลาที่กำหนด",
+          message:
+            "ระบบสร้างคิวอาร์โค้ดใหม่ให้ท่านเรียบร้อยแล้ว กรุณาชำระเงินภายในเวลาที่กำหนด",
           isSuccess: true,
-          bookingId: booking.id
+          bookingId: booking.id,
         });
       } else {
         const err = await res.json();
         // เปิด Popup แจ้งเตือนผิดพลาด (เช่น ทัวร์เต็ม)
         setRenewAlert({
           title: "ไม่สามารถขอคิวอาร์โค้ดใหม่ได้",
-          message: err.message || "ขออภัยในความไม่สะดวก ที่นั่งในรอบดังกล่าวเต็มแล้ว กรุณาเลือกวันหรือเวลาเดินทางอื่น",
-          isSuccess: false
+          message:
+            err.message ||
+            "ขออภัยในความไม่สะดวก ที่นั่งในรอบดังกล่าวเต็มแล้ว กรุณาเลือกวันหรือเวลาเดินทางอื่น",
+          isSuccess: false,
         });
       }
     } catch (error) {
       setRenewAlert({
         title: "เกิดข้อผิดพลาด",
         message: "ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้ กรุณาลองใหม่อีกครั้ง",
-        isSuccess: false
+        isSuccess: false,
       });
     } finally {
       setRenewLoadingId(null);
@@ -508,6 +525,17 @@ export default function BookingHistoryPage() {
     } finally {
       setReviewSubmitting(false);
     }
+  };
+
+  const openTourDetail = (booking: Booking) => {
+    if (!booking.tourId) return;
+
+    if (isTourUnavailable(booking)) {
+      setUnavailableTourBooking(booking);
+      return;
+    }
+
+    navigate(`/tours/${booking.tourId}`);
   };
 
   // ── Filtered bookings ──
@@ -690,8 +718,9 @@ export default function BookingHistoryPage() {
                         canWriteReview={canWriteReview(booking)}
                         hasReviewed={reviewedBookingIds.has(booking.id)}
                         actionLoadingId={actionLoadingId}
-                        renewLoadingId={renewLoadingId} 
+                        renewLoadingId={renewLoadingId}
                         onRenewBooking={handleRenewBooking}
+                        onOpenTour={openTourDetail}
                         onViewDetail={setSelectedBooking}
                         onViewTicket={setTicketBooking}
                         onCancelBooking={requestCancelBooking}
@@ -732,6 +761,7 @@ export default function BookingHistoryPage() {
                             hasReviewed={reviewedBookingIds.has(booking.id)}
                             isLast={idx === paginatedBookings.length - 1}
                             actionLoadingId={actionLoadingId}
+                            onOpenTour={openTourDetail}
                             onViewDetail={setSelectedBooking}
                             onViewTicket={setTicketBooking}
                             onCancelBooking={requestCancelBooking}
@@ -795,6 +825,7 @@ export default function BookingHistoryPage() {
           comment={reviewComment}
           error={reviewError}
           loading={reviewSubmitting}
+          onViewTour={openTourDetail}
           onChangeRating={setReviewRating}
           onChangeComment={setReviewComment}
           onClose={() => {
@@ -847,7 +878,15 @@ export default function BookingHistoryPage() {
           message={successMessage}
           buttonText="ตกลง"
           onClose={() => setSuccessMessage(null)}
-          
+        />
+      )}
+
+      {unavailableTourBooking && (
+        <InfoModal
+          title="ทัวร์ยังไม่พร้อมให้บริการ"
+          message={`${getTourTitle(unavailableTourBooking)} ไม่พร้อมให้บริการในช่วงเวลานี้ กรุณาติดต่อแอดมินเพื่อขอข้อมูลเพิ่มเติม`}
+          buttonText="รับทราบ"
+          onClose={() => setUnavailableTourBooking(null)}
         />
       )}
 
@@ -859,9 +898,9 @@ export default function BookingHistoryPage() {
           onClose={() => {
             const isSuccess = renewAlert.isSuccess;
             const bookingId = renewAlert.bookingId;
-            
+
             // ปิด Popup
-            setRenewAlert(null); 
+            setRenewAlert(null);
 
             // ถ้าจองสำเร็จ พอกดปุ่มใน Popup ค่อยเด้งไปหน้า Payment สวยๆ
             if (isSuccess && bookingId) {
@@ -1001,6 +1040,7 @@ function MobileCard({
   hasReviewed,
   actionLoadingId,
   renewLoadingId,
+  onOpenTour,
   onViewDetail,
   onViewTicket,
   onCancelBooking,
@@ -1012,6 +1052,7 @@ function MobileCard({
   hasReviewed: boolean;
   actionLoadingId: string | null;
   renewLoadingId: string | null;
+  onOpenTour: (booking: Booking) => void;
   onViewDetail: (booking: Booking) => void;
   onViewTicket: (booking: Booking) => void;
   onCancelBooking: (booking: Booking) => void;
@@ -1020,7 +1061,6 @@ function MobileCard({
 }) {
   const effectiveStatus = getEffectiveStatus(booking);
   const cfg = statusConfig[effectiveStatus];
-  const tourLink = booking.tourId ? `/tours/${booking.tourId}` : undefined;
   const travelDateStr = formatDate(getTravelDate(booking));
   const isCancelling = actionLoadingId === booking.id;
 
@@ -1030,14 +1070,15 @@ function MobileCard({
     >
       {/* Top row: icon + title + status */}
       <div className="px-4 pt-4 pb-3 flex items-start gap-3">
-        {tourLink ? (
-          <Link
-            to={tourLink}
+        {booking.tourId ? (
+          <button
+            type="button"
+            onClick={() => onOpenTour(booking)}
             className="focus:outline-none focus-visible:ring-2 focus-visible:ring-[#FF8400]/40 rounded-full shrink-0"
             aria-label="ดูรายละเอียดทัวร์"
           >
             <PlayIcon />
-          </Link>
+          </button>
         ) : (
           <PlayIcon />
         )}
@@ -1139,14 +1180,16 @@ function MobileCard({
             </button>
           </>
         )}
-        
+
         {effectiveStatus === "expired" && (
           <button
             disabled={renewLoadingId === booking.id} // 👈 ใช้งานตรงนี้: ปิดปุ่มตอนกำลังโหลด
-            onClick={() => onRenewBooking(booking)}  // 👈 ใช้งานตรงนี้: พอกดปุ๊บให้เรียกฟังก์ชัน
+            onClick={() => onRenewBooking(booking)} // 👈 ใช้งานตรงนี้: พอกดปุ๊บให้เรียกฟังก์ชัน
             className="text-[11px] font-bold px-3 py-1.5 rounded-full bg-blue-50 text-blue-600 hover:bg-blue-100 transition-colors disabled:opacity-50"
           >
-            {renewLoadingId === booking.id ? "กำลังเช็คที่นั่ง..." : "ขอคิวอาร์โค้ดใหม่"}
+            {renewLoadingId === booking.id
+              ? "กำลังเช็คที่นั่ง..."
+              : "ขอคิวอาร์โค้ดใหม่"}
           </button>
         )}
 
@@ -1188,6 +1231,7 @@ function DesktopRow({
   hasReviewed,
   isLast,
   actionLoadingId,
+  onOpenTour,
   onViewDetail,
   onViewTicket,
   onCancelBooking,
@@ -1198,13 +1242,13 @@ function DesktopRow({
   hasReviewed: boolean;
   isLast: boolean;
   actionLoadingId: string | null;
+  onOpenTour: (booking: Booking) => void;
   onViewDetail: (booking: Booking) => void;
   onViewTicket: (booking: Booking) => void;
   onCancelBooking: (booking: Booking) => void;
   onWriteReview: (booking: Booking) => void;
 }) {
   const cfg = statusConfig[booking.status];
-  const tourLink = booking.tourId ? `/tours/${booking.tourId}` : undefined;
   const travelDateStr = formatDate(getTravelDate(booking));
   const isCancelling = actionLoadingId === booking.id;
 
@@ -1214,14 +1258,15 @@ function DesktopRow({
     >
       <td className="px-6 py-4">
         <div className="flex items-center gap-3">
-          {tourLink ? (
-            <Link
-              to={tourLink}
+          {booking.tourId ? (
+            <button
+              type="button"
+              onClick={() => onOpenTour(booking)}
               className="focus:outline-none focus-visible:ring-2 focus-visible:ring-[#FF8400]/40 rounded-full"
               aria-label="ดูรายละเอียดทัวร์"
             >
               <PlayIcon />
-            </Link>
+            </button>
           ) : (
             <PlayIcon />
           )}
@@ -1497,6 +1542,7 @@ function WriteReviewModal({
   comment,
   error,
   loading,
+  onViewTour,
   onChangeRating,
   onChangeComment,
   onClose,
@@ -1507,13 +1553,12 @@ function WriteReviewModal({
   comment: string;
   error: string | null;
   loading: boolean;
+  onViewTour: (booking: Booking) => void;
   onChangeRating: (value: number) => void;
   onChangeComment: (value: string) => void;
   onClose: () => void;
   onConfirm: () => void;
 }) {
-  const tourLink = booking.tourId ? `/tours/${booking.tourId}` : "/tours";
-
   return (
     <div className="fixed inset-0 z-50 bg-black/40 flex items-end sm:items-center justify-center p-0 sm:p-4">
       <div className="w-full sm:max-w-lg bg-white rounded-t-2xl sm:rounded-2xl shadow-xl border border-[#F0E8E0] overflow-hidden max-h-[92vh] flex flex-col">
@@ -1582,12 +1627,22 @@ function WriteReviewModal({
           )}
 
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-            <Link
-              to={tourLink}
-              className="text-sm font-semibold text-[#4F200D]/70 hover:text-[#FF8400]"
-            >
-              ไปหน้ารายละเอียดทัวร์
-            </Link>
+            {booking.tourId ? (
+              <button
+                type="button"
+                onClick={() => onViewTour(booking)}
+                className="text-left text-sm font-semibold text-[#4F200D]/70 hover:text-[#FF8400]"
+              >
+                ไปหน้ารายละเอียดทัวร์
+              </button>
+            ) : (
+              <Link
+                to="/tours"
+                className="text-sm font-semibold text-[#4F200D]/70 hover:text-[#FF8400]"
+              >
+                ไปหน้ารายละเอียดทัวร์
+              </Link>
+            )}
 
             <div className="flex items-center gap-2 justify-end">
               <button

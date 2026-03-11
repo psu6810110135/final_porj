@@ -6,12 +6,92 @@ const net = require("node:net");
 const repoRoot = path.resolve(__dirname, "..");
 const backendDir = path.join(repoRoot, "project", "backend");
 const frontendDir = path.join(repoRoot, "project", "frontend");
+const backendEnvPath = path.join(backendDir, ".env");
+const frontendEnvPath = path.join(frontendDir, ".env");
 
 const childProcesses = [];
 let shuttingDown = false;
 
 function log(message) {
   process.stdout.write(`[playwright-web-server] ${message}\n`);
+}
+
+function parseDotEnvFile(filePath) {
+  if (!fs.existsSync(filePath)) {
+    return {};
+  }
+
+  const fileContent = fs.readFileSync(filePath, "utf8");
+  const env = {};
+
+  for (const rawLine of fileContent.split(/\r?\n/)) {
+    const line = rawLine.trim();
+
+    if (!line || line.startsWith("#")) {
+      continue;
+    }
+
+    const separatorIndex = line.indexOf("=");
+    if (separatorIndex === -1) {
+      continue;
+    }
+
+    const key = line.slice(0, separatorIndex).trim();
+    let value = line.slice(separatorIndex + 1).trim();
+
+    if (
+      (value.startsWith('"') && value.endsWith('"')) ||
+      (value.startsWith("'") && value.endsWith("'"))
+    ) {
+      value = value.slice(1, -1);
+    }
+
+    env[key] = value;
+  }
+
+  return env;
+}
+
+function getRequiredEnv(name, env) {
+  if (!env[name]) {
+    throw new Error(
+      `Missing required env ${name}. Set it in your shell or ${path.relative(repoRoot, backendEnvPath)}`,
+    );
+  }
+
+  return env[name];
+}
+
+function buildBackendEnv() {
+  const backendDotEnv = parseDotEnvFile(backendEnvPath);
+  const mergedEnv = {
+    ...backendDotEnv,
+    ...process.env,
+    PORT: process.env.PORT || backendDotEnv.PORT || "3000",
+    NODE_ENV: process.env.NODE_ENV || backendDotEnv.NODE_ENV || "test",
+  };
+
+  return {
+    ...mergedEnv,
+    DATABASE_URL: getRequiredEnv("DATABASE_URL", mergedEnv),
+    JWT_SECRET: getRequiredEnv("JWT_SECRET", mergedEnv),
+    GOOGLE_CLIENT_ID: getRequiredEnv("GOOGLE_CLIENT_ID", mergedEnv),
+    GOOGLE_CLIENT_SECRET: getRequiredEnv("GOOGLE_CLIENT_SECRET", mergedEnv),
+    GOOGLE_CALLBACK_URL: getRequiredEnv("GOOGLE_CALLBACK_URL", mergedEnv),
+  };
+}
+
+function buildFrontendEnv() {
+  const frontendDotEnv = parseDotEnvFile(frontendEnvPath);
+
+  return {
+    ...frontendDotEnv,
+    ...process.env,
+    VITE_API_URL:
+      process.env.VITE_API_URL ||
+      frontendDotEnv.VITE_API_URL ||
+      "http://127.0.0.1:3000",
+  };
 }
 
 function runCommand(command, args, options = {}) {
@@ -162,28 +242,13 @@ async function main() {
   await ensureDependencies(backendDir);
   await ensureDependencies(frontendDir);
   await ensurePostgres();
+  const backendEnv = buildBackendEnv();
+  const frontendEnv = buildFrontendEnv();
 
   log("Starting backend");
   startProcess("npm", ["run", "start:dev"], {
     cwd: backendDir,
-    env: {
-      ...process.env,
-      PORT: process.env.PORT || "3000",
-      NODE_ENV: process.env.NODE_ENV || "test",
-      DATABASE_URL:
-        process.env.DATABASE_URL ||
-        "postgresql://thai_tours:thai_tours_password@127.0.0.1:5433/thai_tours",
-      JWT_SECRET:
-        process.env.JWT_SECRET || "dev-secret-key-change-in-production",
-      JWT_EXPIRES_IN: process.env.JWT_EXPIRES_IN || "1h",
-      GOOGLE_CLIENT_ID:
-        process.env.GOOGLE_CLIENT_ID || "playwright-google-client-id",
-      GOOGLE_CLIENT_SECRET:
-        process.env.GOOGLE_CLIENT_SECRET || "playwright-google-client-secret",
-      GOOGLE_CALLBACK_URL:
-        process.env.GOOGLE_CALLBACK_URL ||
-        "http://127.0.0.1:3000/api/auth/google/callback",
-    },
+    env: backendEnv,
   });
   await waitForHttp("http://127.0.0.1:3000", 120_000);
 
@@ -193,10 +258,7 @@ async function main() {
     ["run", "dev", "--", "--host", "127.0.0.1", "--port", "5173"],
     {
       cwd: frontendDir,
-      env: {
-        ...process.env,
-        VITE_API_URL: process.env.VITE_API_URL || "http://127.0.0.1:3000",
-      },
+      env: frontendEnv,
     },
   );
   await waitForHttp("http://127.0.0.1:5173", 120_000);

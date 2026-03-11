@@ -191,21 +191,23 @@ test("Full tour booking flow: Login → Browse → Book → Payment Page", async
   // Step 6: Submit booking
   console.log("\n7️⃣ Submitting booking...");
 
-  // Look for booking button (usually has arrow or special styling)
-  let bookingButton = page
-    .getByRole("button")
-    .filter({ hasText: /จองทัวร์|Book|Reserve|ต่อ|→/i })
-    .last();
+  // Prefer the actual booking CTA labels used on the tour detail page.
+  const bookingButtonCandidates = [
+    page.getByRole("button", { name: /^จอง$/ }),
+    page.getByRole("button", { name: /จองทัวร์เลย/ }),
+    page.getByRole("button", { name: /กำลังดำเนินการ/ }),
+  ];
 
-  // Fallback: look for any prominent button
-  if ((await bookingButton.count()) === 0) {
-    bookingButton = page
-      .getByRole("button")
-      .filter({ hasText: /[A-Z]/ })
-      .last();
+  let bookingButton = bookingButtonCandidates[0];
+  for (const candidate of bookingButtonCandidates) {
+    if ((await candidate.count()) > 0) {
+      bookingButton = candidate.first();
+      break;
+    }
   }
 
   console.log("🖱️ Clicking booking button...");
+  await expect(bookingButton).toBeVisible({ timeout: 10000 });
   await bookingButton.scrollIntoViewIfNeeded();
   await page.waitForTimeout(500);
   await bookingButton.click();

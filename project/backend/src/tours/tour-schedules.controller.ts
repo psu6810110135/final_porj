@@ -35,6 +35,13 @@ export class TourSchedulesController {
     return this.schedulesService.findAll(tourId);
   }
 
+  @Get(':id/travelers')
+  @UseGuards(AuthGuard('jwt'), RolesGuard)
+  @Roles(UserRole.ADMIN)
+  findTravelers(@Param('tourId') tourId: string, @Param('id') id: string) {
+    return this.schedulesService.findTravelers(tourId, id);
+  }
+
   @Get('available')
   findAvailable(@Param('tourId') tourId: string) {
     return this.schedulesService.findAvailableByTour(tourId);

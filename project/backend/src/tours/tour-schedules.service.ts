@@ -44,28 +44,28 @@ export class TourSchedulesService {
         const maxCapacity = schedule.max_capacity_override ?? defaultCapacity;
 
         const now = new Date();
-        
+
         // Count booked seats for this schedule
         const result = await this.bookingRepository
-            .createQueryBuilder('booking')
-            .select('COALESCE(SUM(booking.pax), 0)', 'total')
-            .where('booking.tourScheduleId = :scheduleId', {
-              scheduleId: schedule.id,
-            })
-            .andWhere('booking.status NOT IN (:...statuses)', {
-              statuses: [BookingStatus.CANCELLED, BookingStatus.EXPIRED],
-            })
-            .andWhere(
-              '(booking.status != :pendingStatus OR booking.paymentDeadline > :now)', 
-              { 
-                pendingStatus: BookingStatus.PENDING_PAY,
-                now: now 
-              }
-            )
-            .getRawOne<{ total: string }>();
+          .createQueryBuilder('booking')
+          .select('COALESCE(SUM(booking.pax), 0)', 'total')
+          .where('booking.tourScheduleId = :scheduleId', {
+            scheduleId: schedule.id,
+          })
+          .andWhere('booking.status NOT IN (:...statuses)', {
+            statuses: [BookingStatus.CANCELLED, BookingStatus.EXPIRED],
+          })
+          .andWhere(
+            '(booking.status != :pendingStatus OR booking.paymentDeadline > :now)',
+            {
+              pendingStatus: BookingStatus.PENDING_PAY,
+              now: now,
+            },
+          )
+          .getRawOne<{ total: string }>();
 
-          const bookedSeats = Number(result?.total || 0);
-          const availableSeats = maxCapacity - bookedSeats;
+        const bookedSeats = Number(result?.total || 0);
+        const availableSeats = maxCapacity - bookedSeats;
 
         return {
           ...schedule,
@@ -84,6 +84,64 @@ export class TourSchedulesService {
       throw new NotFoundException(`Tour schedule with ID ${id} not found`);
     }
     return schedule;
+  }
+
+  async findTravelers(tourId: string, scheduleId: string) {
+    const schedule = await this.scheduleRepository.findOne({
+      where: { id: scheduleId, tour_id: tourId },
+    });
+
+    if (!schedule) {
+      throw new NotFoundException(
+        `Tour schedule with ID ${scheduleId} not found`,
+      );
+    }
+
+    const now = new Date();
+    const bookings = await this.bookingRepository
+      .createQueryBuilder('booking')
+      .leftJoinAndSelect('booking.user', 'user')
+      .where('booking.tourScheduleId = :scheduleId', { scheduleId })
+      .andWhere('booking.status NOT IN (:...statuses)', {
+        statuses: [BookingStatus.CANCELLED, BookingStatus.EXPIRED],
+      })
+      .andWhere(
+        '(booking.status != :pendingStatus OR booking.paymentDeadline > :now)',
+        {
+          pendingStatus: BookingStatus.PENDING_PAY,
+          now,
+        },
+      )
+      .orderBy('booking.createdAt', 'ASC')
+      .getMany();
+
+    return {
+      schedule: {
+        id: schedule.id,
+        available_date: schedule.available_date,
+        is_available: schedule.is_available,
+      },
+      totalBookings: bookings.length,
+      totalTravelers: bookings.reduce((sum, booking) => sum + booking.pax, 0),
+      travelers: bookings.map((booking) => ({
+        id: booking.id,
+        bookingReference: booking.bookingReference,
+        pax: booking.pax,
+        status: booking.status,
+        createdAt: booking.createdAt,
+        paymentDeadline: booking.paymentDeadline ?? null,
+        contactInfo: booking.contactInfo,
+        user: booking.user
+          ? {
+              id: booking.user.id,
+              username: booking.user.username,
+              email: booking.user.email,
+              full_name: booking.user.full_name,
+              phone: booking.user.phone,
+            }
+          : null,
+      })),
+    };
   }
 
   async update(

@@ -176,6 +176,13 @@ async function main() {
       JWT_SECRET:
         process.env.JWT_SECRET || "dev-secret-key-change-in-production",
       JWT_EXPIRES_IN: process.env.JWT_EXPIRES_IN || "1h",
+      GOOGLE_CLIENT_ID:
+        process.env.GOOGLE_CLIENT_ID || "playwright-google-client-id",
+      GOOGLE_CLIENT_SECRET:
+        process.env.GOOGLE_CLIENT_SECRET || "playwright-google-client-secret",
+      GOOGLE_CALLBACK_URL:
+        process.env.GOOGLE_CALLBACK_URL ||
+        "http://127.0.0.1:3000/api/auth/google/callback",
     },
   });
   await waitForHttp("http://127.0.0.1:3000", 120_000);

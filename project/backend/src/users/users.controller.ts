@@ -22,16 +22,16 @@ import { UseGuards } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { UserRole } from './entities/user.entity';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { diskStorage } from 'multer';
-import { extname, join } from 'path';
-import { mkdirSync } from 'fs';
-
-const AVATAR_UPLOAD_DIR = join(process.cwd(), 'uploads', 'avatars');
-mkdirSync(AVATAR_UPLOAD_DIR, { recursive: true });
+import { memoryStorage } from 'multer';
+import { extname } from 'path';
+import { StorageService } from '../common/storage/storage.service';
 
 @Controller('api/users')
 export class UsersController {
-  constructor(private readonly usersService: UsersService) {}
+  constructor(
+    private readonly usersService: UsersService,
+    private readonly storageService: StorageService,
+  ) {}
 
   private ensureAdmin(req: any) {
     if (req.user?.role !== UserRole.ADMIN) {
@@ -72,15 +72,7 @@ export class UsersController {
   @Post('me/avatar')
   @UseInterceptors(
     FileInterceptor('avatar', {
-      storage: diskStorage({
-        destination: AVATAR_UPLOAD_DIR,
-        filename: (_, file, callback) => {
-          const extension = extname(file.originalname) || '.jpg';
-          const safeExtension = extension.toLowerCase();
-          const uniqueName = `${Date.now()}-${Math.round(Math.random() * 1e9)}${safeExtension}`;
-          callback(null, uniqueName);
-        },
-      }),
+      storage: memoryStorage(),
       fileFilter: (_, file, callback) => {
         const mimeType = (file.mimetype || '').toLowerCase();
         const extension = extname(file.originalname || '').toLowerCase();
@@ -127,8 +119,11 @@ export class UsersController {
     )
     file: Express.Multer.File,
   ) {
-    const avatarUrl = `/uploads/avatars/${file.filename}`;
-    return this.usersService.updateAvatar(req.user.id, avatarUrl);
+    return this.storageService
+      .uploadPublicFile(file, 'avatars')
+      .then((avatarUrl) =>
+        this.usersService.updateAvatar(req.user.id, avatarUrl),
+      );
   }
 
   @UseGuards(AuthGuard('jwt'))

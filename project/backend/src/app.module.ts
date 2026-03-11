@@ -22,6 +22,15 @@ import { Payment } from './payments/entities/payment.entity';
 import { Tour } from './tours/entities/tour.entity';
 import { ReviewsModule } from './reviews/reviews.module';
 import { TicketsModule } from './tickets/tickets.module';
+import { StorageModule } from './common/storage/storage.module';
+
+const isTruthy = (value: string | undefined, defaultValue: boolean) => {
+  if (value === undefined) {
+    return defaultValue;
+  }
+
+  return ['true', '1', 'yes', 'on'].includes(value.toLowerCase());
+};
 
 @Module({
   imports: [
@@ -30,6 +39,7 @@ import { TicketsModule } from './tickets/tickets.module';
       isGlobal: true, // ให้ทุก Module เรียกใช้ .env ได้
       envFilePath: '.env',
     }),
+    StorageModule,
 
     // Scheduler for background jobs
     ScheduleModule.forRoot(),
@@ -38,18 +48,31 @@ import { TicketsModule } from './tickets/tickets.module';
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
-      useFactory: (configService: ConfigService) => ({
-        type: 'postgres',
-        // ✅ ใช้ Port 5433 ตามที่ระบุใน docker-compose.yml
-        url: configService.get('DATABASE_URL') || 'postgresql://thai_tours:thai_tours_password@localhost:5433/thai_tours',
-        entities: [User, Booking, Payment, Tour],
-        autoLoadEntities: true,
-        synchronize: true, // เปิดไว้สำหรับ dev
-        ssl: false,
-        extra: {
-          ssl: false,
-        },
-      }),
+      useFactory: (configService: ConfigService) => {
+        const isProduction =
+          configService.get<string>('NODE_ENV') === 'production';
+        const databaseSsl = isTruthy(
+          configService.get<string>('DATABASE_SSL'),
+          isProduction,
+        );
+        const synchronize = isTruthy(
+          configService.get<string>('DB_SYNCHRONIZE'),
+          !isProduction,
+        );
+        const sslOptions = databaseSsl ? { rejectUnauthorized: false } : false;
+
+        return {
+          type: 'postgres',
+          url:
+            configService.get('DATABASE_URL') ||
+            'postgresql://thai_tours:thai_tours_password@localhost:5433/thai_tours',
+          entities: [User, Booking, Payment, Tour],
+          autoLoadEntities: true,
+          synchronize,
+          ssl: sslOptions,
+          extra: databaseSsl ? { ssl: sslOptions } : {},
+        };
+      },
     }),
 
     // 3. รวม Modules ทั้งหมดของระบบ

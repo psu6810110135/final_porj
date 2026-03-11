@@ -1,12 +1,35 @@
 //auth.controller.ts
-import { Controller, Post, Body, ValidationPipe, BadRequestException, HttpCode, HttpStatus, Get, UseGuards, Req, Res } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Body,
+  ValidationPipe,
+  BadRequestException,
+  HttpCode,
+  HttpStatus,
+  Get,
+  UseGuards,
+  Req,
+  Res,
+} from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { AuthCredentialsDto } from './dto/auth-credentials.dto';
 import { AuthService } from './auth.service';
 import { AuthGuard } from '@nestjs/passport';
 
 @Controller('api/auth')
 export class AuthController {
-  constructor(private authService: AuthService) { }
+  constructor(
+    private authService: AuthService,
+    private readonly configService: ConfigService,
+  ) {}
+
+  private getFrontendUrl() {
+    return (
+      this.configService.get<string>('FRONTEND_URL') ?? 'http://localhost:5173'
+    ).replace(/\/+$/g, '');
+  }
+
   @Get('/google')
   @UseGuards(AuthGuard('google'))
   async googleAuth(@Req() req) {
@@ -16,14 +39,15 @@ export class AuthController {
   @UseGuards(AuthGuard('google'))
   async googleAuthRedirect(@Req() req, @Res() res) {
     const result = await this.authService.googleLogin(req);
+    const frontendUrl = this.getFrontendUrl();
 
     // ถ้า email นี้มีบัญชีปกติอยู่แล้ว → redirect ไปหน้า conflict พร้อม email
     if ('conflict' in result) {
       const email = encodeURIComponent(req.user?.email || '');
-      return res.redirect(`http://localhost:5173/email-conflict?email=${email}`);
+      return res.redirect(`${frontendUrl}/email-conflict?email=${email}`);
     }
 
-    res.redirect(`http://localhost:5173/login/success?token=${result.accessToken}`);
+    res.redirect(`${frontendUrl}/login/success?token=${result.accessToken}`);
   }
   @Post('/signup')
   signUp(

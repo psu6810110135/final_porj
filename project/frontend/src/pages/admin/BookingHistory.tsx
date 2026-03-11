@@ -35,7 +35,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import axios from "axios";
-import { API_BASE_URL } from "@/config/api";
+import { API_BASE_URL, toAbsoluteAssetUrl } from "@/config/api";
 
 interface BookingTour {
   id: string;
@@ -379,7 +379,10 @@ export default function BookingHistory() {
     }
   };
 
-  const handleInlineStatusChange = async (booking: Booking, nextStatus: string) => {
+  const handleInlineStatusChange = async (
+    booking: Booking,
+    nextStatus: string,
+  ) => {
     if (nextStatus === booking.status) return;
 
     setBookings((prev) =>
@@ -689,12 +692,7 @@ export default function BookingHistory() {
                       b.payment?.slipUrl ||
                       b.payment?.slip_url;
                     const fullSlipUrl = slipPath
-                      ? slipPath.startsWith("http")
-                        ? slipPath
-                        : `${API_BASE_URL}/${slipPath}`.replace(
-                            /([^:]\/)\/+/g,
-                            "$1",
-                          )
+                      ? toAbsoluteAssetUrl(slipPath)
                       : null;
 
                     return (
@@ -782,7 +780,9 @@ export default function BookingHistory() {
                             {/* ─── อัปเดต Dropdown ให้เป็น Custom แบบมน ─── */}
                             <CustomSelect
                               value={b.status}
-                              onChange={(val) => handleInlineStatusChange(b, String(val))}
+                              onChange={(val) =>
+                                handleInlineStatusChange(b, String(val))
+                              }
                               options={STATUS_OPTIONS.map((opt) => ({
                                 value: opt.value,
                                 label: opt.label,
@@ -1077,11 +1077,7 @@ function BookingDetailModal({
 
   const slipPath =
     b.paymentSlipUrl || b.payment?.slipUrl || b.payment?.slip_url;
-  const fullSlipUrl = slipPath
-    ? slipPath.startsWith("http")
-      ? slipPath
-      : `${API_BASE_URL}/${slipPath}`.replace(/([^:]\/)\/+/g, "$1")
-    : null;
+  const fullSlipUrl = slipPath ? toAbsoluteAssetUrl(slipPath) : null;
 
   return (
     <div

@@ -1,7 +1,7 @@
 import { Link, useNavigate } from "react-router-dom";
 import logoIconImage from "../assets/logo_without_text-removebg-preview.png";
 import { useState, useEffect, useRef } from "react";
-import { API_BASE_URL } from "../config/api";
+import { API_BASE_URL, toAbsoluteAssetUrl } from "../config/api";
 
 // ─── Icons ───────────────────────────────────────────────────────────────────
 
@@ -190,15 +190,7 @@ interface NavbarProfileResponse {
 }
 
 const resolveAvatarUrl = (avatarUrl?: string | null) => {
-  if (!avatarUrl) return null;
-  if (avatarUrl.startsWith("http") || avatarUrl.startsWith("data:")) {
-    return avatarUrl;
-  }
-
-  const normalizedPath = avatarUrl.startsWith("/")
-    ? avatarUrl
-    : `/${avatarUrl}`;
-  return `${API_BASE_URL}${normalizedPath}`;
+  return toAbsoluteAssetUrl(avatarUrl) || null;
 };
 
 export default function Navbar({ activePage = "home" }: NavbarProps) {

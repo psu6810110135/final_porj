@@ -4,27 +4,43 @@ import { ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { UsersService } from './users/users.service';
 import { UserRole } from './users/entities/user.entity';
+import { StorageService } from './common/storage/storage.service';
 import * as bcrypt from 'bcrypt';
 
-// ✨ Added imports for serving static files
 import { NestExpressApplication } from '@nestjs/platform-express';
-import { join } from 'path';
+
+const getAllowedOrigins = (configService: ConfigService) => {
+  const rawOrigins = [
+    configService.get<string>('FRONTEND_URL'),
+    configService.get<string>('FRONTEND_URLS'),
+  ]
+    .filter(Boolean)
+    .flatMap((value) => value!.split(','))
+    .map((value) => value.trim())
+    .filter(Boolean);
+
+  return Array.from(new Set([...rawOrigins, 'http://localhost:5173']));
+};
 
 async function bootstrap() {
-  // ✨ Cast app to NestExpressApplication so it can use static assets
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
-  
   const configService = app.get(ConfigService);
   const usersService = app.get(UsersService);
+  const storageService = app.get(StorageService);
+  const allowedOrigins = getAllowedOrigins(configService);
 
-  // 1. Enable CORS (Critical for Frontend connection)
   app.enableCors({
-    origin: true, // Allows all origins (simplest for development)
-    methods: 'GET,POST,PUT,DELETE,PATCH,OPTIONS',
+    origin: (origin, callback) => {
+      if (!origin || allowedOrigins.includes(origin)) {
+        return callback(null, true);
+      }
+
+      return callback(new Error(`Origin ${origin} is not allowed by CORS`));
+    },
+    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
     credentials: true,
   });
 
-  // 2. Validation Pipes
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,
@@ -32,10 +48,11 @@ async function bootstrap() {
     }),
   );
 
-  // ✨ 3. Enable serving static files (This makes your uploaded pictures accessible via URL)
-  app.useStaticAssets(join(__dirname, '..', 'uploads'), {
-    prefix: '/uploads/',
-  });
+  if (storageService.usesLocalUploads()) {
+    app.useStaticAssets(storageService.getLocalUploadsRoot(), {
+      prefix: '/uploads/',
+    });
+  }
 
   // Seed default admin if missing (username: admin, password: admin1234)
   try {
@@ -59,9 +76,11 @@ async function bootstrap() {
   } catch (err) {
     console.error('Admin seed failed:', err);
   }
-  
-  const port = configService.get<number>('PORT') || 3000;
-  await app.listen(port);
-  console.log(`Application is running on: http://localhost:${port}`);
+
+  const port = Number(
+    configService.get<string>('PORT') ?? process.env.PORT ?? 3000,
+  );
+  await app.listen(port, '0.0.0.0');
+  console.log(`Application is running on port ${port}`);
 }
 bootstrap();

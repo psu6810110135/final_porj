@@ -16,7 +16,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { API_BASE_URL } from "@/config/api";
+import { API_BASE_URL, toAbsoluteAssetUrl } from "@/config/api";
 
 interface UserData {
   id: string;
@@ -195,7 +195,7 @@ export default function UserManager() {
                       `${user.first_name || ""} ${user.last_name || ""}`
                     ).trim() || "ไม่ระบุชื่อ";
                   const avatarUrl = user.avatar_url
-                    ? `${API_BASE_URL}${user.avatar_url}`
+                    ? toAbsoluteAssetUrl(user.avatar_url)
                     : null;
 
                   return (

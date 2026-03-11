@@ -3,7 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import logoImage from "../assets/logo.png";
-import { API_BASE_URL } from "@/config/api";
+import { API_BASE_URL, toAbsoluteAssetUrl } from "@/config/api";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -121,10 +121,7 @@ const formatPrice = (price: number) =>
   new Intl.NumberFormat("th-TH").format(price);
 
 const getAssetUrl = (path?: string) => {
-  if (!path) return "";
-  if (/^https?:\/\//i.test(path)) return path;
-  const normalized = path.startsWith("/") ? path : `/${path}`;
-  return `${API_BASE_URL}${normalized}`;
+  return toAbsoluteAssetUrl(path);
 };
 
 const getTravelDate = (b: Booking) => b.travelDate ?? b.startDate;

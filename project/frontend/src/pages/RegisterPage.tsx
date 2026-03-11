@@ -309,6 +309,7 @@ const RegisterPage: React.FC = () => {
     if (!formData.firstName.trim()) e.firstName = 'กรุณากรอกชื่อ';
     if (!formData.lastName.trim()) e.lastName = 'กรุณากรอกนามสกุล';
     if (!formData.username.trim()) e.username = 'กรุณากรอกชื่อผู้ใช้';
+    else if (formData.username.trim().length < 4) e.username = 'ชื่อผู้ใช้ต้องมีอย่างน้อย 4 ตัวอักษร';
     if (!formData.email.trim()) e.email = 'กรุณากรอกอีเมล';
     else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) e.email = 'รูปแบบอีเมลไม่ถูกต้อง';
     setErrors(e);
@@ -318,7 +319,7 @@ const RegisterPage: React.FC = () => {
   const validateStep2 = (): boolean => {
     const e: Partial<FormData> = {};
     if (formData.password.length < 8)
-      e.password = "รหัสผ่านต้องมีอย่างน้อย 8 ตัว";
+      e.password = "รหัสผ่านต้องมีอย่างน้อย 8 ตัวอักษร";
     if (formData.password !== formData.confirmPassword)
       e.confirmPassword = "รหัสผ่านไม่ตรงกัน";
     setErrors(e);
@@ -346,7 +347,7 @@ const RegisterPage: React.FC = () => {
         profile: {
           firstName: formData.firstName,
           lastName: formData.lastName,
-          phoneNumber: formData.phoneNumber || null,
+          phoneNumber: formData.phoneNumber || undefined, // undefined แทน null เพื่อกัน 400 error จาก validation pipe
         },
       });
       setBanner({
@@ -355,14 +356,24 @@ const RegisterPage: React.FC = () => {
       });
       setTimeout(() => navigate("/login"), 2000);
     } catch (error: any) {
-      if (error.response?.status === 409) {
+      const status = error.response?.status;
+      const msg = error.response?.data?.message;
+
+      if (status === 409) {
         setStep(1);
-        setErrors({ username: "ชื่อผู้ใช้หรืออีเมลนี้มีคนใช้แล้ว" });
+        setErrors({ username: "ชื่อผู้ใช้หรืออีเมลนี้มีคนใช้แล้ว", email: "ชื่อผู้ใช้หรืออีเมลนี้มีคนใช้แล้ว" });
         setBanner({ type: "error", msg: "ชื่อผู้ใช้หรืออีเมลนี้มีคนใช้แล้ว" });
+      } else if (status === 400) {
+        // ดึง Error 400 จาก class-validator ของ NestJS ออกมาแสดงผล
+        const errorMsg = Array.isArray(msg) ? msg[0] : (typeof msg === 'string' ? msg : "ข้อมูลไม่ถูกต้อง กรุณาตรวจสอบอีกครั้ง");
+        setBanner({
+          type: "error",
+          msg: `ตรวจสอบข้อมูล: ${errorMsg}`,
+        });
       } else {
         setBanner({
           type: "error",
-          msg: "เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง",
+          msg: "ระบบขัดข้อง หรือไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้ กรุณาลองใหม่อีกครั้ง",
         });
       }
     } finally {

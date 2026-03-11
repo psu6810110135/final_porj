@@ -137,6 +137,11 @@ export class UsersService {
     return enriched;
   }
 
+  // ── Lightweight lookup สำหรับ JWT validation (ไม่ต้อง join legacy data) ──
+  async findByIdLite(id: string): Promise<User | null> {
+    return this.usersRepository.findOne({ where: { id } });
+  }
+
   async getCurrentUserProfile(id: string): Promise<UserProfileResponse> {
     const user = await this.findById(id);
     if (!user) {

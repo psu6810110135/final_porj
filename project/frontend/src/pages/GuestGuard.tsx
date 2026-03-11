@@ -13,7 +13,7 @@ const AlreadyLoggedToast: React.FC<{ onDone: () => void }> = ({ onDone }) => {
             const token = localStorage.getItem('jwt_token');
             if (token) {
                 const payload = JSON.parse(atob(token.split('.')[1]));
-                setName(payload.username || '');
+                setName(payload.email || payload.username || '');
             }
         } catch { /* ไม่สนใจ */ }
     }, []);

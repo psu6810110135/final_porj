@@ -17,9 +17,10 @@ export class AuthController {
   async googleAuthRedirect(@Req() req, @Res() res) {
     const result = await this.authService.googleLogin(req);
 
-    // ถ้า email นี้มีบัญชีปกติอยู่แล้ว → redirect กลับพร้อม error
+    // ถ้า email นี้มีบัญชีปกติอยู่แล้ว → redirect ไปหน้า conflict พร้อม email
     if ('conflict' in result) {
-      return res.redirect('http://localhost:5173/login?error=email_exists');
+      const email = encodeURIComponent(req.user?.email || '');
+      return res.redirect(`http://localhost:5173/email-conflict?email=${email}`);
     }
 
     res.redirect(`http://localhost:5173/login/success?token=${result.accessToken}`);

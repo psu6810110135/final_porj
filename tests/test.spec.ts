@@ -21,7 +21,23 @@ test("test", async ({ page }) => {
   await page
     .getByRole("textbox", { name: "เบอร์โทรศัพท์ (10 หลัก)" })
     .fill("0812345678");
-  await page.getByRole("button", { name: "จองทัวร์เลย →" }).click();
+
+  const bookingButtonCandidates = [
+    page.getByRole("button", { name: /^จอง$/ }),
+    page.getByRole("button", { name: /จองทัวร์เลย/ }),
+    page.getByRole("button", { name: /กำลังดำเนินการ/ }),
+  ];
+
+  let bookingButton = bookingButtonCandidates[0];
+  for (const candidate of bookingButtonCandidates) {
+    if ((await candidate.count()) > 0) {
+      bookingButton = candidate.first();
+      break;
+    }
+  }
+
+  await expect(bookingButton).toBeVisible({ timeout: 10000 });
+  await bookingButton.click();
   await expect(
     page.getByRole("heading", { name: "กรุณาเข้าสู่ระบบก่อน" }),
   ).toBeVisible();

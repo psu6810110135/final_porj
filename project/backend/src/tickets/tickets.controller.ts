@@ -1,4 +1,12 @@
-import { Controller, Get, Post, Patch, Param, Body } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Patch,
+  Delete,
+  Param,
+  Body,
+} from '@nestjs/common';
 import { TicketsService } from './tickets.service';
 import { CreateTicketDto } from './dto/create-ticket.dto';
 
@@ -22,5 +30,11 @@ export class TicketsController {
   @Patch(':id')
   updateStatus(@Param('id') id: string, @Body('status') status: string) {
     return this.ticketsService.updateStatus(id, status);
+  }
+
+  // ลบ ticket ที่แก้ไขแล้วจากหน้า Admin
+  @Delete(':id')
+  removeResolvedTicket(@Param('id') id: string) {
+    return this.ticketsService.removeResolvedTicket(id);
   }
 }

@@ -166,6 +166,22 @@ function waitForTcpPort(host, port, timeoutMs) {
   });
 }
 
+function isTcpPortOpen(host, port) {
+  return new Promise((resolve) => {
+    const socket = net.createConnection({ host, port });
+
+    socket.once("connect", () => {
+      socket.end();
+      resolve(true);
+    });
+
+    socket.once("error", () => {
+      socket.destroy();
+      resolve(false);
+    });
+  });
+}
+
 async function waitForHttp(url, timeoutMs) {
   const deadline = Date.now() + timeoutMs;
 
@@ -245,22 +261,32 @@ async function main() {
   const backendEnv = buildBackendEnv();
   const frontendEnv = buildFrontendEnv();
 
-  log("Starting backend");
-  startProcess("npm", ["run", "start:dev"], {
-    cwd: backendDir,
-    env: backendEnv,
-  });
+  const backendAlreadyRunning = await isTcpPortOpen("127.0.0.1", 3000);
+  if (backendAlreadyRunning) {
+    log("Backend already running on 127.0.0.1:3000, skipping start");
+  } else {
+    log("Starting backend");
+    startProcess("npm", ["run", "start:dev"], {
+      cwd: backendDir,
+      env: backendEnv,
+    });
+  }
   await waitForHttp("http://127.0.0.1:3000", 120_000);
 
-  log("Starting frontend");
-  startProcess(
-    "npm",
-    ["run", "dev", "--", "--host", "127.0.0.1", "--port", "5173"],
-    {
-      cwd: frontendDir,
-      env: frontendEnv,
-    },
-  );
+  const frontendAlreadyRunning = await isTcpPortOpen("127.0.0.1", 5173);
+  if (frontendAlreadyRunning) {
+    log("Frontend already running on 127.0.0.1:5173, skipping start");
+  } else {
+    log("Starting frontend");
+    startProcess(
+      "npm",
+      ["run", "dev", "--", "--host", "127.0.0.1", "--port", "5173"],
+      {
+        cwd: frontendDir,
+        env: frontendEnv,
+      },
+    );
+  }
   await waitForHttp("http://127.0.0.1:5173", 120_000);
 
   log("Backend and frontend are ready for Playwright tests");

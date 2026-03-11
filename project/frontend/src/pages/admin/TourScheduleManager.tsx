@@ -3,6 +3,7 @@ import {
   Calendar,
   Plus,
   Pencil,
+  Eye,
   Trash2,
   X,
   Loader2,
@@ -10,6 +11,8 @@ import {
   CheckCircle,
   XCircle,
   AlertCircle,
+  Mail,
+  Phone,
   ChevronLeft,
   ChevronRight,
   ChevronDown,
@@ -41,6 +44,37 @@ interface Schedule {
   booked_seats?: number;
 }
 
+interface TravelerContactInfo {
+  name: string;
+  email: string;
+  phone: string;
+}
+
+interface TravelerUser {
+  id: string;
+  username: string;
+  email?: string | null;
+  full_name?: string | null;
+  phone?: string | null;
+}
+
+interface ScheduleTraveler {
+  id: string;
+  bookingReference: string;
+  pax: number;
+  status: string;
+  createdAt: string;
+  paymentDeadline: string | null;
+  contactInfo: TravelerContactInfo;
+  user: TravelerUser | null;
+}
+
+interface ScheduleTravelersResponse {
+  totalBookings: number;
+  totalTravelers: number;
+  travelers: ScheduleTraveler[];
+}
+
 const API_BASE = `${API_BASE_URL}/api`;
 const ITEMS_PER_PAGE = 10;
 
@@ -64,6 +98,38 @@ const formatThaiDate = (dateString: string) =>
     day: "numeric",
     weekday: "short",
   });
+
+const formatThaiDateTime = (dateString: string) =>
+  new Date(dateString).toLocaleString("th-TH", {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+
+const getBookingStatusLabel = (status: string) => {
+  switch (status) {
+    case "pending_pay":
+      return "รอชำระเงิน";
+    case "pending_verify":
+      return "รอตรวจสอบ";
+    case "confirmed":
+      return "ยืนยันแล้ว";
+    case "cancelled":
+      return "ยกเลิกแล้ว";
+    case "expired":
+      return "หมดอายุ";
+    default:
+      return status;
+  }
+};
+
+const getTravelerDisplayName = (traveler: ScheduleTraveler) =>
+  traveler.contactInfo?.name ||
+  traveler.user?.full_name ||
+  traveler.user?.username ||
+  "-";
 
 const getDateRange = (startDate: string, endDate: string) => {
   const dates: string[] = [];
@@ -221,6 +287,16 @@ const TourScheduleManager = () => {
   const [bulkMode, setBulkMode] = useState(true);
   const [endDate, setEndDate] = useState(getTomorrowValue());
   const [currentPage, setCurrentPage] = useState(1);
+  const [viewerSchedule, setViewerSchedule] = useState<Schedule | null>(null);
+  const [scheduleTravelers, setScheduleTravelers] = useState<
+    ScheduleTraveler[]
+  >([]);
+  const [loadingTravelers, setLoadingTravelers] = useState(false);
+  const [travelerError, setTravelerError] = useState<string | null>(null);
+  const [travelerSummary, setTravelerSummary] = useState<{
+    totalBookings: number;
+    totalTravelers: number;
+  } | null>(null);
 
   const [formData, setFormData] = useState({
     available_date: "",
@@ -283,6 +359,47 @@ const TourScheduleManager = () => {
       setSchedules([]);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const closeTravelerModal = () => {
+    setViewerSchedule(null);
+    setScheduleTravelers([]);
+    setTravelerError(null);
+    setTravelerSummary(null);
+    setLoadingTravelers(false);
+  };
+
+  const handleViewTravelers = async (schedule: Schedule) => {
+    setViewerSchedule(schedule);
+    setScheduleTravelers([]);
+    setTravelerError(null);
+    setTravelerSummary(null);
+    setLoadingTravelers(true);
+
+    try {
+      const response = await fetch(
+        `${API_BASE}/tours/${selectedTourId}/schedules/${schedule.id}/travelers`,
+        {
+          headers: getAuthHeader(),
+        },
+      );
+
+      if (!response.ok) {
+        throw new Error("ไม่สามารถโหลดรายชื่อผู้จองรอบนี้ได้");
+      }
+
+      const data: ScheduleTravelersResponse = await response.json();
+      setScheduleTravelers(data.travelers || []);
+      setTravelerSummary({
+        totalBookings: data.totalBookings || 0,
+        totalTravelers: data.totalTravelers || 0,
+      });
+    } catch (err) {
+      console.error("Failed to fetch schedule travelers:", err);
+      setTravelerError("ไม่สามารถโหลดรายชื่อผู้จองรอบนี้ได้");
+    } finally {
+      setLoadingTravelers(false);
     }
   };
 
@@ -527,6 +644,9 @@ const TourScheduleManager = () => {
     formData.max_capacity_override !== ""
       ? Number(formData.max_capacity_override)
       : selectedTour?.max_group_size || 0;
+  const viewerScheduleDate = viewerSchedule
+    ? formatThaiDate(viewerSchedule.available_date)
+    : "-";
 
   // Options for Tour Select
   const tourOptions = [
@@ -753,6 +873,15 @@ const TourScheduleManager = () => {
                             <Button
                               variant="ghost"
                               size="icon"
+                              className="h-8 w-8 hover:text-[#4F200D] hover:bg-[#F6F1E9] rounded-xl"
+                              onClick={() => handleViewTravelers(schedule)}
+                              title="ดูรายชื่อผู้จอง"
+                            >
+                              <Eye className="w-4 h-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
                               className="h-8 w-8 hover:text-red-600 hover:bg-red-100 rounded-xl"
                               onClick={() => handleDelete(schedule.id)}
                             >
@@ -826,6 +955,139 @@ const TourScheduleManager = () => {
               </div>
             </div>
           )}
+        </div>
+      )}
+
+      {viewerSchedule && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#4F200D]/60 backdrop-blur-sm p-4 overflow-y-auto pt-16 md:pt-4">
+          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-3xl my-auto animate-in zoom-in-95 duration-200 flex flex-col max-h-[90vh]">
+            <div className="flex justify-between items-center p-5 sm:p-6 border-b-2 border-[#F6F1E9] shrink-0">
+              <div>
+                <h2 className="text-xl sm:text-2xl font-black text-[#4F200D]">
+                  รายชื่อผู้จองในรอบนี้
+                </h2>
+                <p className="text-sm text-[#4F200D]/60 font-medium mt-1">
+                  {selectedTour?.title} • {viewerScheduleDate}
+                </p>
+              </div>
+              <button
+                onClick={closeTravelerModal}
+                className="text-[#4F200D]/40 hover:text-red-500 p-2 rounded-xl hover:bg-red-50 transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="p-5 sm:p-6 overflow-y-auto custom-scrollbar space-y-4 flex-1">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="rounded-2xl bg-[#FFF3E0] border border-[#FFE0B2] p-4">
+                  <p className="text-xs font-black text-[#FF8400] uppercase tracking-wider">
+                    รายการจอง
+                  </p>
+                  <p className="text-2xl font-black text-[#4F200D] mt-2">
+                    {travelerSummary?.totalBookings ?? 0}
+                  </p>
+                </div>
+                <div className="rounded-2xl bg-[#F6F1E9]/60 border border-[#F0E8E0] p-4">
+                  <p className="text-xs font-black text-[#4F200D] uppercase tracking-wider">
+                    ผู้เดินทางรวม
+                  </p>
+                  <p className="text-2xl font-black text-[#4F200D] mt-2">
+                    {travelerSummary?.totalTravelers ?? 0} คน
+                  </p>
+                </div>
+              </div>
+
+              {loadingTravelers ? (
+                <div className="rounded-2xl border border-[#F6F1E9] p-10 text-center">
+                  <div className="flex items-center justify-center gap-2 text-[#FF8400] font-bold">
+                    <Loader2 className="w-4 h-4 animate-spin" />{" "}
+                    กำลังโหลดรายชื่อผู้จอง...
+                  </div>
+                </div>
+              ) : travelerError ? (
+                <div className="bg-red-50 border border-red-100 rounded-2xl px-4 py-3 text-sm text-red-600 font-semibold flex items-center gap-2">
+                  <AlertCircle className="w-4 h-4" /> {travelerError}
+                </div>
+              ) : scheduleTravelers.length === 0 ? (
+                <div className="rounded-2xl border border-dashed border-[#E7DDD2] p-10 text-center text-[#4F200D]/50 font-medium">
+                  ยังไม่มีผู้จองสำหรับรอบนี้
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {scheduleTravelers.map((traveler) => {
+                    const email =
+                      traveler.contactInfo?.email ||
+                      traveler.user?.email ||
+                      "-";
+                    const phone =
+                      traveler.contactInfo?.phone ||
+                      traveler.user?.phone ||
+                      "-";
+
+                    return (
+                      <div
+                        key={traveler.id}
+                        className="rounded-2xl border border-[#F6F1E9] p-4 sm:p-5 bg-white"
+                      >
+                        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+                          <div>
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <p className="text-base font-black text-[#4F200D]">
+                                {getTravelerDisplayName(traveler)}
+                              </p>
+                              <Badge className="bg-[#FF8400]/10 text-[#FF8400] border-0 font-bold">
+                                {traveler.pax} คน
+                              </Badge>
+                              <Badge className="bg-[#F6F1E9] text-[#4F200D] border-0 font-bold">
+                                {getBookingStatusLabel(traveler.status)}
+                              </Badge>
+                            </div>
+                            <p className="text-xs text-[#4F200D]/50 font-semibold mt-1">
+                              Booking #{traveler.bookingReference}
+                            </p>
+                            {traveler.user?.username && (
+                              <p className="text-xs text-[#4F200D]/50 font-semibold mt-1">
+                                บัญชีผู้ใช้: {traveler.user.username}
+                              </p>
+                            )}
+                          </div>
+
+                          <p className="text-xs text-[#4F200D]/40 font-semibold whitespace-nowrap">
+                            จองเมื่อ {formatThaiDateTime(traveler.createdAt)}
+                          </p>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-4 text-sm">
+                          <div className="flex items-center gap-2 text-[#4F200D]">
+                            <Mail className="w-4 h-4 text-[#FF8400] shrink-0" />
+                            <span className="font-medium break-all">
+                              {email}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-2 text-[#4F200D]">
+                            <Phone className="w-4 h-4 text-[#FF8400] shrink-0" />
+                            <span className="font-medium">{phone}</span>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
+            <div className="p-5 sm:p-6 flex items-center justify-end border-t-2 border-[#F6F1E9] bg-white rounded-b-3xl shrink-0">
+              <Button
+                type="button"
+                variant="ghost"
+                onClick={closeTravelerModal}
+                className="hover:bg-[#F6F1E9] text-[#4F200D] font-bold rounded-xl px-4 sm:px-6"
+              >
+                ปิด
+              </Button>
+            </div>
+          </div>
         </div>
       )}
 

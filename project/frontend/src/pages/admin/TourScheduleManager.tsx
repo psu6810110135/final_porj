@@ -125,6 +125,59 @@ const getBookingStatusLabel = (status: string) => {
   }
 };
 
+const getBookingStatusMeta = (status: string) => {
+  switch (status) {
+    case "confirmed":
+      return {
+        label: "ยืนยันแล้ว",
+        badgeClass: "bg-green-100 text-green-800 border border-green-200",
+        cardClass: "border-green-200 bg-green-50/40",
+        textClass: "text-green-700",
+        helperText: "ชำระเงินและตรวจสอบเรียบร้อย พร้อมเดินทาง",
+      };
+    case "pending_verify":
+      return {
+        label: "รอตรวจสอบ",
+        badgeClass: "bg-amber-100 text-amber-800 border border-amber-200",
+        cardClass: "border-amber-200 bg-amber-50/40",
+        textClass: "text-amber-700",
+        helperText: "ลูกค้าส่งหลักฐานแล้ว รอแอดมินตรวจสอบ",
+      };
+    case "pending_pay":
+      return {
+        label: "รอชำระเงิน",
+        badgeClass: "bg-sky-100 text-sky-800 border border-sky-200",
+        cardClass: "border-sky-200 bg-sky-50/40",
+        textClass: "text-sky-700",
+        helperText: "ยังไม่พบสลิปการชำระเงินจากลูกค้า",
+      };
+    case "cancelled":
+      return {
+        label: "ยกเลิกแล้ว",
+        badgeClass: "bg-red-100 text-red-800 border border-red-200",
+        cardClass: "border-red-200 bg-red-50/40",
+        textClass: "text-red-700",
+        helperText: "รายการนี้ถูกยกเลิกแล้ว",
+      };
+    case "expired":
+      return {
+        label: "หมดอายุ",
+        badgeClass: "bg-slate-100 text-slate-700 border border-slate-200",
+        cardClass: "border-slate-200 bg-slate-50/50",
+        textClass: "text-slate-600",
+        helperText: "เกินเวลาชำระเงิน ระบบปิดรายการอัตโนมัติ",
+      };
+    default:
+      return {
+        label: getBookingStatusLabel(status),
+        badgeClass: "bg-[#F6F1E9] text-[#4F200D] border border-[#E7DDD2]",
+        cardClass: "border-[#F0E8E0] bg-white",
+        textClass: "text-[#4F200D]/70",
+        helperText: "",
+      };
+  }
+};
+
 const getTravelerDisplayName = (traveler: ScheduleTraveler) =>
   traveler.contactInfo?.name ||
   traveler.user?.full_name ||
@@ -647,6 +700,13 @@ const TourScheduleManager = () => {
   const viewerScheduleDate = viewerSchedule
     ? formatThaiDate(viewerSchedule.available_date)
     : "-";
+  const travelerStatusSummary = scheduleTravelers.reduce(
+    (acc, traveler) => {
+      acc[traveler.status] = (acc[traveler.status] || 0) + 1;
+      return acc;
+    },
+    {} as Record<string, number>,
+  );
 
   // Options for Tour Select
   const tourOptions = [
@@ -998,6 +1058,32 @@ const TourScheduleManager = () => {
                 </div>
               </div>
 
+              {!loadingTravelers && scheduleTravelers.length > 0 && (
+                <div className="rounded-2xl border border-[#F0E8E0] bg-[#F6F1E9]/35 p-4">
+                  <p className="text-xs font-black text-[#4F200D] uppercase tracking-wider mb-3">
+                    สถานะรายการในรอบนี้
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {Object.entries(travelerStatusSummary).map(
+                      ([status, count]) => {
+                        const meta = getBookingStatusMeta(status);
+                        return (
+                          <span
+                            key={status}
+                            className={`inline-flex items-center gap-2 rounded-full px-3 py-2 text-xs font-black ${meta.badgeClass}`}
+                          >
+                            <span>{meta.label}</span>
+                            <span className="rounded-full bg-white/80 px-2 py-0.5 text-[11px]">
+                              {count}
+                            </span>
+                          </span>
+                        );
+                      },
+                    )}
+                  </div>
+                </div>
+              )}
+
               {loadingTravelers ? (
                 <div className="rounded-2xl border border-[#F6F1E9] p-10 text-center">
                   <div className="flex items-center justify-center gap-2 text-[#FF8400] font-bold">
@@ -1024,11 +1110,12 @@ const TourScheduleManager = () => {
                       traveler.contactInfo?.phone ||
                       traveler.user?.phone ||
                       "-";
+                    const statusMeta = getBookingStatusMeta(traveler.status);
 
                     return (
                       <div
                         key={traveler.id}
-                        className="rounded-2xl border border-[#F6F1E9] p-4 sm:p-5 bg-white"
+                        className={`rounded-2xl border p-4 sm:p-5 ${statusMeta.cardClass}`}
                       >
                         <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
                           <div>
@@ -1039,10 +1126,17 @@ const TourScheduleManager = () => {
                               <Badge className="bg-[#FF8400]/10 text-[#FF8400] border-0 font-bold">
                                 {traveler.pax} คน
                               </Badge>
-                              <Badge className="bg-[#F6F1E9] text-[#4F200D] border-0 font-bold">
-                                {getBookingStatusLabel(traveler.status)}
+                              <Badge
+                                className={`border-0 font-bold ${statusMeta.badgeClass}`}
+                              >
+                                {statusMeta.label}
                               </Badge>
                             </div>
+                            <p
+                              className={`text-xs font-bold mt-2 ${statusMeta.textClass}`}
+                            >
+                              สถานะ: {statusMeta.helperText}
+                            </p>
                             <p className="text-xs text-[#4F200D]/50 font-semibold mt-1">
                               Booking #{traveler.bookingReference}
                             </p>
@@ -1051,6 +1145,12 @@ const TourScheduleManager = () => {
                                 บัญชีผู้ใช้: {traveler.user.username}
                               </p>
                             )}
+                            {traveler.status === "pending_pay" &&
+                              traveler.paymentDeadline && (
+                                <p className="text-xs text-sky-700 font-semibold mt-1">
+                                  ต้องชำระภายใน {formatThaiDateTime(traveler.paymentDeadline)}
+                                </p>
+                              )}
                           </div>
 
                           <p className="text-xs text-[#4F200D]/40 font-semibold whitespace-nowrap">

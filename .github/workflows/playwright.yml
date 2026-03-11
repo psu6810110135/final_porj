@@ -8,46 +8,16 @@ jobs:
   test:
     timeout-minutes: 60
     runs-on: ubuntu-latest
-    services:
-      postgres:
-        image: postgres:16-alpine
-        env:
-          POSTGRES_USER: thai_tours
-          POSTGRES_PASSWORD: thai_tours_password
-          POSTGRES_DB: thai_tours
-        ports:
-          - 5433:5432
-        options: >-
-          --health-cmd "pg_isready -U thai_tours -d thai_tours"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: lts/*
-          cache: "npm"
-          cache-dependency-path: |
-            package-lock.json
-            project/backend/package-lock.json
-            project/frontend/package-lock.json
-      - name: Install root dependencies
+      - name: Install dependencies
         run: npm ci
-      - name: Install backend dependencies
-        run: npm ci
-        working-directory: project/backend
-      - name: Install frontend dependencies
-        run: npm ci
-        working-directory: project/frontend
       - name: Install Playwright Browsers
         run: npx playwright install --with-deps
       - name: Run Playwright tests
-        env:
-          DATABASE_URL: postgresql://thai_tours:thai_tours_password@127.0.0.1:5433/thai_tours
-          JWT_SECRET: dev-secret-key-change-in-production
-          JWT_EXPIRES_IN: 1h
-          VITE_API_URL: http://127.0.0.1:3000
         run: npx playwright test
       - uses: actions/upload-artifact@v4
         if: ${{ !cancelled() }}

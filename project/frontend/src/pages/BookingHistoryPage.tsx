@@ -1187,16 +1187,6 @@ function MobileCard({
 
         {effectiveStatus === "expired" && (
           <button
-            disabled={renewLoadingId === booking.id}
-            onClick={() => onRenewBooking(booking)}
-            className="text-[11px] font-bold px-3 py-1.5 rounded-full bg-blue-50 text-blue-600 hover:bg-blue-100 transition-colors whitespace-nowrap disabled:opacity-50"
-          >
-            {renewLoadingId === booking.id ? "กำลังเช็ค..." : "ขอคิวอาร์ใหม่"}
-          </button>
-        )}
-
-        {effectiveStatus === "expired" && (
-          <button
             disabled={renewLoadingId === booking.id} // 👈 ใช้งานตรงนี้: ปิดปุ่มตอนกำลังโหลด
             onClick={() => onRenewBooking(booking)} // 👈 ใช้งานตรงนี้: พอกดปุ๊บให้เรียกฟังก์ชัน
             className="text-[11px] font-bold px-3 py-1.5 rounded-full bg-blue-50 text-blue-600 hover:bg-blue-100 transition-colors disabled:opacity-50"
@@ -1350,6 +1340,16 @@ function DesktopRow({
                 {isCancelling ? "กำลังยกเลิก..." : "ยกเลิก"}
               </button>
             </>
+          )}
+
+          {effectiveStatus === "expired" && (
+            <button
+              disabled={renewLoadingId === booking.id}
+              onClick={() => onRenewBooking(booking)}
+              className="text-xs font-bold px-3 py-2 rounded-full bg-blue-50 text-blue-600 hover:bg-blue-100 transition-colors whitespace-nowrap disabled:opacity-50"
+            >
+              {renewLoadingId === booking.id ? "กำลังเช็ค..." : "ขอคิวอาร์ใหม่"}
+            </button>
           )}
 
           {booking.status === "confirmed" && (

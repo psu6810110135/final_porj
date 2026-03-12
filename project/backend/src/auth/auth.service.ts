@@ -74,7 +74,7 @@ export class AuthService {
   }
 
   async signIn(authCredentialsDto: AuthCredentialsDto): Promise<{ accessToken: string }> {
-    const { username, password } = authCredentialsDto;
+    const { username, password, rememberMe } = authCredentialsDto;
 
     // ค้นหาด้วย username หรือ email ก็ได้
     const user = await this.usersService.findByUsernameOrEmail(username);
@@ -95,7 +95,9 @@ export class AuthService {
         email: user.email || user.username,
         role: user.role,
       };
-      const accessToken = this.jwtService.sign(payload);
+      const accessToken = rememberMe 
+        ? this.jwtService.sign(payload, { expiresIn: '30d' }) 
+        : this.jwtService.sign(payload);
       return { accessToken };
     } else {
       throw new UnauthorizedException('Please check your login credentials');

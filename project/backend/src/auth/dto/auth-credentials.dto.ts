@@ -1,5 +1,5 @@
 // src/auth/dto/auth-credentials.dto.ts
-import { IsString, MinLength, IsEmail, IsOptional } from 'class-validator';
+import { IsString, MinLength, IsEmail, IsOptional, IsBoolean } from 'class-validator';
 
 export class AuthCredentialsDto {
   @IsString()
@@ -11,6 +11,10 @@ export class AuthCredentialsDto {
   password: string;
 
   // ── fields เพิ่มเติมสำหรับ signup (optional เพราะ signin ไม่ส่งมา) ──
+  @IsBoolean()
+  @IsOptional()
+  rememberMe?: boolean;
+
   @IsEmail()
   @IsOptional()
   email?: string;

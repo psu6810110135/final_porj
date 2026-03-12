@@ -133,6 +133,7 @@ const LoginPage: React.FC = () => {
   /* Login state */
   const [loginForm, setLoginForm] = useState({ username: "", password: "" });
   const [loginLoading, setLoginLoading] = useState(false);
+  const [rememberMe, setRememberMe] = useState(false);
   const [loginError, setLoginError] = useState("");
   const [showLoginPass, setShowLoginPass] = useState(false);
   const [isGoogleAccountError, setIsGoogleAccountError] = useState(false);
@@ -195,11 +196,18 @@ const LoginPage: React.FC = () => {
     setLoginError('');
     setIsGoogleAccountError(false);
     try {
-      const res = await axios.post(`${API_BASE_URL}/api/auth/signin`, loginForm);
-      localStorage.setItem('jwt_token', res.data.accessToken);
-      const redirectUrl = localStorage.getItem('redirect_after_login');
+      const res = await axios.post(`${API_BASE_URL}/api/auth/signin`, { ...loginForm, rememberMe });
+      if (rememberMe) {
+        localStorage.setItem('jwt_token', res.data.accessToken);
+        sessionStorage.removeItem('jwt_token');
+      } else {
+        sessionStorage.setItem('jwt_token', res.data.accessToken);
+        localStorage.removeItem('jwt_token');
+      }
+      const redirectUrl = localStorage.getItem('redirect_after_login') || sessionStorage.getItem('redirect_after_login');
       if (redirectUrl) {
         localStorage.removeItem('redirect_after_login');
+        sessionStorage.removeItem('redirect_after_login');
         navigate(redirectUrl);
       } else {
         navigate('/');
@@ -796,14 +804,25 @@ const LoginPage: React.FC = () => {
                       </div>
                     </div>
 
-                    {/* Forgot link */}
+                    {/* Remember me & Forgot link */}
                     <div
                       style={{
-                        textAlign: "right",
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "center",
                         marginTop: -10,
                         marginBottom: 18,
                       }}
                     >
+                      <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', fontSize: 13, color: '#5D4037', fontWeight: 500 }}>
+                        <input
+                          type="checkbox"
+                          checked={rememberMe}
+                          onChange={(e) => setRememberMe(e.target.checked)}
+                          style={{ accentColor: '#FF8C00', cursor: 'pointer', width: 15, height: 15 }}
+                        />
+                        จดจำฉันในระบบ
+                      </label>
                       <button
                         type="button"
                         onClick={() => {

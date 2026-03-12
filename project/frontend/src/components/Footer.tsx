@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import logoWithTextImage from "../assets/logo_with_text-removebg-preview.png";
 import logoIconImage from "../assets/logo_without_text-removebg-preview.png";
+import { useTranslation } from "react-i18next";
 
 const FacebookIcon = ({ className = "" }: { className?: string }) => (
   <svg className={className} fill="currentColor" viewBox="0 0 24 24">
@@ -27,22 +28,22 @@ const socialLinks = [
 ];
 
 const orgLinks = [
-  { label: "เกี่ยวกับเรา", to: "/about" },
-  { label: "สถานที่ท่องเที่ยว", to: "/tours" },
+  { labelKey: "footer.aboutUs", to: "/about" },
+  { labelKey: "footer.tours", to: "/tours" },
 ];
 
 const supportLinks = [
-  { label: "ศูนย์ช่วยเหลือ", href: "#" },
-  { label: "เงื่อนไขการให้บริการ", href: "#" },
-  { label: "นโยบายความเป็นส่วนตัว", href: "#" },
-  { label: "ติดต่อเรา", to: "/contact" },
+  { labelKey: "footer.helpCenter", href: "#" },
+  { labelKey: "footer.terms", href: "#" },
+  { labelKey: "footer.privacy", href: "#" },
+  { labelKey: "footer.contactUs", to: "/contact" },
 ];
 
 const compactLinks = [
-  { label: "เกี่ยวกับเรา", to: "/about" },
-  { label: "ทัวร์", to: "/tours" },
-  { label: "ติดต่อเรา", to: "/contact" },
-  { label: "ช่วยเหลือ", href: "#" },
+  { labelKey: "footer.aboutUs", to: "/about" },
+  { labelKey: "footer.tours", to: "/tours" },
+  { labelKey: "footer.contactUs", to: "/contact" },
+  { labelKey: "footer.help", href: "#" },
 ];
 
 const linkClass =
@@ -50,6 +51,7 @@ const linkClass =
 
 export default function Footer() {
   const year = new Date().getFullYear();
+  const { t } = useTranslation();
 
   return (
     <footer className="bg-[#4F200D] text-white py-3 sm:py-4 md:py-5 lg:py-9 rounded-t-[20px] md:rounded-t-[24px] lg:rounded-t-[44px]">
@@ -63,27 +65,27 @@ export default function Footer() {
               className="h-7 sm:h-8 w-auto object-contain"
             />
             <p className="text-[11px] sm:text-xs font-extralight leading-snug text-white/85">
-              เที่ยวมั่นใจ พร้อมบริการพรีเมียมทุกเส้นทาง
+              {t('footer.tagline')}
             </p>
           </div>
 
           <div className="flex flex-wrap gap-x-2.5 gap-y-1">
-            {compactLinks.map(({ label, to, href }: any) =>
+            {compactLinks.map(({ labelKey, to, href }: any) =>
               to ? (
                 <Link
-                  key={label}
+                  key={labelKey}
                   to={to}
                   className="text-[12px] sm:text-xs text-white/85 hover:text-white transition-colors"
                 >
-                  {label}
+                  {t(labelKey)}
                 </Link>
               ) : (
                 <a
-                  key={label}
+                  key={labelKey}
                   href={href}
                   className="text-[12px] sm:text-xs text-white/85 hover:text-white transition-colors"
                 >
-                  {label}
+                  {t(labelKey)}
                 </a>
               ),
             )}
@@ -115,18 +117,18 @@ export default function Footer() {
               />
             </div>
             <p className="text-sm font-extralight leading-snug text-white/85 max-w-xs">
-              เที่ยวมั่นใจ พร้อมบริการพรีเมียมทุกเส้นทาง
+              {t('footer.tagline')}
             </p>
           </div>
 
           {/* Organization Info */}
           <div>
-            <h3 className="text-xl font-bold mb-2">ข้อมูลองค์กร</h3>
+            <h3 className="text-xl font-bold mb-2">{t('footer.orgInfo')}</h3>
             <ul className="space-y-1 md:space-y-1.5">
-              {orgLinks.map(({ label, to }) => (
+              {orgLinks.map(({ labelKey, to }) => (
                 <li key={to}>
                   <Link to={to} className={linkClass}>
-                    {label}
+                    {t(labelKey)}
                   </Link>
                 </li>
               ))}
@@ -135,17 +137,17 @@ export default function Footer() {
 
           {/* Support */}
           <div>
-            <h3 className="text-xl font-bold mb-2">Support</h3>
+            <h3 className="text-xl font-bold mb-2">{t('footer.support')}</h3>
             <ul className="space-y-1 md:space-y-1.5">
-              {supportLinks.map(({ label, href, to }: any) => (
-                <li key={label}>
+              {supportLinks.map(({ labelKey, href, to }: any) => (
+                <li key={labelKey}>
                   {to ? (
                     <Link to={to} className={linkClass}>
-                      {label}
+                      {t(labelKey)}
                     </Link>
                   ) : (
                     <a href={href} className={linkClass}>
-                      {label}
+                      {t(labelKey)}
                     </a>
                   )}
                 </li>
@@ -155,9 +157,9 @@ export default function Footer() {
 
           {/* Social */}
           <div>
-            <h3 className="text-xl font-bold mb-2">ติดตามข่าวสาร</h3>
+            <h3 className="text-xl font-bold mb-2">{t('footer.followUs')}</h3>
             <p className="text-xs font-extralight mb-3 text-white/85 max-w-xs">
-              สมัครรับข่าวสารและข้อเสนอพิเศษล่าสุด
+              {t('footer.newsletter')}
             </p>
             <div className="flex gap-2.5 md:gap-3">
               {socialLinks.map(({ name, href, Icon }) => (
@@ -177,7 +179,7 @@ export default function Footer() {
         {/* Bottom */}
         <div className="border-t border-white/20 pt-2 sm:pt-2.5 md:pt-4 mt-3 lg:mt-0">
           <p className="text-[11px] sm:text-xs text-white/80 text-center md:text-left">
-            © {year} Thai Tours Service. All rights reserved.
+            © {year} Thai Tours Service. {t('footer.rights')}
           </p>
         </div>
 

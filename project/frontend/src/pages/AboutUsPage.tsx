@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
 import { Play } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
@@ -34,6 +35,7 @@ function useRevealOnScroll(threshold = 0.15) {
 export default function AboutPage() {
   // ── Hero text animation ──
   const [heroReady, setHeroReady] = useState(false);
+  const { t } = useTranslation();
   useEffect(() => {
     const timer = setTimeout(() => setHeroReady(true), 150);
     return () => clearTimeout(timer);
@@ -47,7 +49,7 @@ export default function AboutPage() {
   const ctaReveal = useRevealOnScroll(0.2);
 
   return (
-    <div className="min-h-screen bg-[#FDFBF7] flex flex-col relative overflow-x-hidden">
+    <div className="min-h-screen bg-[#FDFBF7] dark:bg-gray-900 flex flex-col relative overflow-x-hidden">
       <Navbar activePage="about" />
       <div className="absolute top-1/3 left-0 w-full h-[800px] opacity-[0.03] pointer-events-none bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] bg-repeat" />
       <main className="flex-grow flex flex-col items-center pt-12 md:pt-20 pb-16 relative z-10 w-full">
@@ -57,11 +59,11 @@ export default function AboutPage() {
           className={`text-center max-w-3xl mb-10 px-4 transition-all duration-1000 ${heroReady ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
             }`}
         >
-          <h1 className="text-3xl md:text-5xl font-black text-[#4F200D] mb-4 md:mb-6 leading-tight">
-            สัมผัสเมืองไทย ในแบบที่คุณต้องการ
+          <h1 className="text-3xl md:text-5xl font-black text-[#4F200D] dark:text-gray-100 mb-4 md:mb-6 leading-tight">
+            {t('about.heroTitle')}
           </h1>
-          <p className="text-base md:text-xl text-[#4F200D] font-medium">
-            พร้อมพาทุกคนไปสัมผัสเสน่ห์ของเมืองไทยผ่านมุมมองใหม่ๆ ที่เข้าถึงง่ายและเป็นกันเอง
+          <p className="text-base md:text-xl text-[#4F200D] dark:text-gray-300 font-medium">
+            {t('about.heroDesc')}
           </p>
         </div>
 
@@ -78,7 +80,7 @@ export default function AboutPage() {
           />
           {/* Badge */}
           <div className="absolute -bottom-6 left-1/2 -translate-x-1/2 bg-[#FF8A00] text-white text-xl md:text-3xl font-black py-4 px-10 md:px-20 rounded-full shadow-lg whitespace-nowrap">
-            เรื่องราวของ ThaiTour
+            {t('about.badge')}
           </div>
         </div>
 
@@ -92,10 +94,8 @@ export default function AboutPage() {
               }`}
           >
             <div className="flex-1 text-left order-2 md:order-1">
-              <h2 className="text-2xl md:text-4xl font-extrabold text-[#4F200D] leading-snug">
-                เราเริ่มต้นจากความตั้งใจที่<br />
-                อยากให้ <span className="text-[#FF8A00]">"การเดินทาง"</span><br />
-                เป็นเรื่องที่ทุกคนเข้าถึงได้
+              <h2 className="text-2xl md:text-4xl font-extrabold text-[#4F200D] dark:text-gray-100 leading-snug">
+                {t('about.sec1Title')}
               </h2>
             </div>
             <div className="flex-1 w-full order-1 md:order-2 relative">
@@ -123,9 +123,8 @@ export default function AboutPage() {
               />
             </div>
             <div className="flex-1 text-right order-1 md:order-2">
-              <h2 className="text-2xl md:text-4xl font-extrabold text-[#4F200D] leading-snug">
-                ไม่ว่าคุณจะชอบ<br />
-                <span className="text-[#FF8A00]">ความชิลล์</span> หรือ <span className="text-[#FF8A00]">ความตื่นเต้น</span>
+              <h2 className="text-2xl md:text-4xl font-extrabold text-[#4F200D] dark:text-gray-100 leading-snug">
+                {t('about.sec2Title')}
               </h2>
             </div>
           </div>
@@ -137,10 +136,8 @@ export default function AboutPage() {
               }`}
           >
             <div className="flex-1 text-left order-2 md:order-1">
-              <h2 className="text-2xl md:text-4xl font-extrabold text-[#4F200D] leading-snug">
-                เราคัดสรรเส้นทางที่ตอบโจทย์<br />
-                เพื่อให้ทุกทริปคือ<br />
-                <span className="text-[#FF8A00]">"ความทรงจำที่ดี"</span>
+              <h2 className="text-2xl md:text-4xl font-extrabold text-[#4F200D] dark:text-gray-100 leading-snug">
+                {t('about.sec3Title')}
               </h2>
             </div>
             <div className="flex-1 w-full order-1 md:order-2 relative">
@@ -161,14 +158,14 @@ export default function AboutPage() {
           className={`text-center w-full max-w-2xl mt-8 px-4 mx-auto transition-all duration-1000 ${ctaReveal.visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-10"
             }`}
         >
-          <h2 className="text-2xl md:text-3xl font-black text-[#4F200D] mb-8">
-            พร้อมจะไป <span className="text-[#FF8A00]">เปิดโลกใหม่</span> กับเราหรือยัง?
+          <h2 className="text-2xl md:text-3xl font-black text-[#4F200D] dark:text-gray-100 mb-8">
+            {t('about.ctaTitle')}
           </h2>
           <Link
             to="/tours"
             className="inline-flex items-center gap-3 bg-[#FF8A00] hover:bg-[#e67c00] text-white text-lg md:text-xl font-bold py-4 px-10 rounded-full shadow-lg hover:shadow-xl transition-all hover:-translate-y-1 active:scale-95"
           >
-            เลือกดูทริปที่ใช่สำหรับคุณ
+            {t('about.ctaBtn')}
             <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center">
               <Play size={16} fill="currentColor" />
             </div>

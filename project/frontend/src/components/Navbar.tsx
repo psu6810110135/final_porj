@@ -2,6 +2,8 @@ import { Link, useNavigate } from "react-router-dom";
 import logoIconImage from "../assets/logo_without_text-removebg-preview.png";
 import { useState, useEffect, useRef } from "react";
 import { API_BASE_URL } from "../config/api";
+import { useTranslation } from "react-i18next";
+import { useTheme } from "../contexts/ThemeContext";
 
 // ─── Icons ───────────────────────────────────────────────────────────────────
 
@@ -182,7 +184,7 @@ const ChevronDownIcon = ({ className = "" }: { className?: string }) => (
 // ─── Component ───────────────────────────────────────────────────────────────
 
 interface NavbarProps {
-  activePage?: "home" | "tours" | "about" | "contact";
+  activePage?: "home" | "tours" | "about" | "contact" | "bookingHistory";
 }
 
 interface NavbarProfileResponse {
@@ -214,6 +216,8 @@ export default function Navbar({ activePage = "home" }: NavbarProps) {
   const navigate = useNavigate();
   const token = localStorage.getItem("jwt_token");
   const isLoggedIn = !!token;
+  const { t, i18n } = useTranslation();
+  const { theme, toggleTheme } = useTheme();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -313,18 +317,6 @@ export default function Navbar({ activePage = "home" }: NavbarProps) {
     navigate("/login");
   };
 
-  // Desktop link style
-  const linkClass = (page: string) =>
-    activePage === page
-      ? "font-bold text-[#FF8400]"
-      : "font-medium text-[#4F200D] hover:text-[#FF8400] transition-colors";
-
-  // Mobile top icon button style
-  const mobileIconBtn = (active = false) =>
-    `flex flex-col items-center justify-center gap-1 px-2 sm:px-3 py-1 rounded-xl transition-all duration-200 ${
-      active ? "text-[#FF8400]" : "text-[#6B4226] hover:text-[#FF8400]"
-    }`;
-
   const iconBtnBase =
     "w-10 h-10 sm:w-11 sm:h-11 md:w-11 md:h-11 lg:w-12 lg:h-12 rounded-full flex items-center justify-center p-0 transition-all duration-200 border border-[#F0E8E0]";
 
@@ -369,7 +361,7 @@ export default function Navbar({ activePage = "home" }: NavbarProps) {
       `}</style>
 
       <nav
-        className={`fixed top-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-nav transition-transform duration-300 ease-in-out ${
+        className={`fixed top-0 left-0 right-0 z-50 bg-white/95 dark:bg-gray-900/95 backdrop-blur-nav transition-transform duration-300 ease-in-out ${
           visible ? "translate-y-0" : "-translate-y-full"
         } ${atTop ? "" : "nav-shadow"}`}
       >
@@ -385,10 +377,10 @@ export default function Navbar({ activePage = "home" }: NavbarProps) {
                     className="h-full w-auto object-contain"
                   />
                 </div>
-                <span className="hidden sm:block lg:hidden text-sm md:text-base font-bold text-[#4F200D] tracking-wide whitespace-nowrap">
+                <span className="hidden sm:block lg:hidden text-sm md:text-base font-bold text-[#4F200D] dark:text-white tracking-wide whitespace-nowrap">
                   Thai Tours
                 </span>
-                <span className="hidden lg:block text-base xl:text-xl font-bold text-[#4F200D] tracking-wide whitespace-nowrap">
+                <span className="hidden lg:block text-base xl:text-xl font-bold text-[#4F200D] dark:text-white tracking-wide whitespace-nowrap">
                   Thai Tours Service
                 </span>
               </Link>
@@ -399,22 +391,22 @@ export default function Navbar({ activePage = "home" }: NavbarProps) {
               {/* Desktop: icons + text */}
               <div className="hidden md:flex items-center gap-2.5 lg:gap-7">
                 {[
-                  { to: "/", label: "หน้าหลัก", key: "home", Icon: HomeIcon },
+                  { to: "/", label: t('nav.home'), key: "home", Icon: HomeIcon },
                   {
                     to: "/tours",
-                    label: "ทัวร์",
+                    label: t('nav.tours'),
                     key: "tours",
                     Icon: CompassIcon,
                   },
                   {
                     to: "/about",
-                    label: "เกี่ยวกับเรา",
+                    label: t('nav.about'),
                     key: "about",
                     Icon: InfoIcon,
                   },
                   {
                     to: "/contact",
-                    label: "ติดต่อเรา",
+                    label: t('nav.contact'),
                     key: "contact",
                     Icon: PhoneIcon,
                   },
@@ -422,7 +414,11 @@ export default function Navbar({ activePage = "home" }: NavbarProps) {
                   <Link
                     key={item.key}
                     to={item.to}
-                    className={`flex items-center gap-1.5 md:p-1.5 md:rounded-full lg:p-0 ${linkClass(item.key)}`}
+                    className={`flex items-center gap-1.5 md:p-1.5 md:rounded-full lg:p-0 ${
+                      activePage === item.key
+                        ? "font-bold text-[#FF8400]"
+                        : "font-medium text-[#4F200D] dark:text-gray-200 hover:text-[#FF8400] dark:hover:text-[#FF8400] transition-colors"
+                    }`}
                   >
                     <item.Icon className="w-6 h-6 lg:w-5 lg:h-5 flex-shrink-0" />
                     <span className="hidden lg:inline text-base xl:text-lg">
@@ -433,42 +429,56 @@ export default function Navbar({ activePage = "home" }: NavbarProps) {
               </div>
               {/* Mobile: All 4 nav icons centered */}
               <div className="flex md:hidden items-center gap-0.5 sm:gap-1">
-                <Link to="/" className={mobileIconBtn(activePage === "home")}>
+                <Link to="/" className={`flex flex-col items-center justify-center gap-1 px-2 sm:px-3 py-1 rounded-xl transition-all duration-200 ${activePage === "home" ? "text-[#FF8400]" : "text-[#6B4226] dark:text-gray-300 hover:text-[#FF8400]"}`}>
                   <HomeIcon className="w-5 h-5 sm:w-6 sm:h-6" />
-                  <span className="mobile-nav-label">หน้าหลัก</span>
+                  <span className="mobile-nav-label">{t('nav.home')}</span>
                 </Link>
                 <Link
                   to="/tours"
-                  className={mobileIconBtn(activePage === "tours")}
+                  className={`flex flex-col items-center justify-center gap-1 px-2 sm:px-3 py-1 rounded-xl transition-all duration-200 ${activePage === "tours" ? "text-[#FF8400]" : "text-[#6B4226] dark:text-gray-300 hover:text-[#FF8400]"}`}
                 >
                   <CompassIcon className="w-5 h-5 sm:w-6 sm:h-6" />
-                  <span className="mobile-nav-label">ทัวร์</span>
+                  <span className="mobile-nav-label">{t('nav.tours')}</span>
                 </Link>
                 <Link
                   to="/about"
-                  className={mobileIconBtn(activePage === "about")}
+                  className={`flex flex-col items-center justify-center gap-1 px-2 sm:px-3 py-1 rounded-xl transition-all duration-200 ${activePage === "about" ? "text-[#FF8400]" : "text-[#6B4226] dark:text-gray-300 hover:text-[#FF8400]"}`}
                 >
                   <InfoIcon className="w-5 h-5 sm:w-6 sm:h-6" />
-                  <span className="mobile-nav-label">เกี่ยวกับ</span>
+                  <span className="mobile-nav-label">{t('nav.about')}</span>
                 </Link>
                 <Link
                   to="/contact"
-                  className={mobileIconBtn(activePage === "contact")}
+                  className={`flex flex-col items-center justify-center gap-1 px-2 sm:px-3 py-1 rounded-xl transition-all duration-200 ${activePage === "contact" ? "text-[#FF8400]" : "text-[#6B4226] dark:text-gray-300 hover:text-[#FF8400]"}`}
                 >
                   <PhoneIcon className="w-5 h-5 sm:w-6 sm:h-6" />
-                  <span className="mobile-nav-label">ติดต่อ</span>
+                  <span className="mobile-nav-label">{t('nav.contact')}</span>
                 </Link>
               </div>
             </div>
 
             {/* ── Right: Hamburger (mobile) / Auth (desktop) ── */}
             <div className="flex-1 flex items-center justify-end gap-1.5 sm:gap-2 md:gap-2 lg:gap-3">
+              <button 
+                onClick={toggleTheme}
+                className="w-10 h-10 sm:w-11 sm:h-11 md:w-11 md:h-11 lg:w-12 lg:h-12 rounded-full flex items-center justify-center p-0 transition-all duration-200 border border-[#F0E8E0] dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800 text-[#4F200D] dark:text-white"
+              >
+                {theme === 'dark' ? '☀️' : '🌙'}
+              </button>
+
+              <button 
+                onClick={() => i18n.changeLanguage(i18n.language === 'en' ? 'th' : 'en')}
+                className="w-10 h-10 sm:w-11 sm:h-11 md:w-11 md:h-11 lg:w-12 lg:h-12 rounded-full flex items-center justify-center p-0 transition-all duration-200 border border-[#F0E8E0] dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800 text-[#4F200D] dark:text-white font-bold"
+              >
+                {i18n.language === 'en' ? 'TH' : 'EN'}
+              </button>
+
               {/* Desktop only: Admin */}
               {isAdmin && (
                 <Link to="/admin" className="hidden md:flex">
                   <button
-                    className={`${iconBtnBase} bg-[#FF8400]/8 border-[#FF8400]/25 hover:bg-[#FF8400]/20`}
-                    title="Admin Dashboard"
+                    className={`${iconBtnBase} dark:border-gray-700 bg-[#FF8400]/8 border-[#FF8400]/25 hover:bg-[#FF8400]/20`}
+                    title={t('nav.admin')}
                   >
                     <DashboardIcon className="w-5 h-5 lg:w-6 lg:h-6 text-[#FF8400]" />
                   </button>
@@ -500,32 +510,32 @@ export default function Navbar({ activePage = "home" }: NavbarProps) {
                   </button>
 
                   {showUserDropdown && (
-                    <div className="absolute right-0 top-full mt-2 w-48 bg-white rounded-xl shadow-lg border border-[#F0E8E0] overflow-hidden dropdown-enter z-50">
+                    <div className="absolute right-0 top-full mt-2 w-48 bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-[#F0E8E0] dark:border-gray-700 overflow-hidden dropdown-enter z-50">
                       <Link
                         to="/profile"
                         onClick={() => setShowUserDropdown(false)}
-                        className="flex items-center gap-3 px-4 py-3 text-[#4F200D] hover:bg-[#FFF3E0] hover:text-[#FF8400] transition-colors"
+                        className="flex items-center gap-3 px-4 py-3 text-[#4F200D] dark:text-white hover:bg-[#FFF3E0] dark:hover:bg-gray-700 hover:text-[#FF8400] transition-colors"
                       >
                         <UserIcon className="w-5 h-5" />
-                        <span className="font-medium text-sm">โปรไฟล์</span>
+                        <span className="font-medium text-sm">{t('nav.profile')}</span>
                       </Link>
                       <Link
                         to="/booking-history"
                         onClick={() => setShowUserDropdown(false)}
-                        className="flex items-center gap-3 px-4 py-3 text-[#4F200D] hover:bg-[#FFF3E0] hover:text-[#FF8400] transition-colors"
+                        className="flex items-center gap-3 px-4 py-3 text-[#4F200D] dark:text-white hover:bg-[#FFF3E0] dark:hover:bg-gray-700 hover:text-[#FF8400] transition-colors"
                       >
                         <CalendarIcon className="w-5 h-5" />
                         <span className="font-medium text-sm">
-                          ประวัติการจอง
+                          {t('nav.bookingHistory')}
                         </span>
                       </Link>
-                      <div className="border-t border-[#F0E8E0]" />
+                      <div className="border-t border-[#F0E8E0] dark:border-gray-700" />
                       <button
                         onClick={handleLogout}
-                        className="flex items-center gap-3 px-4 py-3 text-red-500 hover:bg-red-50 transition-colors w-full text-left"
+                        className="flex items-center gap-3 px-4 py-3 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors w-full text-left"
                       >
                         <LogoutIcon className="w-5 h-5" />
-                        <span className="font-medium text-sm">ออกจากระบบ</span>
+                        <span className="font-medium text-sm">{t('nav.logout')}</span>
                       </button>
                     </div>
                   )}
@@ -575,7 +585,7 @@ export default function Navbar({ activePage = "home" }: NavbarProps) {
 
         {/* ── Mobile Dropdown (account only) ── */}
         {menuOpen && (
-          <div className="md:hidden border-t border-[#F0E8E0] bg-white dropdown-enter">
+          <div className="md:hidden border-t border-[#F0E8E0] dark:border-gray-700 bg-white dark:bg-gray-800 dropdown-enter">
             <div className="px-4 py-3 flex flex-col gap-1">
               {/* Admin (ถ้ามี) */}
               {isAdmin && (
@@ -585,7 +595,7 @@ export default function Navbar({ activePage = "home" }: NavbarProps) {
                   className="flex items-center gap-3 px-4 py-3 rounded-xl text-[#FF8400] hover:bg-[#FF8400]/10 transition-colors"
                 >
                   <DashboardIcon className="w-6 h-6 flex-shrink-0" />
-                  <span className="font-medium text-sm">Admin Dashboard</span>
+                  <span className="font-medium text-sm">{t('nav.admin')}</span>
                 </Link>
               )}
 
@@ -595,36 +605,36 @@ export default function Navbar({ activePage = "home" }: NavbarProps) {
                   <Link
                     to="/profile"
                     onClick={() => setMenuOpen(false)}
-                    className="flex items-center gap-3 px-4 py-3 rounded-xl text-[#4F200D] hover:bg-[#FFF3E0] hover:text-[#FF8400] transition-colors"
+                    className="flex items-center gap-3 px-4 py-3 rounded-xl text-[#4F200D] dark:text-white hover:bg-[#FFF3E0] dark:hover:bg-gray-700 hover:text-[#FF8400] transition-colors"
                   >
                     <UserIcon className="w-6 h-6 flex-shrink-0" />
-                    <span className="font-medium text-sm">โปรไฟล์</span>
+                    <span className="font-medium text-sm">{t('nav.profile')}</span>
                   </Link>
                   <Link
                     to="/booking-history"
                     onClick={() => setMenuOpen(false)}
-                    className="flex items-center gap-3 px-4 py-3 rounded-xl text-[#4F200D] hover:bg-[#FFF3E0] hover:text-[#FF8400] transition-colors"
+                    className="flex items-center gap-3 px-4 py-3 rounded-xl text-[#4F200D] dark:text-white hover:bg-[#FFF3E0] dark:hover:bg-gray-700 hover:text-[#FF8400] transition-colors"
                   >
                     <CalendarIcon className="w-6 h-6 flex-shrink-0" />
-                    <span className="font-medium text-sm">ประวัติการจอง</span>
+                    <span className="font-medium text-sm">{t('nav.bookingHistory')}</span>
                   </Link>
-                  <div className="border-t border-[#F0E8E0] my-1" />
+                  <div className="border-t border-[#F0E8E0] dark:border-gray-700 my-1" />
                   <button
                     onClick={handleLogout}
-                    className="flex items-center gap-3 px-4 py-3 rounded-xl text-red-500 hover:bg-red-50 transition-colors w-full text-left"
+                    className="flex items-center gap-3 px-4 py-3 rounded-xl text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors w-full text-left"
                   >
                     <LogoutIcon className="w-6 h-6 flex-shrink-0" />
-                    <span className="font-medium text-sm">ออกจากระบบ</span>
+                    <span className="font-medium text-sm">{t('nav.logout')}</span>
                   </button>
                 </>
               ) : (
                 <Link
                   to="/login"
                   onClick={() => setMenuOpen(false)}
-                  className="flex items-center gap-3 px-4 py-3 rounded-xl text-[#4F200D] hover:bg-[#FFF3E0] hover:text-[#FF8400] transition-colors"
+                  className="flex items-center gap-3 px-4 py-3 rounded-xl text-[#4F200D] dark:text-white hover:bg-[#FFF3E0] dark:hover:bg-gray-700 hover:text-[#FF8400] transition-colors"
                 >
                   <UserIcon className="w-6 h-6 flex-shrink-0" />
-                  <span className="font-medium text-sm">เข้าสู่ระบบ</span>
+                  <span className="font-medium text-sm">{t('nav.login')}</span>
                 </Link>
               )}
             </div>
@@ -673,12 +683,12 @@ export default function Navbar({ activePage = "home" }: NavbarProps) {
               </div>
 
               <h3 className="text-lg font-bold text-[#2C1A0E] mb-1">
-                ออกจากระบบ?
+                {t('logout.title')}
               </h3>
               <p className="text-sm text-gray-400 leading-relaxed">
-                คุณต้องการออกจากระบบใช่ไหม?
+                {t('logout.message')}
                 <br />
-                จะต้องเข้าสู่ระบบใหม่อีกครั้ง
+                {t('logout.subMessage')}
               </p>
             </div>
 
@@ -687,13 +697,13 @@ export default function Navbar({ activePage = "home" }: NavbarProps) {
                 onClick={() => setShowLogoutModal(false)}
                 className="py-3 rounded-xl border-2 border-gray-100 text-gray-500 font-semibold text-sm hover:bg-gray-50 transition-colors active:scale-[0.97]"
               >
-                ยกเลิก
+                {t('logout.cancel')}
               </button>
               <button
                 onClick={confirmLogout}
                 className="py-3 rounded-xl bg-red-500 text-white font-bold text-sm hover:bg-red-600 transition-colors active:scale-[0.97] shadow-md shadow-red-100"
               >
-                ออกจากระบบ
+                {t('logout.confirm')}
               </button>
             </div>
           </div>

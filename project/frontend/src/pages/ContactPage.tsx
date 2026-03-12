@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 
 // Icons
 import { Search } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 // Components
 import Navbar from "../components/Navbar";
@@ -19,6 +20,7 @@ import { TOPICS, PHONE_CODES } from "@/utils/contactData";
 // --- Main Component ---
 const ContactPage = () => {
   // Form State
+  const { t } = useTranslation();
   const [formData, setFormData] = useState({
     firstName: "",
     lastName: "",
@@ -135,13 +137,13 @@ const ContactPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#F5F1E9] flex flex-col relative">
+    <div className="min-h-screen bg-[#F5F1E9] dark:bg-gray-900 flex flex-col relative">
       <Navbar activePage="contact" />
 
       <main className="flex-grow py-8 md:py-12 px-4 sm:px-6 lg:px-8">
         <div className="max-w-5xl mx-auto">
-          <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold text-[#5C3D2E] text-center mb-8 md:mb-12 leading-tight">
-            ยินดีต้อนรับสู่หน้าติดต่อเรา
+          <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold text-[#5C3D2E] dark:text-gray-100 text-center mb-8 md:mb-12 leading-tight">
+            {t('contact.title')}
           </h1>
 
           <div className="flex flex-col lg:flex-row gap-8 lg:gap-12">
@@ -150,18 +152,18 @@ const ContactPage = () => {
               <div className="relative mb-6 md:mb-8">
                 <input
                   type="text"
-                  placeholder="ค้นหาหัวข้อ"
+                  placeholder={t('contact.searchPlaceholder')}
                   value={searchTopic}
                   onChange={(e) => setSearchTopic(e.target.value)}
-                  className="w-full p-3 pl-6 pr-16 rounded-full border border-gray-200 bg-white focus:outline-none focus:ring-2 focus:ring-[#FF8A00] shadow-sm text-sm md:text-base"
+                  className="w-full p-3 pl-6 pr-16 rounded-full border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-[#FF8A00] shadow-sm text-sm md:text-base"
                 />
                 <button className="absolute right-0 top-0 h-full w-14 bg-gray-200 rounded-r-full flex items-center justify-center text-gray-500 hover:bg-[#FF8A00] hover:text-white transition-colors duration-300">
                   <Search size={20} />
                 </button>
               </div>
 
-              <h2 className="text-xl md:text-2xl font-extrabold text-[#5C3D2E] mb-4 md:mb-6">
-                คำถามยอดฮิต
+              <h2 className="text-xl md:text-2xl font-extrabold text-[#5C3D2E] dark:text-gray-100 mb-4 md:mb-6">
+                {t('contact.faqTitle')}
               </h2>
               <TopicList
                 topics={filteredTopics}

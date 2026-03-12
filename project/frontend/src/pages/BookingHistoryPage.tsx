@@ -1,5 +1,6 @@
 import { useEffect, useState, useMemo } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import logoImage from "../assets/logo.png";
@@ -239,6 +240,7 @@ const ChevronRightIcon = () => (
 
 export default function BookingHistoryPage() {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -580,19 +582,19 @@ export default function BookingHistoryPage() {
   }, [bookings]);
 
   return (
-    <div className="min-h-screen bg-[#F6F1E9] flex flex-col">
-      <Navbar />
+    <div className="min-h-screen bg-[#F6F1E9] dark:bg-gray-900 flex flex-col">
+      <Navbar activePage="bookingHistory" />
 
       <main className="w-full flex-1 flex flex-col">
         <div className="max-w-6xl mx-auto w-full px-4 md:px-6 py-6 md:py-8">
           {/* ── Page Title ── */}
           <div className="mb-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             <span className="inline-block self-start bg-gradient-to-r from-[#FF8400] to-[#FF6B00] text-white font-bold text-base px-5 py-2 rounded-full shadow-md">
-              ทริปของฉัน
+              {t('booking.title')}
             </span>
             {!loading && !error && bookings.length > 0 && (
-              <span className="text-sm font-semibold text-[#4F200D]/50">
-                ทั้งหมด {bookings.length} รายการ
+              <span className="text-sm font-semibold text-[#4F200D]/50 dark:text-gray-400">
+                {t('booking.total')} {bookings.length} {t('booking.items')}
               </span>
             )}
           </div>
@@ -607,14 +609,14 @@ export default function BookingHistoryPage() {
           ) : (
             <>
               {/* ── Search & Filter Bar ── */}
-              <div className="bg-white rounded-2xl border border-[#F0E8E0] shadow-sm p-3 md:p-4 mb-4 space-y-3">
+              <div className="bg-white dark:bg-gray-800 rounded-2xl border border-[#F0E8E0] dark:border-gray-700 shadow-sm p-3 md:p-4 mb-4 space-y-3">
                 {/* Search input */}
                 <div className="relative">
-                  <SearchIcon className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#4F200D]/30" />
+                  <SearchIcon className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#4F200D]/30 dark:text-gray-400" />
                   <input
                     type="text"
-                    placeholder="ค้นหาชื่อทัวร์ หรือเลขอ้างอิง..."
-                    className="w-full pl-10 pr-4 py-2.5 bg-[#F6F1E9]/60 border-0 rounded-xl text-sm font-semibold text-[#4F200D] placeholder:text-[#4F200D]/35 placeholder:font-medium focus:outline-none focus:ring-2 focus:ring-[#FF8400]/30 focus:bg-white transition-all"
+                    placeholder={t('booking.searchPlaceholder')}
+                    className="w-full pl-10 pr-4 py-2.5 bg-[#F6F1E9]/60 dark:bg-gray-700 border-0 rounded-xl text-sm font-semibold text-[#4F200D] dark:text-gray-100 placeholder:text-[#4F200D]/35 dark:placeholder:text-gray-400 placeholder:font-medium focus:outline-none focus:ring-2 focus:ring-[#FF8400]/30 focus:bg-white dark:focus:bg-gray-700 transition-all"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                   />
@@ -654,10 +656,10 @@ export default function BookingHistoryPage() {
                         className={`flex items-center gap-1.5 whitespace-nowrap text-xs font-bold px-3.5 py-2 rounded-full transition-all shrink-0 ${
                           isActive
                             ? "bg-[#FF8400] text-white shadow-sm"
-                            : "bg-[#F6F1E9]/80 text-[#4F200D]/60 hover:bg-[#F6F1E9] hover:text-[#4F200D]"
+                            : "bg-[#F6F1E9]/80 dark:bg-gray-700 text-[#4F200D]/60 dark:text-gray-300 hover:bg-[#F6F1E9] dark:hover:bg-gray-600 hover:text-[#4F200D] dark:hover:text-white"
                         }`}
                       >
-                        {opt.label}
+                        {opt.value === 'all' ? t('booking.all') : t(`booking.${opt.value.replace(/_([a-z])/g, g => g[1].toUpperCase())}` as any)}
                         <span
                           className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full leading-none ${
                             isActive
@@ -676,12 +678,12 @@ export default function BookingHistoryPage() {
               {/* ── Filter result info ── */}
               {(searchQuery || statusFilter !== "all") && (
                 <div className="flex items-center justify-between mb-3 px-1">
-                  <p className="text-xs font-semibold text-[#4F200D]/40">
-                    พบ {filteredBookings.length} รายการ
+                  <p className="text-xs font-semibold text-[#4F200D]/40 dark:text-gray-400">
+                    {t('booking.found')} {filteredBookings.length} {t('booking.items')}
                     {searchQuery && (
                       <span>
                         {" "}
-                        สำหรับ "
+                        - "
                         <span className="text-[#FF8400]">{searchQuery}</span>"
                       </span>
                     )}
@@ -693,18 +695,18 @@ export default function BookingHistoryPage() {
                       setStatusFilter("all");
                     }}
                   >
-                    ล้างตัวกรอง
+                    {t('booking.clearFilter')}
                   </button>
                 </div>
               )}
 
               {filteredBookings.length === 0 ? (
-                <div className="bg-white rounded-2xl border border-[#F0E8E0] px-6 py-12 flex flex-col items-center gap-3 shadow-sm">
-                  <div className="w-14 h-14 rounded-full bg-[#FFF3E0] flex items-center justify-center">
+                <div className="bg-white dark:bg-gray-800 rounded-2xl border border-[#F0E8E0] dark:border-gray-700 px-6 py-12 flex flex-col items-center gap-3 shadow-sm">
+                  <div className="w-14 h-14 rounded-full bg-[#FFF3E0] dark:bg-[#FFF3E0]/10 flex items-center justify-center">
                     <SearchIcon className="text-[#FF8400] w-6 h-6" />
                   </div>
-                  <p className="text-[#4F200D]/60 font-semibold text-sm">
-                    ไม่พบการจองที่ตรงกับเงื่อนไข
+                  <p className="text-[#4F200D]/60 dark:text-gray-400 font-semibold text-sm">
+                    {t('booking.noBookingsFound')}
                   </p>
                 </div>
               ) : (
@@ -730,24 +732,24 @@ export default function BookingHistoryPage() {
                   </div>
 
                   {/* Desktop: Table */}
-                  <div className="hidden lg:block bg-white rounded-2xl shadow-sm border border-[#F0E8E0] overflow-hidden">
+                  <div className="hidden lg:block bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-[#F0E8E0] dark:border-gray-700 overflow-hidden">
                     <table className="w-full">
                       <thead>
-                        <tr className="bg-[#FFF3E0] border-b border-[#F0E8E0]">
-                          <th className="text-left px-6 py-4 text-[#4F200D] font-semibold text-sm">
-                            ทัวร์
+                        <tr className="bg-[#FFF3E0] dark:bg-gray-700 border-b border-[#F0E8E0] dark:border-gray-600">
+                          <th className="text-left px-6 py-4 text-[#4F200D] dark:text-gray-100 font-semibold text-sm">
+                            {t('booking.tour')}
                           </th>
-                          <th className="text-left px-4 py-4 text-[#4F200D] font-semibold text-sm">
-                            วันเดินทาง
+                          <th className="text-left px-4 py-4 text-[#4F200D] dark:text-gray-100 font-semibold text-sm">
+                            {t('booking.travelDate')}
                           </th>
-                          <th className="text-center px-4 py-4 text-[#4F200D] font-semibold text-sm">
-                            จำนวน
+                          <th className="text-center px-4 py-4 text-[#4F200D] dark:text-gray-100 font-semibold text-sm">
+                            {t('booking.pax')}
                           </th>
-                          <th className="text-center px-4 py-4 text-[#4F200D] font-semibold text-sm">
-                            สถานะ
+                          <th className="text-center px-4 py-4 text-[#4F200D] dark:text-gray-100 font-semibold text-sm">
+                            {t('booking.status')}
                           </th>
-                          <th className="text-right px-6 py-4 text-[#4F200D] font-semibold text-sm">
-                            ราคา
+                          <th className="text-right px-6 py-4 text-[#4F200D] dark:text-gray-100 font-semibold text-sm">
+                            {t('booking.price')}
                           </th>
                           <th className="px-4 py-4" />
                         </tr>
@@ -964,13 +966,13 @@ function Pagination({
         </p>
 
         <div className="flex items-center justify-center sm:justify-start gap-2">
-          <span className="text-[11px] font-semibold text-[#4F200D]/45 whitespace-nowrap">
+          <span className="text-[11px] font-semibold text-[#4F200D]/45 dark:text-gray-400 whitespace-nowrap">
             แถวต่อหน้า
           </span>
           <select
             value={rowsPerPage}
             onChange={(e) => onRowsPerPageChange(Number(e.target.value))}
-            className="h-7 rounded-lg border border-[#EADFD3] bg-white px-2 text-xs font-bold text-[#4F200D] focus:outline-none focus:ring-2 focus:ring-[#FF8400]/30"
+            className="h-7 rounded-lg border border-[#EADFD3] dark:border-gray-600 bg-white dark:bg-gray-800 px-2 text-xs font-bold text-[#4F200D] dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-[#FF8400]/30"
             aria-label="เลือกจำนวนแถวต่อหน้า"
           >
             {pageSizeOptions.map((size) => (
@@ -985,7 +987,7 @@ function Pagination({
       <div className="flex items-center gap-1 order-1 sm:order-2">
         {/* Prev */}
         <button
-          className="w-8 h-8 flex items-center justify-center rounded-lg text-[#4F200D]/40 hover:text-[#FF8400] hover:bg-[#FF8400]/10 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+          className="w-8 h-8 flex items-center justify-center rounded-lg text-[#4F200D]/40 dark:text-gray-400 hover:text-[#FF8400] hover:bg-[#FF8400]/10 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
           disabled={currentPage <= 1}
           onClick={() => onPageChange(currentPage - 1)}
           aria-label="หน้าก่อนหน้า"
@@ -997,7 +999,7 @@ function Pagination({
           page === "..." ? (
             <span
               key={`dots-${i}`}
-              className="w-8 h-8 flex items-center justify-center text-[#4F200D]/25 text-xs font-bold"
+              className="w-8 h-8 flex items-center justify-center text-[#4F200D]/25 dark:text-gray-500 text-xs font-bold"
             >
               ...
             </span>
@@ -1008,7 +1010,7 @@ function Pagination({
               className={`w-8 h-8 flex items-center justify-center rounded-lg text-xs font-bold transition-all ${
                 page === currentPage
                   ? "bg-[#FF8400] text-white shadow-sm"
-                  : "text-[#4F200D]/50 hover:text-[#FF8400] hover:bg-[#FF8400]/10"
+                  : "text-[#4F200D]/50 dark:text-gray-400 hover:text-[#FF8400] hover:bg-[#FF8400]/10"
               }`}
             >
               {page}
@@ -1018,7 +1020,7 @@ function Pagination({
 
         {/* Next */}
         <button
-          className="w-8 h-8 flex items-center justify-center rounded-lg text-[#4F200D]/40 hover:text-[#FF8400] hover:bg-[#FF8400]/10 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+          className="w-8 h-8 flex items-center justify-center rounded-lg text-[#4F200D]/40 dark:text-gray-400 hover:text-[#FF8400] hover:bg-[#FF8400]/10 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
           disabled={currentPage >= totalPages}
           onClick={() => onPageChange(currentPage + 1)}
           aria-label="หน้าถัดไป"
@@ -1066,7 +1068,7 @@ function MobileCard({
 
   return (
     <div
-      className={`bg-white rounded-2xl border border-[#F0E8E0] border-l-4 ${cfg.mobileBg} shadow-sm overflow-hidden`}
+      className={`bg-white dark:bg-gray-800 rounded-2xl border border-[#F0E8E0] dark:border-gray-700 border-l-4 flex flex-col ${cfg.mobileBg} shadow-sm overflow-hidden`}
     >
       {/* Top row: icon + title + status */}
       <div className="px-4 pt-4 pb-3 flex items-start gap-3">
@@ -1084,7 +1086,7 @@ function MobileCard({
         )}
 
         <div className="flex-1 min-w-0">
-          <p className="font-bold text-[#4F200D] text-sm leading-snug line-clamp-2">
+          <p className="font-bold text-[#4F200D] dark:text-gray-100 text-sm leading-snug line-clamp-2">
             {getTourTitle(booking)}
           </p>
           <p className="text-[#FF8400] text-[11px] mt-1 font-semibold line-clamp-1">
@@ -1108,8 +1110,9 @@ function MobileCard({
       </div>
 
       {/* Bottom row: details + price + action */}
-      <div className="px-4 pb-3 pt-0 flex items-center justify-between border-t border-[#F6F1E9]">
-        <div className="flex items-center gap-4 text-[11px] text-[#4F200D]/45 font-medium">
+      <div className="px-4 pb-3 pt-0 flex flex-col gap-2 border-t border-[#F6F1E9] dark:border-gray-700 mt-2">
+        <div className="flex items-center justify-between pt-2">
+         <div className="flex items-center gap-4 text-[11px] text-[#4F200D]/45 dark:text-gray-400 font-medium">
           <span className="flex items-center gap-1">
             <svg
               width="12"
@@ -1149,16 +1152,17 @@ function MobileCard({
         </div>
 
         <div className="flex items-center gap-2.5">
-          <span className="font-bold text-[#4F200D] text-sm">
+          <span className="font-bold text-[#4F200D] dark:text-gray-100 text-sm">
             ฿{formatPrice(booking.totalPrice)}
           </span>
         </div>
+        </div>
       </div>
 
-      <div className="px-4 pb-4 pt-1 flex flex-wrap gap-2 border-t border-[#F6F1E9]">
+      <div className="px-4 pb-4 pt-1 flex flex-wrap gap-2 border-t border-[#F6F1E9] dark:border-gray-700 mt-2">
         <button
           onClick={() => onViewDetail(booking)}
-          className="text-[11px] font-bold px-3 py-1.5 rounded-full bg-[#4F200D]/10 text-[#4F200D] hover:bg-[#4F200D]/15 transition-colors"
+          className="text-[11px] font-bold px-3 py-1.5 rounded-full bg-[#4F200D]/10 dark:bg-gray-700 text-[#4F200D] dark:text-gray-200 hover:bg-[#4F200D]/15 dark:hover:bg-gray-600 transition-colors"
         >
           ดูรายละเอียด
         </button>
@@ -1185,7 +1189,7 @@ function MobileCard({
           <button
             disabled={renewLoadingId === booking.id} // 👈 ใช้งานตรงนี้: ปิดปุ่มตอนกำลังโหลด
             onClick={() => onRenewBooking(booking)} // 👈 ใช้งานตรงนี้: พอกดปุ๊บให้เรียกฟังก์ชัน
-            className="text-[11px] font-bold px-3 py-1.5 rounded-full bg-blue-50 text-blue-600 hover:bg-blue-100 transition-colors disabled:opacity-50"
+            className="text-[11px] font-bold px-3 py-1.5 rounded-full bg-blue-50 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/60 transition-colors disabled:opacity-50"
           >
             {renewLoadingId === booking.id
               ? "กำลังเช็คที่นั่ง..."
@@ -1254,7 +1258,7 @@ function DesktopRow({
 
   return (
     <tr
-      className={`${!isLast ? "border-b border-[#F0E8E0]" : ""} hover:bg-[#FFFAF5] transition-colors`}
+      className={`${!isLast ? "border-b border-[#F0E8E0] dark:border-gray-600" : ""} hover:bg-[#FFFAF5] dark:hover:bg-gray-600 transition-colors`}
     >
       <td className="px-6 py-4">
         <div className="flex items-center gap-3">
@@ -1271,7 +1275,7 @@ function DesktopRow({
             <PlayIcon />
           )}
           <div>
-            <p className="font-bold text-[#4F200D] text-sm">
+            <p className="font-bold text-[#4F200D] dark:text-gray-100 text-sm">
               {getTourTitle(booking)}
             </p>
             <p className="text-[#FF8400] text-xs font-semibold">
@@ -1280,11 +1284,11 @@ function DesktopRow({
           </div>
         </div>
       </td>
-      <td className="px-4 py-4 text-[#4F200D]/60 text-sm whitespace-nowrap font-medium">
+      <td className="px-4 py-4 text-[#4F200D]/60 dark:text-gray-300 text-sm whitespace-nowrap font-medium">
         {travelDateStr}
       </td>
       <td className="px-4 py-4 text-center">
-        <span className="text-sm font-bold text-[#4F200D]/70">
+        <span className="text-sm font-bold text-[#4F200D]/70 dark:text-gray-200">
           {booking.pax} คน
         </span>
       </td>
@@ -1303,16 +1307,16 @@ function DesktopRow({
           )}
         </div>
       </td>
-      <td className="px-6 py-4 text-right font-bold text-[#4F200D]">
+      <td className="px-6 py-4 text-right font-bold text-[#4F200D] dark:text-gray-100">
         ฿{formatPrice(booking.totalPrice)}
       </td>
       <td className="px-4 py-4">
         <div className="flex items-center justify-end gap-2">
           <button
             onClick={() => onViewDetail(booking)}
-            className="text-xs font-bold px-3 py-2 rounded-full bg-[#4F200D]/10 text-[#4F200D] hover:bg-[#4F200D]/15 transition-colors whitespace-nowrap"
+            className="text-xs font-bold px-3 py-2 rounded-full bg-[#4F200D]/10 dark:bg-gray-700 text-[#4F200D] dark:text-gray-200 hover:bg-[#4F200D]/15 dark:hover:bg-gray-600 transition-colors whitespace-nowrap"
           >
-            รายละเอียด
+            {t('booking.details')}
           </button>
 
           {booking.status === "pending_pay" && (
@@ -1321,14 +1325,14 @@ function DesktopRow({
                 to={`/payment/${booking.id}`}
                 className="text-xs font-bold text-white bg-[#FF8400] px-4 py-2 rounded-full hover:bg-[#e67600] transition-colors whitespace-nowrap"
               >
-                ชำระเงิน
+                {t('booking.pay')}
               </Link>
               <button
                 disabled={isCancelling}
                 onClick={() => onCancelBooking(booking)}
                 className="text-xs font-bold px-3 py-2 rounded-full bg-red-50 text-red-500 hover:bg-red-100 transition-colors whitespace-nowrap disabled:opacity-50"
               >
-                {isCancelling ? "กำลังยกเลิก..." : "ยกเลิก"}
+                {isCancelling ? `...${t('booking.cancelling')}` : t('booking.cancel')}
               </button>
             </>
           )}
@@ -1339,19 +1343,19 @@ function DesktopRow({
                 onClick={() => onViewTicket(booking)}
                 className="text-xs font-bold px-3 py-2 rounded-full bg-green-50 text-green-600 hover:bg-green-100 transition-colors whitespace-nowrap"
               >
-                E-ticket
+                {t('booking.eticket')}
               </button>
               {canWriteReview && (
                 <button
                   onClick={() => onWriteReview(booking)}
                   className="text-xs font-bold px-3 py-2 rounded-full bg-[#FF8400]/10 text-[#FF8400] hover:bg-[#FF8400]/20 transition-colors whitespace-nowrap"
                 >
-                  รีวิวทัวร์
+                  {t('booking.reviewTour')}
                 </button>
               )}
               {hasReviewed && (
                 <span className="text-xs font-bold px-3 py-2 rounded-full bg-[#4F200D]/10 text-[#4F200D]/70 whitespace-nowrap">
-                  รีวิวแล้ว
+                  {t('booking.reviewed')}
                 </span>
               )}
             </>
@@ -1387,14 +1391,14 @@ function BookingDetailModal({
 
   return (
     <div className="fixed inset-0 z-50 bg-black/40 flex items-end sm:items-center justify-center p-0 sm:p-4">
-      <div className="w-full sm:max-w-lg bg-white rounded-t-2xl sm:rounded-2xl shadow-xl border border-[#F0E8E0] overflow-hidden max-h-[92vh] flex flex-col">
-        <div className="px-4 sm:px-5 py-3 sm:py-4 border-b border-[#F0E8E0] flex items-center justify-between">
-          <h3 className="text-[#4F200D] font-bold text-base sm:text-lg">
-            รายละเอียดการจอง
+      <div className="w-full sm:max-w-lg bg-white dark:bg-gray-800 rounded-t-2xl sm:rounded-2xl shadow-xl border border-[#F0E8E0] dark:border-gray-700 overflow-hidden max-h-[92vh] flex flex-col">
+        <div className="px-4 sm:px-5 py-3 sm:py-4 border-b border-[#F0E8E0] dark:border-gray-700 flex items-center justify-between">
+          <h3 className="text-[#4F200D] dark:text-gray-100 font-bold text-base sm:text-lg">
+            {t('booking.bookingDetails')}
           </h3>
           <button
             onClick={onClose}
-            className="w-8 h-8 rounded-full bg-[#F6F1E9] text-[#4F200D] hover:bg-[#ede5dc]"
+            className="w-8 h-8 rounded-full bg-[#F6F1E9] dark:bg-gray-700 text-[#4F200D] dark:text-gray-200 hover:bg-[#ede5dc] dark:hover:bg-gray-600"
             aria-label="ปิด"
           >
             ✕
@@ -1402,19 +1406,19 @@ function BookingDetailModal({
         </div>
 
         <div className="px-4 sm:px-5 py-3 sm:py-4 space-y-2.5 text-sm overflow-y-auto">
-          <DetailRow label="เลขอ้างอิง" value={getBookingReference(booking)} />
-          <DetailRow label="ทัวร์" value={getTourTitle(booking)} />
+          <DetailRow label={t('booking.ref')} value={getBookingReference(booking)} />
+          <DetailRow label={t('booking.tourTitle')} value={getTourTitle(booking)} />
           <DetailRow
-            label="วันเดินทาง"
+            label={t('booking.travelDate')}
             value={formatDate(getTravelDate(booking))}
           />
-          <DetailRow label="จำนวนผู้เดินทาง" value={`${booking.pax} คน`} />
+          <DetailRow label={t('booking.paxCount')} value={`${booking.pax} ${t('booking.persons')}`} />
           <DetailRow
-            label="ยอดชำระ"
+            label={t('booking.totalPaid')}
             value={`฿${formatPrice(booking.totalPrice)}`}
           />
-          <div className="flex justify-between items-center py-2 border-b border-[#F6F1E9]">
-            <span className="text-[#4F200D]/55">สถานะ</span>
+          <div className="flex justify-between items-center py-2 border-b border-[#F6F1E9] dark:border-gray-700">
+            <span className="text-[#4F200D]/55 dark:text-gray-400">{t('booking.status')}</span>
             {/* 🌟 ปรับปรุงส่วนแสดง Status ใน Modal ให้รองรับข้อความเวลา */}
             <div className="text-right flex flex-col items-end gap-1">
               <span
@@ -1432,13 +1436,13 @@ function BookingDetailModal({
 
           {booking.contactInfo && (
             <>
-              <DetailRow label="ชื่อ" value={booking.contactInfo.name || "-"} />
+              <DetailRow label={t('booking.name')} value={booking.contactInfo.name || "-"} />
               <DetailRow
-                label="อีเมล"
+                label={t('booking.email')}
                 value={booking.contactInfo.email || "-"}
               />
               <DetailRow
-                label="เบอร์โทร"
+                label={t('booking.phone')}
                 value={booking.contactInfo.phone || "-"}
               />
             </>
@@ -1460,12 +1464,12 @@ function BookingDetailModal({
 
           {booking.paymentSlipUrl && (
             <div className="pt-2">
-              <p className="text-[#4F200D]/55 mb-2">สลิปที่อัปโหลด</p>
+              <p className="text-[#4F200D]/55 dark:text-gray-400 mb-2">สลิปที่อัปโหลด</p>
               <a
                 href={getAssetUrl(booking.paymentSlipUrl)}
                 target="_blank"
                 rel="noreferrer"
-                className="block rounded-xl overflow-hidden border border-[#F0E8E0] hover:border-[#FF8400]/40 transition-colors"
+                className="block rounded-xl overflow-hidden border border-[#F0E8E0] dark:border-gray-600 hover:border-[#FF8400]/40 transition-colors"
               >
                 <img
                   src={getAssetUrl(booking.paymentSlipUrl)}
@@ -1561,14 +1565,14 @@ function WriteReviewModal({
 }) {
   return (
     <div className="fixed inset-0 z-50 bg-black/40 flex items-end sm:items-center justify-center p-0 sm:p-4">
-      <div className="w-full sm:max-w-lg bg-white rounded-t-2xl sm:rounded-2xl shadow-xl border border-[#F0E8E0] overflow-hidden max-h-[92vh] flex flex-col">
-        <div className="px-4 sm:px-5 py-3 sm:py-4 border-b border-[#F0E8E0] flex items-center justify-between">
-          <h3 className="text-[#4F200D] font-bold text-base sm:text-lg">
+      <div className="w-full sm:max-w-lg bg-white dark:bg-gray-800 rounded-t-2xl sm:rounded-2xl shadow-xl border border-[#F0E8E0] dark:border-gray-700 overflow-hidden max-h-[92vh] flex flex-col">
+        <div className="px-4 sm:px-5 py-3 sm:py-4 border-b border-[#F0E8E0] dark:border-gray-700 flex items-center justify-between">
+          <h3 className="text-[#4F200D] dark:text-gray-100 font-bold text-base sm:text-lg">
             เขียนรีวิวทัวร์
           </h3>
           <button
             onClick={onClose}
-            className="w-8 h-8 rounded-full bg-[#F6F1E9] text-[#4F200D] hover:bg-[#ede5dc]"
+            className="w-8 h-8 rounded-full bg-[#F6F1E9] dark:bg-gray-700 text-[#4F200D] dark:text-gray-200 hover:bg-[#ede5dc] dark:hover:bg-gray-600"
             aria-label="ปิด"
           >
             ✕
@@ -1577,16 +1581,16 @@ function WriteReviewModal({
 
         <div className="px-4 sm:px-5 py-3 sm:py-4 space-y-4 overflow-y-auto">
           <div>
-            <p className="text-sm font-semibold text-[#4F200D]">
+            <p className="text-sm font-semibold text-[#4F200D] dark:text-gray-100">
               {getTourTitle(booking)}
             </p>
-            <p className="text-xs text-[#4F200D]/50 mt-1">
+            <p className="text-xs text-[#4F200D]/50 dark:text-gray-400 mt-1">
               เลขอ้างอิง: {getBookingReference(booking)}
             </p>
           </div>
 
           <div>
-            <p className="text-sm font-semibold text-[#4F200D] mb-2">
+            <p className="text-sm font-semibold text-[#4F200D] dark:text-gray-100 mb-2">
               ให้คะแนน (1-5)
             </p>
             <div className="flex items-center gap-2">
@@ -1601,14 +1605,14 @@ function WriteReviewModal({
                   ★
                 </button>
               ))}
-              <span className="text-sm font-semibold text-[#4F200D]/70 ml-1">
+              <span className="text-sm font-semibold text-[#4F200D]/70 dark:text-gray-300 ml-1">
                 {rating}/5
               </span>
             </div>
           </div>
 
           <div>
-            <p className="text-sm font-semibold text-[#4F200D] mb-2">
+            <p className="text-sm font-semibold text-[#4F200D] dark:text-gray-100 mb-2">
               ความคิดเห็น
             </p>
             <textarea
@@ -1616,7 +1620,7 @@ function WriteReviewModal({
               onChange={(e) => onChangeComment(e.target.value)}
               rows={4}
               placeholder="เล่าประสบการณ์ทัวร์ของคุณ..."
-              className="w-full rounded-xl border border-[#E9DCCF] px-3 py-2 text-sm text-[#4F200D] focus:outline-none focus:ring-2 focus:ring-[#FF8400]/40"
+              className="w-full rounded-xl border border-[#E9DCCF] dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-sm text-[#4F200D] dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-[#FF8400]/40"
             />
           </div>
 
@@ -1631,14 +1635,14 @@ function WriteReviewModal({
               <button
                 type="button"
                 onClick={() => onViewTour(booking)}
-                className="text-left text-sm font-semibold text-[#4F200D]/70 hover:text-[#FF8400]"
+                className="text-left text-sm font-semibold text-[#4F200D]/70 dark:text-gray-400 hover:text-[#FF8400] dark:hover:text-[#FF8400]"
               >
                 ไปหน้ารายละเอียดทัวร์
               </button>
             ) : (
               <Link
                 to="/tours"
-                className="text-sm font-semibold text-[#4F200D]/70 hover:text-[#FF8400]"
+                className="text-sm font-semibold text-[#4F200D]/70 dark:text-gray-400 hover:text-[#FF8400] dark:hover:text-[#FF8400]"
               >
                 ไปหน้ารายละเอียดทัวร์
               </Link>
@@ -1649,7 +1653,7 @@ function WriteReviewModal({
                 type="button"
                 onClick={onClose}
                 disabled={loading}
-                className="text-sm font-semibold px-4 py-2 rounded-full bg-[#F6F1E9] text-[#4F200D] hover:bg-[#ede5dc] disabled:opacity-50"
+                className="text-sm font-semibold px-4 py-2 rounded-full bg-[#F6F1E9] dark:bg-gray-700 text-[#4F200D] dark:text-gray-200 hover:bg-[#ede5dc] dark:hover:bg-gray-600 disabled:opacity-50"
               >
                 ยกเลิก
               </button>
@@ -1717,14 +1721,14 @@ function ETicketModal({
       `}</style>
 
       <div className="ticket-print-root fixed inset-0 z-50 bg-black/40 flex items-end sm:items-center justify-center p-0 sm:p-4">
-        <div className="ticket-print-card w-full sm:max-w-2xl bg-white rounded-t-2xl sm:rounded-2xl shadow-xl border border-[#F0E8E0] overflow-hidden max-h-[92vh] flex flex-col">
-          <div className="ticket-print-header px-4 sm:px-5 py-3 sm:py-4 border-b border-[#F0E8E0] flex items-center justify-between">
-            <h3 className="text-[#4F200D] font-bold text-base sm:text-lg">
+        <div className="ticket-print-card w-full sm:max-w-2xl bg-white dark:bg-gray-800 rounded-t-2xl sm:rounded-2xl shadow-xl border border-[#F0E8E0] dark:border-gray-700 overflow-hidden max-h-[92vh] flex flex-col">
+          <div className="ticket-print-header px-4 sm:px-5 py-3 sm:py-4 border-b border-[#F0E8E0] dark:border-gray-700 flex items-center justify-between">
+            <h3 className="text-[#4F200D] dark:text-gray-100 font-bold text-base sm:text-lg">
               E-ticket
             </h3>
             <button
               onClick={onClose}
-              className="w-8 h-8 rounded-full bg-[#F6F1E9] text-[#4F200D] hover:bg-[#ede5dc]"
+              className="w-8 h-8 rounded-full bg-[#F6F1E9] dark:bg-gray-700 text-[#4F200D] dark:text-gray-200 hover:bg-[#ede5dc] dark:hover:bg-gray-600"
               aria-label="ปิด"
             >
               ✕
@@ -1800,7 +1804,7 @@ function ETicketModal({
             <div className="ticket-print-actions mt-4 flex flex-wrap justify-end gap-2">
               <button
                 onClick={() => window.print()}
-                className="text-xs font-bold px-4 py-2 rounded-full bg-[#4F200D]/10 text-[#4F200D] hover:bg-[#4F200D]/15"
+                className="text-xs font-bold px-4 py-2 rounded-full bg-[#4F200D]/10 dark:bg-gray-700 text-[#4F200D] dark:text-gray-200 hover:bg-[#4F200D]/15 dark:hover:bg-gray-600"
               >
                 พิมพ์ตั๋ว
               </button>
@@ -1820,9 +1824,9 @@ function ETicketModal({
 
 function DetailRow({ label, value }: { label: string; value: string }) {
   return (
-    <div className="flex justify-between items-start gap-4 py-2 border-b border-[#F6F1E9]">
-      <span className="text-[#4F200D]/55">{label}</span>
-      <span className="text-[#4F200D] font-semibold text-right">{value}</span>
+    <div className="flex justify-between items-start gap-4 py-2 border-b border-[#F6F1E9] dark:border-gray-700">
+      <span className="text-[#4F200D]/55 dark:text-gray-400">{label}</span>
+      <span className="text-[#4F200D] dark:text-gray-100 font-semibold text-right">{value}</span>
     </div>
   );
 }
@@ -1852,15 +1856,15 @@ function CancelBookingModal({
 
   return (
     <div className="fixed inset-0 z-[60] bg-black/40 flex items-end sm:items-center justify-center p-0 sm:p-4">
-      <div className="w-full sm:max-w-md bg-white rounded-t-2xl sm:rounded-2xl shadow-xl border border-[#F0E8E0] overflow-hidden max-h-[92vh] flex flex-col">
-        <div className="px-4 sm:px-5 py-3 sm:py-4 border-b border-[#F0E8E0] flex items-center justify-between">
-          <h3 className="text-[#4F200D] font-bold text-base sm:text-lg">
+      <div className="w-full sm:max-w-md bg-white dark:bg-gray-800 rounded-t-2xl sm:rounded-2xl shadow-xl border border-[#F0E8E0] dark:border-gray-700 overflow-hidden max-h-[92vh] flex flex-col">
+        <div className="px-4 sm:px-5 py-3 sm:py-4 border-b border-[#F0E8E0] dark:border-gray-700 flex items-center justify-between">
+          <h3 className="text-[#4F200D] dark:text-gray-100 font-bold text-base sm:text-lg">
             ยืนยันการยกเลิกการจอง
           </h3>
           <button
             onClick={onClose}
             disabled={loading}
-            className="w-8 h-8 rounded-full bg-[#F6F1E9] text-[#4F200D] hover:bg-[#ede5dc] disabled:opacity-50"
+            className="w-8 h-8 rounded-full bg-[#F6F1E9] dark:bg-gray-700 text-[#4F200D] dark:text-gray-200 hover:bg-[#ede5dc] dark:hover:bg-gray-600 disabled:opacity-50"
             aria-label="ปิด"
           >
             ✕
@@ -1868,14 +1872,14 @@ function CancelBookingModal({
         </div>
 
         <div className="px-4 sm:px-5 py-3 sm:py-4 space-y-3 overflow-y-auto">
-          <p className="text-sm text-[#4F200D]/70">
+          <p className="text-sm text-[#4F200D]/70 dark:text-gray-300">
             การจอง{" "}
-            <span className="font-semibold">
+            <span className="font-semibold text-[#4F200D] dark:text-gray-100">
               {getBookingReference(booking)}
             </span>
           </p>
 
-          <label className="block text-sm font-semibold text-[#4F200D]">
+          <label className="block text-sm font-semibold text-[#4F200D] dark:text-gray-100">
             เหตุผลการยกเลิก
           </label>
 
@@ -1885,7 +1889,7 @@ function CancelBookingModal({
               onChangeReasonPreset(e.target.value as CancelReasonOption)
             }
             disabled={loading}
-            className="w-full rounded-xl border border-[#EADFD3] px-3 py-2 text-sm text-[#4F200D] bg-white focus:outline-none focus:ring-2 focus:ring-[#FF8400]/30"
+            className="w-full rounded-xl border border-[#EADFD3] dark:border-gray-600 px-3 py-2 text-sm text-[#4F200D] dark:text-gray-100 bg-white dark:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-[#FF8400]/30"
           >
             {CANCEL_REASON_OPTIONS.map((option) => (
               <option key={option} value={option}>
@@ -1894,7 +1898,7 @@ function CancelBookingModal({
             ))}
           </select>
 
-          <label className="block text-sm font-semibold text-[#4F200D]">
+          <label className="block text-sm font-semibold text-[#4F200D] dark:text-gray-100">
             รายละเอียดเพิ่มเติม {requireDetail ? "(จำเป็น)" : "(ถ้ามี)"}
           </label>
           <textarea
@@ -1907,7 +1911,7 @@ function CancelBookingModal({
                 ? "กรุณาระบุเหตุผลการยกเลิก"
                 : "ระบุรายละเอียดเพิ่มเติม (ถ้ามี)"
             }
-            className="w-full rounded-xl border border-[#EADFD3] px-3 py-2 text-sm text-[#4F200D] focus:outline-none focus:ring-2 focus:ring-[#FF8400]/30"
+            className="w-full rounded-xl border border-[#EADFD3] dark:border-gray-600 px-3 py-2 text-sm text-[#4F200D] dark:text-gray-100 bg-white dark:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-[#FF8400]/30"
           />
 
           {error && (
@@ -1919,7 +1923,7 @@ function CancelBookingModal({
           <button
             onClick={onClose}
             disabled={loading}
-            className="text-xs font-bold px-4 py-2 rounded-full bg-[#4F200D]/10 text-[#4F200D] hover:bg-[#4F200D]/15 disabled:opacity-50"
+            className="text-xs font-bold px-4 py-2 rounded-full bg-[#4F200D]/10 dark:bg-gray-700 text-[#4F200D] dark:text-gray-200 hover:bg-[#4F200D]/15 dark:hover:bg-gray-600 disabled:opacity-50"
           >
             ยกเลิก
           </button>
@@ -1949,15 +1953,15 @@ function InfoModal({
 }) {
   return (
     <div className="fixed inset-0 z-[70] bg-black/40 flex items-end sm:items-center justify-center p-0 sm:p-4">
-      <div className="w-full sm:max-w-sm bg-white rounded-t-2xl sm:rounded-2xl shadow-xl border border-[#F0E8E0] overflow-hidden max-h-[92vh] flex flex-col">
-        <div className="px-4 sm:px-5 py-3 sm:py-4 border-b border-[#F0E8E0]">
-          <h3 className="text-[#4F200D] font-bold text-base sm:text-lg">
+      <div className="w-full sm:max-w-sm bg-white dark:bg-gray-800 rounded-t-2xl sm:rounded-2xl shadow-xl border border-[#F0E8E0] dark:border-gray-700 overflow-hidden max-h-[92vh] flex flex-col">
+        <div className="px-4 sm:px-5 py-3 sm:py-4 border-b border-[#F0E8E0] dark:border-gray-700">
+          <h3 className="text-[#4F200D] dark:text-gray-100 font-bold text-base sm:text-lg">
             {title}
           </h3>
         </div>
 
         <div className="px-4 sm:px-5 py-4 sm:py-5 overflow-y-auto">
-          <p className="text-sm text-[#4F200D]/75">{message}</p>
+          <p className="text-sm text-[#4F200D]/75 dark:text-gray-300">{message}</p>
           <div className="mt-5 flex justify-end">
             <button
               onClick={onClose}
@@ -1978,8 +1982,8 @@ function InfoModal({
 
 function EmptyState() {
   return (
-    <div className="bg-white rounded-2xl border border-[#F0E8E0] px-6 py-16 flex flex-col items-center gap-4 shadow-sm">
-      <div className="w-16 h-16 rounded-full bg-[#FFF3E0] flex items-center justify-center">
+    <div className="bg-white dark:bg-gray-800 rounded-2xl border border-[#F0E8E0] dark:border-gray-700 px-6 py-16 flex flex-col items-center gap-4 shadow-sm">
+      <div className="w-16 h-16 rounded-full bg-[#FFF3E0] dark:bg-[#FFF3E0]/10 flex items-center justify-center">
         <svg
           width="32"
           height="32"
@@ -1996,8 +2000,8 @@ function EmptyState() {
           <line x1="3" y1="10" x2="21" y2="10" />
         </svg>
       </div>
-      <p className="text-[#4F200D] font-semibold text-lg">ยังไม่มีการจอง</p>
-      <p className="text-gray-400 text-sm text-center">
+      <p className="text-[#4F200D] dark:text-gray-100 font-semibold text-lg">ยังไม่มีการจอง</p>
+      <p className="text-gray-400 dark:text-gray-500 text-sm text-center">
         คุณยังไม่มีประวัติการจองทัวร์ในระบบ
       </p>
       <Link
@@ -2018,11 +2022,11 @@ function LoadingSkeleton() {
   return (
     <div className="flex flex-col gap-3">
       {/* Skeleton filter bar */}
-      <div className="bg-white rounded-2xl border border-[#F0E8E0] p-4 shadow-sm animate-pulse">
-        <div className="h-10 bg-gray-100 rounded-xl mb-3" />
+      <div className="bg-white dark:bg-gray-800 rounded-2xl border border-[#F0E8E0] dark:border-gray-700 p-4 shadow-sm animate-pulse">
+        <div className="h-10 bg-gray-100 dark:bg-gray-700 rounded-xl mb-3" />
         <div className="flex gap-2">
           {[1, 2, 3, 4].map((i) => (
-            <div key={i} className="h-8 bg-gray-100 rounded-full w-20" />
+            <div key={i} className="h-8 bg-gray-100 dark:bg-gray-700 rounded-full w-20" />
           ))}
         </div>
       </div>
@@ -2030,16 +2034,16 @@ function LoadingSkeleton() {
       {[1, 2, 3].map((i) => (
         <div
           key={i}
-          className="bg-white rounded-2xl border border-[#F0E8E0] px-4 py-4 flex items-center gap-4 shadow-sm animate-pulse"
+          className="bg-white dark:bg-gray-800 rounded-2xl border border-[#F0E8E0] dark:border-gray-700 px-4 py-4 flex items-center gap-4 shadow-sm animate-pulse"
         >
-          <div className="w-10 h-10 rounded-full bg-gray-200 flex-shrink-0" />
+          <div className="w-10 h-10 rounded-full bg-gray-200 dark:bg-gray-600 flex-shrink-0" />
           <div className="flex-1 space-y-2">
-            <div className="h-4 bg-gray-200 rounded w-2/3" />
-            <div className="h-3 bg-gray-100 rounded w-1/3" />
+            <div className="h-4 bg-gray-200 dark:bg-gray-600 rounded w-2/3" />
+            <div className="h-3 bg-gray-100 dark:bg-gray-700 rounded w-1/3" />
           </div>
           <div className="flex flex-col items-end gap-2">
-            <div className="h-6 bg-gray-200 rounded-full w-20" />
-            <div className="h-4 bg-gray-100 rounded w-14" />
+            <div className="h-6 bg-gray-200 dark:bg-gray-600 rounded-full w-20" />
+            <div className="h-4 bg-gray-100 dark:bg-gray-700 rounded w-14" />
           </div>
         </div>
       ))}
@@ -2053,8 +2057,8 @@ function LoadingSkeleton() {
 
 function ErrorState({ message }: { message: string }) {
   return (
-    <div className="bg-white rounded-2xl border border-red-100 px-6 py-12 flex flex-col items-center gap-3 shadow-sm">
-      <div className="w-14 h-14 rounded-full bg-red-50 flex items-center justify-center">
+    <div className="bg-white dark:bg-gray-800 rounded-2xl border border-red-100 dark:border-red-900/30 px-6 py-12 flex flex-col items-center gap-3 shadow-sm">
+      <div className="w-14 h-14 rounded-full bg-red-50 dark:bg-red-500/10 flex items-center justify-center">
         <svg
           width="28"
           height="28"

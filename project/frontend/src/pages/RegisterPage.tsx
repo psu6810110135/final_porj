@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import axios from "axios";
 import { Link, useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import Navbar from "../components/Navbar";
 import { API_BASE_URL } from "@/config/api";
 
@@ -26,7 +27,6 @@ const getStrength = (pw: string): number => {
   return s;
 };
 
-const STRENGTH_LABEL = ["", "อ่อนมาก", "อ่อน", "ปานกลาง", "แข็งแกร่ง"];
 const STRENGTH_COLOR = ["", "#ef4444", "#f97316", "#eab308", "#22c55e"];
 
 const getInputStyle = (
@@ -74,6 +74,7 @@ const Field: React.FC<FieldProps> = ({
 }) => (
   <div style={{ marginBottom: 14 }}>
     <label
+      className="dark:text-gray-200"
       style={{
         display: "block",
         fontSize: 13,
@@ -87,6 +88,7 @@ const Field: React.FC<FieldProps> = ({
     </label>
     <div style={{ position: "relative" }}>
       <span
+        className="dark:text-gray-300"
         style={{
           position: "absolute",
           left: 13,
@@ -100,6 +102,7 @@ const Field: React.FC<FieldProps> = ({
         {icon}
       </span>
       <input
+        className="reg-input"
         type={type}
         name={name}
         value={value}
@@ -109,12 +112,10 @@ const Field: React.FC<FieldProps> = ({
         onFocus={(e) => {
           e.target.style.borderColor = "#FF8C00";
           e.target.style.boxShadow = "0 0 0 3px rgba(255,140,0,0.12)";
-          e.target.style.background = "white";
         }}
         onBlur={(e) => {
-          e.target.style.borderColor = error ? "#ef4444" : "#E0D5CF";
+          e.target.style.borderColor = error ? "#ef4444" : "";
           e.target.style.boxShadow = "none";
-          e.target.style.background = error ? "#fff5f5" : "#FAFAFA";
         }}
       />
       {rightSlot && (
@@ -175,6 +176,7 @@ const PasswordField: React.FC<PasswordFieldProps> = ({
 }) => (
   <div style={{ marginBottom: 14 }}>
     <label
+      className="dark:text-gray-200"
       style={{
         display: "block",
         fontSize: 13,
@@ -187,6 +189,7 @@ const PasswordField: React.FC<PasswordFieldProps> = ({
     </label>
     <div style={{ position: "relative" }}>
       <span
+        className="dark:text-gray-300"
         style={{
           position: "absolute",
           left: 13,
@@ -200,6 +203,7 @@ const PasswordField: React.FC<PasswordFieldProps> = ({
         {icon}
       </span>
       <input
+        className="reg-input"
         type={show ? "text" : "password"}
         name={name}
         value={value}
@@ -212,14 +216,12 @@ const PasswordField: React.FC<PasswordFieldProps> = ({
         onFocus={(e) => {
           e.target.style.borderColor = "#FF8C00";
           e.target.style.boxShadow = "0 0 0 3px rgba(255,140,0,0.12)";
-          e.target.style.background = "white";
         }}
         onBlur={(e) => {
           e.target.style.borderColor = error
             ? "#ef4444"
-            : (borderColor ?? "#E0D5CF");
+            : (borderColor ?? "");
           e.target.style.boxShadow = "none";
-          e.target.style.background = error ? "#fff5f5" : "#FAFAFA";
         }}
       />
       <button
@@ -275,6 +277,7 @@ const PasswordField: React.FC<PasswordFieldProps> = ({
 /* ─── Main Component ─────────────────────────────── */
 const RegisterPage: React.FC = () => {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const [step, setStep] = useState<1 | 2>(1);
   const [formData, setFormData] = useState<FormData>({
     username: "",
@@ -306,12 +309,12 @@ const RegisterPage: React.FC = () => {
 
   const validateStep1 = (): boolean => {
     const e: Partial<FormData> = {};
-    if (!formData.firstName.trim()) e.firstName = 'กรุณากรอกชื่อ';
-    if (!formData.lastName.trim()) e.lastName = 'กรุณากรอกนามสกุล';
-    if (!formData.username.trim()) e.username = 'กรุณากรอกชื่อผู้ใช้';
-    else if (formData.username.trim().length < 4) e.username = 'ชื่อผู้ใช้ต้องมีอย่างน้อย 4 ตัวอักษร';
-    if (!formData.email.trim()) e.email = 'กรุณากรอกอีเมล';
-    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) e.email = 'รูปแบบอีเมลไม่ถูกต้อง';
+    if (!formData.firstName.trim()) e.firstName = t("register.errorFirstName");
+    if (!formData.lastName.trim()) e.lastName = t("register.errorLastName");
+    if (!formData.username.trim()) e.username = t("register.errorUsername");
+    else if (formData.username.trim().length < 4) e.username = t("register.errorUsernameLen");
+    if (!formData.email.trim()) e.email = t("register.errorEmail");
+    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) e.email = t("register.errorEmailFormat");
     setErrors(e);
     return Object.keys(e).length === 0;
   };
@@ -319,9 +322,9 @@ const RegisterPage: React.FC = () => {
   const validateStep2 = (): boolean => {
     const e: Partial<FormData> = {};
     if (formData.password.length < 8)
-      e.password = "รหัสผ่านต้องมีอย่างน้อย 8 ตัวอักษร";
+      e.password = t("register.errorPasswordLen");
     if (formData.password !== formData.confirmPassword)
-      e.confirmPassword = "รหัสผ่านไม่ตรงกัน";
+      e.confirmPassword = t("register.errorPasswordMatch");
     setErrors(e);
     return Object.keys(e).length === 0;
   };
@@ -352,7 +355,7 @@ const RegisterPage: React.FC = () => {
       });
       setBanner({
         type: "success",
-        msg: "สมัครสมาชิกสำเร็จ! 🎉 กำลังพาไปหน้าเข้าสู่ระบบ...",
+        msg: t("register.successMessage"),
       });
       setTimeout(() => navigate("/login"), 2000);
     } catch (error: any) {
@@ -361,19 +364,19 @@ const RegisterPage: React.FC = () => {
 
       if (status === 409) {
         setStep(1);
-        setErrors({ username: "ชื่อผู้ใช้หรืออีเมลนี้มีคนใช้แล้ว", email: "ชื่อผู้ใช้หรืออีเมลนี้มีคนใช้แล้ว" });
-        setBanner({ type: "error", msg: "ชื่อผู้ใช้หรืออีเมลนี้มีคนใช้แล้ว" });
+        setErrors({ username: t("register.errorDuplicate"), email: t("register.errorDuplicate") });
+        setBanner({ type: "error", msg: t("register.errorDuplicate") });
       } else if (status === 400) {
         // ดึง Error 400 จาก class-validator ของ NestJS ออกมาแสดงผล
-        const errorMsg = Array.isArray(msg) ? msg[0] : (typeof msg === 'string' ? msg : "ข้อมูลไม่ถูกต้อง กรุณาตรวจสอบอีกครั้ง");
+        const errorMsg = Array.isArray(msg) ? msg[0] : (typeof msg === 'string' ? msg : "ข้อมูลไม่ถูกต้อง");
         setBanner({
           type: "error",
-          msg: `ตรวจสอบข้อมูล: ${errorMsg}`,
+          msg: `${t("register.errorMessage")}${errorMsg}`,
         });
       } else {
         setBanner({
           type: "error",
-          msg: "ระบบขัดข้อง หรือไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้ กรุณาลองใหม่อีกครั้ง",
+          msg: t("register.errorNetwork"),
         });
       }
     } finally {
@@ -461,11 +464,33 @@ const RegisterPage: React.FC = () => {
         }
         .strength-bar { display: flex; gap: 3px; margin-top: 5px; }
         .strength-seg { height: 4px; flex: 1; border-radius: 2px; transition: background 0.3s; }
-        @keyframes slideDown {
-          from { opacity: 0; transform: translateY(-6px); }
-          to   { opacity: 1; transform: translateY(0); }
-        }
         .slide-in { animation: slideDown 0.22s ease; }
+        .reg-input { background: #FAFAFA; color: #3E2723; border-color: #E0D5CF; }
+        .dark .reg-wrap {
+          background: linear-gradient(135deg, #111827 0%, #1f2937 45%, #374151 100%);
+        }
+        .dark .reg-wrap::before {
+          background: radial-gradient(circle, rgba(255,140,0,0.05) 0%, transparent 70%);
+        }
+        .dark .reg-wrap::after {
+          background: radial-gradient(circle, rgba(0,0,0,0.5) 0%, transparent 70%);
+        }
+        .dark .reg-card {
+          background: #1f2937;
+          border-color: rgba(255,255,255,0.1);
+          box-shadow: 0 24px 64px rgba(0,0,0,0.4);
+        }
+        .dark .reg-header::after {
+          background: #1f2937;
+        }
+        .dark .step-idle { background: #374151; }
+        .dark .back-btn { background: #374151; border-color: #4b5563; color: #d1d5db; }
+        .dark .back-btn:hover { background: #4b5563; }
+        .dark .google-btn { background: #374151; border-color: #4b5563; color: #d1d5db; }
+        .dark .google-btn:hover { background: #4b5563; }
+        .dark .summary-box { background: #374151; border-color: rgba(255,255,255,0.1); }
+        .dark .reg-input { background: #374151 !important; color: white !important; }
+        .dark .reg-input:not(:focus) { border-color: #4b5563 !important; }
       `}</style>
 
       <Navbar />
@@ -506,7 +531,7 @@ const RegisterPage: React.FC = () => {
                       margin: 0,
                     }}
                   >
-                    เริ่มต้นการเดินทาง
+                    {t("register.subtitle")}
                   </p>
                   <h2
                     style={{
@@ -517,7 +542,7 @@ const RegisterPage: React.FC = () => {
                       letterSpacing: "-0.4px",
                     }}
                   >
-                    สร้างบัญชีใหม่
+                    {t("register.title")}
                   </h2>
                 </div>
               </div>
@@ -544,8 +569,8 @@ const RegisterPage: React.FC = () => {
                 }}
               >
                 {step === 1
-                  ? "ขั้นตอนที่ 1 จาก 2 — ข้อมูลส่วนตัว"
-                  : "ขั้นตอนที่ 2 จาก 2 — ตั้งรหัสผ่าน"}
+                  ? t("register.step1")
+                  : t("register.step2")}
               </p>
 
               {/* Banner */}
@@ -569,9 +594,9 @@ const RegisterPage: React.FC = () => {
                     }}
                   >
                     <Field
-                      label="ชื่อ"
+                      label={t("register.firstName")}
                       name="firstName"
-                      placeholder="ชาญชัย"
+                      placeholder={t("register.firstNamePlaceholder")}
                       icon="👤"
                       required
                       value={formData.firstName}
@@ -579,9 +604,9 @@ const RegisterPage: React.FC = () => {
                       error={errors.firstName}
                     />
                     <Field
-                      label="นามสกุล"
+                      label={t("register.lastName")}
                       name="lastName"
-                      placeholder="ใจดี"
+                      placeholder={t("register.lastNamePlaceholder")}
                       icon="👤"
                       required
                       value={formData.lastName}
@@ -589,9 +614,9 @@ const RegisterPage: React.FC = () => {
                       error={errors.lastName}
                     />
                   </div>
-                  <Field label="ชื่อผู้ใช้" name="username" placeholder="เช่น chaichai99" icon="🪪" required value={formData.username} onChange={handleChange} error={errors.username} />
-                  <Field label="อีเมล" name="email" type="email" placeholder="email@example.com" icon="✉️" required value={formData.email} onChange={handleChange} error={errors.email} />
-                  <Field label="เบอร์โทรศัพท์" name="phoneNumber" type="tel" placeholder="08X-XXX-XXXX (ไม่จำเป็น)" icon="📱" value={formData.phoneNumber} onChange={handleChange} />
+                  <Field label={t("register.username")} name="username" placeholder={t("register.usernamePlaceholder")} icon="🪪" required value={formData.username} onChange={handleChange} error={errors.username} />
+                  <Field label={t("register.email")} name="email" type="email" placeholder={t("register.emailPlaceholder")} icon="✉️" required value={formData.email} onChange={handleChange} error={errors.email} />
+                  <Field label={t("register.phone")} name="phoneNumber" type="tel" placeholder={t("register.phonePlaceholder")} icon="📱" value={formData.phoneNumber} onChange={handleChange} />
 
                   <button
                     type="button"
@@ -599,7 +624,7 @@ const RegisterPage: React.FC = () => {
                     onClick={handleNext}
                     style={{ marginTop: 6, marginBottom: 18 }}
                   >
-                    ถัดไป →
+                    {t("register.next")}
                   </button>
 
                   <div
@@ -613,7 +638,7 @@ const RegisterPage: React.FC = () => {
                     <div
                       style={{ flex: 1, height: 1, background: "#EDE0D8" }}
                     />
-                    <span style={{ color: "#BCAAA4", fontSize: 12 }}>หรือ</span>
+                    <span style={{ color: "#BCAAA4", fontSize: 12 }}>{t("register.or")}</span>
                     <div
                       style={{ flex: 1, height: 1, background: "#EDE0D8" }}
                     />
@@ -644,7 +669,7 @@ const RegisterPage: React.FC = () => {
                         d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
                       />
                     </svg>
-                    ลงทะเบียนด้วย Google
+                    {t("register.googleBtn")}
                   </button>
 
                   <p
@@ -655,7 +680,7 @@ const RegisterPage: React.FC = () => {
                       color: "#8D6E63",
                     }}
                   >
-                    มีบัญชีอยู่แล้ว?
+                    {t("register.haveAccount")}
                     <Link
                       to="/login"
                       style={{
@@ -665,7 +690,7 @@ const RegisterPage: React.FC = () => {
                         textDecoration: "none",
                       }}
                     >
-                      เข้าสู่ระบบ
+                      {t("register.login")}
                     </Link>
                   </p>
                 </div>
@@ -675,9 +700,9 @@ const RegisterPage: React.FC = () => {
               {step === 2 && (
                 <form onSubmit={handleSubmit} noValidate className="slide-in">
                   <PasswordField
-                    label="รหัสผ่าน"
+                    label={t("register.password")}
                     name="password"
-                    placeholder="อย่างน้อย 8 ตัวอักษร"
+                    placeholder={t("register.passwordPlaceholder")}
                     icon="🔒"
                     value={formData.password}
                     onChange={handleChange}
@@ -711,15 +736,15 @@ const RegisterPage: React.FC = () => {
                           margin: "4px 0 0",
                         }}
                       >
-                        ความแข็งแกร่ง: {STRENGTH_LABEL[strength]}
+                        {t("register.strength")} {t(`register.strength${strength}`)}
                       </p>
                     </div>
                   )}
 
                   <PasswordField
-                    label="ยืนยันรหัสผ่าน"
+                    label={t("register.confirmPassword")}
                     name="confirmPassword"
-                    placeholder="กรอกรหัสผ่านอีกครั้ง"
+                    placeholder={t("register.confirmPasswordPlaceholder")}
                     icon="🔑"
                     value={formData.confirmPassword}
                     onChange={handleChange}
@@ -731,7 +756,7 @@ const RegisterPage: React.FC = () => {
                       !errors.confirmPassword &&
                         formData.confirmPassword &&
                         formData.confirmPassword === formData.password
-                        ? "✓ รหัสผ่านตรงกัน"
+                        ? t("register.passwordMatched")
                         : undefined
                     }
                   />
@@ -746,7 +771,7 @@ const RegisterPage: React.FC = () => {
                         marginBottom: 10,
                       }}
                     >
-                      📋 ข้อมูลที่จะลงทะเบียน
+                      {t("register.summaryTitle")}
                     </p>
                     <div
                       style={{
@@ -758,16 +783,17 @@ const RegisterPage: React.FC = () => {
                       {(
                         [
                           [
-                            "ชื่อ-นามสกุล",
+                            t("register.fullName"),
                             `${formData.firstName} ${formData.lastName}`,
                           ],
-                          ["ชื่อผู้ใช้", formData.username],
-                          ["อีเมล", formData.email],
-                          ["เบอร์โทร", formData.phoneNumber || "—"],
+                          [t("register.username"), formData.username],
+                          [t("register.email"), formData.email],
+                          [t("register.phone"), formData.phoneNumber || "—"],
                         ] as [string, string][]
                       ).map(([k, v]) => (
                         <div key={k}>
                           <p
+                            className="dark:text-gray-400"
                             style={{
                               fontSize: 11,
                               color: "#A1887F",
@@ -777,6 +803,7 @@ const RegisterPage: React.FC = () => {
                             {k}
                           </p>
                           <p
+                            className="dark:text-gray-100"
                             style={{
                               fontSize: 12,
                               fontWeight: 600,
@@ -801,7 +828,7 @@ const RegisterPage: React.FC = () => {
                         setErrors({});
                       }}
                     >
-                      ← กลับ
+                      {t("register.back")}
                     </button>
                     <button
                       type="submit"
@@ -809,7 +836,7 @@ const RegisterPage: React.FC = () => {
                       disabled={loading}
                       style={{ flex: 1 }}
                     >
-                      {loading ? "⏳ กำลังสมัคร..." : "🎉 สมัครสมาชิก"}
+                      {loading ? t("register.submitting") : t("register.submit")}
                     </button>
                   </div>
                 </form>

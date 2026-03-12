@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { useNavigate } from "react-router-dom";
 import { API_BASE_URL } from "@/config/api";
+import { useTranslation } from "react-i18next";
 
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
@@ -454,6 +455,7 @@ function RichDropdown({
 
 export default function HomePage() {
   const navigate = useNavigate();
+  const { t } = useTranslation();
 
   const [selectedProvince, setSelectedProvince] = useState<string>("");
   const [selectedCategory, setSelectedCategory] = useState<string>("");
@@ -621,16 +623,16 @@ export default function HomePage() {
   const features = [
     {
       id: 1,
-      title: "คุ้มค่าคุ้มราคา",
-      desc: "เที่ยวง่าย จ่ายเบาๆ",
+      title: t('home.feature1Title'),
+      desc: t('home.feature1Desc'),
       icon: CurrencyIcon,
     },
-    { id: 2, title: "ไกด์ส่วนตัว", desc: "เที่ยวตามสไตล์คุณ", icon: HotelIcon },
-    { id: 3, title: "เดินทางปลอดภัย", desc: "อุ่นใจทุกเส้นทาง", icon: MapIcon },
+    { id: 2, title: t('home.feature2Title'), desc: t('home.feature2Desc'), icon: HotelIcon },
+    { id: 3, title: t('home.feature3Title'), desc: t('home.feature3Desc'), icon: MapIcon },
     {
       id: 4,
-      title: "ดูแลตลอด 24 ชม.",
-      desc: "ติดต่อได้ทุกเมื่อ",
+      title: t('home.feature4Title'),
+      desc: t('home.feature4Desc'),
       icon: HeadphonesIcon,
     },
   ];
@@ -638,23 +640,23 @@ export default function HomePage() {
   const steps = [
     {
       num: 1,
-      title: "เลือกจุดหมาย",
-      desc: "ค้นหารายชื่อสถานที่ท่องเที่ยวยอดนิยมที่เราคัดมาเพื่อคุณ",
+      title: t('home.step1Title'),
+      desc: t('home.step1Desc'),
     },
     {
       num: 2,
-      title: "เช็ควันว่าง",
-      desc: "เลือกวันเดินทางที่เหมาะสมกับตารางเวลาของคุณ",
+      title: t('home.step2Title'),
+      desc: t('home.step2Desc'),
     },
     {
       num: 3,
-      title: "ออกเดินทางกันเลย!",
-      desc: "รับแผนการเดินทาง แล้วเตรียมตัวเดินทางได้ทันที",
+      title: t('home.step3Title'),
+      desc: t('home.step3Desc'),
     },
   ];
 
   return (
-    <div className="min-h-screen bg-[#F6F1E9]">
+    <div className="min-h-screen bg-[#F6F1E9] dark:bg-gray-900">
       <Navbar activePage="home" />
 
       {/* Hero Section */}
@@ -676,17 +678,17 @@ export default function HomePage() {
           <h1
             className={`text-3xl md:text-5xl lg:text-6xl xl:text-[64px] font-extrabold text-white mb-2 text-center drop-shadow-lg transition-all duration-700 ${heroReady ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}
           >
-            ไม่ว่าจุดหมายคือที่ใด
+            {t('home.heroTitle')}
           </h1>
           <h2
             className={`text-2xl md:text-4xl lg:text-5xl xl:text-[56px] font-extrabold text-[#FFD93D] mb-4 text-center drop-shadow-lg transition-all duration-700 delay-200 ${heroReady ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}
           >
-            เราพร้อมพาคุณไปส่งถึงที่
+            {t('home.heroSubtitle')}
           </h2>
           <p
             className={`text-sm md:text-base lg:text-lg text-white/70 font-light mb-6 md:mb-10 text-center max-w-xl transition-all duration-700 delay-300 ${heroReady ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}
           >
-            ค้นหาทริปในฝัน จองง่าย ได้ทันที
+            {t('home.heroDesc')}
           </p>
 
           <div
@@ -793,7 +795,7 @@ export default function HomePage() {
                   <circle cx="11" cy="11" r="8" />
                   <line x1="21" y1="21" x2="16.65" y2="16.65" />
                 </svg>
-                ค้นหา
+                {t('home.search')}
               </Button>
             </div>
           </div>
@@ -801,14 +803,14 @@ export default function HomePage() {
       </section>
 
       {/* Services Section */}
-      <section className="py-10 md:py-14 lg:py-20 bg-[#F6F1E9]">
+      <section className="py-10 md:py-14 lg:py-20 bg-[#F6F1E9] dark:bg-gray-900">
         <div
           ref={servicesReveal.ref}
           className={`max-w-[1920px] mx-auto px-4 md:px-8 transition-all duration-700 ${servicesReveal.visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"}`}
         >
           <div className="text-center mb-9 md:mb-12">
-            <h2 className="text-2xl md:text-4xl lg:text-5xl font-bold text-[#4F200D] mb-3">
-              บริการที่เป็นเลิศเพื่อคุณ
+            <h2 className="text-2xl md:text-4xl lg:text-5xl font-bold text-[#4F200D] dark:text-gray-100 mb-3">
+              {t('home.featuredTitle')}
             </h2>
             <div className="w-12 md:w-18 lg:w-24 h-1 md:h-1.5 bg-[#FF8400] mx-auto rounded-full" />
           </div>
@@ -816,17 +818,17 @@ export default function HomePage() {
             {features.map((feature, idx) => (
               <Card
                 key={feature.id}
-                className="border-0 shadow-lg rounded-2xl md:rounded-3xl bg-[#FFFDFA] overflow-hidden hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group"
+                className="border-0 shadow-lg rounded-2xl md:rounded-3xl bg-[#FFFDFA] dark:bg-gray-800 overflow-hidden hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group"
                 style={{ transitionDelay: `${idx * 80}ms` }}
               >
                 <CardContent className="p-4 md:p-6 text-center">
-                  <div className="w-12 h-12 md:w-16 md:h-16 mx-auto mb-3 md:mb-4 bg-[#FFF3E0] rounded-xl md:rounded-2xl flex items-center justify-center text-[#FF8400] group-hover:bg-[#FF8400] group-hover:text-white transition-colors duration-300">
+                  <div className="w-12 h-12 md:w-16 md:h-16 mx-auto mb-3 md:mb-4 bg-[#FFF3E0] dark:bg-gray-700 rounded-xl md:rounded-2xl flex items-center justify-center text-[#FF8400] group-hover:bg-[#FF8400] group-hover:text-white transition-colors duration-300">
                     <feature.icon className="w-6 h-6 md:w-8 md:h-8" />
                   </div>
-                  <h3 className="text-sm md:text-lg lg:text-2xl font-bold text-[#4F200D] mb-1 md:mb-2">
+                  <h3 className="text-sm md:text-lg lg:text-2xl font-bold text-[#4F200D] dark:text-gray-100 mb-1 md:mb-2">
                     {feature.title}
                   </h3>
-                  <p className="text-xs md:text-sm lg:text-lg text-[#4F200D]/80 font-extralight">
+                  <p className="text-xs md:text-sm lg:text-lg text-[#4F200D]/80 dark:text-gray-400 font-extralight">
                     {feature.desc}
                   </p>
                 </CardContent>
@@ -875,19 +877,18 @@ export default function HomePage() {
       </section>
 
       {/* Trip Planning Section */}
-      <section className="py-10 md:py-14 lg:py-20 bg-[#FFFDFA]">
+      <section className="py-10 md:py-14 lg:py-20 bg-[#FFFDFA] dark:bg-gray-800">
         <div
           ref={planReveal.ref}
           className={`max-w-[1920px] mx-auto px-4 md:px-8 transition-all duration-700 ${planReveal.visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"}`}
         >
           <div className="grid lg:grid-cols-2 gap-6 md:gap-9 items-center">
             <div className="order-2 lg:order-1">
-              <h2 className="text-2xl md:text-4xl lg:text-5xl xl:text-[58px] font-bold text-[#4F200D] mb-3">
-                วางแผนทริปในฝันได้ง่าย ๆ
+              <h2 className="text-2xl md:text-4xl lg:text-5xl xl:text-[58px] font-bold text-[#4F200D] dark:text-gray-100 mb-3">
+                {t('home.planTitle')}
               </h2>
-              <p className="text-sm md:text-lg lg:text-xl xl:text-[24px] font-extralight text-[#4F200D] mb-6 md:mb-9 max-w-2xl">
-                เราลดความยุ่งยากในการจอง
-                เพื่อให้คุณมีเวลาเตรียมจัดกระเป๋าได้เต็มที่
+              <p className="text-sm md:text-lg lg:text-xl xl:text-[24px] font-extralight text-[#4F200D] dark:text-gray-300 mb-6 md:mb-9 max-w-2xl">
+                {t('home.planDesc')}
               </p>
               <div className="space-y-5 md:space-y-6">
                 {steps.map((step, idx) => (
@@ -902,10 +903,10 @@ export default function HomePage() {
                       </span>
                     </div>
                     <div>
-                      <p className="text-base md:text-2xl xl:text-[36px] font-medium text-[#4F200D] mb-1 md:mb-2">
+                      <p className="text-base md:text-2xl xl:text-[36px] font-medium text-[#4F200D] dark:text-gray-100 mb-1 md:mb-2">
                         {step.title}
                       </p>
-                      <p className="text-xs md:text-sm xl:text-lg text-[#4F200D]/80 font-extralight max-w-md">
+                      <p className="text-xs md:text-sm xl:text-lg text-[#4F200D]/80 dark:text-gray-400 font-extralight max-w-md">
                         {step.desc}
                       </p>
                     </div>
@@ -928,26 +929,27 @@ export default function HomePage() {
       </section>
 
       {/* Recommended Destinations Section */}
-      <section className="py-10 md:py-14 lg:py-20 bg-[#FFFDFA]">
+      <section className="py-10 md:py-14 lg:py-20 bg-[#FFFDFA] dark:bg-gray-800">
         <div
           ref={destReveal.ref}
           className={`max-w-[1920px] mx-auto px-4 md:px-8 transition-all duration-700 ${destReveal.visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"}`}
         >
           <div className="text-center mb-9 md:mb-12">
             <span className="inline-block bg-[#FF8400]/10 text-[#FF8400] text-xs md:text-sm font-bold px-4 py-1.5 rounded-full mb-3">
-              แนะนำสำหรับคุณ
+              {t('home.recommended')}
             </span>
-            <h2 className="text-3xl md:text-5xl lg:text-6xl xl:text-[75px] font-bold text-[#4F200D] mb-3 leading-none">
-              พิกัดเที่ยวไทยที่ใครก็พูดถึง
+            <h2 className="text-3xl md:text-5xl lg:text-6xl xl:text-[75px] font-bold text-[#4F200D] dark:text-gray-100 mb-3 leading-none">
+              {t('home.destTitle')}
             </h2>
-            <p className="text-sm md:text-lg xl:text-2xl text-[#4F200D]/70">
-              คัดสรรแลนด์มาร์กสุดฮิต ถ่ายรูปสวย ทันกระแสก่อนใคร
+            <p className="text-sm md:text-lg xl:text-2xl text-[#4F200D]/70 dark:text-gray-400">
+              {t('home.destSubtitle')}
             </p>
           </div>
           <div className="relative">
+
             <div className="flex items-center justify-between gap-3 mb-4">
-              <p className="text-xs md:text-sm text-[#4F200D]/60 font-medium">
-                เลื่อนซ้าย-ขวาเพื่อดูทัวร์แนะนำเพิ่มเติม
+              <p className="text-xs md:text-sm text-[#4F200D]/60 dark:text-gray-400 font-medium">
+                {t('home.scrollHint')}
               </p>
               <div className="hidden sm:flex items-center gap-2">
                 <Button
@@ -1080,24 +1082,24 @@ export default function HomePage() {
               onClick={() => navigate("/tours")}
               className="rounded-full border-2 border-[#4F200D] text-[#4F200D] hover:bg-[#4F200D] hover:text-white px-8 py-3 font-bold transition-all active:scale-95"
             >
-              ดูทัวร์ทั้งหมด
+              {t('home.seeAll')}
             </Button>
           </div>
         </div>
       </section>
 
       {/* Testimonials Section */}
-      <section className="py-10 md:py-14 lg:py-20 bg-[#F6F1E9]">
+      <section className="py-10 md:py-14 lg:py-20 bg-[#F6F1E9] dark:bg-gray-900">
         <div
           ref={testimonialReveal.ref}
           className={`max-w-[1920px] mx-auto px-4 md:px-8 transition-all duration-700 ${testimonialReveal.visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"}`}
         >
           <div className="text-center mb-9 md:mb-12">
             <h2 className="text-2xl md:text-4xl lg:text-5xl font-bold text-[#FF8400] mb-2 md:mb-3">
-              เสียงความประทับใจ
+              {t('home.reviewTitle')}
             </h2>
-            <p className="text-2xl md:text-4xl lg:text-5xl font-bold text-[#4F200D]">
-              จากนักเดินทาง
+            <p className="text-2xl md:text-4xl lg:text-5xl font-bold text-[#4F200D] dark:text-gray-100">
+              {t('home.recommended')}
             </p>
           </div>
           {testimonialsLoading ? (
@@ -1245,7 +1247,7 @@ export default function HomePage() {
       </section>
 
       {/* Newsletter Section */}
-      <section className="py-10 md:py-14 lg:py-20 bg-[#FFFDFA]">
+      <section className="py-10 md:py-14 lg:py-20 bg-[#FFFDFA] dark:bg-gray-800">
         <div
           ref={newsletterReveal.ref}
           className={`max-w-[1920px] mx-auto px-4 md:px-8 transition-all duration-700 ${newsletterReveal.visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"}`}

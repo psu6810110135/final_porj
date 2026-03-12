@@ -292,7 +292,7 @@ export default function ProfilePage() {
     : null;
 
   return (
-    <div className="min-h-screen bg-[#F6F1E9]">
+    <div className="min-h-screen bg-[#F6F1E9] dark:bg-gray-900">
       <Navbar />
 
       <div className="max-w-2xl mx-auto px-4 py-8">
@@ -310,7 +310,7 @@ export default function ProfilePage() {
         ) : profile ? (
           <div className="flex flex-col gap-4">
             {/* Avatar & Name Card */}
-            <div className="bg-white rounded-2xl border border-[#F0E8E0] p-6 shadow-sm flex flex-col sm:flex-row sm:items-start sm:justify-between gap-5">
+            <div className="bg-white dark:bg-gray-800 rounded-2xl border border-[#F0E8E0] dark:border-gray-700 p-6 shadow-sm flex flex-col sm:flex-row sm:items-start sm:justify-between gap-5">
               <div className="flex flex-col sm:flex-row items-center sm:items-start gap-5">
                 <div className="w-20 h-20 rounded-full bg-gradient-to-br from-[#FF8400] to-[#FF6B00] flex items-center justify-center shadow-lg flex-shrink-0">
                   {avatarSrc ? (
@@ -327,7 +327,7 @@ export default function ProfilePage() {
                 </div>
 
                 <div className="text-center sm:text-left">
-                  <h2 className="text-xl font-bold text-[#4F200D]">
+                  <h2 className="text-xl font-bold text-[#4F200D] dark:text-gray-100">
                     {profile.firstName && profile.lastName
                       ? `${profile.firstName} ${profile.lastName}`
                       : (profile.firstName ?? profile.email)}
@@ -375,9 +375,9 @@ export default function ProfilePage() {
             </div>
 
             {/* Info Card */}
-            <div className="bg-white rounded-2xl border border-[#F0E8E0] p-6 shadow-sm">
+            <div className="bg-white dark:bg-gray-800 rounded-2xl border border-[#F0E8E0] dark:border-gray-700 p-6 shadow-sm">
               <div className="flex items-center justify-between mb-4">
-                <h3 className="font-bold text-[#4F200D]">ข้อมูลส่วนตัว</h3>
+                <h3 className="font-bold text-[#4F200D] dark:text-gray-100">ข้อมูลส่วนตัว</h3>
                 <button
                   onClick={openEditModal}
                   className="inline-flex items-center justify-center px-4 py-2 rounded-xl text-sm font-semibold text-white bg-[#FF8400] hover:bg-[#E67600] transition-colors"
@@ -401,7 +401,7 @@ export default function ProfilePage() {
             </div>
 
             {/* Quick Links */}
-            <div className="bg-white rounded-2xl border border-[#F0E8E0] p-5 shadow-sm flex flex-col gap-2">
+            <div className="bg-white dark:bg-gray-800 rounded-2xl border border-[#F0E8E0] dark:border-gray-700 p-5 shadow-sm flex flex-col gap-2">
               <Link
                 to="/booking-history"
                 className="flex items-center justify-between px-4 py-3 rounded-xl hover:bg-[#FFF3E0] transition-colors group"
@@ -486,14 +486,14 @@ export default function ProfilePage() {
 
             {isAvatarConfirmOpen && (
               <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4">
-                <div className="w-full max-w-md bg-white rounded-2xl border border-[#F0E8E0] shadow-lg overflow-hidden">
+                <div className="w-full max-w-md bg-white dark:bg-gray-800 rounded-2xl border border-[#F0E8E0] dark:border-gray-700 shadow-lg overflow-hidden">
                   <div className="h-1.5 w-full bg-gradient-to-r from-[#FF8400] to-[#FF6B00]" />
 
                   <div className="p-6">
-                    <h4 className="font-bold text-[#4F200D] text-lg mb-1">
+                    <h4 className="font-bold text-[#4F200D] dark:text-gray-100 text-lg mb-1">
                       ยืนยันการอัปโหลดรูปโปรไฟล์
                     </h4>
-                    <p className="text-sm text-[#4F200D]/60 mb-4">
+                    <p className="text-sm text-[#4F200D]/60 dark:text-gray-400 mb-4">
                       กรุณาตรวจสอบรูปก่อนบันทึก
                     </p>
 
@@ -534,8 +534,8 @@ export default function ProfilePage() {
 
             {isEditModalOpen && (
               <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4">
-                <div className="w-full max-w-lg bg-white rounded-2xl border border-[#F0E8E0] shadow-lg p-6">
-                  <h4 className="font-bold text-[#4F200D] text-lg mb-4">
+                <div className="w-full max-w-lg bg-white dark:bg-gray-800 rounded-2xl border border-[#F0E8E0] dark:border-gray-700 shadow-lg p-6">
+                  <h4 className="font-bold text-[#4F200D] dark:text-gray-100 text-lg mb-4">
                     แก้ไขข้อมูลส่วนตัว
                   </h4>
 
@@ -545,7 +545,7 @@ export default function ProfilePage() {
                       <input
                         value={firstName}
                         onChange={(e) => setFirstName(e.target.value)}
-                        className="mt-1 w-full rounded-xl border border-[#F0E8E0] px-3 py-2 text-sm text-[#4F200D] focus:outline-none focus:ring-2 focus:ring-[#FF8400]/30"
+                        className="mt-1 w-full rounded-xl border border-[#F0E8E0] dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-sm text-[#4F200D] dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-[#FF8400]/30"
                         placeholder="ชื่อ"
                       />
                     </div>
@@ -554,7 +554,7 @@ export default function ProfilePage() {
                       <input
                         value={lastName}
                         onChange={(e) => setLastName(e.target.value)}
-                        className="mt-1 w-full rounded-xl border border-[#F0E8E0] px-3 py-2 text-sm text-[#4F200D] focus:outline-none focus:ring-2 focus:ring-[#FF8400]/30"
+                        className="mt-1 w-full rounded-xl border border-[#F0E8E0] dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-sm text-[#4F200D] dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-[#FF8400]/30"
                         placeholder="นามสกุล"
                       />
                     </div>
@@ -563,7 +563,7 @@ export default function ProfilePage() {
                       <input
                         value={phone}
                         onChange={(e) => setPhone(e.target.value)}
-                        className="mt-1 w-full rounded-xl border border-[#F0E8E0] px-3 py-2 text-sm text-[#4F200D] focus:outline-none focus:ring-2 focus:ring-[#FF8400]/30"
+                        className="mt-1 w-full rounded-xl border border-[#F0E8E0] dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-sm text-[#4F200D] dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-[#FF8400]/30"
                         placeholder="เบอร์โทร"
                       />
                       {!isPhoneValid && (
@@ -631,14 +631,14 @@ function InfoRow({ label, value }: { label: string; value: string }) {
 function ProfileSkeleton() {
   return (
     <div className="flex flex-col gap-4 animate-pulse">
-      <div className="bg-white rounded-2xl border border-[#F0E8E0] p-6 flex items-center gap-5">
-        <div className="w-20 h-20 rounded-full bg-gray-200 flex-shrink-0" />
+      <div className="bg-white dark:bg-gray-800 rounded-2xl border border-[#F0E8E0] dark:border-gray-700 p-6 flex items-center gap-5">
+        <div className="w-20 h-20 rounded-full bg-gray-200 dark:bg-gray-700 flex-shrink-0" />
         <div className="flex-1 space-y-2">
-          <div className="h-5 bg-gray-200 rounded w-1/2" />
-          <div className="h-4 bg-gray-100 rounded w-1/3" />
+          <div className="h-5 bg-gray-200 dark:bg-gray-700 rounded w-1/2" />
+          <div className="h-4 bg-gray-100 dark:bg-gray-600 rounded w-1/3" />
         </div>
       </div>
-      <div className="bg-white rounded-2xl border border-[#F0E8E0] p-6 space-y-4">
+      <div className="bg-white dark:bg-gray-800 rounded-2xl border border-[#F0E8E0] dark:border-gray-700 p-6 space-y-4">
         {[1, 2, 3, 4, 5].map((i) => (
           <div key={i} className="flex justify-between">
             <div className="h-4 bg-gray-100 rounded w-1/4" />

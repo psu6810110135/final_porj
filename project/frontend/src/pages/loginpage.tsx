@@ -3,6 +3,7 @@ import axios from 'axios';
 import { Link, useNavigate, useSearchParams, useLocation } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 import { API_BASE_URL } from '@/config/api';
+import { useTranslation } from 'react-i18next';
 
 /* ─── Types ─────────────────────────────────────── */
 type View = "login" | "forgot" | "otp" | "reset";
@@ -117,7 +118,6 @@ const getStrength = (pw: string) => {
   if (/[^A-Za-z0-9]/.test(pw)) s++;
   return s;
 };
-const STRENGTH_LABEL = ["", "อ่อนมาก", "อ่อน", "ปานกลาง", "แข็งแกร่ง"];
 const STRENGTH_COLOR = ["", "#ef4444", "#f97316", "#eab308", "#22c55e"];
 
 /* ─── Main Component ─────────────────────────────── */
@@ -125,6 +125,7 @@ const LoginPage: React.FC = () => {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const location = useLocation();
+  const { t } = useTranslation();
   const [view, setView] = useState<View>("login");
 
   /* Google Conflict Modal state */
@@ -218,12 +219,12 @@ const LoginPage: React.FC = () => {
 
       if (msg === 'GOOGLE_ACCOUNT') {
         setIsGoogleAccountError(true);
-        setLoginError('บัญชีนี้ผูกกับ Google กรุณากดปุ่ม "เข้าสู่ระบบด้วย Google" ด้านล่าง');
+        setLoginError(t("login.errorGoogleAccount"));
       } else if (status === 400) {
         // จัดการ Error Validation จาก Backend (400 Bad Request)
-        setLoginError(Array.isArray(msg) ? msg[0] : (typeof msg === 'string' ? msg : 'ข้อมูลไม่ถูกต้อง'));
+        setLoginError(Array.isArray(msg) ? msg[0] : (typeof msg === 'string' ? msg : t("login.errorInvalidData")));
       } else {
-        setLoginError('ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง กรุณาลองใหม่อีกครั้ง');
+        setLoginError(t("login.errorInvalidLogin"));
       }
     } finally {
       setLoginLoading(false);
@@ -234,11 +235,11 @@ const LoginPage: React.FC = () => {
   const handleForgot = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!forgotEmail.trim()) {
-      setForgotError("กรุณากรอกอีเมล");
+      setForgotError(t("login.errorEmailRequired"));
       return;
     }
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(forgotEmail)) {
-      setForgotError("รูปแบบอีเมลไม่ถูกต้อง");
+      setForgotError(t("login.errorInvalidEmail"));
       return;
     }
     setForgotLoading(true);
@@ -250,11 +251,11 @@ const LoginPage: React.FC = () => {
     } catch (err: any) {
       const msg = err.response?.data?.message;
       if (msg === 'GOOGLE_ACCOUNT') {
-        setForgotError('บัญชีนี้ลงทะเบียนผ่าน Google ไม่สามารถรีเซ็ตรหัสผ่านได้ กรุณากลับไปเข้าสู่ระบบด้วย Google');
+        setForgotError(t("login.errorGoogleForgot"));
       } else if (err.response?.status === 400 || err.response?.status === 404) {
-        setForgotError('ไม่พบอีเมลนี้ในระบบ');
+        setForgotError(t("login.errorEmailNotFound"));
       } else {
-        setForgotError('เกิดข้อผิดพลาด กรุณาลองใหม่');
+        setForgotError(t("login.errorGeneric"));
       }
     } finally {
       setForgotLoading(false);
@@ -272,7 +273,7 @@ const LoginPage: React.FC = () => {
       setOtp(Array(6).fill(""));
       setOtpError("");
     } catch {
-      setOtpError("ส่ง OTP ใหม่ไม่สำเร็จ กรุณาลองใหม่");
+      setOtpError(t("login.errorSendOtpTitle"));
     }
   };
 
@@ -281,7 +282,7 @@ const LoginPage: React.FC = () => {
     e.preventDefault();
     const code = otp.join("");
     if (code.length < 6) {
-      setOtpError("กรุณากรอก OTP ให้ครบ 6 หลัก");
+      setOtpError(t("login.errorOtpIncomplete"));
       return;
     }
     setOtpLoading(true);
@@ -295,8 +296,8 @@ const LoginPage: React.FC = () => {
       setView("reset");
     } catch (err: any) {
       if (err.response?.status === 400)
-        setOtpError("รหัส OTP ไม่ถูกต้องหรือหมดอายุแล้ว");
-      else setOtpError("เกิดข้อผิดพลาด กรุณาลองใหม่");
+        setOtpError(t("login.errorInvalidOtp"));
+      else setOtpError(t("login.errorGeneric"));
     } finally {
       setOtpLoading(false);
     }
@@ -306,11 +307,11 @@ const LoginPage: React.FC = () => {
   const handleReset = async (e: React.FormEvent) => {
     e.preventDefault();
     if (resetForm.password.length < 8) {
-      setResetError("รหัสผ่านต้องมีอย่างน้อย 8 ตัว");
+      setResetError(t("login.errorPasswordLen"));
       return;
     }
     if (resetForm.password !== resetForm.confirm) {
-      setResetError("รหัสผ่านไม่ตรงกัน");
+      setResetError(t("login.errorPasswordMatch"));
       return;
     }
     setResetLoading(true);
@@ -328,7 +329,7 @@ const LoginPage: React.FC = () => {
       setOtp(Array(6).fill(""));
       setForgotEmail("");
     } catch (err: any) {
-      setResetError("ไม่สามารถรีเซ็ตรหัสผ่านได้ กรุณาเริ่มใหม่");
+      setResetError(t("login.errorResetFailed"));
     } finally {
       setResetLoading(false);
     }
@@ -355,10 +356,10 @@ const LoginPage: React.FC = () => {
   });
 
   const VIEW_TITLES: Record<View, { title: string; subtitle: string; icon: string }> = {
-    login: { title: 'เข้าสู่ระบบ', subtitle: 'ยินดีต้อนรับกลับมา! เข้าสู่ระบบเพื่อดำเนินการต่อ', icon: '👋' },
-    forgot: { title: 'ลืมรหัสผ่าน', subtitle: 'กรอกอีเมลที่ผูกกับบัญชีของคุณ เราจะส่ง OTP ให้', icon: '🔑' },
-    otp: { title: 'ยืนยัน OTP', subtitle: `กรอกรหัส 6 หลักที่ส่งไปยัง ${forgotEmail}`, icon: '📨' },
-    reset: { title: 'ตั้งรหัสผ่านใหม่', subtitle: 'รหัสผ่านใหม่ต้องมีอย่างน้อย 8 ตัวอักษร', icon: '🛡️' },
+    login: { title: t("login.title"), subtitle: t("login.subtitle"), icon: '👋' },
+    forgot: { title: t("login.forgotTitle"), subtitle: t("login.forgotSubtitle"), icon: '🔑' },
+    otp: { title: t("login.otpTitle"), subtitle: `${t("login.otpSubtitle")} ${forgotEmail}`, icon: '📨' },
+    reset: { title: t("login.resetTitle"), subtitle: t("login.resetSubtitle"), icon: '🛡️' },
   };
 
   const { title, subtitle, icon } = VIEW_TITLES[view];
@@ -375,6 +376,10 @@ const LoginPage: React.FC = () => {
           min-height: calc(100vh - 64px);
           background: linear-gradient(135deg, #FFF8F0 0%, #FFF3E0 40%, #FFE0B2 100%);
           padding: 24px; position: relative; overflow: hidden;
+          transition: background 0.3s ease;
+        }
+        .dark .auth-container {
+          background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 40%, #121212 100%);
         }
         .auth-container::before {
           content: ''; position: absolute; top: -100px; right: -100px;
@@ -386,12 +391,21 @@ const LoginPage: React.FC = () => {
           width: 300px; height: 300px; border-radius: 50%; pointer-events: none;
           background: radial-gradient(circle, rgba(93,64,55,0.08) 0%, transparent 70%);
         }
+        .dark .auth-container::after {
+          background: radial-gradient(circle, rgba(255,255,255,0.03) 0%, transparent 70%);
+        }
 
         .auth-card {
           background: white; border-radius: 28px; width: 100%; max-width: 420px;
           position: relative; z-index: 1; border: 1px solid rgba(255,140,0,0.1);
           box-shadow: 0 20px 60px rgba(93,64,55,0.12), 0 4px 16px rgba(255,140,0,0.08);
           overflow: hidden;
+          transition: background 0.3s ease, border-color 0.3s ease;
+        }
+        .dark .auth-card {
+          background: #242424;
+          border-color: rgba(255,255,255,0.05);
+          box-shadow: 0 20px 60px rgba(0,0,0,0.5), 0 4px 16px rgba(0,0,0,0.3);
         }
 
         .auth-header {
@@ -401,6 +415,10 @@ const LoginPage: React.FC = () => {
         .auth-header::after {
           content: ''; position: absolute; bottom: -1px; left: 0; right: 0;
           height: 20px; background: white; border-radius: 20px 20px 0 0;
+          transition: background 0.3s ease;
+        }
+        .dark .auth-header::after {
+          background: #242424;
         }
         .auth-body { padding: 16px 40px 36px; }
 
@@ -422,11 +440,14 @@ const LoginPage: React.FC = () => {
           cursor: pointer; background: none; border: none;
           padding: 0; transition: color 0.2s; margin-bottom: 18px;
         }
+        .dark .back-link { color: #9ca3af; }
         .back-link:hover { color: #FF8C00; }
 
         .divider { display: flex; align-items: center; gap: 12px; margin: 20px 0; }
-        .divider-line { flex: 1; height: 1px; background: #EDE0D8; }
-        .divider-text { color: #A1887F; font-size: 13px; white-space: nowrap; }
+        .divider-line { flex: 1; height: 1px; background: #EDE0D8; transition: background 0.3s ease; }
+        .dark .divider-line { background: #404040; }
+        .divider-text { color: #A1887F; font-size: 13px; white-space: nowrap; transition: color 0.3s ease; }
+        .dark .divider-text { color: #9ca3af; }
 
         .google-btn {
           width: 100%; padding: 13px; background: white; border: 1.5px solid #E0D5CF;
@@ -434,7 +455,9 @@ const LoginPage: React.FC = () => {
           font-family: 'Prompt', sans-serif; color: #4E342E; transition: all 0.2s;
           display: flex; align-items: center; justify-content: center; gap: 10px;
         }
+        .dark .google-btn { background: #242424; border-color: #404040; color: #e5e7eb; }
         .google-btn:hover { border-color: #FF8C00; background: #FFF8F0; box-shadow: 0 2px 10px rgba(255,140,0,0.12); }
+        .dark .google-btn:hover { background: #2d2d2d; }
 
         .error-banner {
           background: #FFF5F5; border: 1.5px solid #FFCDD2; border-radius: 12px;
@@ -447,15 +470,18 @@ const LoginPage: React.FC = () => {
           margin-bottom: 16px; font-weight: 600; display: flex; align-items: center; gap: 8px;
         }
 
-        .input-label { display: block; margin-bottom: 7px; color: #4E342E; font-weight: 600; font-size: 14px; }
+        .input-label { display: block; margin-bottom: 7px; color: #4E342E; font-weight: 600; font-size: 14px; transition: color 0.3s ease; }
+        .dark .input-label { color: #e5e7eb; }
         .input-group { margin-bottom: 18px; }
         .eyebtn { position: absolute; right: 13px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; font-size: 17px; padding: 0; opacity: 0.4; transition: opacity 0.2s; line-height: 1; }
         .eyebtn:hover { opacity: 0.75; }
+        .dark .eyebtn { color: #9ca3af; }
 
         .strength-bar { display: flex; gap: 3px; margin-top: 6px; }
         .strength-seg { height: 4px; flex: 1; border-radius: 2px; transition: background 0.3s; }
 
-        .footer-text { text-align: center; font-size: 14px; margin-top: 20px; color: #8D6E63; }
+        .footer-text { text-align: center; font-size: 14px; margin-top: 20px; color: #8D6E63; transition: color 0.3s ease; }
+        .dark .footer-text { color: #9ca3af; }
         .footer-link { color: #FF8C00; cursor: pointer; font-weight: 700; margin-left: 4px; text-decoration: none; transition: color 0.2s; }
         .footer-link:hover { color: #FF6B00; }
 
@@ -495,7 +521,9 @@ const LoginPage: React.FC = () => {
           box-shadow: 0 28px 80px rgba(30,15,5,0.22), 0 6px 24px rgba(255,140,0,0.1);
           overflow: hidden;
           animation: popModal 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+          transition: background 0.3s ease;
         }
+        .dark .conflict-modal { background: #242424; }
         @keyframes popModal {
           from { opacity: 0; transform: scale(0.88) translateY(20px); }
           to   { opacity: 1; transform: scale(1) translateY(0); }
@@ -528,8 +556,9 @@ const LoginPage: React.FC = () => {
           margin-bottom: 10px;
           background: #FFF8F0;
           border: 1.5px solid #FFE0B2;
-          transition: background 0.2s;
+          transition: background 0.2s, border-color 0.2s;
         }
+        .dark .conflict-step { background: #2a2a2a; border-color: #404040; }
         .conflict-step:last-of-type { margin-bottom: 0; }
         .conflict-step-num {
           width: 26px; height: 26px; min-width: 26px;
@@ -543,8 +572,11 @@ const LoginPage: React.FC = () => {
           font-size: 13.5px; color: #4E342E;
           line-height: 1.55; font-weight: 500;
           font-family: 'Prompt', sans-serif;
+          transition: color 0.3s ease;
         }
+        .dark .conflict-step-text { color: #e5e7eb; }
         .conflict-step-text b { color: #E65100; }
+        .dark .conflict-step-text b { color: #FF8C00; }
 
         .conflict-btn-primary {
           width: 100%; padding: 14px;
@@ -569,7 +601,9 @@ const LoginPage: React.FC = () => {
           cursor: pointer; margin-top: 10px;
           transition: all 0.2s;
         }
+        .dark .conflict-btn-secondary { color: #9ca3af; border-color: #404040; }
         .conflict-btn-secondary:hover { border-color: #A1887F; color: #6D4C41; background: #FFF8F0; }
+        .dark .conflict-btn-secondary:hover { background: #2d2d2d; color: #e5e7eb; border-color: #6b7280; }
 
         .conflict-close {
           position: absolute; top: 14px; right: 16px;
@@ -592,32 +626,30 @@ const LoginPage: React.FC = () => {
               <button className="conflict-close" onClick={() => setShowConflictModal(false)}>✕</button>
               <div className="conflict-icon-ring">⚠️</div>
               <h2 style={{ color: 'white', fontSize: 19, fontWeight: 800, margin: '0 0 6px', fontFamily: 'Prompt, sans-serif' }}>
-                อีเมลนี้มีบัญชีอยู่แล้ว!
+                {t('login.conflictTitle')}
               </h2>
               <p style={{ color: 'rgba(255,255,255,0.85)', fontSize: 13, margin: 0, fontFamily: 'Prompt, sans-serif', lineHeight: 1.5 }}>
-                บัญชีนี้ลงทะเบียนด้วยรหัสผ่านปกติ<br />ไม่สามารถเข้าสู่ระบบด้วย Google ได้โดยตรง
+                {t('login.conflictDesc')}<b>{searchParams.get('email')}</b>{t('login.conflictDesc2')}
               </p>
             </div>
 
             {/* Body */}
             <div className="conflict-body">
-              <p style={{ color: '#5D4037', fontWeight: 700, fontSize: 14, margin: '0 0 14px', fontFamily: 'Prompt, sans-serif' }}>
+              <p className="dark:text-white" style={{ color: '#5D4037', fontWeight: 700, fontSize: 14, margin: '0 0 14px', fontFamily: 'Prompt, sans-serif' }}>
                 📋 วิธีแก้ไข:
               </p>
 
               <div className="conflict-step">
                 <div className="conflict-step-num">1</div>
                 <div className="conflict-step-text">
-                  ถ้า<b>จำรหัสผ่านได้</b> — กดปิดหน้าต่างนี้แล้วกรอก
-                  <b> Username / Email + รหัสผ่าน</b> เข้าสู่ระบบปกติ
+                  <b>{t('login.conflictOption1Title')}</b> {t('login.conflictOption1Desc')}
                 </div>
               </div>
 
               <div className="conflict-step">
                 <div className="conflict-step-num">2</div>
                 <div className="conflict-step-text">
-                  ถ้า<b>ลืมรหัสผ่าน</b> — กดปุ่มด้านล่างเพื่อไปหน้า
-                  <b> รีเซ็ตรหัสผ่าน</b> ผ่านอีเมลได้เลย
+                  <b>{t('login.conflictOption2Title')}</b> {t('login.conflictOption2Desc')}
                 </div>
               </div>
 
@@ -628,14 +660,14 @@ const LoginPage: React.FC = () => {
                   setView('forgot');
                 }}
               >
-                🔑 ลืมรหัสผ่าน — ไปรีเซ็ตรหัสผ่าน
+                🔑 {t('login.forgotPassword')}
               </button>
 
               <button
                 className="conflict-btn-secondary"
                 onClick={() => setShowConflictModal(false)}
               >
-                ✕ ปิด — ฉันจำรหัสผ่านได้แล้ว
+                ✕ {t('common.close')}
               </button>
             </div>
 
@@ -683,16 +715,16 @@ const LoginPage: React.FC = () => {
                   >
                     GoTrip
                   </p>
-                  <h2
+                    <h2 className="dark:text-white"
                     style={{
-                      color: "white",
+                      color: "#1e1e1e",
                       fontSize: 22,
                       fontWeight: 800,
                       margin: 0,
                       letterSpacing: "-0.4px",
                     }}
                   >
-                    {title}
+                    {view === 'login' ? t('login.title') : title}
                   </h2>
                 </div>
               </div>
@@ -703,7 +735,7 @@ const LoginPage: React.FC = () => {
               {/* ─────────── VIEW: LOGIN ─────────── */}
               {view === "login" && (
                 <div className="slide-in">
-                  <p
+                  <p className="dark:text-gray-400"
                     style={{
                       color: "#8D6E63",
                       fontSize: 14,
@@ -711,7 +743,7 @@ const LoginPage: React.FC = () => {
                       textAlign: "center",
                     }}
                   >
-                    {subtitle}
+                    {t('login.subtitle')}
                   </p>
 
                   {loginError && (
@@ -723,14 +755,15 @@ const LoginPage: React.FC = () => {
 
                   <form onSubmit={handleLogin}>
                     <div className="input-group">
-                      <label className="input-label">ชื่อผู้ใช้</label>
+                      <label className="input-label">{t('login.username')}</label>
                       <input
                         type="text"
                         name="username"
                         value={loginForm.username}
-                        placeholder="Username"
+                        placeholder={t('login.usernamePlaceholder')}
                         required
                         autoComplete="username"
+                        className="dark:bg-[#1a1a1a] dark:text-gray-100 dark:border-gray-700"
                         style={iStyle(!!loginError)}
                         onChange={(e) => {
                           setLoginForm((p) => ({
@@ -761,15 +794,16 @@ const LoginPage: React.FC = () => {
                       className="input-group"
                       style={{ position: "relative" }}
                     >
-                      <label className="input-label">รหัสผ่าน</label>
+                      <label className="input-label">{t('login.password')}</label>
                       <div style={{ position: "relative" }}>
                         <input
                           type={showLoginPass ? "text" : "password"}
                           name="password"
                           value={loginForm.password}
-                          placeholder="Password"
+                          placeholder={t('login.passwordPlaceholder')}
                           required
                           autoComplete="current-password"
+                          className="dark:bg-[#1a1a1a] dark:text-gray-100 dark:border-gray-700"
                           style={iStylePw(!!loginError)}
                           onChange={(e) => {
                             setLoginForm((p) => ({
@@ -814,14 +848,14 @@ const LoginPage: React.FC = () => {
                         marginBottom: 18,
                       }}
                     >
-                      <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', fontSize: 13, color: '#5D4037', fontWeight: 500 }}>
+                      <label className="dark:text-gray-300" style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', fontSize: 13, color: '#5D4037', fontWeight: 500 }}>
                         <input
                           type="checkbox"
                           checked={rememberMe}
                           onChange={(e) => setRememberMe(e.target.checked)}
                           style={{ accentColor: '#FF8C00', cursor: 'pointer', width: 15, height: 15 }}
                         />
-                        จดจำฉันในระบบ
+                        {t('login.rememberMe')}
                       </label>
                       <button
                         type="button"
@@ -840,7 +874,7 @@ const LoginPage: React.FC = () => {
                           padding: 0,
                         }}
                       >
-                        ลืมรหัสผ่าน?
+                        {t('login.forgotPassword')}
                       </button>
                     </div>
 
@@ -849,13 +883,13 @@ const LoginPage: React.FC = () => {
                       className="submit-btn"
                       disabled={loginLoading}
                     >
-                      {loginLoading ? "⏳ กำลังเข้าสู่ระบบ..." : "เข้าสู่ระบบ"}
+                      {loginLoading ? `⏳ ${t('login.loginLoading')}` : t('login.loginBtn')}
                     </button>
                   </form>
 
                   <div className="divider">
                     <div className="divider-line" />
-                    <span className="divider-text">หรือ เข้าสู่ระบบกับ</span>
+                    <span className="divider-text">{t('login.orLoginWith')}</span>
                     <div className="divider-line" />
                   </div>
 
@@ -876,13 +910,13 @@ const LoginPage: React.FC = () => {
                       <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" />
                       <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
                     </svg>
-                    {isGoogleAccountError ? '👉 กดที่นี่เพื่อเข้าสู่ระบบด้วย Google' : 'Google'}
+                    {isGoogleAccountError ? t('login.googleBtnError') : t('login.googleBtn')}
                   </button>
 
                   <p className="footer-text">
-                    หากยังไม่มีบัญชี
+                    {t('login.noAccount')}
                     <Link to="/register" className="footer-link">
-                      ลงทะเบียน
+                      {t('login.register')}
                     </Link>
                   </p>
                 </div>
@@ -899,7 +933,7 @@ const LoginPage: React.FC = () => {
                       setForgotEmail("");
                     }}
                   >
-                    ← กลับสู่หน้าเข้าสู่ระบบ
+                    ← {t('login.backToLogin')}
                   </button>
 
                   <p
@@ -921,11 +955,11 @@ const LoginPage: React.FC = () => {
 
                   <form onSubmit={handleForgot}>
                     <div className="input-group">
-                      <label className="input-label">อีเมลที่ผูกกับบัญชี</label>
+                      <label className="input-label">{t('login.email')}</label>
                       <input
                         type="email"
                         value={forgotEmail}
-                        placeholder="email@example.com"
+                        placeholder={t('login.emailPlaceholder')}
                         onChange={(e) => {
                           setForgotEmail(e.target.value);
                           setForgotError("");
@@ -953,7 +987,7 @@ const LoginPage: React.FC = () => {
                       className="submit-btn"
                       disabled={forgotLoading}
                     >
-                      {forgotLoading ? "⏳ กำลังส่ง..." : "📨 ส่งรหัส OTP"}
+                      {forgotLoading ? `⏳ ${t('login.submitting')}` : `📨 ${t('login.sendOtp')}`}
                     </button>
                   </form>
                 </div>
@@ -970,7 +1004,7 @@ const LoginPage: React.FC = () => {
                       setOtp(Array(6).fill(""));
                     }}
                   >
-                    ← แก้ไขอีเมล
+                    ← {t('common.back')}
                   </button>
 
                   {/* Step dots */}
@@ -988,7 +1022,7 @@ const LoginPage: React.FC = () => {
                       fontWeight: 500,
                     }}
                   >
-                    ขั้นตอนที่ 2 จาก 3
+                    {t('login.step2of3')}
                   </p>
 
                   <p
@@ -999,7 +1033,7 @@ const LoginPage: React.FC = () => {
                       textAlign: "center",
                     }}
                   >
-                    ส่ง OTP ไปที่{" "}
+                    {t('login.otpSentTo')}{" "}
                     <span style={{ color: "#FF8C00", fontWeight: 700 }}>
                       {forgotEmail}
                     </span>
@@ -1012,7 +1046,7 @@ const LoginPage: React.FC = () => {
                       textAlign: "center",
                     }}
                   >
-                    รหัสมีอายุ 10 นาที
+                    {t('login.otpExp')}
                   </p>
 
                   {otpError && (
@@ -1032,7 +1066,7 @@ const LoginPage: React.FC = () => {
                     {/* Resend */}
                     <div style={{ textAlign: "center", margin: "14px 0 20px" }}>
                       <span style={{ color: "#A1887F", fontSize: 13 }}>
-                        ไม่ได้รับรหัส?{" "}
+                        {t('login.resendOtp')}?{" "}
                       </span>
                       <button
                         type="button"
@@ -1050,7 +1084,7 @@ const LoginPage: React.FC = () => {
                       className="submit-btn"
                       disabled={otpLoading || otp.join("").length < 6}
                     >
-                      {otpLoading ? "⏳ กำลังยืนยัน..." : "ยืนยัน OTP →"}
+                      {otpLoading ? `⏳ ${t('login.submitting')}` : `${t('login.verifyOtp')} →`}
                     </button>
                   </form>
                 </div>
@@ -1074,7 +1108,7 @@ const LoginPage: React.FC = () => {
                       fontWeight: 500,
                     }}
                   >
-                    ขั้นตอนที่ 3 จาก 3
+                    {t('login.step3of3')}
                   </p>
 
                   <p
@@ -1098,12 +1132,12 @@ const LoginPage: React.FC = () => {
                   <form onSubmit={handleReset}>
                     {/* New password */}
                     <div className="input-group">
-                      <label className="input-label">รหัสผ่านใหม่</label>
+                      <label className="input-label">{t('login.newPassword')}</label>
                       <div style={{ position: "relative" }}>
                         <input
                           type={showNewPass ? "text" : "password"}
                           value={resetForm.password}
-                          placeholder="อย่างน้อย 8 ตัวอักษร"
+                          placeholder={t('login.newPasswordPlaceholder')}
                           style={iStylePw(!!resetError)}
                           onChange={(e) => {
                             setResetForm((p) => ({
@@ -1152,7 +1186,7 @@ const LoginPage: React.FC = () => {
                               margin: "4px 0 0",
                             }}
                           >
-                            ความแข็งแกร่ง: {STRENGTH_LABEL[strength]}
+                            {t('register.strength')} {t(`register.strength${strength}`)}
                           </p>
                         </>
                       )}
@@ -1160,12 +1194,12 @@ const LoginPage: React.FC = () => {
 
                     {/* Confirm */}
                     <div className="input-group">
-                      <label className="input-label">ยืนยันรหัสผ่านใหม่</label>
+                      <label className="input-label">{t('login.confirmNewPassword')}</label>
                       <div style={{ position: "relative" }}>
                         <input
                           type={showConfirmPass ? "text" : "password"}
                           value={resetForm.confirm}
-                          placeholder="กรอกรหัสผ่านอีกครั้ง"
+                          placeholder={t('register.confirmPasswordPlaceholder')}
                           style={{
                             ...iStylePw(false),
                             borderColor: resetForm.confirm
@@ -1215,7 +1249,7 @@ const LoginPage: React.FC = () => {
                               fontWeight: 600,
                             }}
                           >
-                            ✓ รหัสผ่านตรงกัน
+                            {t('register.passwordMatched')}
                           </p>
                         )}
                     </div>
@@ -1226,8 +1260,8 @@ const LoginPage: React.FC = () => {
                       disabled={resetLoading}
                     >
                       {resetLoading
-                        ? "⏳ กำลังบันทึก..."
-                        : "🔒 บันทึกรหัสผ่านใหม่"}
+                        ? `⏳ ${t('login.submitting')}`
+                        : `🔒 ${t('login.submitReset')}`}
                     </button>
                   </form>
                 </div>

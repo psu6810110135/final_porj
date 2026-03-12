@@ -1,5 +1,6 @@
 import { useState, useEffect, type ReactNode } from "react";
 import { Link, useSearchParams } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 
 // Components
 import Navbar from "@/components/Navbar";
@@ -35,6 +36,7 @@ export default function ToursPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isMobileFilterOpen, setIsMobileFilterOpen] = useState(false);
+  const { t } = useTranslation();
 
   const [provinceOptions, setProvinceOptions] = useState<string[]>([]);
   const [isProvinceDropdownOpen, setIsProvinceDropdownOpen] = useState(false);
@@ -161,7 +163,7 @@ export default function ToursPage() {
   }));
 
   return (
-    <div className="min-h-screen bg-[#FDFBF7] flex flex-col">
+    <div className="min-h-screen bg-[#FDFBF7] dark:bg-gray-900 flex flex-col">
       <Navbar activePage="tours" />
 
       <main className="flex-grow p-4 md:p-10">
@@ -170,23 +172,23 @@ export default function ToursPage() {
           {/* Header Section */}
           <div className="relative z-40 flex flex-col items-center mb-8 md:mb-12">
             <div className="w-full mb-4">
-              <Link to="/" className="inline-flex items-center gap-2 text-sm font-bold text-gray-500 hover:text-[#FF8400] transition-colors">
-                <ChevronLeft size={18} /> กลับหน้าหลัก
+              <Link to="/" className="inline-flex items-center gap-2 text-sm font-bold text-gray-500 dark:text-gray-400 hover:text-[#FF8400] transition-colors">
+                <ChevronLeft size={18} /> {t('tours.backHome')}
               </Link>
             </div>
 
-            <h1 className="text-2xl md:text-4xl font-black text-center mb-2 text-[#4F200D]">
-              ทุกจุดหมาย มั่นใจไปกับเรา
+            <h1 className="text-2xl md:text-4xl font-black text-center mb-2 text-[#4F200D] dark:text-gray-100">
+              {t('tours.title')}
             </h1>
             <div className="flex justify-center mb-6 md:mb-8">
-              <div className="w-24 md:w-48 h-1 rounded-full bg-[#4F200D]" />
+              <div className="w-24 md:w-48 h-1 rounded-full bg-[#4F200D] dark:bg-orange-500" />
             </div>
 
             {/* Search Bar - Responsive */}
             <div className="tours-search-bar-container relative z-[90] w-full max-w-5xl">
               <div className="bg-white/95 backdrop-blur-md rounded-2xl sm:rounded-full p-2 sm:p-2.5 flex flex-col sm:flex-row gap-2 items-stretch sm:items-center shadow-2xl border border-white/30">
                 <RichDropdown
-                  label="เลือกจังหวัด"
+                  label={t('tours.allProvinces')}
                   icon={<MapPin className="w-4 h-4" />}
                   value={provinceFilter}
                   options={provinceDropdownOptions}
@@ -217,7 +219,7 @@ export default function ToursPage() {
                   onClick={handleSearchSubmit}
                   className="bg-[#FF8400] text-white hover:bg-[#e67600] rounded-xl sm:rounded-full px-5 md:px-7 py-2.5 md:py-3 text-sm md:text-base font-bold shadow-lg hover:shadow-xl transition-all whitespace-nowrap active:scale-95"
                 >
-                  ค้นหา
+                  {t('tours.search')}
                 </button>
 
                 {/* ปุ่ม Mobile Filter */}
@@ -234,7 +236,7 @@ export default function ToursPage() {
           <div className="flex flex-col lg:flex-row gap-8">
             {/* Sidebar Filters (Desktop) */}
             <aside className="hidden lg:block w-[280px] shrink-0">
-              <div className="bg-white p-8 rounded-[2rem] shadow-sm sticky top-28 border border-gray-100 space-y-8">
+              <div className="bg-white dark:bg-gray-800 p-8 rounded-[2rem] shadow-sm sticky top-28 border border-gray-100 dark:border-gray-700 space-y-8">
                 <FilterContent
                   durationFilter={durationFilter}
                   regionFilter={regionFilter}
@@ -248,9 +250,9 @@ export default function ToursPage() {
             {isMobileFilterOpen && (
               <div className="fixed inset-0 z-[100] lg:hidden">
                 <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setIsMobileFilterOpen(false)} />
-                <div className="absolute right-0 top-0 h-full w-[85%] max-w-[320px] bg-white p-6 shadow-2xl overflow-y-auto transition-transform">
+                <div className="absolute right-0 top-0 h-full w-[85%] max-w-[320px] bg-white dark:bg-gray-800 p-6 shadow-2xl overflow-y-auto transition-transform">
                   <div className="flex justify-between items-center mb-8">
-                    <h2 className="text-xl font-black text-[#4F200D]">ตัวกรอง</h2>
+                    <h2 className="text-xl font-black text-[#4F200D] dark:text-gray-100">{t('tours.filter')}</h2>
                     <button onClick={() => setIsMobileFilterOpen(false)} className="p-2 hover:bg-gray-100 rounded-full">
                       <X size={24} />
                     </button>
@@ -264,7 +266,7 @@ export default function ToursPage() {
                     />
                   </div>
                   <button onClick={() => setIsMobileFilterOpen(false)} className="w-full mt-10 py-4 bg-[#FF8400] text-white font-bold rounded-2xl shadow-lg">
-                    แสดงผลทัวร์
+                    {t('tours.title')}
                   </button>
                 </div>
               </div>
@@ -285,11 +287,11 @@ export default function ToursPage() {
               )}
 
               {!loading && tours.length === 0 && !error && (
-                <div className="flex items-center justify-center h-64 border-2 border-dashed border-gray-200 bg-white rounded-[2.5rem]">
+                <div className="flex items-center justify-center h-64 border-2 border-dashed border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 rounded-[2.5rem]">
                   <div className="text-center p-4">
-                    <p className="text-lg text-gray-400 font-bold mb-2">ไม่พบทัวร์ที่ตรงเงื่อนไข</p>
+                    <p className="text-lg text-gray-400 font-bold mb-2">{t('tours.noTours')}</p>
                     <button onClick={() => { setSearchInput(""); setSearchParams({}); }} className="text-[#FF8400] underline text-sm">
-                      ล้างตัวกรองและค้นหาใหม่
+                      {t('tours.clearFilter')}
                     </button>
                   </div>
                 </div>

@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Navigate, Outlet, useNavigate } from 'react-router-dom';
+import { getToken, removeToken } from '../utils/auth';
+
 
 /* ── Toast แจ้งเตือนว่า login แล้ว ── */
 const AlreadyLoggedToast: React.FC<{ onDone: () => void }> = ({ onDone }) => {
@@ -10,11 +12,12 @@ const AlreadyLoggedToast: React.FC<{ onDone: () => void }> = ({ onDone }) => {
     useEffect(() => {
         // พยายามอ่านชื่อจาก token
         try {
-            const token = localStorage.getItem('jwt_token');
+            const token = getToken();
             if (token) {
                 const payload = JSON.parse(atob(token.split('.')[1]));
                 setName(payload.email || payload.username || '');
             }
+
         } catch { /* ไม่สนใจ */ }
     }, []);
 
@@ -128,7 +131,7 @@ const GuestGuard = () => {
     const [showToast, setShowToast] = useState(false);
 
     useEffect(() => {
-        const token = localStorage.getItem('jwt_token');
+        const token = getToken();
 
         if (!token) {
             setStatus('guest');
@@ -140,7 +143,7 @@ const GuestGuard = () => {
 
             // ถ้า token หมดอายุ ถือว่าเป็น guest
             if (payload.exp && payload.exp * 1000 < Date.now()) {
-                localStorage.removeItem('jwt_token');
+                removeToken();
                 setStatus('guest');
                 return;
             }
@@ -150,13 +153,24 @@ const GuestGuard = () => {
             setShowToast(true);
         } catch {
             // token เสีย ถือว่า guest
-            localStorage.removeItem('jwt_token');
+            removeToken();
             setStatus('guest');
         }
+
     }, []);
 
     // รอ check
-    if (status === 'checking') return null;
+    if (status === 'checking') {
+        return (
+            <div className="flex h-screen w-full items-center justify-center bg-[#FDFBF7]">
+                <div className="flex flex-col items-center gap-3">
+                    <div className="h-10 w-10 animate-spin rounded-full border-4 border-[#FF8400] border-t-transparent"></div>
+                    <p className="text-sm font-bold text-[#4F200D]/60">กำลังตรวจสอบ...</p>
+                </div>
+            </div>
+        );
+    }
+
 
     // ยังไม่ได้ login → ให้ผ่านหน้า login/register ได้ปกติ
     if (status === 'guest') return <Outlet />;

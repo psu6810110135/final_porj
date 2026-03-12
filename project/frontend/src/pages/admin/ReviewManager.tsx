@@ -17,6 +17,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { API_BASE_URL } from "@/config/api";
+import { getToken } from "@/utils/auth";
+
 
 interface ReviewUser {
   id: string;
@@ -75,9 +77,10 @@ interface FeedbackState {
 }
 
 const getAuthHeader = (): Record<string, string> => {
-  const token = localStorage.getItem("jwt_token");
+  const token = getToken();
   return token ? { Authorization: `Bearer ${token}` } : {};
 };
+
 
 const API_URL = `${API_BASE_URL}/api/reviews/admin`;
 

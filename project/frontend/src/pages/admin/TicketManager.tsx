@@ -14,6 +14,8 @@ import {
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { API_BASE_URL } from "@/config/api";
+import { getToken } from "@/utils/auth";
+
 
 interface TicketData {
   id: string;
@@ -33,9 +35,10 @@ interface FeedbackState {
 }
 
 const getAuthHeader = (): Record<string, string> => {
-  const token = localStorage.getItem("jwt_token");
+  const token = getToken();
   return token ? { Authorization: `Bearer ${token}` } : {};
 };
+
 
 /* ─── Custom Select Component (Theme Oriented & Round) ─── */
 interface Option {

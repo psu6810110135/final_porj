@@ -1,5 +1,7 @@
 import { useEffect, useState, useMemo } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { getToken } from "@/utils/auth";
+
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import logoImage from "../assets/logo.png";
@@ -284,8 +286,10 @@ export default function BookingHistoryPage() {
   const [rowsPerPage, setRowsPerPage] = useState(10);
 
   const fetchBookings = async () => {
-    const token = localStorage.getItem("jwt_token");
+    const token = getToken();
+
     if (!token) {
+      sessionStorage.setItem('redirect_after_login', window.location.pathname);
       navigate("/login");
       return;
     }
@@ -355,7 +359,8 @@ export default function BookingHistoryPage() {
   const handleRenewBooking = async (booking: Booking) => {
     setRenewLoadingId(booking.id);
     try {
-      const token = localStorage.getItem("jwt_token");
+      const token = getToken();
+
       const res = await fetch(
         `${API_BASE_URL}/api/bookings/${booking.id}/renew`,
         {
@@ -407,8 +412,10 @@ export default function BookingHistoryPage() {
   const handleCancelBooking = async () => {
     if (!cancelModalBooking) return;
 
-    const token = localStorage.getItem("jwt_token");
+    const token = getToken();
+
     if (!token) {
+      sessionStorage.setItem('redirect_after_login', window.location.pathname);
       navigate("/login");
       return;
     }
@@ -480,8 +487,10 @@ export default function BookingHistoryPage() {
   const submitReview = async () => {
     if (!reviewModalBooking) return;
 
-    const token = localStorage.getItem("jwt_token");
+    const token = getToken();
+
     if (!token) {
+      sessionStorage.setItem('redirect_after_login', window.location.pathname);
       navigate("/login");
       return;
     }

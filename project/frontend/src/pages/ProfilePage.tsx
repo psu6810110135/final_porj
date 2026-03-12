@@ -1,5 +1,7 @@
 import { useEffect, useState, type ChangeEvent } from "react";
 import { useNavigate, Link } from "react-router-dom";
+import { getToken } from "../utils/auth";
+
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import { API_BASE_URL } from "@/config/api";
@@ -84,8 +86,10 @@ export default function ProfilePage() {
   };
 
   useEffect(() => {
-    const token = localStorage.getItem("jwt_token");
+    const token = getToken();
+
     if (!token) {
+      sessionStorage.setItem('redirect_after_login', window.location.pathname);
       navigate("/login");
       return;
     }
@@ -158,7 +162,8 @@ export default function ProfilePage() {
   };
 
   const confirmUploadAvatar = async () => {
-    const token = localStorage.getItem("jwt_token");
+    const token = getToken();
+
     if (!token || !pendingAvatarFile) {
       setUploadError("ไม่พบไฟล์รูปหรือเซสชันหมดอายุ กรุณาเลือกใหม่อีกครั้ง");
       closeAvatarConfirmModal();
@@ -206,7 +211,8 @@ export default function ProfilePage() {
   };
 
   const handleSaveProfile = async () => {
-    const token = localStorage.getItem("jwt_token");
+    const token = getToken();
+
     if (!token || !profile) return;
 
     if (!hasProfileChanges) {

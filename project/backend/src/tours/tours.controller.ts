@@ -9,7 +9,12 @@ import {
   Body,
   UseInterceptors,
   UploadedFiles,
+  UseGuards,
 } from '@nestjs/common';
+import { AuthGuard } from '@nestjs/passport';
+import { RolesGuard } from '../auth/roles.guard';
+import { Roles } from '../auth/roles.decorator';
+import { UserRole } from '../users/entities/user.entity';
 import { AnyFilesInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import { extname } from 'path';
@@ -82,6 +87,8 @@ export class ToursController {
   }
 
   @Post()
+  @UseGuards(AuthGuard('jwt'), RolesGuard)
+  @Roles(UserRole.ADMIN)
   @UseInterceptors(AnyFilesInterceptor({ storage: storageConfig }))
   createTour(
     @Body() createTourDto: any,
@@ -115,6 +122,8 @@ export class ToursController {
   }
 
   @Patch(':id')
+  @UseGuards(AuthGuard('jwt'), RolesGuard)
+  @Roles(UserRole.ADMIN)
   @UseInterceptors(AnyFilesInterceptor({ storage: storageConfig }))
   update(
     @Param('id') id: string, 
@@ -156,6 +165,8 @@ export class ToursController {
   }
 
   @Delete(':id')
+  @UseGuards(AuthGuard('jwt'), RolesGuard)
+  @Roles(UserRole.ADMIN)
   remove(@Param('id') id: string) {
     return this.toursService.remove(id);
   }

@@ -136,7 +136,7 @@ export class AuthService {
     });
 
     await this.transporter.sendMail({
-      from: `"GoTrip Support" <${process.env.EMAIL_USER}>`,
+      from: `"Thai Tour Service Support" <${process.env.EMAIL_USER}>`,
       to: email,
       subject: 'รหัส OTP สำหรับตั้งรหัสผ่านใหม่ 🔐',
       html: `<h2>รหัส OTP ของคุณคือ: <b>${otp}</b></h2><p>รหัสนี้จะหมดอายุในอีก 10 นาทีครับ</p>`,

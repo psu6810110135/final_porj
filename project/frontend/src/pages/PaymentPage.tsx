@@ -2,6 +2,8 @@ import { useEffect, useState, useCallback } from "react";
 import { useNavigate, useParams, useLocation } from "react-router-dom";
 import { QRCodeCanvas } from "qrcode.react";
 import { API_BASE_URL } from "@/config/api";
+import { getToken } from "@/utils/auth";
+
 
 export default function PaymentPage() {
   const navigate = useNavigate();
@@ -30,9 +32,11 @@ export default function PaymentPage() {
   const [isDownloaded, setIsDownloaded] = useState(false);
 
   const getAuthHeader = (): Record<string, string> => {
-    const token = localStorage.getItem("jwt_token");
+    const token = getToken();
     return token ? { Authorization: `Bearer ${token}` } : {};
   };
+
+
 
   // ✨ 1. ดึงข้อมูล QR Code และเวลาหมดอายุจาก Backend
   const fetchQrCode = useCallback(async () => {
@@ -157,7 +161,8 @@ export default function PaymentPage() {
     if (!file) return;
     setIsUploading(true);
 
-    const token = localStorage.getItem("jwt_token");
+    const token = getToken();
+
     if (!token) {
       setUploadAlert({ title: "เซสชันหมดอายุ", message: "ไม่พบ Token! กรุณาล็อกอินใหม่", isSuccess: false });
       setIsUploading(false);
@@ -205,7 +210,8 @@ export default function PaymentPage() {
   const handleRenewBooking = async () => {
     setIsRenewing(true);
     try {
-      const token = localStorage.getItem("jwt_token");
+      const token = getToken();
+
       const res = await fetch(`${API_BASE_URL}/api/bookings/${id}/renew`, {
         method: "POST",
         headers: { Authorization: `Bearer ${token}` },

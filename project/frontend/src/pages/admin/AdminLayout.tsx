@@ -14,6 +14,8 @@ import {
   Star,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { removeToken } from "@/utils/auth";
+
 
 export default function AdminLayout() {
   const location = useLocation();
@@ -32,10 +34,11 @@ export default function AdminLayout() {
 
   const handleLogout = () => {
     if (window.confirm("คุณแน่ใจหรือไม่ว่าต้องการออกจากระบบ?")) {
-      localStorage.removeItem("jwt_token");
+      removeToken();
       navigate("/login");
     }
   };
+
 
   const closeMobileMenu = () => setIsMobileMenuOpen(false);
 

@@ -3,6 +3,9 @@ import axios from 'axios';
 import { Link, useNavigate, useSearchParams, useLocation } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 import { API_BASE_URL } from '@/config/api';
+import { setToken, getToken, removeToken } from '../utils/auth';
+
+
 
 /* ─── Types ─────────────────────────────────────── */
 type View = "login" | "forgot" | "otp" | "reset";
@@ -197,22 +200,17 @@ const LoginPage: React.FC = () => {
     setIsGoogleAccountError(false);
     try {
       const res = await axios.post(`${API_BASE_URL}/api/auth/signin`, { ...loginForm, rememberMe });
-      if (rememberMe) {
-        localStorage.setItem('jwt_token', res.data.accessToken);
-        sessionStorage.removeItem('jwt_token');
-      } else {
-        sessionStorage.setItem('jwt_token', res.data.accessToken);
-        localStorage.removeItem('jwt_token');
-      }
-      const redirectUrl = localStorage.getItem('redirect_after_login') || sessionStorage.getItem('redirect_after_login');
+      setToken(res.data.accessToken, rememberMe);
+
+      const redirectUrl = getToken('redirect_after_login');
       if (redirectUrl) {
-        localStorage.removeItem('redirect_after_login');
-        sessionStorage.removeItem('redirect_after_login');
+        removeToken('redirect_after_login');
         navigate(redirectUrl);
       } else {
         navigate('/');
       }
     } catch (err: any) {
+
       const status = err.response?.status;
       const msg = err.response?.data?.message;
 
@@ -681,7 +679,7 @@ const LoginPage: React.FC = () => {
                       margin: 0,
                     }}
                   >
-                    GoTrip
+                    Thai Tour Service
                   </p>
                   <h2
                     style={{

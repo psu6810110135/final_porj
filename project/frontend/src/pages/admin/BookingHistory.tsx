@@ -36,6 +36,8 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import axios from "axios";
 import { API_BASE_URL } from "@/config/api";
+import { getToken } from "@/utils/auth";
+
 
 interface BookingTour {
   id: string;
@@ -235,7 +237,8 @@ export default function BookingHistory() {
   useEffect(() => {
     setLoading(true);
     setError(null);
-    const token = localStorage.getItem("jwt_token");
+    const token = getToken();
+
     axios
       .get<Booking[]>(`${API_BASE_URL}/api/admin/bookings`, {
         headers: token ? { Authorization: `Bearer ${token}` } : {},
@@ -364,7 +367,8 @@ export default function BookingHistory() {
     if (!bookingToDelete) return;
     setDeleting(true);
     try {
-      const token = localStorage.getItem("jwt_token");
+      const token = getToken();
+
       await axios.delete(
         `${API_BASE_URL}/api/admin/bookings/${bookingToDelete.id}`,
         { headers: token ? { Authorization: `Bearer ${token}` } : {} },
@@ -405,7 +409,8 @@ export default function BookingHistory() {
     );
 
     try {
-      const token = localStorage.getItem("jwt_token");
+      const token = getToken();
+
       await axios.patch(
         `${API_BASE_URL}/api/admin/bookings/${booking.id}/status`,
         { status: nextStatus },

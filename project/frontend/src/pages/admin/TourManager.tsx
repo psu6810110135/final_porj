@@ -20,12 +20,15 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { API_BASE_URL } from "@/config/api";
 import { THAI_PROVINCES, getProvinceLabel } from "@/utils/tourLabels";
+import { getToken } from "@/utils/auth";
+
 
 /* ─── Auth Helper ────────────────────────────────── */
 const getAuthHeader = (): Record<string, string> => {
-  const token = localStorage.getItem("jwt_token");
+  const token = getToken();
   return token ? { Authorization: `Bearer ${token}` } : {};
 };
+
 
 /* ─── เคล็ดลับดึง URL รูปภาพให้ติดชัวร์ 100% ─────────── */
 const getImageUrl = (path?: string) => {
@@ -148,7 +151,13 @@ interface Option {
 }
 
 const CustomSelect = ({
-  value, onChange, options, className, hasError = false, enableSearch = false
+  value,
+  onChange,
+  options,
+  className,
+  hasError = false,
+  enableSearch = false,
+  menuPlacement = "bottom",
 }: {
   value: string | boolean;
   onChange: (val: any) => void;
@@ -156,10 +165,16 @@ const CustomSelect = ({
   className?: string;
   hasError?: boolean;
   enableSearch?: boolean;
+  menuPlacement?: "top" | "bottom" | "auto";
 }) => {
   const [isOpen, setIsOpen] = useState(false);
+  const [resolvedPlacement, setResolvedPlacement] = useState<"top" | "bottom">(
+    "bottom",
+  );
+  const [menuMaxHeight, setMenuMaxHeight] = useState(240);
   const [search, setSearch] = useState("");
   const ref = useRef<HTMLDivElement>(null);
+
 
   // เคลียร์คำค้นหาเมื่อปิด
   useEffect(() => {
@@ -167,14 +182,42 @@ const CustomSelect = ({
   }, [isOpen]);
 
   useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
-      if (ref.current && !ref.current.contains(event.target as Node)) setIsOpen(false);
-    }
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
+    if (!isOpen) return;
+
+    const updateMenuLayout = () => {
+      if (!ref.current) return;
+
+      const rect = ref.current.getBoundingClientRect();
+      const spaceAbove = rect.top - 12;
+      const spaceBelow = window.innerHeight - rect.bottom - 12;
+
+      const nextPlacement =
+        menuPlacement === "auto"
+          ? spaceBelow < 220 && spaceAbove > spaceBelow
+            ? "top"
+            : "bottom"
+          : menuPlacement;
+
+      setResolvedPlacement(nextPlacement === "top" ? "top" : "bottom");
+
+      const availableSpace = nextPlacement === "top" ? spaceAbove : spaceBelow;
+      setMenuMaxHeight(
+        Math.max(120, Math.min(240, Math.floor(availableSpace))),
+      );
+    };
+
+    updateMenuLayout();
+    window.addEventListener("resize", updateMenuLayout);
+    window.addEventListener("scroll", updateMenuLayout, true);
+
+    return () => {
+      window.removeEventListener("resize", updateMenuLayout);
+      window.removeEventListener("scroll", updateMenuLayout, true);
+    };
+  }, [isOpen, menuPlacement]);
 
   const selectedOption = options.find((o) => String(o.value) === String(value)) || (value ? { label: value } : options[0]);
+
   const errorClasses = hasError ? "ring-2 ring-red-500 bg-red-50 border-red-500 text-red-700" : "";
 
   // กรองข้อมูลตามที่พิมพ์ค้นหา (ตรวจสอบทั้ง label ภาษาไทย และ searchTerms ภาษาอังกฤษ)
@@ -195,8 +238,11 @@ const CustomSelect = ({
         <ChevronDown className={`w-4 h-4 ml-2 transition-transform duration-200 shrink-0 ${hasError ? "text-red-500" : "text-[#4F200D]/50"} ${isOpen ? "rotate-180" : ""}`} />
       </div>
       {isOpen && (
-        <div className="absolute z-50 w-full min-w-[140px] mt-2 bg-white border-2 border-[#F6F1E9] rounded-2xl shadow-xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
-          
+        <div
+          className={`absolute z-50 w-full min-w-[140px] bg-white border-2 border-[#F6F1E9] rounded-2xl shadow-xl overflow-hidden animate-in fade-in zoom-in-95 duration-200 ${
+            resolvedPlacement === "top" ? "bottom-full mb-2" : "top-full mt-2"
+          }`}
+        >
           {/* ส่วนช่องค้นหาภายใน Dropdown */}
           {enableSearch && (
             <div className="p-2 border-b-2 border-[#F6F1E9] bg-white">
@@ -212,7 +258,11 @@ const CustomSelect = ({
             </div>
           )}
 
-          <div className="max-h-60 overflow-y-auto custom-scrollbar py-2">
+          <div
+            className="overflow-y-auto custom-scrollbar py-2"
+            style={{ maxHeight: `${menuMaxHeight}px` }}
+          >
+
             {filteredOptions.length > 0 ? (
               filteredOptions.map((opt) => (
                 <div

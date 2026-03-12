@@ -125,12 +125,12 @@ const CustomSelect = ({
       ref={ref}
     >
       <div
-        className={`flex items-center justify-between ${className}`}
+        className={`relative flex items-center justify-center ${className}`}
         onClick={() => setIsOpen(!isOpen)}
       >
-        <span className="truncate flex-1 text-center">{selectedOption?.label}</span>
+        <span className="truncate text-center px-6">{selectedOption?.label}</span>
         <ChevronDown
-          className={`w-4 h-4 ml-2 transition-transform duration-200 text-[#4F200D]/50 shrink-0 ${
+          className={`absolute right-3 w-4 h-4 transition-transform duration-200 text-[#4F200D]/50 shrink-0 ${
             isOpen ? "rotate-180" : ""
           }`}
         />
@@ -148,7 +148,7 @@ const CustomSelect = ({
             {options.map((opt) => (
               <div
                 key={String(opt.value)}
-                className={`px-4 py-3 text-sm font-bold cursor-pointer transition-colors ${
+                className={`px-4 py-3 text-sm font-bold text-center cursor-pointer transition-colors ${
                   String(value) === String(opt.value)
                     ? "bg-[#FFD93D]/30 text-[#FF8400]"
                     : "text-[#4F200D] hover:bg-[#F6F1E9]"

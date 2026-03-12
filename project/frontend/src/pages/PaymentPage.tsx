@@ -384,9 +384,14 @@ export default function PaymentPage() {
         {/* ส่วนฟอร์มอัปโหลดสลิป (ซ่อนทันทีถ้าหมดเวลา) */}
         {paymentStatus === "pending" && (
           <div className="mt-6 border-t border-gray-200 pt-6 text-left animate-in fade-in">
-            <p className="text-sm font-bold text-gray-700 mb-3">
-              แนบสลิปการโอนเงิน
-            </p>
+            <div className="mb-3">
+              <p className="text-sm font-bold text-gray-700">
+                แนบสลิปการโอนเงิน
+              </p>
+              <p className="text-xs text-gray-500 mt-1">
+                รองรับไฟล์: JPEG, JPG, PNG (ขนาดไม่เกิน 5MB)
+              </p>
+            </div>
             <input
               type="file"
               accept="image/jpeg, image/jpg, image/png"

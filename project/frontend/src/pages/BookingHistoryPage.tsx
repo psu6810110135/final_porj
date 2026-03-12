@@ -770,6 +770,8 @@ export default function BookingHistoryPage() {
                             hasReviewed={reviewedBookingIds.has(booking.id)}
                             isLast={idx === paginatedBookings.length - 1}
                             actionLoadingId={actionLoadingId}
+                            renewLoadingId={renewLoadingId} 
+                            onRenewBooking={handleRenewBooking}
                             onOpenTour={openTourDetail}
                             onViewDetail={setSelectedBooking}
                             onViewTicket={setTicketBooking}
@@ -817,6 +819,8 @@ export default function BookingHistoryPage() {
           canWriteReview={canWriteReview(selectedBooking)}
           hasReviewed={reviewedBookingIds.has(selectedBooking.id)}
           actionLoadingId={actionLoadingId}
+          renewLoadingId={renewLoadingId}
+          onRenewBooking={handleRenewBooking}
           onClose={() => setSelectedBooking(null)}
           onCancelBooking={requestCancelBooking}
           onWriteReview={openReviewModal}
@@ -1240,6 +1244,8 @@ function DesktopRow({
   hasReviewed,
   isLast,
   actionLoadingId,
+  renewLoadingId,
+  onRenewBooking,
   onOpenTour,
   onViewDetail,
   onViewTicket,
@@ -1251,13 +1257,16 @@ function DesktopRow({
   hasReviewed: boolean;
   isLast: boolean;
   actionLoadingId: string | null;
+  renewLoadingId: string | null;
+  onRenewBooking: (booking: Booking) => void;
   onOpenTour: (booking: Booking) => void;
   onViewDetail: (booking: Booking) => void;
   onViewTicket: (booking: Booking) => void;
   onCancelBooking: (booking: Booking) => void;
   onWriteReview: (booking: Booking) => void;
 }) {
-  const cfg = statusConfig[booking.status];
+  const effectiveStatus = getEffectiveStatus(booking);
+  const cfg = statusConfig[effectiveStatus];
   const travelDateStr = formatDate(getTravelDate(booking));
   const isCancelling = actionLoadingId === booking.id;
 
@@ -1342,6 +1351,16 @@ function DesktopRow({
             </>
           )}
 
+          {effectiveStatus === "expired" && (
+            <button
+              disabled={renewLoadingId === booking.id}
+              onClick={() => onRenewBooking(booking)}
+              className="text-xs font-bold px-3 py-2 rounded-full bg-blue-50 text-blue-600 hover:bg-blue-100 transition-colors whitespace-nowrap disabled:opacity-50"
+            >
+              {renewLoadingId === booking.id ? "กำลังเช็ค..." : "ขอคิวอาร์ใหม่"}
+            </button>
+          )}
+
           {booking.status === "confirmed" && (
             <>
               <button
@@ -1376,6 +1395,8 @@ function BookingDetailModal({
   canWriteReview,
   hasReviewed,
   actionLoadingId,
+  renewLoadingId,
+  onRenewBooking,
   onClose,
   onCancelBooking,
   onWriteReview,
@@ -1385,13 +1406,16 @@ function BookingDetailModal({
   canWriteReview: boolean;
   hasReviewed: boolean;
   actionLoadingId: string | null;
+  renewLoadingId: string | null; 
+  onRenewBooking: (booking: Booking) => void;
   onClose: () => void;
   onCancelBooking: (booking: Booking) => void;
   onWriteReview: (booking: Booking) => void;
   onViewTicket: () => void;
 }) {
-  const cfg = statusConfig[booking.status];
-  const canCancel = booking.status === "pending_pay";
+  const effectiveStatus = getEffectiveStatus(booking);
+  const cfg = statusConfig[effectiveStatus]; 
+  const canCancel = effectiveStatus === "pending_pay";
   const canViewTicket = booking.status === "confirmed";
 
   return (
@@ -1495,13 +1519,23 @@ function BookingDetailModal({
         </div>
 
         <div className="px-4 sm:px-5 pb-4 sm:pb-5 pt-2 flex flex-wrap gap-2 justify-end">
-          {booking.status === "pending_pay" && (
+          {effectiveStatus === "pending_pay" && (
             <Link
               to={`/payment/${booking.id}`}
               className="text-xs font-bold text-white bg-[#FF8400] px-4 py-2 rounded-full hover:bg-[#e67600] transition-colors"
             >
               ไปหน้าชำระเงิน
             </Link>
+          )}
+
+          {effectiveStatus === "expired" && (
+            <button
+              disabled={renewLoadingId === booking.id}
+              onClick={() => onRenewBooking(booking)}
+              className="text-xs font-bold px-4 py-2 rounded-full bg-blue-50 text-blue-600 hover:bg-blue-100 transition-colors disabled:opacity-50"
+            >
+              {renewLoadingId === booking.id ? "กำลังเช็คที่นั่ง..." : "ขอคิวอาร์โค้ดใหม่"}
+            </button>
           )}
 
           {canViewTicket && (

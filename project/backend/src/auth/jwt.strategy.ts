@@ -29,6 +29,9 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     if (!user) {
       throw new UnauthorizedException();
     }
+    if (user.is_active === false) {
+      throw new UnauthorizedException('บัญชีนี้ถูกระงับการใช้งาน');
+    }
     return user;
   }
 }

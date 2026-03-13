@@ -43,7 +43,11 @@ export class AuthService {
       // ❌ มีบัญชีปกติอยู่แล้ว → แจ้งเตือน conflict ห้าม overwrite provider
       return { conflict: true };
     }
-    // provider === 'google' → login ปกติ ไม่ต้องทำอะไรเพิ่ม
+
+    // ตรวจสอบว่าบัญชีถูกระงับหรือไม่
+    if (user.is_active === false) {
+      throw new UnauthorizedException('บัญชีนี้ถูกระงับการใช้งาน');
+    }
 
     const payload = {
       sub: user.id,
@@ -81,6 +85,11 @@ export class AuthService {
 
     if (!user) {
       throw new UnauthorizedException('Please check your login credentials');
+    }
+
+    // ตรวจสอบว่าบัญชีถูกระงับหรือไม่
+    if (user.is_active === false) {
+      throw new UnauthorizedException('บัญชีนี้ถูกระงับการใช้งาน กรุณาติดต่อผู้ดูแลระบบ');
     }
 
     // ถ้า user ลงทะเบียนผ่าน Google → ห้าม login ด้วย password

@@ -1112,7 +1112,7 @@ function MobileCard({
           >
             {cfg.label}
           </span>
-          {booking.status === "pending_pay" && booking.paymentDeadline && (
+          {effectiveStatus === "pending_pay" && booking.paymentDeadline && (
             <span className="text-[10px] text-red-500 font-medium">
               *ภายใน {formatDeadlineTime(booking.paymentDeadline)}
             </span>
@@ -1314,7 +1314,7 @@ function DesktopRow({
           >
             {cfg.label}
           </span>
-          {booking.status === "pending_pay" && booking.paymentDeadline && (
+          {effectiveStatus === "pending_pay" && booking.paymentDeadline && (
             <span className="text-[10px] text-red-500 font-medium whitespace-nowrap">
               *ชำระภายใน {formatDeadlineTime(booking.paymentDeadline)}
             </span>
@@ -1333,7 +1333,7 @@ function DesktopRow({
             รายละเอียด
           </button>
 
-          {booking.status === "pending_pay" && (
+          {effectiveStatus === "pending_pay" && (
             <>
               <Link
                 to={`/payment/${booking.id}`}
@@ -1357,7 +1357,7 @@ function DesktopRow({
               onClick={() => onRenewBooking(booking)}
               className="text-xs font-bold px-3 py-2 rounded-full bg-blue-50 text-blue-600 hover:bg-blue-100 transition-colors whitespace-nowrap disabled:opacity-50"
             >
-              {renewLoadingId === booking.id ? "กำลังเช็ค..." : "ขอคิวอาร์ใหม่"}
+              {renewLoadingId === booking.id ? "กำลังเช็ค..." : "ขอคิวอาร์โค้ดใหม่"}
             </button>
           )}
 
@@ -1455,7 +1455,7 @@ function BookingDetailModal({
               >
                 {cfg.label}
               </span>
-              {booking.status === "pending_pay" && booking.paymentDeadline && (
+              {effectiveStatus === "pending_pay" && booking.paymentDeadline && (
                 <span className="text-[10px] text-red-500 font-medium">
                   *ชำระภายใน {formatDeadlineTime(booking.paymentDeadline)}
                 </span>

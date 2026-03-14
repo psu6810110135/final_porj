@@ -20,12 +20,15 @@ import { CalculateBookingDto } from './dto/calculate-booking.dto';
 import { CreateBookingDto } from './dto/create-booking.dto';
 import { CancelBookingDto } from './dto/cancel-booking.dto';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { diskStorage } from 'multer';
-import { extname } from 'path';
+import { memoryStorage } from 'multer';
+import { StorageService } from '../common/storage/storage.service';
 
 @Controller('api/bookings')
 export class BookingsController {
-  constructor(private readonly bookingsService: BookingsService) {}
+  constructor(
+    private readonly bookingsService: BookingsService,
+    private readonly storageService: StorageService,
+  ) {}
 
   @Post('calculate')
   calculatePrice(@Body() calculateBookingDto: CalculateBookingDto) {
@@ -91,14 +94,7 @@ export class BookingsController {
   @Post(':id/upload-slip')
   @UseInterceptors(
     FileInterceptor('file', {
-      storage: diskStorage({
-        destination: './uploads/slips',
-        filename: (req, file, cb) => {
-          const uniqueSuffix =
-            Date.now() + '-' + Math.round(Math.random() * 1e9);
-          cb(null, `slip-${uniqueSuffix}${extname(file.originalname)}`);
-        },
-      }),
+      storage: memoryStorage(),
       limits: { fileSize: 5 * 1024 * 1024 },
     }),
   )
@@ -120,15 +116,20 @@ export class BookingsController {
       throw new UnauthorizedException('ไม่พบข้อมูล User ID ในระบบ');
     }
 
-    return this.bookingsService.uploadPaymentSlip(id, file.filename, userId);
+    const paymentSlipUrl = await this.storageService.uploadPublicFile(
+      file,
+      'slips',
+    );
+
+    return this.bookingsService.uploadPaymentSlip(id, paymentSlipUrl, userId);
   }
 
   @UseGuards(AuthGuard('jwt'))
   @Post(':id/renew')
   async renewBooking(@Param('id') id: string, @Req() req: any) {
     // ดึง userId จาก Token (ปรับชื่อ req.user.id หรือ req.user.sub ตามที่ตั้งไว้ใน payload)
-    const userId = req.user?.id || req.user?.sub; 
-    
+    const userId = req.user?.id || req.user?.sub;
+
     return await this.bookingsService.renewBooking(id, userId);
   }
 }

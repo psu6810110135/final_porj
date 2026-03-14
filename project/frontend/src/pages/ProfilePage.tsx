@@ -4,7 +4,7 @@ import { getToken } from "../utils/auth";
 
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
-import { API_BASE_URL } from "@/config/api";
+import { API_BASE_URL, toAbsoluteAssetUrl } from "@/config/api";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -294,7 +294,7 @@ export default function ProfilePage() {
   };
 
   const avatarSrc = profile?.avatarUrl
-    ? `${API_BASE_URL}${profile.avatarUrl}`
+    ? toAbsoluteAssetUrl(profile.avatarUrl)
     : null;
 
   return (

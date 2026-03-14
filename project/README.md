@@ -5,6 +5,7 @@ A full-stack tour booking platform for Thai tourism with customer portal and adm
 ## Project Overview
 
 This is a tour booking system that allows customers to:
+
 - Browse and search for tours across Thailand
 - Book tours with real-time availability checking
 - Upload payment slips for verification
@@ -12,6 +13,7 @@ This is a tour booking system that allows customers to:
 - Manage their bookings
 
 Admins can:
+
 - Manage tour listings
 - Verify payment slips
 - View dashboard statistics
@@ -20,22 +22,25 @@ Admins can:
 ## Tech Stack
 
 ### Frontend
+
 - **Framework**: React + TypeScript + Vite
 - **Routing**: React Router
 - **Styling**: TailwindCSS
 - **State Management**: TanStack Query
-- **Deployment**: Vercel
+- **Deployment**: Amazon S3 + CloudFront
 
 ### Backend
+
 - **Runtime**: Node.js
-- **Framework**: Express
+- **Framework**: NestJS
 - **ORM**: TypeORM
-- **Database**: PostgreSQL (Render/Railway)
+- **Database**: PostgreSQL (Amazon RDS)
 - **Authentication**: JWT
-- **Deployment**: Render
+- **Deployment**: AWS App Runner or Amazon ECS Fargate
 
 ### Database
-- PostgreSQL (Render/Railway)
+
+- PostgreSQL (Amazon RDS)
 - Connection pooling managed by backend
 
 ## Project Structure
@@ -51,6 +56,7 @@ project/
 ## Getting Started
 
 ### Prerequisites
+
 - Node.js 18+
 - PostgreSQL database
 
@@ -73,17 +79,30 @@ npm run dev
 ### Environment Variables
 
 #### Frontend (`.env`)
+
 ```
-VITE_API_URL=http://localhost:8080/api/v1
+VITE_API_URL=http://localhost:3000
 ```
 
 #### Backend (`.env`)
+
 ```
-PORT=8080
+PORT=3000
 DATABASE_URL=postgresql://...
 JWT_SECRET=your-secret-key
 JWT_EXPIRES_IN=24h
 ```
+
+## AWS Deployment
+
+The codebase now supports AWS-oriented production configuration:
+
+- Frontend static hosting on S3 + CloudFront
+- Backend container deployment on App Runner or ECS Fargate
+- PostgreSQL on RDS
+- Uploads stored in S3 via backend `StorageService`
+
+Deployment steps and required environment variables are documented in `AWS_DEPLOYMENT.md`.
 
 ## Development Roadmap
 

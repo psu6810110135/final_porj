@@ -1,5 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
+import { getToken } from "@/utils/auth";
+
 import axios from "axios";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
@@ -582,9 +584,9 @@ function BookingSheet({
   }, [api, isTourInactive, tour.id]);
 
   useEffect(() => {
-    const token =
-      localStorage.getItem("jwt_token") || localStorage.getItem("token");
+    const token = getToken();
     if (!token) return;
+
 
     const headers = { Authorization: `Bearer ${token}` };
 
@@ -645,15 +647,13 @@ function BookingSheet({
       return;
     }
 
-    const token =
-      localStorage.getItem("jwt_token") ||
-      localStorage.getItem("token") ||
-      localStorage.getItem("accessToken");
+    const token = getToken();
 
     if (!token) {
       setShowLoginModal(true);
       return;
     }
+
 
     if (!selectedSchedule) {
       showToast("กรุณาเลือกวันที่เดินทาง", "warning");
@@ -722,12 +722,10 @@ function BookingSheet({
         <LoginRequiredModal
           onClose={() => setShowLoginModal(false)}
           onLogin={() => {
-            localStorage.setItem(
-              "redirect_after_login",
-              window.location.pathname,
-            );
+            sessionStorage.setItem("redirect_after_login", window.location.pathname);
             navigate("/login");
           }}
+
         />
       )}
 

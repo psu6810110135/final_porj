@@ -1,7 +1,9 @@
 import { Link, useNavigate } from "react-router-dom";
 import logoIconImage from "../assets/logo_without_text-removebg-preview.png";
 import { useState, useEffect, useRef } from "react";
-import { API_BASE_URL, toAbsoluteAssetUrl } from "../config/api";
+import { API_BASE_URL } from "../config/api";
+import { getToken, removeToken } from "../utils/auth";
+
 
 // ─── Icons ───────────────────────────────────────────────────────────────────
 
@@ -190,7 +192,15 @@ interface NavbarProfileResponse {
 }
 
 const resolveAvatarUrl = (avatarUrl?: string | null) => {
-  return toAbsoluteAssetUrl(avatarUrl) || null;
+  if (!avatarUrl) return null;
+  if (avatarUrl.startsWith("http") || avatarUrl.startsWith("data:")) {
+    return avatarUrl;
+  }
+
+  const normalizedPath = avatarUrl.startsWith("/")
+    ? avatarUrl
+    : `/${avatarUrl}`;
+  return `${API_BASE_URL}${normalizedPath}`;
 };
 
 export default function Navbar({ activePage = "home" }: NavbarProps) {
@@ -204,8 +214,9 @@ export default function Navbar({ activePage = "home" }: NavbarProps) {
   const [avatarLoadFailed, setAvatarLoadFailed] = useState(false);
   const userDropdownRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
-  const token = localStorage.getItem("jwt_token");
+  const token = getToken();
   const isLoggedIn = !!token;
+
 
   useEffect(() => {
     const handleScroll = () => {
@@ -294,15 +305,17 @@ export default function Navbar({ activePage = "home" }: NavbarProps) {
 
   const handleLogout = () => {
     setMenuOpen(false);
+    setShowUserDropdown(false);
     setShowLogoutModal(true);
   };
 
   const confirmLogout = () => {
-    localStorage.removeItem("jwt_token");
+    removeToken();
     setAvatarSrc(null);
     setAvatarLoadFailed(false);
     setShowLogoutModal(false);
-    navigate("/login");
+    navigate("/");
+    window.location.reload();
   };
 
   // Desktop link style
@@ -523,7 +536,11 @@ export default function Navbar({ activePage = "home" }: NavbarProps) {
                   )}
                 </div>
               ) : (
-                <Link to="/login" className="hidden md:flex">
+                <Link 
+                  to="/login" 
+                  className="hidden md:flex"
+                  onClick={() => sessionStorage.setItem('redirect_after_login', window.location.pathname)}
+                >
                   <button
                     className={userAvatarBtnClass}
                     aria-label="เข้าสู่ระบบ"
@@ -612,7 +629,10 @@ export default function Navbar({ activePage = "home" }: NavbarProps) {
               ) : (
                 <Link
                   to="/login"
-                  onClick={() => setMenuOpen(false)}
+                  onClick={() => {
+                    sessionStorage.setItem('redirect_after_login', window.location.pathname);
+                    setMenuOpen(false);
+                  }}
                   className="flex items-center gap-3 px-4 py-3 rounded-xl text-[#4F200D] hover:bg-[#FFF3E0] hover:text-[#FF8400] transition-colors"
                 >
                   <UserIcon className="w-6 h-6 flex-shrink-0" />

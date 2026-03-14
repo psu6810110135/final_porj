@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Navigate, Outlet, useNavigate } from 'react-router-dom';
+import { getToken, removeToken } from '../utils/auth';
+
 
 /* ── Toast notification (ไม่ใช้ browser alert เลย) ── */
 interface ToastProps {
@@ -125,44 +127,58 @@ const AdminGuard = () => {
   const [decision, setDecision] = useState<'allow' | 'deny-no-token' | 'deny-not-admin' | null>(null);
 
   useEffect(() => {
-    const token = localStorage.getItem('jwt_token');
-
-    // 1. ไม่มี token เลย
-    if (!token) {
-      setToast({ message: 'กรุณาเข้าสู่ระบบก่อนนะครับ 🛡️', icon: '🔐', redirectTo: '/login' });
-      setDecision('deny-no-token');
-      return;
-    }
-
-    try {
-      const payloadBase64 = token.split('.')[1];
-      const payload = JSON.parse(atob(payloadBase64));
-
-      // 2. ตรวจ token หมดอายุ
-      if (payload.exp && payload.exp * 1000 < Date.now()) {
-        localStorage.removeItem('jwt_token');
-        setToast({ message: 'Session หมดอายุ กรุณาเข้าสู่ระบบใหม่', icon: '⏰', redirectTo: '/login' });
+      const token = getToken();
+  
+      // 1. ไม่มี token เลย
+      if (!token) {
+        sessionStorage.setItem('redirect_after_login', window.location.pathname);
+        setToast({ message: 'กรุณาเข้าสู่ระบบก่อนนะครับ 🛡️', icon: '🔐', redirectTo: '/login' });
         setDecision('deny-no-token');
         return;
       }
+  
+      try {
+        const payloadBase64 = token.split('.')[1];
+        const payload = JSON.parse(atob(payloadBase64));
+  
+        // 2. ตรวจ token หมดอายุ
+        if (payload.exp && payload.exp * 1000 < Date.now()) {
+          removeToken();
+          sessionStorage.setItem('redirect_after_login', window.location.pathname);
+          setToast({ message: 'Session หมดอายุ กรุณาเข้าสู่ระบบใหม่', icon: '⏰', redirectTo: '/login' });
+          setDecision('deny-no-token');
+          return;
+        }
 
-      // 3. ตรวจ role
-      if (payload.role === 'admin') {
-        setDecision('allow');
-      } else {
-        setToast({ message: 'เฉพาะ Admin เท่านั้นที่เข้าหน้านี้ได้', icon: '🚫', redirectTo: '/' });
-        setDecision('deny-not-admin');
+  
+        // 3. ตรวจ role
+        if (payload.role === 'admin') {
+          setDecision('allow');
+        } else {
+          setToast({ message: 'เฉพาะ Admin เท่านั้นที่เข้าหน้านี้ได้', icon: '🚫', redirectTo: '/' });
+          setDecision('deny-not-admin');
+        }
+      } catch {
+        // token เสีย
+        removeToken();
+        setToast({ message: 'Token ไม่ถูกต้อง กรุณาเข้าสู่ระบบใหม่', icon: '⚠️', redirectTo: '/login' });
+        setDecision('deny-no-token');
       }
-    } catch {
-      // token เสีย
-      localStorage.removeItem('jwt_token');
-      setToast({ message: 'Token ไม่ถูกต้อง กรุณาเข้าสู่ระบบใหม่', icon: '⚠️', redirectTo: '/login' });
-      setDecision('deny-no-token');
-    }
+
   }, []);
 
   // รอจนกว่า useEffect จะตัดสินใจก่อน (ป้องกัน flash)
-  if (decision === null) return null;
+  if (decision === null) {
+    return (
+      <div className="flex h-screen w-full items-center justify-center bg-[#FDFBF7]">
+        <div className="flex flex-col items-center gap-3">
+          <div className="h-10 w-10 animate-spin rounded-full border-4 border-[#FF8400] border-t-transparent"></div>
+          <p className="text-sm font-bold text-[#4F200D]/60 animate-pulse">กำลังตรวจสอบสิทธิ์...</p>
+        </div>
+      </div>
+    );
+  }
+
 
   // อนุญาต
   if (decision === 'allow') return <Outlet />;

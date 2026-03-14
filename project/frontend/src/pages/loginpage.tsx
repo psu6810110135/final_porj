@@ -3,6 +3,9 @@ import axios from 'axios';
 import { Link, useNavigate, useSearchParams, useLocation } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 import { API_BASE_URL } from '@/config/api';
+import { setToken, getToken, removeToken } from '../utils/auth';
+
+
 
 /* ─── Types ─────────────────────────────────────── */
 type View = "login" | "forgot" | "otp" | "reset";
@@ -130,9 +133,13 @@ const LoginPage: React.FC = () => {
   /* Google Conflict Modal state */
   const [showConflictModal, setShowConflictModal] = useState(false);
 
+  /* Suspended Account Modal state */
+  const [showSuspendedModal, setShowSuspendedModal] = useState(false);
+
   /* Login state */
   const [loginForm, setLoginForm] = useState({ username: "", password: "" });
   const [loginLoading, setLoginLoading] = useState(false);
+  const [rememberMe, setRememberMe] = useState(false);
   const [loginError, setLoginError] = useState("");
   const [showLoginPass, setShowLoginPass] = useState(false);
   const [isGoogleAccountError, setIsGoogleAccountError] = useState(false);
@@ -195,24 +202,27 @@ const LoginPage: React.FC = () => {
     setLoginError('');
     setIsGoogleAccountError(false);
     try {
-      const res = await axios.post(`${API_BASE_URL}/api/auth/signin`, loginForm);
-      localStorage.setItem('jwt_token', res.data.accessToken);
-      const redirectUrl = localStorage.getItem('redirect_after_login');
+      const res = await axios.post(`${API_BASE_URL}/api/auth/signin`, { ...loginForm, rememberMe });
+      setToken(res.data.accessToken, rememberMe);
+
+      const redirectUrl = getToken('redirect_after_login');
       if (redirectUrl) {
-        localStorage.removeItem('redirect_after_login');
+        removeToken('redirect_after_login');
         navigate(redirectUrl);
       } else {
         navigate('/');
       }
     } catch (err: any) {
+
       const status = err.response?.status;
       const msg = err.response?.data?.message;
 
       if (msg === 'GOOGLE_ACCOUNT') {
         setIsGoogleAccountError(true);
         setLoginError('บัญชีนี้ผูกกับ Google กรุณากดปุ่ม "เข้าสู่ระบบด้วย Google" ด้านล่าง');
+      } else if (typeof msg === 'string' && msg.includes('ถูกระงับ')) {
+        setShowSuspendedModal(true);
       } else if (status === 400) {
-        // จัดการ Error Validation จาก Backend (400 Bad Request)
         setLoginError(Array.isArray(msg) ? msg[0] : (typeof msg === 'string' ? msg : 'ข้อมูลไม่ถูกต้อง'));
       } else {
         setLoginError('ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง กรุณาลองใหม่อีกครั้ง');
@@ -635,6 +645,46 @@ const LoginPage: React.FC = () => {
         </div>
       )}
 
+      {/* ── Suspended Account Modal ── */}
+      {showSuspendedModal && (
+        <div className="conflict-overlay" onClick={() => setShowSuspendedModal(false)}>
+          <div className="conflict-modal" onClick={e => e.stopPropagation()}>
+
+            {/* Banner */}
+            <div className="conflict-banner" style={{ background: 'linear-gradient(135deg, #b91c1c, #dc2626)' }}>
+              <button className="conflict-close" onClick={() => setShowSuspendedModal(false)}>✕</button>
+              <div className="conflict-icon-ring">🚫</div>
+              <h2 style={{ color: 'white', fontSize: 19, fontWeight: 800, margin: '0 0 6px', fontFamily: 'Prompt, sans-serif' }}>
+                บัญชีถูกระงับการใช้งาน
+              </h2>
+              <p style={{ color: 'rgba(255,255,255,0.85)', fontSize: 13, margin: 0, fontFamily: 'Prompt, sans-serif', lineHeight: 1.5 }}>
+                บัญชีของคุณถูกระงับโดยผู้ดูแลระบบ<br />ไม่สามารถเข้าสู่ระบบได้ในขณะนี้
+              </p>
+            </div>
+
+            {/* Body */}
+            <div className="conflict-body">
+              <div className="conflict-step" style={{ background: '#FFF5F5', borderColor: '#FFCDD2' }}>
+                <div className="conflict-step-num" style={{ background: 'linear-gradient(135deg, #dc2626, #b91c1c)' }}>!</div>
+                <div className="conflict-step-text">
+                  หากคุณคิดว่านี่เป็นความผิดพลาด กรุณา<b>ติดต่อผู้ดูแลระบบ</b>
+                  เพื่อขอให้ปลดล็อกบัญชีของคุณ
+                </div>
+              </div>
+
+              <button
+                className="conflict-btn-primary"
+                style={{ background: 'linear-gradient(135deg, #dc2626, #b91c1c)', boxShadow: '0 5px 18px rgba(220,38,38,0.4)', marginTop: 20 }}
+                onClick={() => setShowSuspendedModal(false)}
+              >
+                รับทราบ
+              </button>
+            </div>
+
+          </div>
+        </div>
+      )}
+
       <Navbar />
       <div className="auth-page">
         <div className="auth-container">
@@ -673,7 +723,7 @@ const LoginPage: React.FC = () => {
                       margin: 0,
                     }}
                   >
-                    GoTrip
+                    Thai Tour Service
                   </p>
                   <h2
                     style={{
@@ -796,14 +846,25 @@ const LoginPage: React.FC = () => {
                       </div>
                     </div>
 
-                    {/* Forgot link */}
+                    {/* Remember me & Forgot link */}
                     <div
                       style={{
-                        textAlign: "right",
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "center",
                         marginTop: -10,
                         marginBottom: 18,
                       }}
                     >
+                      <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', fontSize: 13, color: '#5D4037', fontWeight: 500 }}>
+                        <input
+                          type="checkbox"
+                          checked={rememberMe}
+                          onChange={(e) => setRememberMe(e.target.checked)}
+                          style={{ accentColor: '#FF8C00', cursor: 'pointer', width: 15, height: 15 }}
+                        />
+                        จดจำฉันในระบบ
+                      </label>
                       <button
                         type="button"
                         onClick={() => {

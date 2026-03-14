@@ -16,7 +16,9 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { API_BASE_URL, toAbsoluteAssetUrl } from "@/config/api";
+import { API_BASE_URL } from "@/config/api";
+import { getToken } from "@/utils/auth";
+
 
 interface UserData {
   id: string;
@@ -35,9 +37,10 @@ interface UserData {
 }
 
 const getAuthHeader = (): Record<string, string> => {
-  const token = localStorage.getItem("jwt_token");
+  const token = getToken();
   return token ? { Authorization: `Bearer ${token}` } : {};
 };
+
 
 export default function UserManager() {
   const [users, setUsers] = useState<UserData[]>([]);
@@ -76,20 +79,25 @@ export default function UserManager() {
   };
 
   const handleToggleStatus = async (user: UserData) => {
+    // Treat null/undefined as active (true) for legacy users
+    const currentlyActive = user.is_active !== false;
     try {
       await axios.patch(
         `${API_BASE_URL}/api/users/${user.id}`,
-        { is_active: !user.is_active },
+        { is_active: !currentlyActive },
         { headers: getAuthHeader() },
       );
-      // Update local state to feel snappy without full refetch
+      // Update local state optimistically without full refetch
       setUsers(
         users.map((u) =>
-          u.id === user.id ? { ...u, is_active: !u.is_active } : u,
+          u.id === user.id ? { ...u, is_active: !currentlyActive } : u,
         ),
       );
-    } catch (error) {
-      alert("ไม่สามารถอัปเดตสถานะผู้ใช้งานได้");
+    } catch (error: any) {
+      const msg =
+        error?.response?.data?.message ||
+        "ไม่สามารถอัปเดตสถานะผู้ใช้งานได้";
+      alert(msg);
       console.error(error);
     }
   };
@@ -195,7 +203,7 @@ export default function UserManager() {
                       `${user.first_name || ""} ${user.last_name || ""}`
                     ).trim() || "ไม่ระบุชื่อ";
                   const avatarUrl = user.avatar_url
-                    ? toAbsoluteAssetUrl(user.avatar_url)
+                    ? `${API_BASE_URL}${user.avatar_url}`
                     : null;
 
                   return (
@@ -225,9 +233,16 @@ export default function UserManager() {
                               <User size={20} strokeWidth={2.5} />
                             </div>
                           )}
-                          <span className="font-bold text-[#4F200D]">
-                            {displayName}
-                          </span>
+                          <div className="flex flex-col">
+                            <span className="font-bold text-[#4F200D]">
+                              {displayName}
+                            </span>
+                            {user.username && (
+                              <span className="text-[10px] font-semibold text-[#4F200D]/40 flex items-center gap-1 mt-0.5">
+                                @{user.username}
+                              </span>
+                            )}
+                          </div>
                         </div>
                       </td>
                       <td className="px-6 py-5">
@@ -305,9 +320,15 @@ export default function UserManager() {
                             variant="ghost"
                             size="icon"
                             title={
-                              user.is_active ? "ระงับการใช้งาน" : "เปิดใช้งาน"
+                              user.is_active !== false
+                                ? "ระงับการใช้งาน"
+                                : "เปิดใช้งาน"
                             }
-                            className={`h-9 w-9 rounded-xl transition-colors ${user.is_active ? "text-red-500 hover:bg-red-50" : "text-green-500 hover:bg-green-50"}`}
+                            className={`h-9 w-9 rounded-xl transition-colors ${
+                              user.is_active !== false
+                                ? "text-red-500 hover:bg-red-50"
+                                : "text-green-500 hover:bg-green-50"
+                            }`}
                             onClick={() => handleToggleStatus(user)}
                           >
                             <Power className="w-4 h-4" />

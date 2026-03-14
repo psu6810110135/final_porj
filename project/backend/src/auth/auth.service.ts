@@ -43,7 +43,11 @@ export class AuthService {
       // ❌ มีบัญชีปกติอยู่แล้ว → แจ้งเตือน conflict ห้าม overwrite provider
       return { conflict: true };
     }
-    // provider === 'google' → login ปกติ ไม่ต้องทำอะไรเพิ่ม
+
+    // ตรวจสอบว่าบัญชีถูกระงับหรือไม่
+    if (user.is_active === false) {
+      throw new UnauthorizedException('บัญชีนี้ถูกระงับการใช้งาน');
+    }
 
     const payload = {
       sub: user.id,
@@ -74,13 +78,18 @@ export class AuthService {
   }
 
   async signIn(authCredentialsDto: AuthCredentialsDto): Promise<{ accessToken: string }> {
-    const { username, password } = authCredentialsDto;
+    const { username, password, rememberMe } = authCredentialsDto;
 
     // ค้นหาด้วย username หรือ email ก็ได้
     const user = await this.usersService.findByUsernameOrEmail(username);
 
     if (!user) {
       throw new UnauthorizedException('Please check your login credentials');
+    }
+
+    // ตรวจสอบว่าบัญชีถูกระงับหรือไม่
+    if (user.is_active === false) {
+      throw new UnauthorizedException('บัญชีนี้ถูกระงับการใช้งาน กรุณาติดต่อผู้ดูแลระบบ');
     }
 
     // ถ้า user ลงทะเบียนผ่าน Google → ห้าม login ด้วย password
@@ -95,7 +104,9 @@ export class AuthService {
         email: user.email || user.username,
         role: user.role,
       };
-      const accessToken = this.jwtService.sign(payload);
+      const accessToken = rememberMe 
+        ? this.jwtService.sign(payload, { expiresIn: '30d' }) 
+        : this.jwtService.sign(payload);
       return { accessToken };
     } else {
       throw new UnauthorizedException('Please check your login credentials');
@@ -134,7 +145,7 @@ export class AuthService {
     });
 
     await this.transporter.sendMail({
-      from: `"GoTrip Support" <${process.env.EMAIL_USER}>`,
+      from: `"Thai Tour Service Support" <${process.env.EMAIL_USER}>`,
       to: email,
       subject: 'รหัส OTP สำหรับตั้งรหัสผ่านใหม่ 🔐',
       html: `<h2>รหัส OTP ของคุณคือ: <b>${otp}</b></h2><p>รหัสนี้จะหมดอายุในอีก 10 นาทีครับ</p>`,

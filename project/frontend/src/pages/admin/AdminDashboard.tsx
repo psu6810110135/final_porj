@@ -12,11 +12,14 @@ import {
 } from "lucide-react";
 import axios from "axios";
 import { API_BASE_URL } from "@/config/api";
+import { getToken } from "@/utils/auth";
+
 
 const getAuthHeader = (): Record<string, string> => {
-  const token = localStorage.getItem("jwt_token");
+  const token = getToken();
   return token ? { Authorization: `Bearer ${token}` } : {};
 };
+
 
 const CONFIRMED_STATUSES = new Set(["confirmed", "paid", "ยืนยันแล้ว"]);
 const MONTH_NAMES = [

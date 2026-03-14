@@ -1,5 +1,8 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
+import { setToken, getToken, removeToken } from '../utils/auth';
+
+
 
 const LoginSuccess = () => {
   const [searchParams] = useSearchParams();
@@ -10,10 +13,17 @@ const LoginSuccess = () => {
     const token = searchParams.get('token');
 
     if (token) {
-      localStorage.setItem('jwt_token', token);
+      setToken(token, true); // Google login defaults to rememberMe
+
       setStatus('success');
-      const timer = setTimeout(() => navigate('/'), 1800);
+      
+      const redirectUrl = getToken('redirect_after_login');
+      const target = redirectUrl || '/';
+      if (redirectUrl) removeToken('redirect_after_login');
+
+      const timer = setTimeout(() => navigate(target), 1800);
       return () => clearTimeout(timer);
+
     } else {
       setStatus('error');
       const timer = setTimeout(() => navigate('/login'), 2000);

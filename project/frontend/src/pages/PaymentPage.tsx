@@ -2,6 +2,8 @@ import { useEffect, useState, useCallback } from "react";
 import { useNavigate, useParams, useLocation } from "react-router-dom";
 import { QRCodeCanvas } from "qrcode.react";
 import { API_BASE_URL } from "@/config/api";
+import { getToken } from "@/utils/auth";
+
 
 export default function PaymentPage() {
   const navigate = useNavigate();
@@ -30,9 +32,11 @@ export default function PaymentPage() {
   const [isDownloaded, setIsDownloaded] = useState(false);
 
   const getAuthHeader = (): Record<string, string> => {
-    const token = localStorage.getItem("jwt_token");
+    const token = getToken();
     return token ? { Authorization: `Bearer ${token}` } : {};
   };
+
+
 
   // ✨ 1. ดึงข้อมูล QR Code และเวลาหมดอายุจาก Backend
   const fetchQrCode = useCallback(async () => {
@@ -157,7 +161,8 @@ export default function PaymentPage() {
     if (!file) return;
     setIsUploading(true);
 
-    const token = localStorage.getItem("jwt_token");
+    const token = getToken();
+
     if (!token) {
       setUploadAlert({ title: "เซสชันหมดอายุ", message: "ไม่พบ Token! กรุณาล็อกอินใหม่", isSuccess: false });
       setIsUploading(false);
@@ -205,7 +210,8 @@ export default function PaymentPage() {
   const handleRenewBooking = async () => {
     setIsRenewing(true);
     try {
-      const token = localStorage.getItem("jwt_token");
+      const token = getToken();
+
       const res = await fetch(`${API_BASE_URL}/api/bookings/${id}/renew`, {
         method: "POST",
         headers: { Authorization: `Bearer ${token}` },
@@ -378,9 +384,14 @@ export default function PaymentPage() {
         {/* ส่วนฟอร์มอัปโหลดสลิป (ซ่อนทันทีถ้าหมดเวลา) */}
         {paymentStatus === "pending" && (
           <div className="mt-6 border-t border-gray-200 pt-6 text-left animate-in fade-in">
-            <p className="text-sm font-bold text-gray-700 mb-3">
-              แนบสลิปการโอนเงิน
-            </p>
+            <div className="mb-3">
+              <p className="text-sm font-bold text-gray-700">
+                แนบสลิปการโอนเงิน
+              </p>
+              <p className="text-xs text-gray-500 mt-1">
+                รองรับไฟล์: JPEG, JPG, PNG (ขนาดไม่เกิน 5MB)
+              </p>
+            </div>
             <input
               type="file"
               accept="image/jpeg, image/jpg, image/png"

@@ -21,11 +21,14 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { API_BASE_URL } from "@/config/api";
+import { getToken } from "@/utils/auth";
+
 
 const getAuthHeader = (): Record<string, string> => {
-  const token = localStorage.getItem("jwt_token");
+  const token = getToken();
   return token ? { Authorization: `Bearer ${token}` } : {};
 };
+
 
 interface Tour {
   id: string;

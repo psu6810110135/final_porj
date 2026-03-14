@@ -6,7 +6,7 @@ import axios from "axios";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { getCategoryLabel, getDurationLabel } from "@/utils/tourLabels";
-import { API_BASE_URL } from "@/config/api";
+import { API_BASE_URL, toAbsoluteAssetUrl } from "@/config/api";
 
 /* ─── Types ───────────────────────── */
 
@@ -372,8 +372,7 @@ function TourUnavailableModal({ onClose }: { onClose: () => void }) {
 
 const getImageUrl = (path?: string) => {
   if (!path) return "https://placehold.co/80x80?text=No+Img";
-  if (path.startsWith("http")) return path;
-  return `${API_BASE_URL}/${path.replace(/^\//, "")}`;
+  return toAbsoluteAssetUrl(path);
 };
 
 function parsePreparation(raw?: string[] | string): string[] {

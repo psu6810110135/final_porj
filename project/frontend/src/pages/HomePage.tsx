@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { useNavigate } from "react-router-dom";
-import { API_BASE_URL } from "@/config/api";
+import { API_BASE_URL, toAbsoluteAssetUrl } from "@/config/api";
 
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
@@ -121,15 +121,12 @@ const PROVINCE_EN_MAPPING: Record<string, string> = {
 
 const getImageUrl = (path?: string) => {
   if (!path) return "";
-  if (path.startsWith("http") || path.startsWith("data:")) return path;
   if (path.startsWith("/src/assets")) return path;
-  return `${API_BASE_URL}/${path.replace(/^\//, "")}`;
+  return toAbsoluteAssetUrl(path);
 };
 
 const getAvatarUrl = (path?: string | null) => {
-  if (!path) return "";
-  if (path.startsWith("http") || path.startsWith("data:")) return path;
-  return `${API_BASE_URL}/${path.replace(/^\//, "")}`;
+  return toAbsoluteAssetUrl(path);
 };
 
 // ─── Hooks ────────────────────────────────────────────────────────────────────

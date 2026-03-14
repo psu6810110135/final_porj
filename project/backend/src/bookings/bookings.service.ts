@@ -239,7 +239,7 @@ export class BookingsService {
   }
 
   // เพิ่มฟังก์ชันนี้ลงไปในคลาส BookingsService
-  async uploadPaymentSlip(id: string, filename: string, userId: string) {
+  async uploadPaymentSlip(id: string, paymentSlipUrl: string, userId: string) {
     const booking = await this.findOneById(id, userId);
 
     if (booking.status !== BookingStatus.PENDING_PAY) {
@@ -250,11 +250,13 @@ export class BookingsService {
     if (booking.paymentDeadline && now > new Date(booking.paymentDeadline)) {
       booking.status = BookingStatus.EXPIRED; // ปรับเป็นหมดอายุทันที
       await this.bookingsRepository.save(booking);
-      throw new BadRequestException('หมดเวลาชำระเงินแล้ว ระบบได้ยกเลิกรายการนี้แล้ว หากโอนเงินมาแล้วกรุณาติดต่อแอดมิน');
+      throw new BadRequestException(
+        'หมดเวลาชำระเงินแล้ว ระบบได้ยกเลิกรายการนี้แล้ว หากโอนเงินมาแล้วกรุณาติดต่อแอดมิน',
+      );
     }
 
     // เซฟพาร์ทของรูปและเปลี่ยนสถานะเป็นรอตรวจสอบ
-    booking.paymentSlipUrl = `/uploads/slips/${filename}`;
+    booking.paymentSlipUrl = paymentSlipUrl;
     booking.status = BookingStatus.PENDING_VERIFY;
 
     const savedBooking = await this.bookingsRepository.save(booking);
@@ -380,15 +382,17 @@ export class BookingsService {
       if (!booking) throw new NotFoundException('ไม่พบรายการจองนี้');
 
       if (booking.status === BookingStatus.CANCELLED) {
-        throw new BadRequestException('รายการจองนี้ถูกยกเลิกไปแล้ว กรุณากดจองใหม่');
+        throw new BadRequestException(
+          'รายการจองนี้ถูกยกเลิกไปแล้ว กรุณากดจองใหม่',
+        );
       }
 
       const now = new Date();
 
       // 2) ถ้ายังไม่หมดเวลา ไม่ต้องทำอะไร ส่งข้อมูลเดิมกลับไปเลย
       if (
-        booking.status === BookingStatus.PENDING_PAY && 
-        booking.paymentDeadline && 
+        booking.status === BookingStatus.PENDING_PAY &&
+        booking.paymentDeadline &&
         booking.paymentDeadline > now
       ) {
         return booking;
@@ -423,7 +427,9 @@ export class BookingsService {
 
       // 4) ถ้าที่นั่งเหลือน้อยกว่าจำนวนที่ลูกค้าจองไว้แต่แรก
       if (available < booking.pax) {
-        throw new BadRequestException('ขออภัยค่ะ มีผู้ใช้ท่านอื่นจองที่นั่งนี้ไปแล้ว กรุณาเลือกรอบทัวร์ใหม่');
+        throw new BadRequestException(
+          'ขออภัยค่ะ มีผู้ใช้ท่านอื่นจองที่นั่งนี้ไปแล้ว กรุณาเลือกรอบทัวร์ใหม่',
+        );
       }
 
       // 5) ถ้าที่นั่งพอ ให้ต่อเวลาไปอีก 15 นาที!

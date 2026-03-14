@@ -130,17 +130,17 @@ frontend/
 
 ## Tech Stack
 
-| Technology | Version | Purpose |
-|------------|---------|---------|
-| React | 19.2.0 | UI Framework |
-| TypeScript | 5.9.3 | Type Safety |
-| Vite | 7.2.4 | Build Tool |
-| React Router | 7.13.0 | Routing |
-| Tailwind CSS | 4.1.18 | Styling |
-| Axios | 1.13.4 | HTTP Client |
-| TanStack Query | 5.90.20 | State Management |
-| date-fns | 4.1.0 | Date Utilities |
-| qrcode.react | 4.2.0 | QR Code Generation |
+| Technology     | Version | Purpose            |
+| -------------- | ------- | ------------------ |
+| React          | 19.2.0  | UI Framework       |
+| TypeScript     | 5.9.3   | Type Safety        |
+| Vite           | 7.2.4   | Build Tool         |
+| React Router   | 7.13.0  | Routing            |
+| Tailwind CSS   | 4.1.18  | Styling            |
+| Axios          | 1.13.4  | HTTP Client        |
+| TanStack Query | 5.90.20 | State Management   |
+| date-fns       | 4.1.0   | Date Utilities     |
+| qrcode.react   | 4.2.0   | QR Code Generation |
 
 ---
 
@@ -167,13 +167,16 @@ frontend/
 Pages that require authentication use `ProtectedRoute` wrapper:
 
 ```tsx
-import { ProtectedRoute } from './components/ProtectedRoute';
+import { ProtectedRoute } from "./components/ProtectedRoute";
 
-<Route path="/my-bookings" element={
-  <ProtectedRoute>
-    <MyBookings />
-  </ProtectedRoute>
-} />
+<Route
+  path="/my-bookings"
+  element={
+    <ProtectedRoute>
+      <MyBookings />
+    </ProtectedRoute>
+  }
+/>;
 ```
 
 ### API Service
@@ -181,7 +184,7 @@ import { ProtectedRoute } from './components/ProtectedRoute';
 Base API configuration in `src/services/api.ts`:
 
 ```typescript
-import axios from 'axios';
+import axios from "axios";
 
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL,
@@ -190,7 +193,7 @@ const api = axios.create({
 
 // Add token to requests
 api.interceptors.request.use((config) => {
-  const token = localStorage.getItem('token');
+  const token = localStorage.getItem("token");
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
@@ -213,7 +216,11 @@ Vite provides instant hot-reload. Changes reflect immediately in the browser.
 function TourCard({ tour }) {
   return (
     <div className="bg-white rounded-lg shadow-md p-4 hover:shadow-lg transition">
-      <img src={tour.image} alt={tour.title} className="w-full h-48 object-cover rounded" />
+      <img
+        src={tour.image}
+        alt={tour.title}
+        className="w-full h-48 object-cover rounded"
+      />
       <h3 className="text-xl font-bold mt-2">{tour.title}</h3>
       <p className="text-gray-600">{formatPrice(tour.price)}</p>
     </div>
@@ -224,12 +231,16 @@ function TourCard({ tour }) {
 ### State Management with TanStack Query
 
 ```tsx
-import { useQuery } from '@tanstack/react-query';
-import { toursService } from '../services/tours';
+import { useQuery } from "@tanstack/react-query";
+import { toursService } from "../services/tours";
 
 function TourList() {
-  const { data: tours, isLoading, error } = useQuery({
-    queryKey: ['tours'],
+  const {
+    data: tours,
+    isLoading,
+    error,
+  } = useQuery({
+    queryKey: ["tours"],
     queryFn: toursService.getAllTours,
   });
 
@@ -238,7 +249,9 @@ function TourList() {
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-      {tours?.map(tour => <TourCard key={tour.id} tour={tour} />)}
+      {tours?.map((tour) => (
+        <TourCard key={tour.id} tour={tour} />
+      ))}
     </div>
   );
 }
@@ -251,6 +264,7 @@ function TourList() {
 ### API Connection Refused
 
 Make sure backend is running:
+
 ```bash
 # Check backend status
 curl http://localhost:3000/api/tours
@@ -286,18 +300,22 @@ npm run preview
 
 Build output is in `dist/` directory.
 
-Deploy `dist/` to Vercel, Netlify, or any static hosting.
+Deploy `dist/` to Amazon S3 and serve it with CloudFront, or use AWS Amplify if you want managed frontend hosting.
 
 ---
 
 ## Deployment
 
-### Vercel (Recommended)
+### Amazon S3 + CloudFront (Recommended)
 
-1. Connect GitHub repository
-2. Set environment variable:
-   - `VITE_API_URL` = your production backend URL
-3. Deploy automatically on push to `main`
+1. Build the app with `npm run build`
+2. Upload the `dist/` folder to an S3 bucket
+3. Put CloudFront in front of the bucket
+4. Set environment variable:
+
+- `VITE_API_URL` = your production backend URL
+
+5. Configure CloudFront custom error responses so SPA routes fall back to `/index.html`
 
 ### Manual Deployment
 

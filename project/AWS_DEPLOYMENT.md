@@ -117,6 +117,60 @@ npm run build
 9. Point DNS records to CloudFront and backend public endpoint
 10. Update Google OAuth allowed origins and callback URL
 
+## EC2 Docker Compose Deployment
+
+Use this when deploying the full stack directly on one EC2 instance.
+
+Files prepared:
+
+- `project/docker-compose.ec2.yml`
+- `project/.env.ec2.example`
+- `project/frontend/Dockerfile`
+- `project/frontend/nginx.conf`
+
+### 1. Prepare environment file
+
+```bash
+cd project
+cp .env.ec2.example .env.ec2
+```
+
+Update at least these values in `.env.ec2`:
+
+- `POSTGRES_PASSWORD`
+- `JWT_SECRET`
+- `FRONTEND_URL` and `FRONTEND_URLS`
+- `SEED_ADMIN_USERNAME`
+- `SEED_ADMIN_PASSWORD`
+- Optional admin profile fields (`SEED_ADMIN_EMAIL`, `SEED_ADMIN_FIRST_NAME`, `SEED_ADMIN_LAST_NAME`, `SEED_ADMIN_FULL_NAME`, `SEED_ADMIN_PHONE`)
+
+### 2. Start containers
+
+```bash
+cd project
+docker compose --env-file .env.ec2 -f docker-compose.ec2.yml up -d --build
+```
+
+### 3. Check service status
+
+```bash
+docker compose --env-file .env.ec2 -f docker-compose.ec2.yml ps
+docker compose --env-file .env.ec2 -f docker-compose.ec2.yml logs -f backend
+```
+
+### 4. Seed admin behavior
+
+Admin bootstrap seed is controlled by env values:
+
+- `SEED_ADMIN_ON_BOOT=true|false`: enable/disable seed on startup
+- `SEED_ADMIN_UPDATE_EXISTING=true|false`: update existing admin profile/password from env
+- `SEED_ADMIN_*`: username, password, and profile fields
+
+Recommended production usage:
+
+1. First deploy: `SEED_ADMIN_ON_BOOT=true` and set strong `SEED_ADMIN_PASSWORD`.
+2. After admin account is created and verified: set `SEED_ADMIN_ON_BOOT=false` (or keep it true with `SEED_ADMIN_UPDATE_EXISTING=false`).
+
 ## Health Checks
 
 Backend health endpoint:

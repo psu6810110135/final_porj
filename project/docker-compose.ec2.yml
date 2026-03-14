@@ -1,0 +1,107 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-thai_tours}
+      POSTGRES_USER: ${POSTGRES_USER:-thai_tours}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-thai_tours_password}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U ${POSTGRES_USER:-thai_tours} -d ${POSTGRES_DB:-thai_tours}",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - thai_tour_net
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      NODE_ENV: ${NODE_ENV:-production}
+      PORT: 3000
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost}
+      FRONTEND_URLS: ${FRONTEND_URLS:-http://localhost}
+      DATABASE_URL: postgresql://${POSTGRES_USER:-thai_tours}:${POSTGRES_PASSWORD:-thai_tours_password}@postgres:5432/${POSTGRES_DB:-thai_tours}
+      DATABASE_SSL: ${DATABASE_SSL:-false}
+      DB_SYNCHRONIZE: ${DB_SYNCHRONIZE:-false}
+      JWT_SECRET: ${JWT_SECRET:-replace-me}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-3d}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
+      GOOGLE_CALLBACK_URL: ${GOOGLE_CALLBACK_URL:-}
+      STORAGE_DRIVER: ${STORAGE_DRIVER:-local}
+      AWS_REGION: ${AWS_REGION:-ap-southeast-1}
+      AWS_S3_BUCKET: ${AWS_S3_BUCKET:-}
+      AWS_S3_KEY_PREFIX: ${AWS_S3_KEY_PREFIX:-thai-tour}
+      AWS_S3_PUBLIC_BASE_URL: ${AWS_S3_PUBLIC_BASE_URL:-}
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-}
+      EMAIL_USER: ${EMAIL_USER:-}
+      EMAIL_PASS: ${EMAIL_PASS:-}
+      SEED_ADMIN_ON_BOOT: ${SEED_ADMIN_ON_BOOT:-true}
+      SEED_ADMIN_UPDATE_EXISTING: ${SEED_ADMIN_UPDATE_EXISTING:-false}
+      SEED_ADMIN_USERNAME: ${SEED_ADMIN_USERNAME:-admin}
+      SEED_ADMIN_PASSWORD: ${SEED_ADMIN_PASSWORD:-}
+      SEED_ADMIN_EMAIL: ${SEED_ADMIN_EMAIL:-}
+      SEED_ADMIN_FIRST_NAME: ${SEED_ADMIN_FIRST_NAME:-}
+      SEED_ADMIN_LAST_NAME: ${SEED_ADMIN_LAST_NAME:-}
+      SEED_ADMIN_FULL_NAME: ${SEED_ADMIN_FULL_NAME:-}
+      SEED_ADMIN_PHONE: ${SEED_ADMIN_PHONE:-}
+      SEED_ADMIN_IS_ACTIVE: ${SEED_ADMIN_IS_ACTIVE:-true}
+    ports:
+      - "${BACKEND_PORT:-3000}:3000"
+    volumes:
+      - backend_uploads:/app/uploads
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "wget -qO- http://127.0.0.1:3000/health >/dev/null || exit 1",
+        ]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    networks:
+      - thai_tour_net
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        VITE_API_URL: ${VITE_API_URL:-}
+    restart: unless-stopped
+    depends_on:
+      backend:
+        condition: service_healthy
+    ports:
+      - "${FRONTEND_PORT:-80}:80"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1/ >/dev/null || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - thai_tour_net
+
+networks:
+  thai_tour_net:
+    driver: bridge
+
+volumes:
+  postgres_data:
+  backend_uploads:

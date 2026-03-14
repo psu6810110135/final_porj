@@ -9,6 +9,19 @@ import * as bcrypt from 'bcrypt';
 
 import { NestExpressApplication } from '@nestjs/platform-express';
 
+const isTruthy = (value: string | undefined, defaultValue: boolean) => {
+  if (value === undefined) {
+    return defaultValue;
+  }
+
+  return ['true', '1', 'yes', 'on'].includes(value.toLowerCase());
+};
+
+const readOptional = (value: string | undefined) => {
+  const trimmed = value?.trim();
+  return trimmed ? trimmed : undefined;
+};
+
 const getAllowedOrigins = (configService: ConfigService) => {
   const rawOrigins = [
     configService.get<string>('FRONTEND_URL'),
@@ -54,24 +67,93 @@ async function bootstrap() {
     });
   }
 
-  // Seed default admin if missing (username: admin, password: admin1234)
+  const isProduction = configService.get<string>('NODE_ENV') === 'production';
+  const shouldSeedAdmin = isTruthy(
+    configService.get<string>('SEED_ADMIN_ON_BOOT'),
+    !isProduction,
+  );
+  const shouldUpdateExistingAdmin = isTruthy(
+    configService.get<string>('SEED_ADMIN_UPDATE_EXISTING'),
+    false,
+  );
+  const adminUsername =
+    readOptional(configService.get<string>('SEED_ADMIN_USERNAME')) ?? 'admin';
+  const adminPassword = readOptional(
+    configService.get<string>('SEED_ADMIN_PASSWORD'),
+  );
+  const adminEmail = readOptional(
+    configService.get<string>('SEED_ADMIN_EMAIL'),
+  );
+  const adminFirstName = readOptional(
+    configService.get<string>('SEED_ADMIN_FIRST_NAME'),
+  );
+  const adminLastName = readOptional(
+    configService.get<string>('SEED_ADMIN_LAST_NAME'),
+  );
+  const derivedAdminFullName = [adminFirstName, adminLastName]
+    .filter(Boolean)
+    .join(' ')
+    .trim();
+  const adminFullName =
+    readOptional(configService.get<string>('SEED_ADMIN_FULL_NAME')) ??
+    (derivedAdminFullName || undefined);
+  const adminPhone = readOptional(
+    configService.get<string>('SEED_ADMIN_PHONE'),
+  );
+  const adminIsActive = isTruthy(
+    configService.get<string>('SEED_ADMIN_IS_ACTIVE'),
+    true,
+  );
+
+  // Seed admin account based on environment configuration.
   try {
-    const existing = await usersService.findOne('admin');
-    const hashed = await bcrypt.hash('admin1234', 10);
-    if (!existing) {
-      await usersService.createUser({
-        username: 'admin',
-        password: hashed,
-        role: UserRole.ADMIN,
-      });
-      console.log('Seeded default admin: admin/admin1234');
-    } else {
-      // Ensure role and password match expected demo credentials
-      await usersService.update(existing.id, {
-        password: hashed,
-        role: UserRole.ADMIN,
-      });
-      console.log('Updated existing admin credentials to admin1234');
+    if (shouldSeedAdmin) {
+      const existing = await usersService.findOne(adminUsername);
+      const hashedPassword = adminPassword
+        ? await bcrypt.hash(adminPassword, 10)
+        : undefined;
+
+      if (!existing) {
+        if (!hashedPassword) {
+          console.warn(
+            `Skipped admin seed: SEED_ADMIN_PASSWORD is required to create '${adminUsername}'.`,
+          );
+        } else {
+          await usersService.createUser({
+            username: adminUsername,
+            password: hashedPassword,
+            email: adminEmail,
+            first_name: adminFirstName,
+            last_name: adminLastName,
+            full_name: adminFullName,
+            phone: adminPhone,
+            role: UserRole.ADMIN,
+            is_active: adminIsActive,
+            provider: 'local',
+          });
+          console.log(`Seeded admin account '${adminUsername}'.`);
+        }
+      } else if (shouldUpdateExistingAdmin) {
+        await usersService.update(existing.id, {
+          ...(hashedPassword ? { password: hashedPassword } : {}),
+          ...(adminEmail ? { email: adminEmail } : {}),
+          ...(adminFirstName ? { first_name: adminFirstName } : {}),
+          ...(adminLastName ? { last_name: adminLastName } : {}),
+          ...(adminFullName ? { full_name: adminFullName } : {}),
+          ...(adminPhone ? { phone: adminPhone } : {}),
+          role: UserRole.ADMIN,
+          is_active: adminIsActive,
+        });
+        console.log(`Updated admin account '${adminUsername}' from env.`);
+      } else {
+        await usersService.update(existing.id, {
+          role: UserRole.ADMIN,
+          is_active: adminIsActive,
+        });
+        console.log(
+          `Admin account '${adminUsername}' exists. Set SEED_ADMIN_UPDATE_EXISTING=true to sync profile/password from env.`,
+        );
+      }
     }
   } catch (err) {
     console.error('Admin seed failed:', err);

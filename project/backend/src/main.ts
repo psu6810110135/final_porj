@@ -6,6 +6,7 @@ import { UsersService } from './users/users.service';
 import { UserRole } from './users/entities/user.entity';
 import { StorageService } from './common/storage/storage.service';
 import * as bcrypt from 'bcrypt';
+import * as express from 'express';
 
 import { NestExpressApplication } from '@nestjs/platform-express';
 
@@ -41,6 +42,9 @@ async function bootstrap() {
   const usersService = app.get(UsersService);
   const storageService = app.get(StorageService);
   const allowedOrigins = getAllowedOrigins(configService);
+
+  app.use(express.json({ limit: '50mb' }));
+  app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
   app.enableCors({
     origin: (origin, callback) => {

@@ -84,7 +84,10 @@ export class ToursController {
   @Post()
   @UseGuards(AuthGuard('jwt'), RolesGuard)
   @Roles(UserRole.ADMIN)
-  @UseInterceptors(AnyFilesInterceptor({ storage: memoryStorage() }))
+  @UseInterceptors(AnyFilesInterceptor({ 
+    storage: memoryStorage(),
+    limits: { fileSize: 50 * 1024 * 1024 } // เพิ่มบรรทัดนี้เพื่อกำหนดขนาดไฟล์สูงสุด (เช่น 50MB)
+  }))
   async createTour(
     @Body() createTourDto: any,
     @UploadedFiles() files: Array<Express.Multer.File>,

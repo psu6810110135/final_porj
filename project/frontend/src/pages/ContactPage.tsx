@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import { Search } from "lucide-react";
 
 // Components
-import Navbar from "../components/Navbar";
+import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { TopicList } from "@/components/contact/TopicList";
 import { ContactForm } from "@/components/contact/ContactForm";
@@ -40,6 +40,8 @@ const ContactPage = () => {
   // Search State
   const [searchTopic, setSearchTopic] = useState("");
 
+  const [errors, setErrors] = useState<Record<string, string>>({});
+
   const messageInputRef = useRef<HTMLTextAreaElement>(null);
 
   const filteredTopics = TOPICS.filter((topic) =>
@@ -55,7 +57,14 @@ const ContactPage = () => {
         details = prev.message.substring(
           prev.message.indexOf("รายละเอียด: ") + "รายละเอียด: ".length,
         );
-      } else if (!prev.message.includes("สอบถามเรื่อง:")) {
+      } else if (prev.message.includes("สอบถามเรื่อง:")) {
+        const newlineIndex = prev.message.indexOf("\n");
+        if (newlineIndex !== -1) {
+          details = prev.message.substring(newlineIndex).trim();
+        } else {
+          details = "";
+        }
+      } else {
         details = prev.message;
       }
 
@@ -79,12 +88,56 @@ const ContactPage = () => {
       HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
     >,
   ) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+    const { name, value } = e.target;
+    
+    // Clear error when user changes the value
+    if (errors[name]) {
+      setErrors(prev => {
+        const newErrors = { ...prev };
+        delete newErrors[name];
+        return newErrors;
+      });
+    }
+
+    if (name === "phoneNumber") {
+      const numbersOnly = value.replace(/\D/g, "");
+      if (numbersOnly.length <= 10) {
+        setFormData({ ...formData, [name]: numbersOnly });
+      }
+    } else {
+      setFormData({ ...formData, [name]: value });
+    }
+  };
+
+  const validateForm = () => {
+    const newErrors: Record<string, string> = {};
+
+    if (!formData.firstName.trim()) newErrors.firstName = "กรุณากรอกชื่อจริง";
+    if (!formData.lastName.trim()) newErrors.lastName = "กรุณากรอกนามสกุล";
+    
+    if (!formData.email.trim()) {
+      newErrors.email = "กรุณากรอกอีเมล";
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+      newErrors.email = "รูปแบบอีเมลไม่ถูกต้อง";
+    }
+
+    if (!formData.phoneNumber.trim()) {
+      newErrors.phoneNumber = "กรุณากรอกเบอร์โทรศัพท์";
+    } else if (!/^\d{9,10}$/.test(formData.phoneNumber)) {
+      newErrors.phoneNumber = "เบอร์โทรศัพท์ต้องมี 9-10 หลัก";
+    }
+
+    if (!formData.message.trim()) newErrors.message = "กรุณากรอกรายละเอียดเรื่องที่ต้องการติดต่อ";
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    setShowConfirmModal(true);
+    if (validateForm()) {
+      setShowConfirmModal(true);
+    }
   };
 
   const confirmAndSubmit = async () => {
@@ -183,6 +236,7 @@ const ContactPage = () => {
                 setFormData={setFormData}
                 messageInputRef={messageInputRef}
                 phoneCodes={PHONE_CODES}
+                errors={errors}
               />
             </div>
           </div>

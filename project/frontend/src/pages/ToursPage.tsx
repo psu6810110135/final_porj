@@ -74,21 +74,29 @@ export default function ToursPage() {
   // 2. Real-time Search Logic (Debounce)
   useEffect(() => {
     const delayDebounceFn = setTimeout(() => {
-      const newParams = new URLSearchParams(searchParams);
-      if (searchInput.trim()) {
-        newParams.set("search", searchInput.trim());
-      } else {
-        newParams.delete("search");
-      }
-      setSearchParams(newParams);
+      setSearchParams((prevParams) => {
+        const newParams = new URLSearchParams(prevParams);
+        if (searchInput.trim()) {
+          newParams.set("search", searchInput.trim());
+        } else {
+          newParams.delete("search");
+        }
+        return newParams;
+      });
     }, 500);
 
     return () => clearTimeout(delayDebounceFn);
-  }, [searchInput, searchParams, setSearchParams]);
+  }, [searchInput, setSearchParams]);
+
+  // ซิงค์ URL กลับมาที่ Input เมื่อ URL เปลี่ยนแปลงภายนอก (เช่น กด Back/Forward)
+  useEffect(() => {
+    setSearchInput(searchFilter);
+  }, [searchFilter]);
 
   // 3. Fetch Data Logic
   useEffect(() => {
     setLoading(true);
+    setError(null);
     const params = new URLSearchParams();
 
     if (provinceFilter) params.append("province", provinceFilter);

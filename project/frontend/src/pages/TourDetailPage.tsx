@@ -960,11 +960,11 @@ function BookingSheet({
 
           {/* Free Cancel */}
           <div className="pt-2">
-            <p className="text-[#5C341E] font-black text-xl mb-3">ยกเลิกฟรี</p>
-            <div className="flex items-start gap-3">
+            <p className="text-[#5C341E] font-black text-xl mb-3">นโยบายการคืนเงิน</p>
+            <div className="flex items-start gap-3.5">
               <div className="mt-0.5 shrink-0">
                 <svg
-                  className="w-6 h-6 text-[#5C341E]"
+                  className="w-7 h-7 text-[#5C341E]"
                   viewBox="0 0 24 24"
                   fill="none"
                   stroke="currentColor"
@@ -979,16 +979,16 @@ function BookingSheet({
                   <path d="M9 16l2 2 4-4"></path>
                 </svg>
               </div>
-              <p className="text-[#5C341E] font-bold text-[14.5px] leading-[1.4]">
-                ยกเลิกได้ล่วงหน้าสูงสุด 24 ชั่วโมงเพื่อ
-                <br className="hidden sm:block" />
-                รับเงินคืนเต็มจำนวน
-              </p>
+              <div className="text-[#5C341E] font-bold text-[15px] leading-[1.6] space-y-1">
+                <p>• ยกเลิกมากกว่า 7 วัน: คืนเงิน 100%</p>
+                <p>• ยกเลิก 3-7 วัน: คืนเงิน 50%</p>
+                <p>• น้อยกว่า 3 วัน: ไม่สามารถคืนเงินได้</p>
+              </div>
             </div>
           </div>
 
           {/* Contact Details (Minimal/Hidden visually to match design, but required for API) */}
-          <div className="pt-8 space-y-2 opacity-50 hover:opacity-100 transition-opacity focus-within:opacity-100">
+          <div className="pt-1 space-y-2 opacity-50 hover:opacity-100 transition-opacity focus-within:opacity-100">
             <label className="text-[11px] font-bold text-[#8c6b5d] uppercase tracking-wider block">
               -- ข้อมูลติดต่อสำหรับการสั่งจอง --
             </label>

@@ -95,12 +95,14 @@ function buildFrontendEnv() {
 }
 
 function runCommand(command, args, options = {}) {
+  const isWindows = process.platform === 'win32';
+
   return new Promise((resolve, reject) => {
     const child = spawn(command, args, {
       cwd: options.cwd ?? repoRoot,
       env: options.env ?? process.env,
       stdio: options.stdio ?? "inherit",
-      shell: false,
+      shell: isWindows, 
     });
 
     child.on("error", reject);
@@ -118,11 +120,13 @@ function runCommand(command, args, options = {}) {
 }
 
 function startProcess(command, args, options = {}) {
+  const isWindows = process.platform === 'win32';
+
   const child = spawn(command, args, {
     cwd: options.cwd ?? repoRoot,
     env: options.env ?? process.env,
     stdio: options.stdio ?? "inherit",
-    shell: false,
+    shell: isWindows, 
   });
 
   childProcesses.push(child);

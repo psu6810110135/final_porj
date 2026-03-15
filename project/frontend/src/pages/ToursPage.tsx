@@ -46,12 +46,12 @@ export default function ToursPage() {
   const durationFilter = searchParams.get("duration") || "";
   const provinceFilter = searchParams.get("province") || "";
 
-  // สถานะสำหรับ Input (แยกจาก URL เพื่อให้พิมพ์ได้ลื่นไหล)
+  // สถานะสำหรับ Input
   const [searchInput, setSearchInput] = useState(searchFilter);
 
   const apiBase = `${API_BASE_URL}/api`;
 
-  // 1. Fetch Provinces for Dropdown
+  // Fetch Provinces for Dropdown
   useEffect(() => {
     fetch(`${apiBase}/tours`)
       .then((res) => res.json())
@@ -71,24 +71,31 @@ export default function ToursPage() {
       });
   }, [apiBase]);
 
-  // 2. Real-time Search Logic (Debounce)
+  // Real-time Search Logic (Debounce)
   useEffect(() => {
     const delayDebounceFn = setTimeout(() => {
-      const newParams = new URLSearchParams(searchParams);
-      if (searchInput.trim()) {
-        newParams.set("search", searchInput.trim());
-      } else {
-        newParams.delete("search");
-      }
-      setSearchParams(newParams);
+      setSearchParams((prevParams) => {
+        const newParams = new URLSearchParams(prevParams);
+        if (searchInput.trim()) {
+          newParams.set("search", searchInput.trim());
+        } else {
+          newParams.delete("search");
+        }
+        return newParams;
+      });
     }, 500);
 
     return () => clearTimeout(delayDebounceFn);
-  }, [searchInput, searchParams, setSearchParams]);
+  }, [searchInput, setSearchParams]);
 
-  // 3. Fetch Data Logic
+  useEffect(() => {
+    setSearchInput(searchFilter);
+  }, [searchFilter]);
+
+  // Fetch Data Logic
   useEffect(() => {
     setLoading(true);
+    setError(null);
     const params = new URLSearchParams();
 
     if (provinceFilter) params.append("province", provinceFilter);

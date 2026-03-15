@@ -545,10 +545,16 @@ export default function BookingHistoryPage() {
   };
 
   // ── Filtered bookings ──
+ // ── Filtered bookings ──
   const filteredBookings = useMemo(() => {
     return bookings.filter((b) => {
+      // 🌟 1. คำนวณสถานะล่าสุดก่อน (ว่าหมดเวลาหรือยัง)
+      const currentStatus = getEffectiveStatus(b); 
+
       // Status
-      if (statusFilter !== "all" && b.status !== statusFilter) return false;
+      // 🌟 2. เปลี่ยนจาก b.status เป็น currentStatus
+      if (statusFilter !== "all" && currentStatus !== statusFilter) return false; 
+      
       // Text search
       if (searchQuery) {
         const q = searchQuery.toLowerCase();
@@ -580,7 +586,10 @@ export default function BookingHistoryPage() {
   const statusCounts = useMemo(() => {
     const counts: Record<string, number> = { all: bookings.length };
     for (const b of bookings) {
-      counts[b.status] = (counts[b.status] ?? 0) + 1;
+      // 🌟 3. ดึงสถานะล่าสุดมาใช้นับเลข
+      const currentStatus = getEffectiveStatus(b); 
+      // 🌟 4. เปลี่ยน b.status เป็น currentStatus
+      counts[currentStatus] = (counts[currentStatus] ?? 0) + 1; 
     }
     return counts;
   }, [bookings]);

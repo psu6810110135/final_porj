@@ -8,17 +8,13 @@ interface TopicListProps {
 }
 
 export function TopicList({ topics, handleTopicClick }: TopicListProps) {
-    const [expandedIndex, setExpandedIndex] = useState<number | null>(null);
+    const [expandedTitle, setExpandedTitle] = useState<string | null>(null);
 
-    const toggleAccordion = (index: number, topic: FAQTopic) => {
-        if (expandedIndex === index) {
-            setExpandedIndex(null);
+    const toggleAccordion = (title: string) => {
+        if (expandedTitle === title) {
+            setExpandedTitle(null);
         } else {
-            setExpandedIndex(index);
-            // ถ้าเป็นหัวข้อประเภทที่จะต้องพิมพ์ฟอร์มทันที ให้ดึงฟอร์มมาเตรียมพร้อม
-            if (topic.isFormFocus) {
-                handleTopicClick(topic.title);
-            }
+            setExpandedTitle(title);
         }
     };
 
@@ -26,11 +22,11 @@ export function TopicList({ topics, handleTopicClick }: TopicListProps) {
         <div className="space-y-3">
             {topics.length > 0 ? (
                 topics.map((topic, index) => {
-                    const isExpanded = expandedIndex === index;
+                    const isExpanded = expandedTitle === topic.title;
                     return (
                         <div key={index} className="bg-white border border-gray-100 rounded-[1.2rem] shadow-sm overflow-hidden transition-all duration-300">
                             <button
-                                onClick={() => toggleAccordion(index, topic)}
+                                onClick={() => toggleAccordion(topic.title)}
                                 className={`w-full flex items-center justify-between p-4 md:p-5 text-left transition-colors ${isExpanded ? "bg-[#FF8A00]/5" : "hover:bg-gray-50 group"
                                     }`}
                             >

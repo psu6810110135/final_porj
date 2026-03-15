@@ -22,6 +22,7 @@ interface ContactFormProps {
     setFormData: (data: FormData | ((prev: FormData) => FormData)) => void;
     messageInputRef: React.RefObject<HTMLTextAreaElement | null>;
     phoneCodes: { code: string; label: string }[];
+    errors: Record<string, string>;
 }
 
 export function ContactForm({
@@ -36,113 +37,124 @@ export function ContactForm({
     setFormData,
     messageInputRef,
     phoneCodes,
+    errors,
 }: ContactFormProps) {
     return (
         <div className="bg-white p-6 md:p-8 rounded-[1.5rem] md:rounded-[2rem] shadow-xl border border-gray-50 lg:sticky lg:top-28">
             <h2 className="text-2xl md:text-3xl font-extrabold text-[#5C3D2E] mb-6">สนใจติดต่อ</h2>
 
-            <form className="space-y-4 md:space-y-5" onSubmit={handleSubmit}>
-                <div className="flex flex-col sm:flex-row gap-3 md:gap-4">
-                    <input
-                        type="text"
-                        name="firstName"
-                        value={formData.firstName}
-                        onChange={handleChange}
-                        placeholder="ชื่อจริง"
-                        required
-                        className="flex-1 min-w-0 p-3.5 rounded-2xl md:rounded-full border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#FF8A00] text-sm bg-gray-50/50"
-                    />
-                    <input
-                        type="text"
-                        name="lastName"
-                        value={formData.lastName}
-                        onChange={handleChange}
-                        placeholder="นามสกุล"
-                        required
-                        className="flex-1 min-w-0 p-3.5 rounded-2xl md:rounded-full border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#FF8A00] text-sm bg-gray-50/50"
-                    />
-                </div>
-
-                <input
-                    type="email"
-                    name="email"
-                    value={formData.email}
-                    onChange={handleChange}
-                    placeholder="อีเมลของคุณ"
-                    required
-                    className="w-full p-3.5 rounded-2xl md:rounded-full border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#FF8A00] text-sm bg-gray-50/50"
-                />
-
-                {/* Custom Dropdown เบอร์โทรศัพท์ */}
-                <div className="flex relative border border-gray-200 rounded-2xl md:rounded-full focus-within:ring-2 focus-within:ring-[#FF8A00] bg-gray-50/50">
-
-                    {/* ปุ่มกด Dropdown */}
-                    <div className="relative border-r border-gray-200 flex-shrink-0">
-                        <button
-                            type="button"
-                            onClick={() => setIsPhoneDropdownOpen(!isPhoneDropdownOpen)}
-                            className="flex items-center gap-2 h-full bg-transparent py-3.5 pl-5 pr-3 text-sm outline-none text-gray-600 font-bold cursor-pointer"
-                        >
-                            <span className="text-[#8e8e8e]">
-                                {phoneCodes.find((p) => p.code === formData.phoneCode)?.label}
-                            </span>
-                            <span className="text-[#5C3D2E] font-extrabold">
-                                {formData.phoneCode}
-                            </span>
-                            <ChevronDown size={16} className={`text-gray-400 transition-transform ${isPhoneDropdownOpen ? "rotate-180" : ""}`} />
-                        </button>
-
-                        {/* เมนู Dropdown */}
-                        {isPhoneDropdownOpen && (
-                            <>
-                                <div
-                                    className="fixed inset-0 z-10"
-                                    onClick={() => setIsPhoneDropdownOpen(false)}
-                                />
-                                <div className="absolute top-[calc(100%+8px)] left-0 w-[110px] bg-white border border-gray-100 rounded-2xl shadow-xl z-20 overflow-hidden py-1 animate-in fade-in slide-in-from-top-2">
-                                    {phoneCodes.map((item) => (
-                                        <button
-                                            key={item.code}
-                                            type="button"
-                                            className={`w-full text-left px-4 py-3 text-sm transition-colors flex items-center gap-2 ${formData.phoneCode === item.code
-                                                ? "bg-[#FF8A00]/10 text-[#FF8A00] font-bold"
-                                                : "text-gray-600 hover:bg-gray-50"
-                                                }`}
-                                            onClick={() => {
-                                                setFormData((prev: FormData) => ({ ...prev, phoneCode: item.code }));
-                                                setIsPhoneDropdownOpen(false);
-                                            }}
-                                        >
-                                            <span className="font-bold">{item.label}</span>
-                                            <span className="text-gray-400 ml-auto">{item.code}</span>
-                                        </button>
-                                    ))}
-                                </div>
-                            </>
-                        )}
+            <form className="space-y-4" onSubmit={handleSubmit} noValidate>
+                <div className="flex flex-col sm:flex-row gap-4">
+                    <div className="flex-1 space-y-1.5">
+                        <input
+                            type="text"
+                            name="firstName"
+                            value={formData.firstName}
+                            onChange={handleChange}
+                            placeholder="ชื่อจริง"
+                            className={`w-full p-3.5 rounded-2xl md:rounded-full border focus:outline-none focus:ring-2 focus:ring-[#FF8A00] text-sm bg-gray-50/50 ${errors.firstName ? 'border-red-500 ring-1 ring-red-500' : 'border-gray-200'}`}
+                        />
+                        {errors.firstName && <p className="text-red-500 text-[11px] font-bold pl-4">! {errors.firstName}</p>}
                     </div>
 
-                    <input
-                        type="tel"
-                        name="phoneNumber"
-                        value={formData.phoneNumber}
-                        onChange={handleChange}
-                        placeholder="หมายเลขโทรศัพท์"
-                        required
-                        className="flex-1 w-full p-3.5 pl-4 text-sm outline-none bg-transparent rounded-r-2xl md:rounded-r-full"
-                    />
+                    <div className="flex-1 space-y-1.5">
+                        <input
+                            type="text"
+                            name="lastName"
+                            value={formData.lastName}
+                            onChange={handleChange}
+                            placeholder="นามสกุล"
+                            className={`w-full p-3.5 rounded-2xl md:rounded-full border focus:outline-none focus:ring-2 focus:ring-[#FF8A00] text-sm bg-gray-50/50 ${errors.lastName ? 'border-red-500 ring-1 ring-red-500' : 'border-gray-200'}`}
+                        />
+                        {errors.lastName && <p className="text-red-500 text-[11px] font-bold pl-4">! {errors.lastName}</p>}
+                    </div>
                 </div>
 
-                <textarea
-                    ref={messageInputRef}
-                    name="message"
-                    value={formData.message}
-                    onChange={handleChange}
-                    placeholder="เราจะช่วยคุณได้อย่างไร?"
-                    rows={5}
-                    required
-                    className="w-full p-4 rounded-[1.2rem] md:rounded-[1.5rem] border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#FF8A00] text-sm resize-none bg-gray-50/50"
-                ></textarea>
+                <div className="space-y-1.5">
+                    <input
+                        type="email"
+                        name="email"
+                        value={formData.email}
+                        onChange={handleChange}
+                        placeholder="อีเมลของคุณ"
+                        className={`w-full p-3.5 rounded-2xl md:rounded-full border focus:outline-none focus:ring-2 focus:ring-[#FF8A00] text-sm bg-gray-50/50 ${errors.email ? 'border-red-500 ring-1 ring-red-500' : 'border-gray-200'}`}
+                    />
+                    {errors.email && <p className="text-red-500 text-[11px] font-bold pl-5">! {errors.email}</p>}
+                </div>
+
+                {/* Custom Dropdown เบอร์โทรศัพท์ */}
+                <div className="space-y-1.5">
+                    <div className={`flex relative border rounded-2xl md:rounded-full focus-within:ring-2 focus-within:ring-[#FF8A00] bg-gray-50/50 ${errors.phoneNumber ? 'border-red-500 ring-1 ring-red-500' : 'border-gray-200'}`}>
+                        {/* ปุ่มกด Dropdown */}
+                        <div className="relative border-r border-gray-200 flex-shrink-0">
+                            <button
+                                type="button"
+                                onClick={() => setIsPhoneDropdownOpen(!isPhoneDropdownOpen)}
+                                className="flex items-center gap-2 h-full bg-transparent py-3.5 pl-5 pr-3 text-sm outline-none text-gray-600 font-bold cursor-pointer"
+                            >
+                                <span className="text-[#8e8e8e]">
+                                    {phoneCodes.find((p) => p.code === formData.phoneCode)?.label}
+                                </span>
+                                <span className="text-[#5C3D2E] font-extrabold">
+                                    {formData.phoneCode}
+                                </span>
+                                <ChevronDown size={16} className={`text-gray-400 transition-transform ${isPhoneDropdownOpen ? "rotate-180" : ""}`} />
+                            </button>
+
+                            {/* เมนู Dropdown */}
+                            {isPhoneDropdownOpen && (
+                                <>
+                                    <div
+                                        className="fixed inset-0 z-10"
+                                        onClick={() => setIsPhoneDropdownOpen(false)}
+                                    />
+                                    <div className="absolute top-[calc(100%+8px)] left-0 w-[110px] bg-white border border-gray-100 rounded-2xl shadow-xl z-20 overflow-hidden py-1 animate-in fade-in slide-in-from-top-2">
+                                        {phoneCodes.map((item) => (
+                                            <button
+                                                key={item.code}
+                                                type="button"
+                                                className={`w-full text-left px-4 py-3 text-sm transition-colors flex items-center gap-2 ${formData.phoneCode === item.code
+                                                    ? "bg-[#FF8A00]/10 text-[#FF8A00] font-bold"
+                                                    : "text-gray-600 hover:bg-gray-50"
+                                                    }`}
+                                                onClick={() => {
+                                                    setFormData((prev: FormData) => ({ ...prev, phoneCode: item.code }));
+                                                    setIsPhoneDropdownOpen(false);
+                                                }}
+                                            >
+                                                <span className="font-bold">{item.label}</span>
+                                                <span className="text-gray-400 ml-auto">{item.code}</span>
+                                            </button>
+                                        ))}
+                                    </div>
+                                </>
+                            )}
+                        </div>
+
+                        <input
+                            type="tel"
+                            name="phoneNumber"
+                            value={formData.phoneNumber}
+                            onChange={handleChange}
+                            placeholder="หมายเลขโทรศัพท์"
+                            className="flex-1 w-full p-3.5 pl-4 text-sm outline-none bg-transparent rounded-r-2xl md:rounded-r-full"
+                        />
+                    </div>
+                    {errors.phoneNumber && <p className="text-red-500 text-[11px] font-bold pl-5">! {errors.phoneNumber}</p>}
+                </div>
+
+                <div className="space-y-1.5">
+                    <textarea
+                        ref={messageInputRef}
+                        name="message"
+                        value={formData.message}
+                        onChange={handleChange}
+                        placeholder="เราจะช่วยคุณได้อย่างไร?"
+                        rows={5}
+                        className={`w-full p-4 rounded-[1.2rem] md:rounded-[1.5rem] border focus:outline-none focus:ring-2 focus:ring-[#FF8A00] text-sm resize-none bg-gray-50/50 ${errors.message ? 'border-red-500 ring-1 ring-red-500' : 'border-gray-200'}`}
+                    ></textarea>
+                    {errors.message && <p className="text-red-500 text-[11px] font-bold pl-5">! {errors.message}</p>}
+                </div>
 
                 {/* Submit Status Box */}
                 {submitStatus !== "idle" && (

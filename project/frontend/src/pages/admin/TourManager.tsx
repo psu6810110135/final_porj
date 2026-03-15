@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import {
   Plus,
   Search,
@@ -14,6 +14,8 @@ import {
   ChevronLeft,
   ChevronRight,
   AlertCircle,
+  CheckCircle2,
+  AlertTriangle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -21,6 +23,67 @@ import { Badge } from "@/components/ui/badge";
 import { API_BASE_URL } from "@/config/api";
 import { THAI_PROVINCES, getProvinceLabel } from "@/utils/tourLabels";
 import { getToken } from "@/utils/auth";
+
+/* ─── Mini Confirm Dialog ──────────────────────────── */
+function ConfirmDialog({
+  open,
+  title,
+  description,
+  onConfirm,
+  onCancel,
+}: {
+  open: boolean;
+  title: string;
+  description?: string;
+  onConfirm: () => void;
+  onCancel: () => void;
+}) {
+  if (!open) return null;
+  return (
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center">
+      <div className="absolute inset-0 bg-black/30 backdrop-blur-sm" onClick={onCancel} />
+      <div className="relative bg-white rounded-2xl shadow-2xl p-6 w-80 space-y-4 animate-in zoom-in-95 fade-in duration-200">
+        <div className="flex items-start gap-3">
+          <div className="p-2 bg-red-50 rounded-xl shrink-0">
+            <AlertTriangle className="w-5 h-5 text-red-500" />
+          </div>
+          <div>
+            <p className="font-black text-[#4F200D] text-sm">{title}</p>
+            {description && <p className="text-xs text-[#4F200D]/60 mt-1 font-medium">{description}</p>}
+          </div>
+        </div>
+        <div className="flex gap-2 justify-end">
+          <button
+            onClick={onCancel}
+            className="px-4 py-2 text-xs font-bold rounded-xl bg-[#F6F1E9] text-[#4F200D] hover:bg-[#F6F1E9]/80 transition-colors"
+          >
+            ยกเลิก
+          </button>
+          <button
+            onClick={onConfirm}
+            className="px-4 py-2 text-xs font-bold rounded-xl bg-red-500 text-white hover:bg-red-600 transition-colors"
+          >
+            ลบเลย
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ─── Success Toast ────────────────────────────────── */
+function SuccessToast({ message, visible }: { message: string; visible: boolean }) {
+  return (
+    <div
+      className={`fixed bottom-6 right-6 z-[9999] flex items-center gap-2.5 bg-white border border-green-100 shadow-xl rounded-2xl px-5 py-3.5 transition-all duration-300 ${
+        visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4 pointer-events-none"
+      }`}
+    >
+      <CheckCircle2 className="w-5 h-5 text-green-500 shrink-0" />
+      <span className="text-sm font-bold text-[#4F200D]">{message}</span>
+    </div>
+  );
+}
 
 
 /* ─── Auth Helper ────────────────────────────────── */
@@ -288,6 +351,14 @@ const TourManager = () => {
   const [tours, setTours] = useState<Tour[]>([]);
   const [loading, setLoading] = useState(true);
 
+  const [confirmDialog, setConfirmDialog] = useState<{ open: boolean; tourId: string | null }>({ open: false, tourId: null });
+  const [toast, setToast] = useState<{ visible: boolean; message: string }>({ visible: false, message: "" });
+
+  const showToast = useCallback((message: string) => {
+    setToast({ visible: true, message });
+    setTimeout(() => setToast((t) => ({ ...t, visible: false })), 2800);
+  }, []);
+
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [regionFilter, setRegionFilter] = useState<string>("all");
@@ -511,13 +582,20 @@ const TourManager = () => {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm("คุณแน่ใจหรือไม่ว่าต้องการลบทัวร์นี้?")) return;
+    setConfirmDialog({ open: true, tourId: id });
+  };
+
+  const confirmDelete = async () => {
+    const id = confirmDialog.tourId;
+    setConfirmDialog({ open: false, tourId: null });
+    if (!id) return;
     try {
       const res = await fetch(`${API_URL}/${id}`, { method: "DELETE", headers: getAuthHeader() });
       if (!res.ok) throw new Error("Failed to delete tour");
       setTours((prev) => prev.filter((t) => t.id !== id));
+      showToast("ลบทัวร์เรียบร้อยแล้ว");
     } catch (err: any) {
-      alert(err?.message || "Failed to delete tour");
+      showToast(err?.message || "ไม่สามารถลบทัวร์ได้");
     }
   };
 
@@ -582,6 +660,14 @@ const TourManager = () => {
 
   return (
     <div className="w-full space-y-6 animate-in fade-in duration-500">
+      <ConfirmDialog
+        open={confirmDialog.open}
+        title="ยืนยันการลบทัวร์"
+        description="การดำเนินการนี้ไม่สามารถยกเลิกได้ ข้อมูลทัวร์จะถูกลบออกจากระบบถาวร"
+        onConfirm={confirmDelete}
+        onCancel={() => setConfirmDialog({ open: false, tourId: null })}
+      />
+      <SuccessToast message={toast.message} visible={toast.visible} />
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 sm:mb-8">
         <div>
           <h1 className="text-2xl sm:text-3xl font-extrabold text-[#4F200D] tracking-tight">จัดการทัวร์</h1>

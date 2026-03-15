@@ -89,7 +89,7 @@ const ContactPage = () => {
     >,
   ) => {
     const { name, value } = e.target;
-    
+
     // Clear error when user changes the value
     if (errors[name]) {
       setErrors(prev => {
@@ -114,7 +114,7 @@ const ContactPage = () => {
 
     if (!formData.firstName.trim()) newErrors.firstName = "กรุณากรอกชื่อจริง";
     if (!formData.lastName.trim()) newErrors.lastName = "กรุณากรอกนามสกุล";
-    
+
     if (!formData.email.trim()) {
       newErrors.email = "กรุณากรอกอีเมล";
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
@@ -255,5 +255,3 @@ const ContactPage = () => {
 };
 
 export default ContactPage;
-
-//test แยก branch

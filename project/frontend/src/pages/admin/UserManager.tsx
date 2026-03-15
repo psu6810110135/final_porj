@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import axios from "axios";
 import {
   Search,
@@ -12,12 +12,75 @@ import {
   Clock,
   Hash,
   Power,
+  CheckCircle2,
+  AlertTriangle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { API_BASE_URL } from "@/config/api";
 import { getToken } from "@/utils/auth";
+
+/* ─── Mini Confirm Dialog ──────────────────────────── */
+function ConfirmDialog({
+  open,
+  title,
+  description,
+  onConfirm,
+  onCancel,
+}: {
+  open: boolean;
+  title: string;
+  description?: string;
+  onConfirm: () => void;
+  onCancel: () => void;
+}) {
+  if (!open) return null;
+  return (
+    <div className="fixed inset-0 z-[200] flex items-center justify-center">
+      <div className="absolute inset-0 bg-black/30 backdrop-blur-sm" onClick={onCancel} />
+      <div className="relative bg-white rounded-2xl shadow-2xl p-6 w-80 space-y-4 animate-in zoom-in-95 fade-in duration-200">
+        <div className="flex items-start gap-3">
+          <div className="p-2 bg-red-50 rounded-xl shrink-0">
+            <AlertTriangle className="w-5 h-5 text-red-500" />
+          </div>
+          <div>
+            <p className="font-black text-[#4F200D] text-sm">{title}</p>
+            {description && <p className="text-xs text-[#4F200D]/60 mt-1 font-medium">{description}</p>}
+          </div>
+        </div>
+        <div className="flex gap-2 justify-end">
+          <button
+            onClick={onCancel}
+            className="px-4 py-2 text-xs font-bold rounded-xl bg-[#F6F1E9] text-[#4F200D] hover:bg-[#F6F1E9]/80 transition-colors"
+          >
+            ยกเลิก
+          </button>
+          <button
+            onClick={onConfirm}
+            className="px-4 py-2 text-xs font-bold rounded-xl bg-red-500 text-white hover:bg-red-600 transition-colors"
+          >
+            ลบเลย
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ─── Success Toast ────────────────────────────────── */
+function SuccessToast({ message, visible }: { message: string; visible: boolean }) {
+  return (
+    <div
+      className={`fixed bottom-6 right-6 z-[300] flex items-center gap-2.5 bg-white border border-green-100 shadow-xl rounded-2xl px-5 py-3.5 transition-all duration-300 ${
+        visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4 pointer-events-none"
+      }`}
+    >
+      <CheckCircle2 className="w-5 h-5 text-green-500 shrink-0" />
+      <span className="text-sm font-bold text-[#4F200D]">{message}</span>
+    </div>
+  );
+}
 
 
 interface UserData {
@@ -43,6 +106,13 @@ const getAuthHeader = (): Record<string, string> => {
 
 
 export default function UserManager() {
+  const [confirmDialog, setConfirmDialog] = useState<{ open: boolean; userId: string | null }>({ open: false, userId: null });
+  const [toast, setToast] = useState<{ visible: boolean; message: string }>({ visible: false, message: "" });
+
+  const showToast = useCallback((message: string) => {
+    setToast({ visible: true, message });
+    setTimeout(() => setToast((t) => ({ ...t, visible: false })), 2800);
+  }, []);
   const [users, setUsers] = useState<UserData[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
@@ -67,14 +137,21 @@ export default function UserManager() {
   }, []);
 
   const handleDelete = async (id: string) => {
-    if (!confirm("คุณแน่ใจหรือไม่ว่าต้องการลบผู้ใช้งานนี้?")) return;
+    setConfirmDialog({ open: true, userId: id });
+  };
+
+  const confirmDelete = async () => {
+    const id = confirmDialog.userId;
+    setConfirmDialog({ open: false, userId: null });
+    if (!id) return;
     try {
       await axios.delete(`${API_BASE_URL}/api/users/${id}`, {
         headers: getAuthHeader(),
       });
-      setUsers(users.filter((u) => u.id !== id));
+      setUsers((prev) => prev.filter((u) => u.id !== id));
+      showToast("ลบผู้ใช้งานเรียบร้อยแล้ว");
     } catch (error) {
-      alert("ไม่สามารถลบผู้ใช้งานได้");
+      showToast("ไม่สามารถลบผู้ใช้งานได้");
     }
   };
 
@@ -120,6 +197,14 @@ export default function UserManager() {
 
   return (
     <div className="w-full space-y-6 animate-in fade-in duration-500">
+      <ConfirmDialog
+        open={confirmDialog.open}
+        title="ยืนยันการลบผู้ใช้งาน"
+        description="การดำเนินการนี้ไม่สามารถยกเลิกได้ ผู้ใช้งานจะถูกลบออกจากระบบถาวร"
+        onConfirm={confirmDelete}
+        onCancel={() => setConfirmDialog({ open: false, userId: null })}
+      />
+      <SuccessToast message={toast.message} visible={toast.visible} />
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 sm:mb-8">
         <div>
           <h1 className="text-2xl sm:text-3xl font-extrabold text-[#4F200D] tracking-tight">

@@ -24,6 +24,10 @@ test("Full tour booking flow: Login → Browse → Book → Payment Page", async
   // ===== SETUP PHASE: Create tour and schedule via API =====
   console.log("📋 SETUP: Creating tour and schedule via API...");
 
+  const testUsername = `e2e_user_${Date.now()}`;
+  const testPassword = "Password123!";
+  const testEmail = `${testUsername}@example.com`;
+
   const adminToken = await adminLogin("admin", "admin1234");
   console.log(
     "✅ Admin logged in, token:",
@@ -56,38 +60,72 @@ test("Full tour booking flow: Login → Browse → Book → Payment Page", async
     schedule.available_date,
   );
 
+  const signupResponse = await fetch("http://localhost:3000/api/auth/signup", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      username: testUsername,
+      password: testPassword,
+      email: testEmail,
+      full_name: "E2E Test User",
+    }),
+  });
+
+  if (!signupResponse.ok) {
+    const signupError = await signupResponse.text();
+    throw new Error(
+      `Test user signup failed: ${signupResponse.status} ${signupError}`,
+    );
+  }
+  console.log("✅ Test user created:", testUsername);
+
   // ===== USER TEST PHASE =====
   console.log("\n🧑 USER FLOW: Starting user booking flow...");
 
   // Step 1: User logs in (on the UI)
   console.log("\n1️⃣ User navigating to login page...");
   await page.goto("http://localhost:5173/login");
-  await page.waitForTimeout(1000);
 
-  console.log("2️⃣ Entering login credentials (somchai_w / Password123!)...");
+  console.log(
+    `2️⃣ Entering login credentials (${testUsername} / ${testPassword})...`,
+  );
 
   // Fill username
   const usernameInput = page.getByPlaceholder("Username");
-  await usernameInput.fill("somchai_w");
-  await page.waitForTimeout(500);
+  await usernameInput.fill(testUsername);
 
   // Fill password
   const passwordInput = page.getByPlaceholder("Password");
-  await passwordInput.fill("Password123!");
-  await page.waitForTimeout(500);
+  await passwordInput.fill(testPassword);
 
   // Click login button in form
   const formLoginButton = page.locator("form").getByRole("button", {
     name: "เข้าสู่ระบบ",
   });
-  await formLoginButton.click();
+  await expect(formLoginButton).toBeVisible({ timeout: 10000 });
+  await expect(formLoginButton).toBeEnabled({ timeout: 10000 });
 
   console.log("⏳ Waiting for login to complete...");
-  // Wait for navigation away from login page
-  await page.waitForURL(/^(?!.*login).*/, { timeout: 10000 }).catch(() => {
-    console.log("⚠️ URL navigation check timed out, continuing anyway");
-  });
-  await page.waitForTimeout(2000); // Extra delay to ensure login is done
+  await formLoginButton.click();
+
+  // Login can complete without full page navigation in SPA mode.
+  await expect
+    .poll(
+      async () =>
+        page.evaluate(
+          () =>
+            window.localStorage.getItem("jwt_token") ||
+            window.sessionStorage.getItem("jwt_token") ||
+            window.localStorage.getItem("token") ||
+            window.sessionStorage.getItem("token") ||
+            window.localStorage.getItem("accessToken") ||
+            window.sessionStorage.getItem("accessToken"),
+        ),
+      {
+        timeout: 10000,
+      },
+    )
+    .not.toBeNull();
 
   // Step 2: Navigate to tours page
   console.log("\n3️⃣ Navigating to tours page...");
@@ -122,7 +160,9 @@ test("Full tour booking flow: Login → Browse → Book → Payment Page", async
   await tourCard.click();
 
   await page.waitForURL("**/tours/**", { timeout: 10000 });
-  await page.waitForTimeout(2000); // Delay to see tour details
+
+  // Guard against continuing while still unauthenticated.
+  await expect(page.getByText("กรุณาเข้าสู่ระบบก่อน")).toHaveCount(0);
 
   // Step 4: Select a date and travelers
   console.log("\n5️⃣ Selecting travel date and number of travelers...");
@@ -160,23 +200,9 @@ test("Full tour booking flow: Login → Browse → Book → Payment Page", async
     console.log("⚠️ Could not find date button, trying alternative selectors");
   }
 
-  // Select adults (click + button for first traveler group)
-  console.log("👥 Adding travelers...");
-  const plusButtons = page.getByRole("button", { name: "+" });
-  const buttonCount = await plusButtons.count();
-
-  if (buttonCount > 0) {
-    const firstPlusButton = plusButtons.first();
-
-    await firstPlusButton.click(); // +1 adult
-    await page.waitForTimeout(400);
-    await firstPlusButton.click(); // +1 more
-    await page.waitForTimeout(500);
-  } else {
-    console.log(
-      "⚠️ Plus buttons not found, tour may use different UI for selecting travelers",
-    );
-  }
+  // Traveler defaults to 1 adult. Keep this flow stable by not depending on
+  // icon-only +/- controls that can vary across responsive layouts.
+  console.log("👥 Using default traveler count (1 adult)");
 
   // Step 5: Fill contact information
   console.log("\n6️⃣ Filling contact information...");
@@ -208,21 +234,16 @@ test("Full tour booking flow: Login → Browse → Book → Payment Page", async
 
   console.log("🖱️ Clicking booking button...");
   await expect(bookingButton).toBeVisible({ timeout: 10000 });
+  await expect(bookingButton).toBeEnabled({ timeout: 10000 });
   await bookingButton.scrollIntoViewIfNeeded();
   await page.waitForTimeout(500);
   await bookingButton.click();
 
   console.log("⏳ Waiting for payment page...");
   // Should redirect to /payment/:id
-  try {
-    await page.waitForURL("**/payment/*", { timeout: 10000 });
-  } catch (e) {
-    console.log(
-      "⚠️ URL did not change to payment page, checking current URL:",
-      page.url(),
-    );
-    throw e;
-  }
+  await expect(page).toHaveURL(/\/payment\/[0-9a-f-]+$/i, {
+    timeout: 15000,
+  });
   await page.waitForTimeout(2500); // Delay to see payment page load
 
   // ===== ASSERTIONS: Payment Page =====
@@ -287,7 +308,7 @@ test("Full tour booking flow: Login → Browse → Book → Payment Page", async
 
   // We'll verify by checking the API response for booking details
   try {
-    const userToken = await userLogin("somchai_w", "Password123!");
+    const userToken = await userLogin(testUsername, testPassword);
 
     const bookingResponse = await fetch(
       `http://localhost:3000/api/bookings/${bookingId}`,

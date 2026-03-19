@@ -1,0 +1,37 @@
+import { test, expect } from '@playwright/test';
+
+test('CreateTourPlayWright', async ({ page }) => {
+  await page.goto('http://localhost:5173/');
+  await page.getByRole('button', { name: 'เข้าสู่ระบบ' }).click();
+  await page.getByRole('textbox', { name: 'Username' }).click();
+  await page.getByRole('textbox', { name: 'Username' }).fill('admin');
+  await page.getByRole('textbox', { name: 'Password' }).click();
+  await page.getByRole('textbox', { name: 'Password' }).fill('admin1234');
+  await page.locator('form').getByRole('button', { name: 'เข้าสู่ระบบ' }).click();
+  await page.getByRole('button', { name: 'Admin Dashboard' }).click();
+  await page.getByRole('link', { name: 'จัดการทัวร์' }).click();
+  await page.getByRole('button', { name: 'เพิ่มทัวร์ใหม่' }).click();
+  await page.getByRole('textbox', { name: 'เช่น ทริปดำน้ำสุดฟิน' }).click();
+  await page.getByRole('textbox', { name: 'เช่น ทริปดำน้ำสุดฟิน' }).fill('TourKub');
+  await page.getByRole('spinbutton').first().click();
+  await page.getByRole('spinbutton').first().fill('1234');
+  await page.locator('#tour-modal-content').getByText('ภาคกลาง').click();
+  await page.locator('#tour-modal-content').getByText('ภาคตะวันตก').click();
+  await page.locator('.grid > div:nth-child(2) > .relative > .flex > .lucide').first().click();
+  await page.locator('#tour-modal-content').getByText('กาญจนบุรี').click();
+  await page.locator('#tour-modal-content').getByText('ธรรมชาติ').click();
+  await page.locator('#tour-modal-content').getByText('ศิลปวัฒนธรรม').click();
+  const fileChooserPromise1 = page.waitForEvent('filechooser');
+  await page.getByRole('button', { name: 'เพิ่มรูปหน้าปก' }).click();
+  const fileChooser1 = await fileChooserPromise1;
+  await fileChooser1.setFiles('project/frontend/src/assets/logo.png');
+  const fileChooserPromise2 = page.waitForEvent('filechooser');
+  await page.getByRole('button', { name: 'เพิ่มรูป' }).click();
+  const fileChooser2 = await fileChooserPromise2;
+  await fileChooser2.setFiles('project/frontend/src/assets/bg1.jpeg');
+  await page.getByRole('textbox').nth(2).click();
+  await page.getByRole('textbox').nth(2).fill('test');
+  await page.getByRole('button', { name: 'บันทึกทัวร์' }).click();
+  await page.getByRole('button', { name: 'กลับหน้าหลัก' }).click();
+  await page.getByRole('button', { name: 'เริ่มต้นการเดินทาง' }).click();
+});
